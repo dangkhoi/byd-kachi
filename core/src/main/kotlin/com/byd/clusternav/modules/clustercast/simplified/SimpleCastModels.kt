@@ -217,6 +217,18 @@ sealed interface SimpleCastState {
     object Closing : SimpleCastState { override fun toString() = "Closing" }
 }
 
+/**
+ * 2.90 · R6 (review Pass 1) — khoá "trang Cài đặt › Chiếu cụm phải dựng lại chưa": đúng những gì dòng trạng thái + ô xem trước HIỆN
+ * (loại trạng thái · gói đang chiếu · tỉ lệ chia · câu lỗi). So theo LOẠI thôi thì `CastingFull(A) → CastingFull(B)` hay câu lỗi
+ * mới vẫn để chữ cũ trên trang; so cả data class thì mỗi lượt cập nhật bản ghim (−/+) cũng dựng lại cả trang.
+ */
+fun SimpleCastState.statusKey(): String = when (this) {
+    is SimpleCastState.CastingFull -> "full:$targetPkg"
+    is SimpleCastState.CastingSplit -> "split:${left?.pkg}|${right?.pkg}|$leftPercent"
+    is SimpleCastState.Error -> "error:$message"
+    else -> toString()
+}
+
 // ─── Cast intent (what the user wants to do) ──────────────────────────────────
 
 sealed interface SimpleCastIntent {

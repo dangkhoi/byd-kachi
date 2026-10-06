@@ -87,11 +87,25 @@ class VietMapWidgetBridge private constructor(context: Context) {
         VietMapWidgetOwner.DIAGNOSTICS in owners ||
             (Prefs.enabled(appContext) && (Prefs.lane(appContext) || Prefs.hud(appContext)))
     // BG-31: cache provider/version (TTL + receiver gói) — xem [VietMapProviderCatalog]. Chỉ chạm trên main.
-    private val catalog = VietMapProviderCatalog(appContext, manager, VIETMAP_PACKAGE) { _ ->
+    private val catalog: VietMapProviderCatalog = VietMapProviderCatalog(appContext, manager, VIETMAP_PACKAGE) { action ->
         if (!listening) return@VietMapProviderCatalog
+        // 2.90 · R10: gói VietMap vừa cài/cập nhật ⇒ dựng lại widget + bind lại ô đã mất (gỡ-rồi-cài xoá widget — KDoc
+        // [VietMapWidgetRestorePlan]); bản cũ chỉ phát lại snapshot ⇒ id chết nằm im tới lần tiến trình sau (cũng không lành).
+        if (action != Intent.ACTION_PACKAGE_REMOVED) { restoreBoundViews(); autoBindMissing() }
+        // Review Pass 3 [P3]: thứ tự nhận `PACKAGE_ADDED` giữa Kachi và AppWidgetService không bảo đảm — provider mới có thể CHƯA
+        // vào `getInstalledProviders` ⇒ KEEP_WAIT, không lành tới lần tiến trình sau. Thử lại MỘT lần sau [PKG_SETTLE_MS].
+        main.removeCallbacks(packageSettleRetry)
+        if (action != Intent.ACTION_PACKAGE_REMOVED) main.postDelayed(packageSettleRetry, PKG_SETTLE_MS)
         publishSnapshot()
         main.removeCallbacks(freshnessTick)   // đánh giá lại nhịp ngay, không chờ hết 10 s
         main.post(freshnessTick)
+    }
+    /** Lượt lành lại sau đổi gói (xem callback [catalog]) — chỉ khi còn nghe và còn ô thiếu view. Chỉ chạm trên main. */
+    private val packageSettleRetry: Runnable = Runnable {
+        if (!listening || VietMapWidgetSlot.entries.none { it !in unsupportedSlots && views[it] == null }) return@Runnable
+        catalog.refresh(force = true)
+        restoreBoundViews()
+        autoBindMissing()
     }
     // --- Lifecycle ---
     fun start(owner: VietMapWidgetOwner) = onMain {
@@ -118,6 +132,7 @@ class VietMapWidgetBridge private constructor(context: Context) {
         if (!owners.remove(owner) || owners.isNotEmpty() || !listening) return@onMain
         main.removeCallbacks(freshnessTick)
         main.removeCallbacks(publishDebounced)
+        main.removeCallbacks(packageSettleRetry)
         catalog.unregister()
         clearRuntimeValues()
         publishSnapshot()
@@ -311,27 +326,38 @@ class VietMapWidgetBridge private constructor(context: Context) {
         VietMapWidgetSlot.entries.forEach { slot ->
             val id = prefs.widgetId(slot) ?: return@forEach
             val info = manager.getAppWidgetInfo(id)
-            if (info == null) {
-                // Info temporarily unavailable (system not ready, or app just installed).
-                // Keep the saved ID — do NOT delete. Will retry on next start/update.
-                Log.w(TAG, "getAppWidgetInfo($id) returned null for ${slot.name} — keeping saved ID")
-                slotsById[id] = slot
-                return@forEach
+            // 2.90 · R10 — luật thuần [VietMapWidgetRestorePlan] (gốc badge không hiện 06/10: id chết giữ mãi ⇒ tự khoá).
+            when (VietMapWidgetRestorePlan.decide(
+                info?.provider?.flattenToString(), slot.component.flattenToString(), providerInfo(slot) != null,
+            )) {
+                VietMapWidgetRestorePlan.Action.KEEP_WAIT -> {
+                    // Provider vắng / zombie (đang cài lại, hệ thống chưa sẵn): giữ id, thử lại ở lượt start/đổi gói sau.
+                    Log.w(TAG, "getAppWidgetInfo($id) returned null for ${slot.name} — provider chưa có, keeping saved ID")
+                    slotsById[id] = slot
+                    return@forEach
+                }
+                VietMapWidgetRestorePlan.Action.DROP_REBIND -> {
+                    // Provider CÓ (không zombie) mà widget không còn ⇒ đã bị xoá (vd gỡ-rồi-cài VietMap) ⇒ bỏ id, bind lại.
+                    Log.w(TAG, "getAppWidgetInfo($id) returned null for ${slot.name} — widget đã mất, provider còn ⇒ bỏ id, bind lại")
+                    deleteAllocatedId(id)
+                    prefs.clearWidgetId(slot)
+                    return@forEach
+                }
+                VietMapWidgetRestorePlan.Action.DROP_MISMATCH -> {
+                    Log.w(TAG, "widget $id provider mismatch: ${info?.provider} != ${slot.component} — removing")
+                    deleteAllocatedId(id)
+                    prefs.clearWidgetId(slot)
+                    return@forEach
+                }
+                VietMapWidgetRestorePlan.Action.DROP_UNINSTALLED -> {
+                    Log.w(TAG, "provider for ${slot.name} no longer installed — removing widget $id")
+                    deleteAllocatedId(id)
+                    prefs.clearWidgetId(slot)
+                    return@forEach
+                }
+                VietMapWidgetRestorePlan.Action.ATTACH -> Unit
             }
-            if (info.provider != slot.component) {
-                // Provider genuinely changed — orphan ID, clean up
-                Log.w(TAG, "widget $id provider mismatch: ${info.provider} != ${slot.component} — removing")
-                deleteAllocatedId(id)
-                prefs.clearWidgetId(slot)
-                return@forEach
-            }
-            if (providerInfo(slot) == null) {
-                // Provider uninstalled but ID still points to it — clean up
-                Log.w(TAG, "provider for ${slot.name} no longer installed — removing widget $id")
-                deleteAllocatedId(id)
-                prefs.clearWidgetId(slot)
-                return@forEach
-            }
+            if (info == null) return@forEach
             slotsById[id] = slot
             try {
                 views[slot] = host.createView(appContext, id, info)
@@ -405,6 +431,7 @@ class VietMapWidgetBridge private constructor(context: Context) {
         internal const val TAG = "VietMapWidget"
         private const val HOST_ID = 0x564D
         private const val UPDATE_DEBOUNCE_MS = 120L
+        private const val PKG_SETTLE_MS = 2_000L
         @Volatile private var instance: VietMapWidgetBridge? = null
         fun get(context: Context): VietMapWidgetBridge = instance ?: synchronized(this) {
             instance ?: VietMapWidgetBridge(context).also { instance = it }

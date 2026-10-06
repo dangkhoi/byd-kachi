@@ -66,17 +66,17 @@ class ThemeLedgerTest {
     }
 
     /**
-     * Review 2.89 Pass 3 · cluster-r2-3 — ĐỔI GHIM có lý do: trên xe có kiểu GỐC biết được (Seal 10.25" `car.type=138` ⇒ Chữ nhật),
-     * `31;ok` của tiến trình / lần khởi động TRƯỚC vẫn chứng minh Chữ nhật (opcode gốc còn hiệu lực, hoặc nổ máy đã về gốc [ĐO-gv
-     * F3]) — đúng giả định luật 3 của `ClusterStylePlan.wanted`. `30;ok` của tiến trình trước vẫn UNKNOWN (mơ hồ, B1b-OQ6); xe
-     * chưa biết kiểu gốc (`SEAL_DL3` trơn) giữ luật cũ ở bài trên.
+     * 2.90 · R2 — GỠ ngoại lệ cluster-r2-3 của 2.89: [ĐO xe 06/10] theme cụm GIỮ qua nổ máy (cong từ hôm trước) và 2.89 tin RECT từ
+     * `31;ok` của tiến trình trước trên một cụm đang CONG ⇒ khung Chữ nhật, đen quanh Maps. Kiểu tin chỉ là thứ CHÍNH tiến trình này
+     * đã gửi + thấy thành công. Thử ĐỎ: trả lại nhánh `nativeStyle` trong `believed`.
      */
     @Test
-    fun `Pass 3 - opcode GOC ok chung minh kieu goc bat ke tien trinh, opcode khac van can cung tien trinh`() {
+    fun `290 - chi ok CUNG tien trinh moi suy duoc kieu, ke ca opcode goc`() {
         val r = ProjectionRecipe.SEAL_DL3.copy(nativeStyle = CastStyle.RECT)
         val n = now(200, 2, start = 100)
-        assertEquals(BelievedStyle.RECT, ThemeLedger.believed(e(31, 50, 2), r, n), "tiến trình trước")
-        assertEquals(BelievedStyle.RECT, ThemeLedger.believed(e(31, 50, 1), r, n), "lần khởi động trước")
+        assertEquals(BelievedStyle.UNKNOWN, ThemeLedger.believed(e(31, 50, 2), r, n), "tiến trình trước")
+        assertEquals(BelievedStyle.UNKNOWN, ThemeLedger.believed(e(31, 50, 1), r, n), "lần khởi động trước")
+        assertEquals(BelievedStyle.RECT, ThemeLedger.believed(e(31, 150, 2), r, n), "31 cùng tiến trình")
         assertEquals(BelievedStyle.UNKNOWN, ThemeLedger.believed(e(30, 50, 2), r, n), "30 của tiến trình trước: mơ hồ")
         assertEquals(BelievedStyle.CURVED, ThemeLedger.believed(e(30, 150, 2), r, n), "30 cùng tiến trình: như cũ")
         assertEquals(BelievedStyle.UNKNOWN, ThemeLedger.believed(e(31, 50, 2, ThemeLedger.State.PENDING), r, n), "pending ⇒ UNKNOWN")

@@ -61,13 +61,6 @@ class FloatingBubbleService : Service() {
     private val pipGuard = BubblePipGuard()
 
     /**
-     * B1b · CLUSTER-RECT-OPTION (D1) — số km/h Kachi vẽ trên cụm Chữ nhật. Sống theo dịch vụ chiếu (dịch vụ này chạy suốt
-     * khi Cast bật, kể cả khi ẩn nút nổi); TỰ ẩn khi phiên không phải Chữ nhật ([ClusterSpeedReadoutOverlay] /
-     * `SpeedReadoutPolicy`).
-     */
-    private var speedReadout: ClusterSpeedReadoutOverlay? = null
-
-    /**
      * Bộ **tự chiếu khi nổ máy** — driver DUY NHẤT (R1); thân ở [BubbleAutostart] (tách ở WP6 vì trần 500 dòng).
      * Dùng CHUNG [handler] với dịch vụ, nên `handler.removeCallbacksAndMessages(null)` ở [onDestroy] vẫn huỷ đúng
      * lượt mở-chiếu đang chờ; `detach` gỡ hai bộ nghe còn treo.
@@ -107,6 +100,8 @@ class FloatingBubbleService : Service() {
             // Item 4: re-áp vị trí bong bóng VietMap ĐÃ LƯU mỗi nhịp (nếu VietMap-mod dựng lại bong bóng lúc
             // đang lái / ClusterNav chạy nền) → luôn TỰ về đúng vị trí owner đã chỉnh. send() tự gate Cast ON.
             runCatching { com.byd.clusternav.VmOverlayPosition.applyOnOpen(applicationContext) }
+            // 2.90 · R8 — giữ bóng VietMap ĐÚNG công tắc (mod dựng lại bóng giữa chuyến ⇒ lượt gửi lặp ẩn lại); cổng 15 s trong hàm.
+            runCatching { com.byd.clusternav.VmBubbleVisibility.keepHidden(applicationContext) }
             if (!destroyed) handler.postDelayed(this, REFRESH_INTERVAL_MS)
         }
     }
@@ -145,9 +140,6 @@ class FloatingBubbleService : Service() {
         val coordinator = SimpleCastRuntime.coordinator(applicationContext)
         coordinator.addStateListener(stateListener)
         handler.post(refresh)
-
-        // B1b — số km/h trên cụm Chữ nhật (chỉ hiện khi phiên Chữ nhật, trên đúng id cụm đã xác minh).
-        speedReadout = ClusterSpeedReadoutOverlay(applicationContext, coordinator).also { it.start() }
 
         // Block PiP for GMaps/YouTube — prevents foreground detection confusion
         pipGuard.block(coordinator)
@@ -193,9 +185,6 @@ class FloatingBubbleService : Service() {
         autostart.detach(coordinator)
         // Restore PiP permissions for blocked apps
         pipGuard.restore(coordinator)
-        // B1b — gỡ số km/h khỏi cụm + dừng luồng đọc.
-        speedReadout?.close()
-        speedReadout = null
         // Shutdown gesture executor. Guard the lateinits: onCreate() may stopSelf() and return
         // BEFORE these are initialized (overlay permission or startForeground denied — e.g. the
         // very first launch after a clean install), and stopSelf() still runs onDestroy(). Touching

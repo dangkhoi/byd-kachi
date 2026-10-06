@@ -71,6 +71,8 @@ internal fun ClusterNavBridge.reapplyAll() {
     // `vm_bubble_x/y`: `VmOverlayPosition` vừa lưu vừa **bắn broadcast** cho mod VietMap trong cùng một hàm, nên
     // `applyOnOpen` (`VmOverlayPosition.kt:86`) là đúng đường phát lại — nó tự no-op khi Cast chưa live.
     step("bubble.pos") { VmOverlayPosition.applyOnOpen(app) }
+    // 2.90 · R8 — `vm_bubble_hidden` của HỒ SƠ MỚI ⇒ ẩn/hiện bóng thật (`VM_BUBBLE_VIS`), không gate Cast ON (bóng nằm trên cụm cả khi tắt chiếu).
+    step("bubble.vis") { com.byd.clusternav.VmBubbleVisibility.apply(app, "profile-reapply", force = true) }
     // Review 2.89 Pass 3 · vietmap-dock-r2-2 — điều kiện nền (miễn pin · appop vẽ nổi) theo HỒ SƠ MỚI: `vm_bubble_enabled` /
     // biển tốc độ / app tự chiếu theo hồ sơ, và lượt SẴN của hồ sơ trước có thể đã TRẢ appop vẽ nổi của VietMap (r1-2). Không
     // gọi lại thì hồ sơ bật bóng mất bóng tới lần màn sáng / nổ máy / mở chiếu kế. `onReady` = lượt nền (luồng riêng, KHÔNG mở

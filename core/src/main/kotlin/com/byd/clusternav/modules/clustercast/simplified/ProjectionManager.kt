@@ -54,27 +54,12 @@ class ProjectionManager(
 
     /**
      * B1b — kiểu cụm của PHIÊN đang mở ([CastSessionStyle]): ghim MỘT lần khi [open] thành công, xoá khi [close] thành công hoặc
-     * [resetState] về đóng. `null` = không có phiên. Khung app, khoá lưu `__RECT` và số km/h Kachi vẽ đều đọc ở đây — không đọc
+     * [resetState] về đóng. `null` = không có phiên. Khung app và khoá lưu `__RECT` đọc ở đây — không đọc
      * lại lựa chọn của hồ sơ giữa phiên (mẫu VC-R6).
      */
     @Volatile
     var session: CastSessionStyle? = null
         private set
-
-    /**
-     * Review 2.89 Pass 2 · cluster-r1-4 — id màn ảo cụm ĐÃ XÁC MINH gắn với [session] (lượt dò thành công đầu tiên sau [open], và
-     * mọi lượt dò thành công sau đó trong phiên — [bindSessionDisplay]); `-1` = chưa có / không có phiên. Xoá cùng [session].
-     * Chỉ để lớp km/h KHÔNG tắt vì MỘT lượt dò hụt giữa phiên (shell chớp ≠ màn ảo mất): id display không bao giờ được tái dùng
-     * [ĐO AOSP — B4], và lớp km/h tự gỡ khi display bị xoá. Không lệnh đặt / `wm -d` nào đọc trường này (R1 giữ nguyên).
-     */
-    @Volatile
-    var sessionDisplayId: Int = -1
-        private set
-
-    /** Gắn [vd] (đã xác minh, ≥ 1) vào phiên đang mở; không có phiên ⇒ bỏ qua. */
-    fun bindSessionDisplay(vd: Int) {
-        if (session != null && vd >= 1) sessionDisplayId = vd
-    }
 
     /** Thay công thức (chỉ khi KHÔNG đang chiếu — chuỗi tắt phải khớp chuỗi đã mở). Trả `true` khi đã thay. */
     fun refreshRecipe(next: ProjectionRecipe): Boolean {
@@ -97,7 +82,6 @@ class ProjectionManager(
         if (isOpen) return true
         abortedOn = null
         session = null
-        sessionDisplayId = -1
         val r = recipe
         val ledger = gate.ledger()
         val want = ClusterStylePlan.wanted(r, desired, ledger)
@@ -154,14 +138,13 @@ class ProjectionManager(
         }
         isOpen = false
         session = null
-        sessionDisplayId = -1
         return true
     }
 
     /** Reset state without issuing commands (e.g. after process restart). B1b: về đóng ⇒ không còn phiên. */
     fun resetState(open: Boolean) {
         isOpen = open
-        if (!open) { session = null; sessionDisplayId = -1 }
+        if (!open) session = null
     }
 
     private companion object {

@@ -50,16 +50,26 @@ class SpeedBadgeLifecycleContractTest {
         assertTrue(overlay.contains("DisplayManager.DisplayListener"), "a DisplayListener is declared")
         assertTrue(overlay.contains("registerDisplayListener(displayListener, handler)"), "listener registered on the main handler")
         assertTrue(overlay.contains("unregisterDisplayListener(displayListener)"), "listener unregistered on close")
+        // 2.90 · R10 (ĐỔI GHIM có lý do): màn ảo cụm dựng lại có thể được THÊM trước khi màn cũ bị GỠ ([ĐO 06/10] 4 → 9) — cổng cũ
+        // `if (clusterWm != null && displayId != resolvedDisplayId) return` bỏ lượt thêm đó, không gắn lại tới giá trị kế. Nay mọi
+        // thêm/gỡ đều chọn lại qua `reconcile()` (gỡ + gắn lại khi id chọn đổi, phát lại giá trị cuối).
         val added = functionBody(overlay, "override fun onDisplayAdded(displayId: Int)")
-        // 2026-09-14: gate is no longer pinned to the constant 1. This car's cluster is display 2 (fission_bg_xdja),
-        // so before we are attached ANY add may be the cluster (initOverlay resolves the right one); once attached we
-        // only re-init when OUR display re-appears. Tracks `resolvedDisplayId`, not a hardcoded id.
-        assertTrue(added.contains("if (clusterWm != null && displayId != resolvedDisplayId) return"), "add tracks resolved display")
-        assertTrue(added.contains("initOverlay()"), "onDisplayAdded re-initializes")
-        assertTrue(added.contains("lastSpeedKph?.let { doShow("), "onDisplayAdded re-shows the pending value")
+        assertTrue(added.contains("reconcile()"), "add re-resolves the cluster display")
+        assertFalse(added.contains("displayId != resolvedDisplayId) return"), "the add-gate that dropped the rebuilt VD is gone")
         val removed = functionBody(overlay, "override fun onDisplayRemoved(displayId: Int)")
-        assertTrue(removed.contains("if (displayId != resolvedDisplayId) return"), "remove gated on the resolved display")
-        assertTrue(removed.contains("teardown()"), "onDisplayRemoved tears down")
+        assertTrue(removed.contains("if (displayId == resolvedDisplayId) teardown()"), "remove of OUR display tears down")
+        assertTrue(removed.contains("reconcile()"), "then re-resolves (the rebuilt VD may already be there)")
+        val rec = functionBody(overlay, "private fun reconcile()")
+        assertTrue(rec.contains("initOverlay()") && rec.contains("replayLast()"), "reconcile re-attaches + re-shows the pending value")
+        // Review Pass 3 [P1]: a CLEARED limit (`hide()` keeps lastSpeedKph) must NOT reappear after re-attach / dọn-trả cụm.
+        val replay = functionBody(overlay, "private fun replayLast()")
+        assertTrue(replay.contains("lastSpeedKph?.let { doShow(it, lastSignType); if (hidden) doHide() }"), "replay keeps a hidden badge hidden")
+        assertTrue(functionBody(overlay, "private fun doHide()").contains("lastHidden = true"), "hide is remembered")
+        assertTrue(functionBody(overlay, "private fun doShow(speedKph: Int, signType: SpeedSignType?)").contains("lastHidden = false"))
+        assertTrue(rec.contains("target == resolvedDisplayId) return"), "same display ⇒ no churn")
+        assertTrue(rec.contains("ClusterOverlayDisplays.paused"), "R9: theme gate clearing the cluster ⇒ detach, no re-attach")
+        assertTrue(overlay.contains("ClusterOverlayDisplays.resolve(dm)"), "display = shared live-cluster resolver")
+        assertFalse(overlay.contains("getDisplay(1)") || overlay.contains("CLUSTER_DISPLAY_ID"), "no hard-coded display 1")
         // The resolved id is captured at init from the display actually attached to (may be ≠ 1 on this car).
         assertTrue(overlay.contains("resolvedDisplayId = display.displayId"), "init records the resolved display id")
     }

@@ -17,18 +17,17 @@ import java.nio.file.Files
  * B1b · CLUSTER-RECT-OPTION (spec `docs/specs/kachi-289-field-fixes.html` §B1b · C.3 mục 12–13) — DÂY NỐI phía `:app`.
  *
  * `:app` không có Robolectric ⇒ canh MÃ đã bỏ chú thích ([SourceRoots.codeOf]); luật thuần chạy thật ở `:core`
- * (`SpeedReadoutPolicyTest`, `CastRectFrameKeyTest`, `CastRectSessionCoordinatorTest`).
+ * (`CastRectFrameKeyTest`, `CastRectSessionCoordinatorTest`, `ClusterRectStaleDisplayTest`, `ClusterThemeBubbleTest`).
  *
  * Khoá: (1) lựa chọn `cast_style` đi từ prefs theo hồ sơ vào `desiredStyle` của coordinator — quên dòng này là màn Cài đặt ghi
- * mà cụm không bao giờ đổi (CLAUDE.md §8: compile xanh ≠ chạy); (2) lớp km/h có call site, chỉ gắn lên id cụm ĐÃ XÁC MINH qua
- * `createDisplayContext`, không bao giờ display 1/0 gõ cứng (lỗi của `SpeedBadgeOverlay`); (3) màn Cài đặt chỉ ghi prefs — theme
- * không bao giờ gửi từ Cài đặt; "Áp ngay" kiểm lại trạng thái rồi mới đi `restoreCluster`; (4) khoá mới xếp loại đủ ba bảng.
+ * mà cụm không bao giờ đổi (CLAUDE.md §8: compile xanh ≠ chạy); (2) 2.90 · R3: lớp km/h ĐÃ GỠ hẳn (owner 06/10) — không quay lại;
+ * (3) màn Cài đặt chỉ ghi prefs — theme không bao giờ gửi từ Cài đặt; "Áp ngay" kiểm lại trạng thái rồi mới đi `restoreCluster`;
+ * (4) khoá mới xếp loại đủ ba bảng; (5) 2.90 · R1/R2/R6: Cài đặt nói lý do bóng nổi + khung trọn cụm, trang sống theo trạng thái.
  */
 class ClusterRectOptionWiringContractTest {
 
     private fun app(rel: String) = SourceRoots.codeOf("src/main/java/com/byd/clusternav/$rel")
     private val runtime by lazy { app("modules/clustercast/simplified/SimpleCastRuntime.kt") }
-    private val overlay by lazy { app("modules/clustercast/ClusterSpeedReadoutOverlay.kt") }
     private val service by lazy { app("modules/clustercast/FloatingBubbleService.kt") }
     private val section by lazy { app("launcher/SettingsSectionsCastStyle.kt") }
     private val castSection by lazy { app("launcher/SettingsSectionsCast.kt") }
@@ -37,11 +36,9 @@ class ClusterRectOptionWiringContractTest {
     @Test
     fun `lua chon cast_style vao coordinator va doc khong nem`() {
         val create = SourceRoots.body(runtime, "private fun create(app: Context): SimpleCastCoordinator {")
-        // Review 2.89 Pass 3 · cluster-r2-5 — ĐỔI GHIM có lý do: lựa chọn đi qua chốt "vẽ được km/h" (Chữ nhật không quyền vẽ ⇒ Bo tròn).
-        assertTrue(create.contains("desiredStyle = { desiredStyleFor(app, prefs.castStyle()) }"), "lựa chọn phải tới được lượt mở chiếu: $create")
-        val guard = SourceRoots.body(runtime, "private fun desiredStyleFor(app: Context, chosen: CastStyle): CastStyle")
-        assertTrue(guard.contains("CastStyleApply.withReadout(chosen, canDrawReadout(app))") && guard.contains("Log.w("), guard)
-        assertTrue(SourceRoots.body(runtime, "fun canDrawReadout(context: Context): Boolean").contains("Settings.canDrawOverlays("))
+        // 2.90 · R3 — ĐỔI GHIM có lý do: Kachi không vẽ km/h nữa ⇒ lựa chọn đi THẲNG vào lượt mở (không chốt quyền vẽ).
+        assertTrue(create.contains("desiredStyle = { prefs.castStyle() }"), "lựa chọn phải tới được lượt mở chiếu: $create")
+        assertFalse(runtime.contains("canDrawReadout") || runtime.contains("withReadout"), "chốt km/h đã gỡ")
         assertTrue(create.contains("ProjectionManager(shell, recipe = recipe)"), "runtime tiêm công thức hồ sơ")
         assertFalse(Regex("""ProjectionManager\(shell\)""").containsMatchIn(runtime), "không còn ProjectionManager(shell) trơn")
         val read = SourceRoots.body(runtime, "override fun castStyle(): CastStyle")
@@ -50,56 +47,39 @@ class ClusterRectOptionWiringContractTest {
         assertTrue(write.contains("putString(\"cast_style\", style.name)"), write)
     }
 
+    /** 2.90 · R3 — lớp km/h của Kachi đã gỡ hẳn: không tệp, không dây nối, không chuỗi. Thử ĐỎ: khôi phục `ClusterSpeedReadoutOverlay`. */
     @Test
-    fun `lop km-h co call site va dong cung dich vu chieu`() {
-        val create = SourceRoots.body(service, "override fun onCreate()")
-        assertTrue(create.contains("ClusterSpeedReadoutOverlay(applicationContext, coordinator).also { it.start() }"), create)
-        val destroy = SourceRoots.body(service, "override fun onDestroy()")
-        assertTrue(destroy.contains("speedReadout?.close()"), "phải gỡ cửa sổ + dừng luồng khi dịch vụ chết")
+    fun `290 - khong con lop km-h cua Kachi`() {
+        assertFalse(SourceRoots.moduleSourceRoots().any { Files.exists(it.resolve("com/byd/clusternav/modules/clustercast/ClusterSpeedReadoutOverlay.kt")) })
+        listOf(service, section, bridge, runtime).forEach { src ->
+            listOf("SpeedReadout", "speedReadout", "kachi_cast_style_rect_no_overlay").forEach {
+                assertFalse(src.contains(it), "còn sót `$it`")
+            }
+        }
     }
 
+    /** 2.90 · R1/R2 — Cài đặt nói: bóng nổi chặn đổi kiểu (tên app + "Áp ngay"), phiên chưa rõ kiểu ⇒ trọn cụm. */
     @Test
-    fun `lop km-h chi gan len id cum da xac minh, khong cham, khong focus, luong rieng`() {
-        listOf(
-            "coordinator.speedReadoutInputs()", "SpeedReadoutPolicy.visible(", "createDisplayContext(display)",
-            "dm.getDisplay(vd)", "TYPE_APPLICATION_OVERLAY", "FLAG_NOT_FOCUSABLE", "FLAG_NOT_TOUCHABLE",
-            "HandlerThread(", "SpeedProvider.mpsOrNull()", "SpeedReadoutPolicy.face(", "ClusterRectLayout.SPEED_BOX",
-            "onDisplayRemoved", "removeStateListener", "thread.quitSafely()",
-        ).forEach { assertTrue(overlay.contains(it), "lớp km/h thiếu `$it`") }
-        listOf("getDisplay(1)", "getDisplay(0)", "DISPLAY_CATEGORY_PRESENTATION", "CLUSTER_DISPLAY_ID", "Thread.sleep(")
-            .forEach { assertFalse(overlay.contains(it), "lớp km/h không được `$it` (display đoán / chặn luồng)") }
-        val step = SourceRoots.body(overlay, "private fun step(): Boolean")
-        assertTrue(step.indexOf("SpeedReadoutPolicy.visible(") < step.indexOf("SpeedProvider.mpsOrNull()"),
-            "chỉ đọc HAL khi đang hiện")
-        assertFalse(overlay.contains("lastGoodKmh = 0") || overlay.contains("?: 0"), "không bao giờ giả 0")
+    fun `290 - Cai dat noi ly do bong noi va khung tron cum`() {
+        val rebuild = SourceRoots.body(section, "fun rebuild()")
+        assertTrue(rebuild.contains("bridge.castThemeBlockers()") && rebuild.contains("R.string.kachi_cast_style_blocked"), rebuild)
+        assertTrue(rebuild.contains("fullFrame == true") && rebuild.contains("R.string.kachi_cast_style_full_frame"), rebuild)
+        assertTrue(SourceRoots.body(bridge, "fun ClusterNavBridge.castThemeBlockers(): List<String>").contains("coordinator.themeBlockers"))
     }
 
     /**
-     * Review 2.89 Pass 3 · cluster-r2-4 — luật "không giữ số cũ" và gỡ khi trạng thái đổi KHÔNG chờ luồng HAL: canh gác chạy trên
-     * LUỒNG CHÍNH (`main.postDelayed(watchdog`), quyết bằng `SpeedReadoutPolicy.watchdog` (thuần, `:core`), không gọi HAL; bộ nghe
-     * trạng thái kiểm luật hiện trên luồng chính trước khi xếp một nhịp worker. Thử ĐỎ: bỏ `main.post { checkVisible() }`.
+     * 2.90 · R6 — [ĐO xe 06/10] trang đứng "Đang mở cụm…" sau khi mở xong. Trang gắn bộ nghe trạng thái khi hiện, gỡ khi rời, post về
+     * luồng chính rồi mới `refreshStatus()`. Thử ĐỎ: bỏ `liveStatus(statusRow.view)`.
      */
     @Test
-    fun `Pass 3 - canh gac luong chinh tach khoi luong HAL`() {
-        val dog = SourceRoots.body(overlay, "private val watchdog = object : Runnable {")
-        assertTrue(dog.contains("SpeedReadoutPolicy.watchdog(lastGoodAtMs, lastRenderAtMs, SystemClock.elapsedRealtime())"), dog)
-        assertTrue(dog.contains("SpeedReadoutPolicy.NO_VALUE, dim = true") && dog.contains("detach("), dog)
-        assertFalse(dog.contains("SpeedProvider") || dog.contains("worker."), "canh gác không chạm HAL / luồng worker")
-        val listener = SourceRoots.body(overlay, "private val stateListener: (SimpleCastState) -> Unit = { _ ->")
-        assertTrue(listener.indexOf("main.post { checkVisible() }") in 0 until listener.indexOf("worker.post { step() }"), listener)
-        assertFalse(SourceRoots.body(overlay, "private fun checkVisible()").contains("SpeedProvider"))
-        assertTrue(SourceRoots.body(overlay, "private fun render(").contains("lastRenderAtMs = SystemClock.elapsedRealtime()"))
-        assertTrue(SourceRoots.body(overlay, "private fun attachOrThrow(").contains("main.postDelayed(watchdog, SpeedReadoutPolicy.TICK_MS)"))
-        assertTrue(SourceRoots.body(overlay, "private fun detach(").contains("main.removeCallbacks(watchdog)"))
-        assertTrue(overlay.contains("@Volatile private var lastGoodAtMs"), "đọc chéo luồng")
-    }
-
-    /** Review 2.89 Pass 3 · cluster-r2-5 — Cài đặt nói lý do khi chọn Chữ nhật mà chưa có quyền vẽ (lượt mở dùng Bo tròn). */
-    @Test
-    fun `Pass 3 - Cai dat noi ly do Chu nhat ha ve Bo tron`() {
-        val rebuild = SourceRoots.body(section, "fun rebuild()")
-        assertTrue(rebuild.contains("if (!bridge.castStyleReadoutDrawable()) box.addView(rows.note(context.getString(R.string.kachi_cast_style_rect_no_overlay)))"))
-        assertTrue(SourceRoots.body(bridge, "fun ClusterNavBridge.castStyleReadoutDrawable(): Boolean").contains("SimpleCastRuntime.canDrawReadout(app)"))
+    fun `290 - trang Chieu cum song theo trang thai, go khi roi trang`() {
+        val castNow = SourceRoots.body(castSection, "private fun castNow(body: LinearLayout)")
+        assertTrue(castNow.contains("liveStatus(statusRow.view)"), castNow)
+        val live = SourceRoots.body(castSection, "private fun liveStatus(anchor: View)")
+        listOf("addOnAttachStateChangeListener(", "bridge.observeCastState", "v.post {", "refreshStatus()", "override fun onViewDetachedFromWindow",
+            "unsubscribe?.invoke()", "statusKey()").forEach { assertTrue(live.contains(it), "thiếu `$it`: $live") }
+        val obs = SourceRoots.body(app("launcher/ClusterNavBridgeCast.kt"), "fun ClusterNavBridge.observeCastState(")
+        assertTrue(obs.contains("c.addStateListener(onChange)") && obs.contains("c.removeStateListener(onChange)"), obs)
     }
 
     @Test
@@ -146,20 +126,23 @@ class ClusterRectOptionWiringContractTest {
             "applySessionPin(" to "fun SimpleCastCoordinator.applySessionPin(",
             "verifyFrame(" to "fun verifyFrame(",
             "taskBoundsOn(" to "fun taskBoundsOn(",
-            "speedReadoutInputs()" to "fun SimpleCastCoordinator.speedReadoutInputs()",
             "ClusterRectLayout.pin(" to "",
             "ClusterRectLayout.splitFrames(" to "",
             "ClusterRectLayout.slotFrame(" to "",
             "CastStyleApply.offer(" to "",
-            "CastStyleApply.withReadout(" to "",
-            "castStyleReadoutDrawable()" to "fun ClusterNavBridge.castStyleReadoutDrawable()",
-            "SpeedReadoutPolicy.watchdog(" to "",
             "ClusterRectLayout.editFrame(" to "",
             "castStyleApplyOffered()" to "fun ClusterNavBridge.castStyleApplyOffered()",
             "applyCastStyleNow()" to "fun ClusterNavBridge.applyCastStyleNow()",
             "castStyleSession()" to "fun ClusterNavBridge.castStyleSession()",
             "SettingsCastStyleBlock(" to "class SettingsCastStyleBlock(",
-            "ClusterSpeedReadoutOverlay(" to "class ClusterSpeedReadoutOverlay(",
+            "castThemeBlockers()" to "fun ClusterNavBridge.castThemeBlockers()",
+            "observeCastState" to "fun ClusterNavBridge.observeCastState(",
+            "liveStatus(" to "private fun liveStatus(",
+            "themeBlockers" to "val SimpleCastCoordinator.themeBlockers",
+            "fullFrameSession" to "val SimpleCastCoordinator.fullFrameSession",
+            "newestSameName(" to "fun newestSameName(",
+            "displayGone(" to "fun displayGone(",
+            "ClusterBubbleApps::labelOf" to "",
             ".recordKey(" to "",
         ).forEach { (call, def) ->
             val n = Regex(Regex.escape(call)).findAll(all).count() - (if (def.isEmpty()) 0 else Regex(Regex.escape(def)).findAll(all).count())

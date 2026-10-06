@@ -4,8 +4,9 @@ import com.byd.clusternav.modules.clustercast.ClusterProfile
 import com.byd.clusternav.modules.clustercast.simplified.CastSessionStyle
 import com.byd.clusternav.modules.clustercast.simplified.CastStyle
 import com.byd.clusternav.modules.clustercast.simplified.CastStyleApply
-import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.modules.clustercast.simplified.castSession
+import com.byd.clusternav.modules.clustercast.simplified.themeBlockers
+import com.byd.clusternav.modules.clustercast.simplified.themeBubbleOldMod
 
 /**
  * ═══ B1b · CLUSTER-RECT-OPTION — nửa "Kiểu chiếu cụm: Bo tròn / Chữ nhật" của [ClusterNavBridge] ══════════════════════════
@@ -17,7 +18,8 @@ import com.byd.clusternav.modules.clustercast.simplified.castSession
  *  1. **Ghi lựa chọn = CHỈ prefs** ([setCastStyle]) — 0 lệnh AutoContainer, kể cả khi đang chiếu. Coordinator đọc lựa chọn MỘT
  *     lần đầu lượt mở chiếu và ghim theo phiên (`ProjectionManager.session`).
  *  2. **"Áp ngay" chỉ khi không có app đang chiếu** ([applyCastStyleNow] kiểm LẠI trạng thái lúc chạy — CLAUDE.md §5) và đi
- *     đúng đường [restoreCluster] ⇒ lượt mở qua cổng theme: màn ảo cụm còn ⇒ `VD_PRESENT`, không gửi theme (D4).
+ *     đúng đường [restoreCluster] ⇒ lượt mở qua cổng theme: 2.90 mức B (Seal 138) — màn ảo cụm trống thì gửi, còn cửa sổ lạ (vd
+ *     bóng nổi VietMap) thì bỏ và nói lý do ([castThemeBlockers]).
  *  3. **Hàng chỉ hiện khi đời xe cho Chữ nhật** ([castStyleOffered]) — Seal `car.type=138` (bảng B.2); xe khác ẩn hẳn, không
  *     "hiện mà bấm không ăn" (opcode 31 trên cụm 8.8" đẩy cụm về simple mode [ĐO DashCast INC-20260625]).
  */
@@ -37,25 +39,24 @@ fun ClusterNavBridge.setCastStyle(style: CastStyle) {
     coordinator.prefs.setCastStyle(style)
 }
 
-/**
- * Review 2.89 Pass 3 · cluster-r2-5 — Kachi vẽ được số km/h không (quyền vẽ trên ứng dụng khác). Chọn Chữ nhật mà `false` ⇒ lượt mở
- * chiếu dùng Bo tròn (`CastStyleApply.withReadout`) — màn Cài đặt nói lý do.
- */
-fun ClusterNavBridge.castStyleReadoutDrawable(): Boolean = SimpleCastRuntime.canDrawReadout(app)
-
 /** Kiểu cụm của phiên chiếu đang mở (`null` = không có phiên) — để màn Cài đặt nói "cụm đang …". */
 fun ClusterNavBridge.castStyleSession(): CastSessionStyle? = runCatching { coordinator.castSession }.getOrNull()
 
 /**
- * Kiểu lượt mở chiếu kế tiếp THẬT SỰ dùng: Chữ nhật mà chưa vẽ được km/h ⇒ Bo tròn ([CastStyleApply.withReadout], cùng luật
- * với `SimpleCastRuntime.desiredStyleFor`). Review 2.89 vòng 3 · r3a-3: so nút "Áp ngay" / câu "Cụm đang" với kiểu này, không
- * với lựa chọn thô — nếu không nút hiện mãi mà bấm vẫn ra Bo tròn.
+ * 2.90 · R1 — nhãn app bóng nổi đã chặn lượt đổi theme gần nhất (vd "VietMap"); rỗng = không bị chặn. Màn Cài đặt nói "tắt bóng …
+ * rồi Áp ngay" — Kachi KHÔNG tự dừng app bên thứ ba.
  */
-fun ClusterNavBridge.castStyleEffective(): CastStyle = CastStyleApply.withReadout(castStyle(), castStyleReadoutDrawable())
+fun ClusterNavBridge.castThemeBlockers(): List<String> = runCatching { coordinator.themeBlockers }.getOrDefault(emptyList())
 
-/** Có hiện nút "Áp ngay" không ([CastStyleApply.offer]) — theo kiểu hiệu lực [castStyleEffective]. */
+/** 2.90 · R9 — lượt chặn gần nhất là bản mod VietMap CŨ (đã gửi `VM_BUBBLE_VIS show=false` mà bóng vẫn còn) — chỉ để chọn câu. */
+fun ClusterNavBridge.castThemeBubbleOldMod(): Boolean = runCatching { coordinator.themeBubbleOldMod }.getOrDefault(false)
+
+/**
+ * Có hiện nút "Áp ngay" không ([CastStyleApply.offer]). 2.90 · R3: so thẳng với lựa chọn — Chữ nhật không còn bị hạ về Bo tròn vì
+ * thiếu quyền vẽ km/h (Kachi không vẽ km/h nữa).
+ */
 fun ClusterNavBridge.castStyleApplyOffered(): Boolean =
-    CastStyleApply.offer(castStyleEffective(), castStyleSession(), castState(), castEnabled())
+    CastStyleApply.offer(castStyle(), castStyleSession(), castState(), castEnabled())
 
 /**
  * "Áp ngay": kiểm LẠI ngay lúc bấm (trạng thái có thể đã đổi từ lúc vẽ nút) rồi đi đúng đường [restoreCluster]. Trả `false`

@@ -268,6 +268,17 @@ private fun ClusterNavBridge.reopenRetryingThemeGap() {
     c.openProjection()
 }
 
+/**
+ * 2.90 · R6 — nghe trạng thái chiếu cho trang Cài đặt › Chiếu cụm ([ĐO xe 06/10] trang đứng "Đang mở cụm…" sau khi mở xong vì chỉ
+ * làm mới sau thao tác người dùng). Bộ nghe chạy trên luồng của coordinator (bên gọi tự `post` lên luồng chính); phát trạng thái
+ * hiện tại ngay khi gắn. Trả hàm GỠ — bên gọi gỡ khi rời trang (không rò bộ nghe giữ View).
+ */
+fun ClusterNavBridge.observeCastState(onChange: (SimpleCastState) -> Unit): () -> Unit {
+    val c = coordinator
+    c.addStateListener(onChange)
+    return { c.removeStateListener(onChange) }
+}
+
 /** Bộ xem của lượt "Áp ngay" gần nhất — gỡ khi lượt mới gắn (một bộ xem cho cả tiến trình, như [clusterReopen]). */
 @Volatile private var gapWatch: ((SimpleCastState) -> Unit)? = null
 

@@ -126,14 +126,18 @@ class ProjectionManagerThemeGateTest {
         assertEquals(emptyList<String>(), sh.log)
     }
 
+    /**
+     * 2.90 · R2 — sổ `31;ok` (của bất kỳ tiến trình nào) KHÔNG còn là lý do bỏ hỏi cổng: [ĐO xe 06/10] theme giữ qua nổ máy, sổ không
+     * nói được cụm đang ở kiểu nào. Lượt trùng trong cùng tiến trình do cổng đỡ (SAME_THEME). Thử ĐỎ: trả lại luật `nativeAlready`.
+     */
     @Test
-    fun `Chu nhat tren xe goc chu nhat, so ghi 31 ok - KHONG hoi cong, chi 16 35`() {
+    fun `290 - Chu nhat tren xe goc chu nhat, so ghi 31 ok - VAN hoi cong`() {
         val recipe = ProjectionRecipe.SEAL_DL3.copy(nativeStyle = CastStyle.RECT)
         val e = ThemeLedger.Entry(31, ThemeLedger.State.OK, 5, 1)
         val sh = Shell(); val gate = Gate(ThemeVerdict.SEND, e); val pm = ProjectionManager(sh, sleepMs = {}, recipe = recipe)
         assertTrue(pm.open(-1, gate, CastStyle.RECT))
-        assertEquals(listOf(16, 35), ops(sh.log))
-        assertEquals(emptyList<Int>(), gate.asked)
+        assertEquals(listOf(31, 16, 35), ops(sh.log))
+        assertEquals(listOf(31), gate.asked)
         assertEquals(BelievedStyle.RECT, pm.lastPlan?.believed)
     }
 

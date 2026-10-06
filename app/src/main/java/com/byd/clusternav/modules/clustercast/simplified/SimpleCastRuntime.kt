@@ -15,7 +15,6 @@ import com.byd.clusternav.modules.clustercast.simplified.CastEnableDeferral
 import com.byd.clusternav.modules.clustercast.simplified.CastGeometryGuard
 import com.byd.clusternav.modules.clustercast.simplified.ThemeLedger
 import com.byd.clusternav.modules.clustercast.simplified.CastStyle
-import com.byd.clusternav.modules.clustercast.simplified.CastStyleApply
 
 /**
  * Android-side runtime for the simplified Cluster Cast coordinator.
@@ -84,9 +83,9 @@ object SimpleCastRuntime {
             themeLedger = themeLedgerStore(app),
             themeClock = themeClock(app),
             // B1b · CLUSTER-RECT-OPTION — kiểu chiếu cụm của HỒ SƠ (`cast_style`), đọc MỘT lần đầu mỗi lượt mở chiếu
-            // (`desiredStyleOnce`); đổi giữa phiên chỉ đổi prefs — 0 lệnh. Mặc định Bo tròn (D3).
-            // Review 2.89 Pass 3 · cluster-r2-5: Chữ nhật chỉ khi Kachi vẽ được km/h ([canDrawReadout]); không ⇒ Bo tròn + log.
-            desiredStyle = { desiredStyleFor(app, prefs.castStyle()) },
+            // (`desiredStyleOnce`); đổi giữa phiên chỉ đổi prefs — 0 lệnh. Mặc định Bo tròn (D3). 2.90 · R3: Kachi không vẽ km/h
+            // nữa ⇒ Chữ nhật không còn phụ thuộc quyền vẽ trên ứng dụng khác.
+            desiredStyle = { prefs.castStyle() },
             // `car.type` không đọc được trong tiến trình ⇒ dò qua dadb ở lượt mở ĐẦU (executor, không luồng chính).
             recipeProbe = { sh ->
                 com.byd.clusternav.modules.clustercast.ClusterProfile.refineByShell(app) { cmd ->
@@ -98,7 +97,15 @@ object SimpleCastRuntime {
             appPrereqs = { sh -> com.byd.clusternav.AppPrereqs.ensureForCastOpen(app, prefs, sh) },
             // 2.89 · B4 DISPLAY-OWNER-DYNAMIC — cổng sở hữu display của launcher (cùng tiến trình chính) theo id cụm DÒ LIVE thay
             // hằng `1`: [ĐO xe 15/09 + máy ảo 05/10] sau khởi động nguội display 1 là ô `kachi-slot-0` ⇒ `REJECT LAUNCHER … @display=1`.
-            onCastDisplay = { id -> com.byd.clusternav.system.WindowCommandDispatcher.get(app).setCastDisplay(id) },
+            // 2.90 · R10: CÙNG id cụm sống cho lớp phủ trong tiến trình (badge tốc độ, camera) — `ClusterOverlayDisplays`.
+            onCastDisplay = { id ->
+                com.byd.clusternav.system.WindowCommandDispatcher.get(app).setCastDisplay(id)
+                com.byd.clusternav.modules.clustercast.ClusterOverlayDisplays.publishCastDisplay(id)
+                // R8 — mở chiếu / dò lại cụm ⇒ giữ bóng VietMap đúng công tắc (cổng gửi lặp 15 s trong hàm).
+                if (id != null) com.byd.clusternav.VmBubbleVisibility.apply(app, "dò cụm id=$id")
+            },
+            // 2.90 · R9 — "dọn cụm / trả cụm" quanh lượt đổi theme: badge của Kachi + `VM_BUBBLE_VIS` cho bản mod VietMap.
+            clusterLayers = com.byd.clusternav.modules.clustercast.ClusterLayerExecutor(app),
         )
         // Chốt BẬT→TẮT ⇒ tiến trình trước có thể đã để projection mở trên cụm: không dọn là cụm HAI CHỦ (HUD thấy TẮT nên
         // ghi op 39 trong khi mặt chiếu cũ vẫn đứng). Xếp lên executor của coordinator (shell ở nền, không ở luồng gọi).
@@ -107,19 +114,6 @@ object SimpleCastRuntime {
         if (atStart is CastEnableDeferral.AtStart.Commit && atStart.closeOrphan) coordinator.closeOrphanProjection()
         return coordinator
     }
-
-    /**
-     * Review 2.89 Pass 3 · cluster-r2-5 — Kachi vẽ được số km/h của chính nó trên cụm không: lớp km/h là `TYPE_APPLICATION_OVERLAY`
-     * (cần quyền vẽ trên ứng dụng khác; `FloatingBubbleService.onCreate` dừng trước khi dựng lớp nếu thiếu). Đọc lỗi ⇒ `false`.
-     */
-    fun canDrawReadout(context: Context): Boolean =
-        runCatching { android.provider.Settings.canDrawOverlays(context.applicationContext) }.getOrDefault(false)
-
-    /** Kiểu đưa vào lượt mở ([CastStyleApply.withReadout]); hạ Chữ nhật ⇒ Bo tròn thì ghi log lý do. */
-    private fun desiredStyleFor(app: Context, chosen: CastStyle): CastStyle =
-        CastStyleApply.withReadout(chosen, canDrawReadout(app)).also {
-            if (it != chosen) android.util.Log.w("SimpleCast", "kiểu cụm: chọn $chosen nhưng chưa có quyền vẽ km/h ⇒ mở chiếu $it (cluster-r2-5)")
-        }
 
     /**
      * CLUSTER-THEME-SAFE — lượt quyết gần nhất của cổng theme, KHÔNG dựng coordinator nếu chưa có (đọc cho chẩn đoán

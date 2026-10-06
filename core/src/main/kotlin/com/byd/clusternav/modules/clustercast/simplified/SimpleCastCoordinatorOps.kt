@@ -37,6 +37,19 @@ internal fun SimpleCastCoordinator.probeRecipeOnce() {
     if (next != projection.recipe && projection.refreshRecipe(next)) log("công thức chiếu dò lại: $next")
 }
 
+/**
+ * 2.90 · R9 — [openProjectionBody] + TRẢ cụm LUÔN chạy ([ClusterThemeGuard.resumeLayers], idempotent): lượt mở có DỌN lớp phủ trước
+ * opcode theme thì mọi lối ra (thành công, bỏ theme, DỪNG, dò hụt, ngắt) đều gắn lại lớp của Kachi trên id cụm dò SAU khi mở và gửi
+ * `VM_BUBBLE_VIS` theo công tắc. `liveDisplayId` = lượt dò gần nhất của chính lượt mở này (`-1` khi hụt ⇒ lớp tự chọn display).
+ */
+internal fun SimpleCastCoordinator.openProjectionGuarded() {
+    try {
+        openProjectionBody()
+    } finally {
+        themeGuard.resumeLayers(liveDisplayId)
+    }
+}
+
 /** Thân của [openProjection] — tách ra để mọi `return` sớm vẫn nằm trong `try` bắt-mọi-lối-thoát ở trên. */
 internal fun SimpleCastCoordinator.openProjectionBody() {
     run {
@@ -56,8 +69,9 @@ internal fun SimpleCastCoordinator.openProjectionBody() {
         projection.resetState(false)
         probeRecipeOnce()
         // CLUSTER-THEME-SAFE (2.89, P0): opcode theme chỉ đi qua cổng [ClusterThemeGuard] + kế hoạch [ClusterStylePlan] —
-        // B1a: chỉ gửi khi CHƯA có màn ảo cụm (mức A), cách lần trước ≥ 15 s (sổ bền); còn lại bỏ theme, 16/35 đi tiếp
-        // hoặc DỪNG khi không chứng minh được kiểu cụm (KDoc [ClusterStylePlan]).
+        // gửi khi CHƯA có màn ảo cụm (mức A) hoặc — 2.90, đời xe đã đo (Seal 138) — màn ảo có 0 task + 0 cửa sổ (mức B, sau khi
+        // gỡ ClusterBlack của chính Kachi), cách lần trước ≥ 15 s (sổ bền); còn lại bỏ theme, 16/35 đi tiếp hoặc DỪNG khi không
+        // chứng minh được kiểu cụm (KDoc [ClusterStylePlan]).
         themeGuard.beginOpen()
         val ok = projection.open(preOpenId, themeGuard, desiredStyleOnce())
         if (!ok) {
@@ -85,7 +99,10 @@ internal fun SimpleCastCoordinator.openProjectionBody() {
         // (2) Dò SAU khi mở — nguồn sự thật cho MỌI lệnh đặt bên dưới (R1). Đúng thứ tự đường proven cũ
         //     (`ClusterCast.cast()` git HEAD:471-478: castSeq → lặp dò 16×500 ms → đặt app). Hụt ⇒ trả đồng hồ,
         //     báo lỗi, KHÔNG đặt lên seed.
-        val vd = detectClusterDisplay(awaitAfterOpen = true)
+        // 2.90 · R5: lượt mở vừa GỬI opcode theme trên một màn ảo có sẵn ⇒ màn ảo dựng lại với id MỚI ([ĐO xe 06/10] 4 → 9) —
+        // bỏ qua id cũ tới khi thấy id khác (hết lượt mà chỉ thấy id cũ ⇒ nhận nó: màn ảo không dựng lại).
+        val sentTheme = projection.lastPlan?.themeOp != null
+        val vd = detectClusterDisplay(awaitAfterOpen = true, exclude = if (sentTheme) preOpenId else -1)
         if (vd < 1) {
             log("openProjection: không dò thấy VD cụm sau khi mở → đóng projection, không đặt ClusterBlack")
             projection.close(displayId, themeGuard)

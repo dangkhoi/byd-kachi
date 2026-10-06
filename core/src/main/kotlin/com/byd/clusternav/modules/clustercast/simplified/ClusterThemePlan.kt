@@ -16,10 +16,10 @@ import com.byd.clusternav.modules.clustercast.StackEntry
  *
  * ## Luật (thứ tự xét — mọi nhánh "không chắc" đều rơi về KHÔNG GỬI, không bao giờ đoán)
  *  1. Không đọc được danh sách display ⇒ [Reason.UNREADABLE].
- *  2. **B1a — mức B tắt**: có màn ảo cụm (dù trống) mà hồ sơ không bật `themeOnVacantVd` (MẶC ĐỊNH tắt cho mọi hồ sơ) ⇒
- *     [Reason.VD_PRESENT]. Theme CHỈ gửi khi chưa có màn ảo cụm nào (mức A — đường đã chạy ngoài đường từ 08/02 [ĐO F2]).
- *     Gửi khi màn ảo còn mà trống [CHƯA ĐO] (bước đo V4b); DashCast ghi màn ảo tạo lại với id mới làm hỏng sổ display của
- *     ATM (`ClusterManager.kt:37`).
+ *  2. **B1a — mức B tắt**: có màn ảo cụm (dù trống) mà hồ sơ không bật `themeOnVacantVd` ⇒ [Reason.VD_PRESENT]. 2.90: mức B
+ *     BẬT cho đời xe đã đo (Seal `car.type=138` — `ClusterProfile.forCarType`): [ĐO xe 06/10] màn ảo cụm có TỪ LÚC đầu máy
+ *     khởi động (mức A không bao giờ gửi được), và gửi `31` khi màn ảo có 0 task + 0 cửa sổ ⇒ KHÔNG sập, màn ảo dựng lại với
+ *     id MỚI (4 → 9) — bên gọi phải dò lại id sau khi gửi (`ClusterDisplayResolver.awaitAndPersist(exclude)`).
  *  3. Đã gửi CÙNG opcode trong tiến trình này VÀ id màn ảo cụm không đổi ([Marker]) ⇒ [Reason.SAME_THEME]. Cờ RAM chỉ được
  *     phép làm ĐỠ một lượt gửi, không bao giờ cho phép gửi (CLAUDE.md §5 — sự thật là bản đọc).
  *  4. **B1a** — lần đổi theme trước (sổ bền, cùng boot) chưa đủ [ThemeLedger.MIN_GAP_MS] ⇒ [Reason.TOO_SOON] (không ngủ chờ).
@@ -27,7 +27,9 @@ import com.byd.clusternav.modules.clustercast.StackEntry
  *  6. Không đọc được `am stack list` hoặc danh sách cửa sổ ⇒ [Reason.UNREADABLE].
  *  7. Không task / cửa sổ nào trên màn ảo cụm ⇒ [Decision.Send].
  *  8. Có task / cửa sổ KHÔNG phải placeholder `ClusterBlack` của chính Kachi ⇒ [Reason.FOREIGN] (0 lệnh ghi — không gỡ
- *     ClusterBlack vô ích khi đằng nào cũng bỏ theme).
+ *     ClusterBlack vô ích khi đằng nào cũng bỏ theme). 2.90: 0 task lạ và MỌI cửa sổ lạ là cửa sổ phủ (tên = gói trần) của một
+ *     app bóng nổi đã biết ([ClusterBubbleApps]) ⇒ [Reason.BUBBLE] kèm nhãn app (Cài đặt nói "tắt bóng … rồi Áp ngay"; Kachi
+ *     KHÔNG tự dừng app bên thứ ba).
  *  9. Chỉ còn placeholder mà đây là bản đọc SAU lượt gỡ ⇒ [Reason.STILL_OCCUPIED].
  * 10. Chỉ còn placeholder ⇒ gỡ đúng stack của nó ([Decision.RemovePlaceholder]) — CHỈ khi mọi task placeholder nằm trong
  *     stack qua [admissible]; không thì [Reason.NOT_REMOVABLE].
@@ -51,12 +53,13 @@ object ClusterThemePlan {
     /** Một cửa sổ WM và display nó nằm ([parseWindows]). */
     data class WindowOnDisplay(val name: String, val displayId: Int)
 
-    enum class Reason { UNREADABLE, VD_PRESENT, SAME_THEME, TOO_SOON, FOREIGN, STILL_OCCUPIED, NOT_REMOVABLE }
+    enum class Reason { UNREADABLE, VD_PRESENT, SAME_THEME, TOO_SOON, FOREIGN, BUBBLE, STILL_OCCUPIED, NOT_REMOVABLE }
 
     sealed interface Decision {
         object Send : Decision { override fun toString() = "SEND" }
         data class RemovePlaceholder(val stackIds: List<Int>) : Decision
-        data class Skip(val reason: Reason, val detail: String) : Decision
+        /** [apps] = nhãn app bóng nổi đang chặn ([Reason.BUBBLE]); rỗng với mọi lý do khác. */
+        data class Skip(val reason: Reason, val detail: String, val apps: List<String> = emptyList()) : Decision
     }
 
     /** Tên lớp placeholder (khớp cách in `pkg/.x.ClusterBlackActivity` lẫn `pkg/com…ClusterBlackActivity`). */
@@ -105,6 +108,17 @@ object ClusterThemePlan {
         if (tasksOn.isEmpty() && windowsOn.isEmpty()) return Decision.Send
         val foreignTasks = tasksOn.filterNot { isPlaceholderComp(it.comp, selfPkg) }
         val foreignWindows = windowsOn.filterNot { isPlaceholderComp(it.name, selfPkg) }
+        if (foreignTasks.isEmpty() && foreignWindows.isNotEmpty()) {
+            val labels = foreignWindows.map { w -> w.name.takeIf { '/' !in it }?.let(ClusterBubbleApps::labelOf) }
+            if (labels.none { it == null }) {
+                val apps = labels.filterNotNull().distinct()
+                return Decision.Skip(
+                    Reason.BUBBLE,
+                    "cửa sổ phủ của ${apps.joinToString()} (${foreignWindows.size}) trên ${vds.sorted()} — tắt bóng rồi Áp ngay",
+                    apps,
+                )
+            }
+        }
         if (foreignTasks.isNotEmpty() || foreignWindows.isNotEmpty()) {
             val what = foreignTasks.map { "task ${it.taskId} ${it.comp} @d${it.displayId}" } +
                 foreignWindows.map { "cửa sổ ${it.name} @d${it.displayId}" }
@@ -133,7 +147,7 @@ object ClusterThemePlan {
      *    thì [ClusterStylePlan] vẫn cho đi tiếp.
      *  - [Reason.SAME_THEME] / [Reason.VD_PRESENT] ⇒ [ThemeVerdict.SKIP_KNOWN] (màn ảo cụm có từ trước ⇒ cụm đang trong một
      *    phiên chiếu).
-     *  - [Reason.TOO_SOON] / [Reason.FOREIGN] / [Reason.STILL_OCCUPIED] / [Reason.NOT_REMOVABLE] ⇒ [ThemeVerdict.SKIP_KNOWN]
+     *  - [Reason.TOO_SOON] / [Reason.FOREIGN] / [Reason.BUBBLE] / [Reason.STILL_OCCUPIED] / [Reason.NOT_REMOVABLE] ⇒ [ThemeVerdict.SKIP_KNOWN]
      *    chỉ khi [vdBefore] (cụm đang chiếu từ trước), không thì [ThemeVerdict.ABORT]. [CHƯA BIẾT] màn ảo fission có sống qua
      *    một vòng tắt-nổ máy trong khi cụm về theme gốc không (OC-7) — nếu có, bỏ theme trên màn ảo sống sót cũng phải DỪNG
      *    (🚗 R1-V3).
@@ -146,7 +160,7 @@ object ClusterThemePlan {
         is Decision.Skip -> when (d.reason) {
             Reason.UNREADABLE -> ThemeVerdict.ABORT
             Reason.SAME_THEME, Reason.VD_PRESENT -> ThemeVerdict.SKIP_KNOWN
-            Reason.TOO_SOON, Reason.FOREIGN, Reason.STILL_OCCUPIED, Reason.NOT_REMOVABLE ->
+            Reason.TOO_SOON, Reason.FOREIGN, Reason.BUBBLE, Reason.STILL_OCCUPIED, Reason.NOT_REMOVABLE ->
                 if (vdBefore) ThemeVerdict.SKIP_KNOWN else ThemeVerdict.ABORT
         }
     }

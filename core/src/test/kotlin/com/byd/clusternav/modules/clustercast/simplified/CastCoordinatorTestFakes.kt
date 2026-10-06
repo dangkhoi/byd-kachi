@@ -58,6 +58,28 @@ class FakeShell : SimpleCastShell {
 
     private val taskBounds = mutableMapOf<Int, String>()
 
+    /**
+     * 2.90 · R1/R5 — [ĐO xe 06/10] gửi opcode theme (30/31) khi màn ảo cụm CÒN ⇒ màn ảo dựng lại với id MỚI (4 → 9). Khác `null` ⇒
+     * lệnh theme đầu tiên đổi [clusterDisplayId] sang giá trị này. `null` (mặc định) = hành vi lịch sử (id không đổi).
+     */
+    var vdAfterTheme: Int? = null
+
+    /**
+     * 2.90 · R5 — số lượt dò SAU lệnh theme mà bản `dumpsys display` còn liệt kê CẢ màn cũ (đứng trước) lẫn màn mới cùng tên
+     * ([ĐOÁN] khe dựng lại — chưa chụp được trên xe; giả lập để khoá đường "id cũ lọt vào").
+     */
+    var lingerOldVdReads = 0
+    private var oldVd: Int? = null
+
+    /** 2.90 · R5 — `wm size -d N`: N = cụm ⇒ `Physical size: 1920x720`, khác ⇒ `Physical size: 0x0` (display đã mất — AOSP). */
+    var reportWmSize = false
+
+    /**
+     * 2.90 · R9 — cửa sổ PHỦ (không phải task) trên màn ảo cụm HIỆN TẠI: tên (gói trần, dạng `Window{… u0 <gói>}` thật — `WindowState
+     * .getWindowTag()` r47 `:3629-3635`). Bài "dọn cụm" xoá phần tử khi lớp phủ được gỡ. Mặc định rỗng = hành vi lịch sử.
+     */
+    val overlayWindows = CopyOnWriteArrayList<String>()
+
     init {
         // CP/AA are always already running when user requests cast (they're system apps)
         runningTasks["com.byd.autolink.carplay"] = 10
@@ -70,6 +92,14 @@ class FakeShell : SimpleCastShell {
         // Check per-command failures
         if (failCommands.any { command.contains(it) }) {
             return ShellResult(1, "", "fake failure for: $command")
+        }
+        if (vdAfterTheme != null && oldVd == null && Regex(" i32 1000 i32 (29|30|31) ").containsMatchIn(command)) {
+            oldVd = clusterDisplayId
+            clusterDisplayId = vdAfterTheme!!
+        }
+        if (reportWmSize && command.startsWith("wm size -d ")) {
+            val id = command.removePrefix("wm size -d ").trim().toIntOrNull()
+            return ShellResult(0, if (id == clusterDisplayId) "Physical size: 1920x720" else "Physical size: 0x0", "")
         }
         if (command.startsWith("am task resize ")) {
             val p = command.removePrefix("am task resize ").trim().split(Regex("\\s+")).mapNotNull { it.toIntOrNull() }
@@ -85,6 +115,11 @@ class FakeShell : SimpleCastShell {
         }
         // Simulate `dumpsys display | grep …` — cluster VD detection (R1: coordinator resolves LIVE before placing)
         if (command == ClusterDisplayResolver.DETECT_CMD) {
+            val old = oldVd
+            if (old != null && lingerOldVdReads > 0) {
+                lingerOldVdReads--
+                return ShellResult(0, detectOutFor(listOf(old, clusterDisplayId)), "")
+            }
             return ShellResult(0, clusterDetectOut ?: if (vdExists()) defaultDetectOut() else "  Display 0:\n", "")
         }
         // CLUSTER-THEME-SAFE — mỗi task trong bản `am stack list` giả có một cửa sổ cùng display (+ bàn phím ở display 0).
@@ -110,7 +145,21 @@ class FakeShell : SimpleCastShell {
             sb.appendLine("  Window #${i + 1} Window{${(0xa000 + i).toString(16)} u0 ${e.comp}}:")
             sb.appendLine("    mDisplayId=${e.displayId} stackId=${e.stackId} mSession=Session{0 0:u0a10138} mClient=android.os.BinderProxy@0")
         }
+        overlayWindows.forEachIndexed { i, name ->
+            sb.appendLine("  Window #${100 + i} Window{${(0xb000 + i).toString(16)} u0 $name}:")
+            sb.appendLine("    mDisplayId=$clusterDisplayId stackId=0 mSession=Session{0 0:u0a10134} mClient=android.os.BinderProxy@1")
+        }
         return sb.toString()
+    }
+
+    /** Như [defaultDetectOut] nhưng nhiều màn ảo cụm CÙNG tên (theo thứ tự [ids]). */
+    fun detectOutFor(ids: List<Int>): String = buildString {
+        appendLine("  Display 0:")
+        for (id in ids) {
+            appendLine("  Display $id:")
+            appendLine("    mPrimaryDisplayDevice=fission_bg_xdjaVirtualSurface")
+            appendLine("    mBaseDisplayInfo=DisplayInfo{\"fission_bg_xdjaVirtualSurface, displayId $id\", uniqueId \"virtual:com.xdja.containerservice,1000,fission_bg_xdjaVirtualSurface,0\", app 1920 x 720, real 1920 x 720, ...}")
+        }
     }
 
     /** Dạng grep thật trên xe 2026-09-15 (fission = cụm), id thay bằng [clusterDisplayId]. */

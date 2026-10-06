@@ -251,7 +251,6 @@ class AppPrereqsWiringContractTest {
             "AppPrereqPlan.markKey(" to "AppPrereqs.kt",
             "themeGapRetryMs()" to "BubbleAutostart.kt",
             "slotDisplayConfig(intent.pkg)" to "SimpleCastCoordinatorIntents.kt",
-            "projection.bindSessionDisplay(" to "SimpleCastCoordinator.kt",
             "ClusterRectLayout.oneToOne(" to "CastSessionPin.kt",
         ).forEach { (call, file) ->
             val callers = allMain.filter { it.second.contains(call) }.map { it.first.substringAfterLast('/') }

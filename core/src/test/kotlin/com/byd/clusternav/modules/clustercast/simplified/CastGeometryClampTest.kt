@@ -80,27 +80,21 @@ class CastGeometryClampTest {
     }
 
     /**
-     * Seal Chữ nhật, chia 50 %: nửa trái ghim (50,128)-(667,555). Bấm + mép phải 5 lần (5 × [GEOMETRY_STEP 20]) KHÔNG được vượt
-     * 667 (dải cũ 0..960 cho tới 767 ⇒ hai app chồng 100 px [ĐO mã]); mép trên/dưới không ra khỏi vùng trống. Thử ĐỎ: trả
-     * `editFrame` nhánh RECT về dải cả cụm.
+     * 2.90 · R4 — owner 06/10 "bị giới hạn cả cao thấp trái phải … mở bung ra" / "cứ để full resolution": Chữ nhật kẹp vào trọn
+     * cụm 0..W × 0..H như Bo tròn — mép trên/dưới/trái/phải chạm được biên cụm. Thử ĐỎ: trả `editFrame` nhánh RECT về FREE_AREA.
      */
     @Test
-    fun `Pass 3 - Chu nhat chia 50 - cong mep phai nua trai khong qua 667, Y trong vung trong`() {
-        var b = ClusterRectLayout.slotFrame(ClusterSlotSide.LEFT, 50)
-        assertEquals(CastBounds(50, 128, 667, 555), b)
-        repeat(5) { b = clampIn(CastStyle.RECT, ClusterSlotSide.LEFT, 50, b.copy(right = b.right + 20)) }
-        assertEquals(667, b.right, "nửa trái không lấn nửa phải: $b")
-        val wild = clampIn(CastStyle.RECT, ClusterSlotSide.RIGHT, 50, CastBounds(0, 0, 1920, 720))
-        assertEquals(CastBounds(667, 128, 1285, 555), wild, "nửa phải kẹp trong nửa vùng trống — không dưới nền ADAS")
-        assertTrue(!ClusterRectLayout.intersects(wild, ClusterRectLayout.ADAS_PANEL))
-    }
-
-    /** "Đặt lại" ở Chữ nhật = đúng khung phiên ghim (slotFrame / FREE_AREA) — không bao giờ `0..W × 0..H` dưới nền ADAS. */
-    @Test
-    fun `Pass 3 - Dat lai o Chu nhat ve khung phien ghim`() {
-        assertEquals(ClusterRectLayout.FREE_AREA, ClusterRectLayout.editFrame(CastStyle.RECT, null, 50, width, height))
+    fun `290 - Chu nhat bo chinh mo bung trong ca cum, khong vung chua`() {
+        val wide = clampIn(CastStyle.RECT, null, 50, CastBounds(-40, -40, 2400, 900))
+        assertEquals(CastBounds(0, 0, 1920, 720), wide, "toàn cụm: chạm đủ 4 mép cụm")
+        assertEquals(CastBounds(0, 0, 1920, 720), ClusterRectLayout.editFrame(CastStyle.RECT, null, 50, width, height))
+        val left = clampIn(CastStyle.RECT, ClusterSlotSide.LEFT, 50, CastBounds(0, 0, 1920, 720))
+        assertEquals(CastBounds(0, 0, 960, 720), left, "nửa trái = nửa của trọn cụm, đủ cao")
         for (pct in CastProfile.SPLIT_PERCENTS) for (side in ClusterSlotSide.values()) {
-            assertEquals(ClusterRectLayout.slotFrame(side, pct), ClusterRectLayout.editFrame(CastStyle.RECT, side, pct, width, height))
+            assertEquals(
+                ClusterRectLayout.editFrame(CastStyle.CURVED, side, pct, width, height),
+                ClusterRectLayout.editFrame(CastStyle.RECT, side, pct, width, height), "RECT = Bo tròn ($side $pct)",
+            )
         }
     }
 

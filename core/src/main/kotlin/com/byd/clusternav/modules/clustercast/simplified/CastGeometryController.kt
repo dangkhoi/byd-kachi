@@ -17,6 +17,12 @@ internal class CastGeometryController(
     // X2 — provider (KHÔNG phải Int cố định): id display cụm được dò động ở coordinator và có thể đổi trong
     // phiên, nên geometry phải đọc giá trị SỐNG mỗi lần dùng thay vì chụp lúc dựng.
     private val displayIdProvider: () -> Int,
+    /**
+     * 2.90 · R5 — dò lại id cụm LIVE (coordinator `detectClusterDisplay`) khi [queryDisplaySize] thấy display hiện tại đã mất
+     * ([CastGeometryGuard.displayGone]); trả id mới hoặc `-1`. Mặc định: không dò (test cũ). Đứng TRƯỚC [log] để lambda cuối của
+     * các chỗ gọi cũ vẫn là [log].
+     */
+    private val redetect: () -> Int = { -1 },
     private val log: (String) -> Unit = { println("[CastGeometry] $it") },
 ) {
     private val displayId: Int get() = displayIdProvider()
@@ -25,7 +31,9 @@ internal class CastGeometryController(
     fun findTaskIdForPkg(pkg: String): String? {
         val result = shell.execute("am stack list")
         if (!result.success) return null
-        return CastStackParser.findTaskId(result.stdout, pkg, prefs.lastDisplayId() ?: displayId)
+        // 2.90 · R5: tra theo id SỐNG của coordinator — không ưu tiên `prefs.lastDisplayId()` (giá trị bền, có thể của màn ảo đã
+        // dựng lại / tiến trình trước — [ĐO xe 06/10] lượt đọc lại hỏi display 4 khi cụm đã là 9).
+        return CastStackParser.findTaskId(result.stdout, pkg, displayId)
     }
 
     /**
@@ -119,9 +127,12 @@ internal class CastGeometryController(
         var asked: CastBounds? = null
         val bounds = pinned.bounds
         if (bounds != null) {
+            // 2.90 · R5: đo kích TRƯỚC khi tra task — lượt đo tự dò lại id nếu display hiện tại đã mất, nên lượt tra task và
+            // lệnh resize sau đó chạy trên id mới.
+            val size = queryDisplaySize(preferOverride = true)
             val taskId = findTaskIdForPkg(pkg)
             if (taskId != null) {
-                val (w, h) = queryDisplaySize(preferOverride = true) ?: (1920 to 720)
+                val (w, h) = size ?: (1920 to 720)
                 val b = CastGeometryGuard.clampBounds(bounds, 0, w, h)
                 shell.execute("am task resize $taskId ${b.left} ${b.top} ${b.right} ${b.bottom}")
                 asked = b
@@ -230,8 +241,17 @@ internal class CastGeometryController(
      * ([applyPinned]). Phép parse ở [CastGeometryGuard.parseDisplaySize]. `null` = đo hụt.
      */
     private fun queryDisplaySize(preferOverride: Boolean): Pair<Int, Int>? {
-        val result = shell.execute("wm size -d $displayId")
+        val id = displayId
+        val result = shell.execute("wm size -d $id")
         if (!result.success) return null
+        if (CastGeometryGuard.displayGone(result.stdout)) {
+            // 2.90 · R5 — display [id] đã mất (màn ảo cụm dựng lại với id mới). Dò lại MỘT lần; id khác ⇒ đo lại trên id đó.
+            val fresh = runCatching(redetect).getOrDefault(-1)
+            log("wm size -d $id: display đã mất (0x0) ⇒ dò lại cụm: $fresh")
+            if (fresh < 1 || fresh == id) return null
+            val again = shell.execute("wm size -d $fresh")
+            return if (again.success) CastGeometryGuard.parseDisplaySize(again.stdout, preferOverride) else null
+        }
         return CastGeometryGuard.parseDisplaySize(result.stdout, preferOverride)
     }
 }

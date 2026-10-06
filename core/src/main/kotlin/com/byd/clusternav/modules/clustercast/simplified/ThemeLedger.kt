@@ -14,9 +14,9 @@ package com.byd.clusternav.modules.clustercast.simplified
  *
  * ## Vì sao "cùng tiến trình", không chỉ "cùng boot" ([sameProcess])
  * [ĐO 29/09] BYD giết Kachi MỖI lần tắt máy, Android dựng lại tiến trình ~0,3 s sau ⇒ một lần nổ máy mới luôn là một tiến
- * trình mới. [ĐO-gv 05/10] tắt/mở máy ⇒ cụm Seal về theme gốc. [CHƯA BIẾT] đầu máy có khởi động lại (BOOT_COUNT tăng) mỗi
- * lần nổ máy không — nếu không, "cùng boot" vẫn có thể là một lần nổ máy khác. Mục sổ do tiến trình TRƯỚC ghi ⇒ không suy
- * được kiểu (UNKNOWN). Tiến trình chết vì lý do khác giữa một lần nổ máy chỉ làm suy luận bảo thủ hơn (UNKNOWN), không sai.
+ * trình mới. 2.90: [ĐO xe 06/10] theme cụm GIỮ qua các lần tắt/nổ máy (cong từ hôm trước, đầu máy không khởi động lại) ⇒ giả
+ * định 2.89 "nổ máy trả theme gốc" (F3) SAI trên xe này. Mục sổ do tiến trình TRƯỚC ghi ⇒ không suy được kiểu (UNKNOWN), kể cả
+ * `<opcode gốc>;ok` (ngoại lệ cluster-r2-3 của 2.89 đã gỡ — chính nó làm Kachi tin RECT trên cụm đang cong, F3 06/10).
  */
 object ThemeLedger {
 
@@ -104,18 +104,12 @@ object ThemeLedger {
     }
 
     /**
-     * Kiểu cụm SUY từ sổ khi cổng phải bỏ opcode: `ok` do chính tiến trình này ghi ⇒ kiểu mà opcode đó ép
-     * ([ĐO 05/10] tắt chiếu KHÔNG trả theme; chỉ Kachi gửi opcode theme); còn lại ⇒ [BelievedStyle.UNKNOWN].
-     *
-     * Review 2.89 Pass 3 · cluster-r2-3 — NGOẠI LỆ duy nhất: `<opcode GỐC>;ok` (vd `31;ok` trên Seal 10.25") chứng minh kiểu GỐC bất
-     * kể tiến trình / lần khởi động — cả hai lịch sử khả dĩ cùng một kết cục: opcode gốc còn hiệu lực trong lần nổ máy này, HOẶC
-     * lần nổ máy đã trả cụm về kiểu gốc [ĐO-gv F3]. Đây đúng là giả định mà luật 3 của [ClusterStylePlan.wanted] đã dùng để BỎ gửi
-     * opcode gốc — hai chỗ dùng sổ nay nói cùng một điều. `30;ok` của tiến trình trước thì thật sự mơ hồ (B1b-OQ6) ⇒ vẫn UNKNOWN.
+     * Kiểu cụm SUY từ sổ khi cổng phải bỏ opcode: `ok` do CHÍNH tiến trình này ghi ⇒ kiểu mà opcode đó ép
+     * ([ĐO 05/10] tắt chiếu KHÔNG trả theme; chỉ Kachi gửi opcode theme); còn lại ⇒ [BelievedStyle.UNKNOWN]. 2.90 · R2: không
+     * ngoại lệ nào (xem KDoc lớp) — kiểu tin = thứ Kachi đã gửi và thấy thành công trong đời tiến trình này.
      */
     fun believed(e: Entry?, recipe: ProjectionRecipe, now: Now): BelievedStyle {
         if (e == null || e.state != State.OK) return BelievedStyle.UNKNOWN
-        val native = recipe.nativeStyle
-        if (native != null && recipe.styleOps[native] == e.op) return BelievedStyle.of(native)
         if (!sameProcess(e, now)) return BelievedStyle.UNKNOWN
         return BelievedStyle.of(recipe.styleOf(e.op))
     }

@@ -25,13 +25,14 @@ enum class BelievedStyle {
  *     kiểu nào (DiLink 5) ⇒ không gửi gì, kiểu UNKNOWN.
  *  2. `desired ≠ native` (Bo tròn trên Seal 10.25", hoặc native chưa biết) ⇒ cần `styleOps[desired]` — đúng hành vi đã chạy
  *     ở lần mở đầu sau nổ máy từ 08/02 [ĐO F2].
- *  3. `desired == native` (Chữ nhật trên Seal 10.25"): sổ ghi `<opcode gốc>;ok` ⇒ KHÔNG gửi (cụm đã ở kiểu gốc: ép bằng chính
- *     opcode gốc trong lần nổ máy này, hoặc đã về gốc sau nổ máy [ĐO-gv F3]) — đi thẳng `16 → 35` [ĐO-gv F4]. Sổ trống /
- *     `pending` / opcode khác ⇒ cần opcode gốc (gửi thừa ở mức A vô hại [SUY], cùng điều kiện với F2).
+ *  3. 2.90 · R2 — GỠ luật "sổ ghi `<opcode gốc>;ok` ⇒ không gửi": [ĐO xe 06/10] theme giữ qua nổ máy, sổ của tiến trình trước
+ *     không nói được cụm đang ở kiểu nào. Kiểu nào cũng xin opcode của nó; lượt trùng trong CÙNG tiến trình do cổng đỡ bằng dấu
+ *     RAM ([ClusterThemePlan.Reason.SAME_THEME]).
  *  4. Cổng [ThemeVerdict.SEND] ⇒ gửi; kiểu tin = kiểu đã ép.
- *  5. Cổng [ThemeVerdict.SKIP_KNOWN] (màn ảo cụm có từ trước) ⇒ bỏ opcode, đi tiếp 16/35; kiểu tin = [ThemeLedger.believed].
- *  6. Cổng [ThemeVerdict.ABORT] ⇒ bỏ opcode; đi tiếp CHỈ KHI sổ chứng minh cụm đã ở đúng kiểu cần ([ThemeLedger.believed]: cùng
- *     tiến trình, hoặc `<opcode gốc>;ok` bất kể tiến trình — Pass 3 · cluster-r2-3) — không thì DỪNG lượt mở.
+ *  5. Cổng [ThemeVerdict.SKIP_KNOWN] (màn ảo cụm có từ trước) ⇒ bỏ opcode, đi tiếp 16/35; kiểu tin = [ThemeLedger.believed]
+ *     (chỉ cùng tiến trình — 2.90 · R2; không thì UNKNOWN ⇒ khung trọn cụm, `CastSessionStyle.fullFrame`).
+ *  6. Cổng [ThemeVerdict.ABORT] ⇒ bỏ opcode; đi tiếp CHỈ KHI sổ (cùng tiến trình) chứng minh cụm đã ở đúng kiểu cần — không thì
+ *     DỪNG lượt mở.
  *
  * ## Vì sao luật 6 giữ DỪNG (đối chiếu yêu cầu "UNREADABLE ⇒ bỏ theme, đi tiếp 16/35 trừ khi 16/35 không an toàn")
  *  • Về SẬP: 16/35 an toàn ở mọi trạng thái màn ảo — [ĐO xe 05/10 §4] gửi lại `16`/`35` khi Maps đang trên màn ảo 8 ⇒
@@ -40,7 +41,7 @@ enum class BelievedStyle {
  *  • Về NGƯỜI LÁI: không chứng minh được thì lượt mở có thể rơi vào theme gốc — Seal 10.25" ⇒ "m/h lạc góc, MẤT số km/h"
  *    [ĐO xe 05/10 §4, `cluster-rect-seal-2026-10-05.md` §3] cả phiên, mà người lái chọn Bo tròn. Không còn đồng hồ tốc độ
  *    trên cụm là KHÔNG an toàn cho người đang lái (CLAUDE.md: đúng > an toàn > nhanh) ⇒ DỪNG (Error có lý do, bật lại được) —
- *    giữ đúng chốt R1-1 của review Pass 1. Số km/h do Kachi vẽ (B.7) chưa có ở B1a.
+ *    giữ đúng chốt R1-1 của review Pass 1. 2.90: Kachi KHÔNG vẽ km/h (owner 06/10 — HUD, bản đồ, bóng VietMap đều có).
  */
 object ClusterStylePlan {
 
@@ -60,11 +61,10 @@ object ClusterStylePlan {
     }
 
     /** Luật 2–3 — opcode theme cần xin cổng; `null` = không cần gửi theme. */
+    @Suppress("UNUSED_PARAMETER")   // [ledger] giữ cho chữ ký ổn định (ThemeGatePreview / ProjectionManager) — 2.90 không còn dùng
     fun wanted(recipe: ProjectionRecipe, desired: CastStyle, ledger: ThemeLedger.Entry?): Int? {
         val style = effective(recipe, desired) ?: return null
-        val op = recipe.styleOps[style] ?: return null
-        val nativeAlready = style == recipe.nativeStyle && ledger?.state == ThemeLedger.State.OK && ledger.op == op
-        return if (nativeAlready) null else op
+        return recipe.styleOps[style]
     }
 
     /**
@@ -83,7 +83,7 @@ object ClusterStylePlan {
             ?: return Plan(null, BelievedStyle.UNKNOWN, abort = false, why = "đời xe không có opcode kiểu — chỉ chuỗi chiếu")
         val target = BelievedStyle.of(style)
         if (want == null) {
-            return Plan(null, target, abort = false, why = "kiểu $style = kiểu gốc, sổ ghi lần ép gần nhất đã là opcode gốc ⇒ không gửi theme")
+            return Plan(null, BelievedStyle.UNKNOWN, abort = false, why = "kiểu $style không có opcode ⇒ không gửi theme")
         }
         val fromLedger = ThemeLedger.believed(ledger, recipe, now)
         return when (verdict ?: ThemeVerdict.ABORT) {

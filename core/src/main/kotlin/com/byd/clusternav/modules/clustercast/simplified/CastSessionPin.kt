@@ -39,12 +39,18 @@ internal class FullPin(val config: DisplayConfig, val pinned: DisplayConfig?)
  */
 internal fun SimpleCastCoordinator.pinFull(pkg: String, appType: AppType): FullPin {
     if (appType != AppType.NORMAL) return FullPin(DisplayConfig.forAppType(appType), null)
-    // B1b — ô nhớ theo kiểu khung của PHIÊN (Bo tròn = khoá cũ, từng byte). Chữ nhật: bản ghim LUÔN có khung (vùng trống, D2)
-    // — nền ADAS lớn luôn hiện ở theme2 FULL [ĐO QML], để app trọn cụm là để nó che nửa bản đồ.
+    // B1b — ô nhớ theo kiểu khung của PHIÊN (Bo tròn = khoá cũ, từng byte). Chữ nhật: bản ghim LUÔN có khung — 2.90 · R4 mặc định
+    // trọn cụm (owner 06/10: "cứ để full resolution", người lái tự chỉnh). 2.90 · R2: kiểu chưa xác nhận ([fullFrameSession]) ⇒
+    // trọn cụm, bỏ khung đã lưu (khung lưu cho một kiểu cụm khác là khung sai — F3 06/10: khung Chữ nhật trên cụm cong).
     val style = frameStyle
     val profile = CastProfile.FULL.inStyle(style)
     val saved = prefs.displayConfigFor(pkg, profile)
-    val pinned = if (style == CastStyle.RECT) ClusterRectLayout.pin(saved, ClusterRectLayout.FREE_AREA) else saved
+    val pinned = when {
+        fullFrameSession -> (saved ?: DisplayConfig.NORMAL_DEFAULT.copy(density = CastGeometryGuard.DENSITY_RESET))
+            .copy(bounds = ClusterRectLayout.FULL)
+        style == CastStyle.RECT -> ClusterRectLayout.pin(saved, ClusterRectLayout.FULL)
+        else -> saved
+    }
     logPin(pkg, profile, pinned)
     // Pass 2 · cluster-r1-3: Chữ nhật áp `wm size`/overscan 1:1 dù bản `__RECT` có bị làm bẩn (Bo tròn: đúng phép cũ từng byte).
     val config = saved ?: DisplayConfig.NORMAL_DEFAULT
@@ -73,13 +79,17 @@ internal fun SimpleCastCoordinator.sessionLeftPercent(current: SimpleCastState):
 
 /**
  * Bản ghi đã lưu của ô ([side] × [leftPercent] của phiên) — đọc **một lần** lúc ô bắt đầu. B1b: ô nhớ theo kiểu khung của
- * PHIÊN; Chữ nhật luôn có khung (nửa vùng trống theo tỉ lệ — [ClusterRectLayout.slotFrame]).
+ * PHIÊN; Chữ nhật luôn có khung (nửa của trọn cụm theo tỉ lệ — [ClusterRectLayout.slotFrame], 2.90 · R4).
  */
 internal fun SimpleCastCoordinator.pinSlot(pkg: String, side: ClusterSlotSide, leftPercent: Int): DisplayConfig? {
     val style = frameStyle
     val profile = CastProfile.of(side, leftPercent, style)
     val saved = prefs.displayConfigFor(pkg, profile)
-    val pinned = if (style == CastStyle.RECT) ClusterRectLayout.pin(saved, ClusterRectLayout.slotFrame(side, leftPercent)) else saved
+    val pinned = when {
+        fullFrameSession -> saved?.copy(bounds = null)   // 2.90 · R2: kiểu chưa rõ ⇒ nửa của trọn cụm (fitToCluster), giữ DPI
+        style == CastStyle.RECT -> ClusterRectLayout.pin(saved, ClusterRectLayout.slotFrame(side, leftPercent))
+        else -> saved
+    }
     return pinned.also { logPin(pkg, profile, it) }
 }
 

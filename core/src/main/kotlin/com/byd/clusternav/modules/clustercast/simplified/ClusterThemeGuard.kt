@@ -15,8 +15,8 @@ import com.byd.clusternav.modules.clustercast.WmParse
  *  • [admit] (gọi từ [ProjectionManager] ngay trước mỗi opcode theme): đọc `dumpsys display` (tập màn ảo cụm, cách dò SẴN
  *    CÓ — [ClusterDisplayResolver.DETECT_CMD] + [WmParse.clusterDisplayIds] − màn ảo của chính Kachi) và sổ theme
  *    ([ThemeLedger], khoảng 15 s); quyết bằng [ClusterThemePlan.decide]. B1a: có màn ảo cụm mà hồ sơ không bật
- *    `themeOnVacantVd` (mặc định) ⇒ `VD_PRESENT` ngay, 0 lệnh đọc thêm; chưa có màn ảo ⇒ không đọc stack/cửa sổ (không có
- *    lớp nào để đọc). Chỉ khi cờ bật (mức B, chờ đo V4b): đọc `am stack list` + `dumpsys window windows`; nếu chỉ còn
+ *    `themeOnVacantVd` ⇒ `VD_PRESENT` ngay, 0 lệnh đọc thêm; chưa có màn ảo ⇒ không đọc stack/cửa sổ (không có
+ *    lớp nào để đọc). Cờ bật (mức B — 2.90 bật cho Seal 138 sau phép đo 06/10, `oncar-2026-10-06-cluster-rect.md` F4): đọc `am stack list` + `dumpsys window windows`; nếu chỉ còn
  *    `ClusterBlack` của Kachi ⇒ gỡ đúng stack của nó, đọc lại tới khi trống (trần [SETTLE_READS] × [SETTLE_STEP_MS]) rồi
  *    quyết LẦN HAI. Lời đáp [ThemeVerdict] qua [ClusterThemePlan.verdict]; quyết cuối ở [ClusterStylePlan].
  *  • [inspect]: CÙNG các lượt đọc + quyết định, KHÔNG gỡ, KHÔNG ghi sổ — cho `ClusterDiag` "Cổng theme (chỉ đọc)".
@@ -56,6 +56,8 @@ class ClusterThemeGuard(
     private val clock: ThemeLedger.Clock = ThemeLedger.JVM_CLOCK,
     /** B1a — cờ hồ sơ `themeOnVacantVd`, đọc lúc quyết (công thức có thể được dò lại ở lượt mở đầu). Mặc định TẮT. */
     private val vacantVdAllowed: () -> Boolean = { false },
+    /** 2.90 · R9 — bộ thi hành "dọn cụm / trả cụm" ([ClusterLayerPause]); mặc định không có lớp nào (hành vi trước Pass 3). */
+    private val layers: ClusterLayerPort = ClusterLayerPort.NONE,
     private val log: (String) -> Unit = {},
 ) : ThemeGate {
 
@@ -91,7 +93,7 @@ class ClusterThemeGuard(
         private set
 
     /** Đầu một lượt mở chiếu: bỏ opcode "đã gửi" còn treo của lượt trước (lượt đó có thể đã hỏng trước khi [bindVd]). */
-    fun beginOpen() { pendingOp = null }
+    fun beginOpen() { pendingOp = null; openScope = true }
 
     /** Sau khi dò được màn ảo cụm của lượt mở này: chốt dấu "đã gửi [pendingOp], màn ảo = [vd]". */
     fun bindVd(vd: Int) {
@@ -158,25 +160,85 @@ class ClusterThemeGuard(
     }
 
     /**
-     * B1b — LATCH của mức B (G4 nghiên cứu 05/10): `true` suốt lượt [admit] khi cờ `themeOnVacantVd` bật — lượt đó đọc
-     * `dumpsys window windows` trên màn ảo cụm, và mọi overlay của Kachi ở đó (số km/h — `ClusterSpeedReadoutOverlay`) sẽ bị
-     * đếm là lớp lạ (`FOREIGN`). Lớp km/h đọc cờ này qua `speedReadoutInputs()` và tự gỡ. Cờ mặc định TẮT ⇒ latch không bao giờ
-     * bật trên đường đang chạy. ⚠ Trước khi bật mức B (V4b): việc gỡ overlay phải ĐỒNG BỘ với lượt đọc cửa sổ (B1b-OQ3).
+     * 2.90 · R1 — nhãn app bóng nổi chặn lượt [admit] GẦN NHẤT ([ClusterThemePlan.Reason.BUBBLE]); rỗng = lượt đó không bị
+     * bóng nổi chặn. Chỉ để Cài đặt / Chẩn đoán nói lý do ("tắt bóng VietMap rồi Áp ngay") — không quyết lệnh nào (CLAUDE.md §5).
      */
-    @Volatile var latched: Boolean = false
+    @Volatile var lastBlockers: List<String> = emptyList()
         private set
 
-    override fun admit(op: Int): ThemeVerdict {
-        latched = vacantVdAllowed()
-        try {
-            return admitInner(op)
-        } finally {
-            latched = false
+    /**
+     * 2.90 · R9 — lượt [admit] gần nhất đã DỌN mà bóng nổi vẫn còn ⇒ bản mod chưa hỗ trợ `VM_BUBBLE_VIS` (Cài đặt: "bản mod VietMap
+     * cũ chưa hỗ trợ ẩn bóng — tắt VietMap rồi Áp ngay"). Chỉ để nói lý do, không quyết lệnh nào.
+     */
+    @Volatile var lastBubbleOldMod: Boolean = false
+        private set
+
+    /** 2.90 · R9 — đã DỌN cụm mà chưa TRẢ ([resumeLayers]). RAM: tiến trình chết ⇒ lớp của Kachi dựng lại từ đầu (mặc định "không dọn"). */
+    @Volatile private var paused = false
+
+    /**
+     * Review Pass 3 [P2] — DỌN chỉ được phép trong một lượt MỞ ([beginOpen] … [resumeLayers] ở `finally` của
+     * `openProjectionGuarded`). Lượt TẮT (`ProjectionManager.close` với công thức còn opcode theme) không có `finally` TRẢ ⇒ nếu dọn
+     * ở đó, badge + bóng nằm ẩn tới lượt mở sau. Ngoài lượt mở ⇒ luật cũ (FOREIGN/BUBBLE ⇒ bỏ opcode).
+     */
+    @Volatile private var openScope = false
+
+    /** Nhãn app bóng nổi của lượt DỌN đang chạy — [verdict] quyết [lastBubbleOldMod] từ quyết định CUỐI (kể cả sau gỡ ClusterBlack). */
+    @Volatile private var pausedBubbles: List<String> = emptyList()
+
+    override fun admit(op: Int): ThemeVerdict = admitInner(op)
+
+    /**
+     * 2.90 · R9 — TRẢ cụm sau một lượt mở có DỌN (idempotent: chưa dọn ⇒ không làm gì). [liveId] = id cụm dò SAU khi mở (màn ảo có
+     * thể đã dựng lại với id mới — [ĐO xe 06/10] 4 → 9); `< 1` ⇒ lớp của Kachi tự chọn display. `show` của bóng = công tắc người lái
+     * ([ClusterLayerPause.resume]). Không bao giờ ném — đường mở chiếu không được gãy vì một lớp phủ.
+     */
+    fun resumeLayers(liveId: Int) {
+        openScope = false
+        if (!paused) return
+        paused = false
+        val plan = runCatching { ClusterLayerPause.resume(liveId, layers.bubbleHiddenByUser(), layers.bubbleInstalled()) }
+            .getOrElse { ClusterLayerPause.Resume(if (liveId >= 1) liveId else -1, null) }
+        runCatching { layers.resumeOwn(plan.reattachOn) }.onFailure { log("trả cụm: gắn lại lớp Kachi lỗi ${it.message}") }
+        plan.bubbleShow?.let { show -> runCatching { layers.sendBubble(show) }.onFailure { log("trả cụm: VM_BUBBLE_VIS lỗi ${it.message}") } }
+        log("trả cụm: id=${plan.reattachOn} lớp Kachi gắn lại · VM_BUBBLE_VIS ${plan.bubbleShow?.let { "show=$it" } ?: "không gửi (VietMap không cài)"}")
+    }
+
+    /**
+     * 2.90 · R9 — DỌN rồi đọc lại tới khi chỉ còn placeholder (trần [PAUSE_READS] × [SETTLE_STEP_MS]), rồi QUYẾT LẠI toàn bộ từ bản
+     * đọc mới (gồm nhánh gỡ ClusterBlack). Một lần mỗi lượt [admit]. Luật gửi không đổi — chỉ bản đọc đổi.
+     */
+    private fun pauseAndReread(op: Int, first: Read, pause: ClusterLayerPause.Pause): Read {
+        val vds = first.displays?.vds ?: return first
+        paused = true
+        runCatching { layers.pauseOwn() }.onFailure { log("dọn cụm: gỡ lớp Kachi lỗi ${it.message}") }
+        val hide = runCatching { layers.bubbleInstalled() }.getOrDefault(false)
+        if (hide) runCatching { layers.sendBubble(false) }.onFailure { log("dọn cụm: VM_BUBBLE_VIS lỗi ${it.message}") }
+        log("dọn cụm: theme $op trên ${vds.sorted()} — lớp Kachi ${pause.ownWindows} cửa sổ, bóng ${pause.bubbleApps}" +
+            " · VM_BUBBLE_VIS ${if (hide) "show=false" else "không gửi (app bóng không cài)"} rồi đọc lại")
+        for (i in 0 until PAUSE_READS) {
+            sleepMs(SETTLE_STEP_MS)
+            val t = readTasks()
+            val w = readWindows()
+            if (t != null && w != null && ClusterLayerPause.cleared(t, w, vds, selfPackage)) break
         }
+        return readAndDecide(op)
     }
 
     private fun admitInner(op: Int): ThemeVerdict {
-        val first = readAndDecide(op)
+        lastBubbleOldMod = false
+        pausedBubbles = emptyList()
+        var first = readAndDecide(op)
+        val d0 = first.decision
+        if (d0 is ClusterThemePlan.Decision.Skip && openScope && !paused &&
+            (d0.reason == ClusterThemePlan.Reason.FOREIGN || d0.reason == ClusterThemePlan.Reason.BUBBLE)
+        ) {
+            val pause = first.displays?.vds?.let { ClusterLayerPause.pausable(first.tasks, first.windows, it, selfPackage) }
+            if (pause != null) {
+                pausedBubbles = pause.bubbleApps
+                first = pauseAndReread(op, first, pause)
+            }
+        }
         val vdBefore = first.vdBefore
         val removal = when (val d = first.decision) {
             ClusterThemePlan.Decision.Send, is ClusterThemePlan.Decision.Skip -> return verdict(op, first.displays, d, vdBefore)
@@ -214,6 +276,7 @@ class ClusterThemeGuard(
         val tasks: List<StackEntry>?,
         val decision: ClusterThemePlan.Decision,
         val vdBefore: Boolean,
+        val windows: List<ClusterThemePlan.WindowOnDisplay>? = null,
     )
 
     /**
@@ -233,7 +296,7 @@ class ClusterThemeGuard(
             op, displays?.vds, displays?.primary ?: -1, marker, tasks, windows, selfPackage,
             themeOnVacantVd = vacantOk, gapRemainingMs = gap,
         )
-        return Read(displays, tasks, d, vdBefore)
+        return Read(displays, tasks, d, vdBefore, windows)
     }
 
     /**
@@ -274,6 +337,11 @@ class ClusterThemeGuard(
 
     private fun verdict(op: Int, displays: Displays?, d: ClusterThemePlan.Decision, vdBefore: Boolean): ThemeVerdict {
         val v = ClusterThemePlan.verdict(d, vdBefore)
+        lastBlockers = (d as? ClusterThemePlan.Decision.Skip)?.takeIf { it.reason == ClusterThemePlan.Reason.BUBBLE }?.apps.orEmpty()
+        val bubbles = pausedBubbles
+        pausedBubbles = emptyList()
+        lastBubbleOldMod = bubbles.isNotEmpty() && ClusterLayerPause.oldMod(d)
+        if (lastBubbleOldMod) log("dọn cụm: bóng $bubbles VẪN còn sau VM_BUBBLE_VIS ⇒ bản mod chưa hỗ trợ ẩn — bỏ theme (BUBBLE)")
         val text = line(op, displays, d, v)
         lastVerdict = text
         log(text)
@@ -325,6 +393,12 @@ class ClusterThemeGuard(
          * [CHƯA BIẾT] trên xe `am stack remove` một activity đen mất bao lâu ([ĐO 05/10] VietMap: > 1,25 s).
          */
         const val SETTLE_READS: Int = 4
+
+        /**
+         * 2.90 · R9 — số lần đọc lại sau DỌN (bước [SETTLE_STEP_MS] ⇒ ≤ 1,5 s): broadcast tới mod rồi mod `removeView` trên luồng
+         * chính của nó. [CHƯA BIẾT] trên xe mất bao lâu (spec OQ6) — hết lượt mà còn bóng ⇒ coi như mod cũ, KHÔNG gửi (an toàn).
+         */
+        const val PAUSE_READS: Int = 6
         const val SETTLE_STEP_MS: Long = FloatingOrphanSweep.SETTLE_STEP_MS
 
         private val DISPLAY0 = Regex("Display 0:")

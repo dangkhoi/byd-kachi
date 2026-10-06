@@ -92,8 +92,8 @@ android {
         // ⚠ bản chính thức kế tiếp phải ≥ 191 (xe đã mang 190).
         // 2.89 (191) — bản OTA chính thức sau buổi xe 05/10 (spec kachi-289-field-fixes): ô 7 đỗ ẩn · cổng
         // CLUSTER-THEME-SAFE · nhạc chuyến đi trong ô · đóng ô chờ lắng · mở ô không force-stop · bo góc khung ô.
-        versionCode = 191
-        versionName = "2.89"
+        versionCode = 192
+        versionName = "2.90"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

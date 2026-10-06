@@ -11,6 +11,7 @@ import java.util.Locale
 import com.byd.clusternav.R
 import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
+import com.byd.clusternav.modules.clustercast.simplified.statusKey
 import com.byd.clusternav.ui.ClusterPreviewView
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
@@ -285,6 +286,7 @@ class SettingsCastSection(
         statusRow = rows.statusRow(KachiTheme.MUT2, "")
         body.addView(statusRow.view)
         refreshStatus()
+        liveStatus(statusRow.view)
         body.addView(rows.button(context.getString(R.string.kachi_cast_now_full)) { pickAndCast(null) })
         body.addView(rows.button(context.getString(R.string.kachi_cast_now_left)) { pickAndCast(ClusterSlotSide.LEFT) })
         body.addView(rows.button(context.getString(R.string.kachi_cast_now_right)) { pickAndCast(ClusterSlotSide.RIGHT) })
@@ -349,6 +351,41 @@ class SettingsCastSection(
         rebuildSplit()
         styleBlock.rebuild()
         geometryBlock.rebuild()
+    }
+
+    /**
+     * 2.90 · R6 — trang SỐNG theo trạng thái chiếu: [ĐO xe 06/10] sau khi mở chiếu xong trang vẫn "Đang mở cụm…" và khoá các nút
+     * khung/vị trí tới khi mở lại trang, vì [refreshStatus] chỉ chạy sau thao tác của người dùng. Gắn bộ nghe khi dòng trạng thái lên
+     * màn, gỡ khi rời màn; bộ nghe chạy trên luồng coordinator ⇒ `post` về luồng chính, và chỉ dựng lại khi thứ trang HIỆN đổi
+     * ([statusKey]: loại trạng thái · gói · tỉ lệ · câu lỗi) — không dựng lại trang theo mỗi lần phát trùng / cập nhật bản ghim.
+     */
+    private fun liveStatus(anchor: View) {
+        val watcher = object : View.OnAttachStateChangeListener {
+            private var unsubscribe: (() -> Unit)? = null
+            // Khoá của lần dựng GẦN NHẤT (castNow vừa refreshStatus() ngay trước) — không đặt lại lúc gắn: trang rời màn rồi quay
+            // lại (trang được nhớ) phải bắt kịp trạng thái đổi trong lúc vắng — bộ nghe phát trạng thái hiện tại ngay khi gắn.
+            private var shown: String? = bridge.castState().statusKey()
+
+            override fun onViewAttachedToWindow(v: View) {
+                unsubscribe?.invoke()
+                unsubscribe = bridge.observeCastState { state ->
+                    v.post {
+                        val key = state.statusKey()
+                        if (v.isAttachedToWindow && key != shown) {
+                            shown = key
+                            refreshStatus()
+                        }
+                    }
+                }
+            }
+
+            override fun onViewDetachedFromWindow(v: View) {
+                unsubscribe?.invoke()
+                unsubscribe = null
+            }
+        }
+        anchor.addOnAttachStateChangeListener(watcher)
+        if (anchor.isAttachedToWindow) watcher.onViewAttachedToWindow(anchor)
     }
 
     /**

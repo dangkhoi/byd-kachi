@@ -46,6 +46,7 @@ class SimpleCastCoordinator(
      * của launcher (`:app`: `WindowCommandDispatcher.setCastDisplay`). Gọi qua [publishCastDisplay]. Mặc định: không làm gì.
      */
     internal val onCastDisplay: (Int?) -> Unit = {},
+    clusterLayers: ClusterLayerPort = ClusterLayerPort.NONE, // 2.90 · R9 — dọn/trả cụm quanh lượt đổi theme (`:app` cấp)
 ) {
     // ── Cluster display id — id SỐNG, dò động (X2) ────────────────────────────
     // Seed = giá trị dựng (prefs.lastDisplayId ?: fallback), nhưng KHÔNG tin nó: openProjection() dò lại thật
@@ -83,7 +84,7 @@ class SimpleCastCoordinator(
      */
     internal val themeGuard = ClusterThemeGuard(
         shell, selfPackage, ownPlaceholder, sleepMs = detectSleepMs,
-        store = themeLedger, clock = themeClock, vacantVdAllowed = { projection.recipe.themeOnVacantVd },
+        store = themeLedger, clock = themeClock, vacantVdAllowed = { projection.recipe.themeOnVacantVd }, layers = clusterLayers,
     ) { msg -> log(msg) }
 
     /** B1a — [recipeProbe] chạy tối đa MỘT lần mỗi tiến trình (`probeRecipeOnce`, `SimpleCastCoordinatorOps.kt`). */
@@ -100,9 +101,15 @@ class SimpleCastCoordinator(
             return "${gate ?: "cổng không được hỏi"} · kế hoạch: ${plan.why} · kiểu tin=${plan.believed}"
         }
 
-
-    /** Owns freeform task resize + per-app profile persistence/restore (R4/R5/R6). Đọc displayId SỐNG qua provider. */
-    internal val geometry = CastGeometryController(shell, prefs, { displayId }) { msg -> log(msg) }
+    /**
+     * Owns freeform task resize + per-app profile persistence/restore (R4/R5/R6). Đọc displayId SỐNG qua provider.
+     * ⚠ 2.90 · R5 — `this.displayId`: tham số dựng `displayId` (SEED) che thuộc tính ⇒ bản cũ chụp seed mãi mãi — F7 xe 06/10
+     * `wm size -d 4` → `0x0` khi cụm đã là 9 ([ĐO] `ClusterRectStaleDisplayTest`).
+     */
+    internal val geometry = CastGeometryController(
+        shell, prefs, { this.displayId },
+        redetect = { detectClusterDisplay() },   // 2.90 · R5: `wm size -d` thấy display đã mất ⇒ dò lại id cụm
+    ) { msg -> log(msg) }
 
     /**
      * X2 — dò id display CỤM thật (generic: fission/xdja qua [ClusterDisplayResolver], KHÔNG hardcode 1/2) và
@@ -115,17 +122,16 @@ class SimpleCastCoordinator(
      * [awaitAfterOpen] = true ⇒ dò lặp ([ClusterDisplayResolver.awaitAndPersist]) vì VD cụm chỉ xuất hiện sau khi
      * AutoContainer mở projection.
      */
-    internal fun detectClusterDisplay(awaitAfterOpen: Boolean = false): Int {
+    internal fun detectClusterDisplay(awaitAfterOpen: Boolean = false, exclude: Int = -1): Int {
         val persist: (Int) -> Unit = { prefs.saveLastDisplayId(it) }
         val resolved = if (awaitAfterOpen) {
-            ClusterDisplayResolver.awaitAndPersist(shell, selfPackage, sleepMs = detectSleepMs, persist = persist)
+            ClusterDisplayResolver.awaitAndPersist(shell, selfPackage, sleepMs = detectSleepMs, exclude = exclude, persist = persist)
         } else {
             ClusterDisplayResolver.detectAndPersist(shell, selfPackage, persist)
         }
         if (resolved >= 1) {
             if (resolved != displayId) log("cluster display: $displayId → $resolved (dò fission/xdja)")
             displayId = resolved
-            projection.bindSessionDisplay(resolved)   // Pass 2 · cluster-r1-4: id của PHIÊN cho lớp km/h (không cho lệnh đặt)
         } else {
             log("cluster display: KHÔNG dò thấy fission/xdja (hoặc id là VD của $selfPackage) — không đặt gì (R1/R2)")
         }
@@ -241,7 +247,7 @@ class SimpleCastCoordinator(
             // `openProjection` chỉ chạy lại từ `Off`/`Error` ⇒ cast chết tới khi tiến trình khởi động lại.
             // Bắt → `Error` (tự hồi về Idle/Off sau 3 s) ⇒ người dùng bấm lại được.
             try {
-                openProjectionBody()
+                openProjectionGuarded()
             } catch (t: Throwable) {
                 if (t is InterruptedException) Thread.currentThread().interrupt()
                 log("openProjection ngắt/lỗi giữa chừng (${t.javaClass.simpleName}) — nhả state khỏi Opening")

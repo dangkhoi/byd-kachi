@@ -44,10 +44,28 @@ object ClusterDisplayResolver {
      *   KHÔNG BAO GIỜ trả 0 (màn giữa) và KHÔNG có fallback (R1).
      */
     fun resolve(detectGrepOut: String, selfPackage: String): Int {
-        val detected = DisplayParse.clusterDisplayId(detectGrepOut)
+        val detected = newestSameName(detectGrepOut, DisplayParse.clusterDisplayId(detectGrepOut))
         if (detected < 1) return -1
         if (DisplayParse.isOwnedVirtualDisplay(detectGrepOut, detected, selfPackage)) return -1
         return detected
+    }
+
+    private val RE_INFO_NAME = Regex("""DisplayInfo\{"([^"]+), displayId (\d+)"""")
+
+    /**
+     * 2.90 · R5 — màn ảo cụm được DỰNG LẠI (theme đổi ⇒ id mới, [ĐO xe 06/10] 4 → 9) mà bản đọc còn thấy cả màn cũ CÙNG TÊN
+     * ⇒ lấy id LỚN nhất trong nhóm cùng tên với [first]: id logical display không bao giờ tái dùng, cấp tăng dần
+     * ([ĐO nguồn A10 r47] `DisplayManagerService.java:1033-1034` `assignDisplayIdLocked` — `mNextNonDefaultDisplayId++`) ⇒ id lớn hơn là màn mới hơn.
+     * Tên khác nhau (vd DL5 `fission_bg_XDJAScreenProjection_0/_1`) ⇒ giữ đúng [first] — thứ tự cũ (CLAUDE.md §6).
+     * Tên lấy từ dòng `DisplayInfo{"<tên>, displayId N"` của chính [DETECT_CMD]; không đọc được tên ⇒ [first].
+     */
+    internal fun newestSameName(detectGrepOut: String, first: Int): Int {
+        if (first < 1) return first
+        val names = RE_INFO_NAME.findAll(detectGrepOut).mapNotNull { m ->
+            m.groupValues[2].toIntOrNull()?.let { it to m.groupValues[1] }
+        }.toList()
+        val name = names.firstOrNull { it.first == first }?.second ?: return first
+        return names.filter { it.second == name }.maxOf { it.first }
     }
 
     /**
@@ -66,20 +84,28 @@ object ClusterDisplayResolver {
     /**
      * Dò LẶP sau khi mở projection — VD cụm do AutoContainer tạo bất đồng bộ sau profile 35, nên lần dò đầu có
      * thể hụt (đường cũ `ClusterCast.cast()` cũng lặp 16×500 ms rồi mới đặt app). Trả id ≥ 1 ngay khi dò được,
-     * `-1` sau [attempts] lần hụt. [sleepMs] tách ra để test không ngủ thật.
+     * `-1` sau [attempts] lần hụt. [sleepMs] tách ra để test không ngủ thật. 2.90 · R5: [exclude] ≥ 1 = id màn ảo TRƯỚC một lượt
+     * đổi theme ([ĐO xe 06/10] theme đổi ⇒ màn ảo dựng lại với id mới 4 → 9) — bỏ qua id đó tới khi thấy id khác; hết lượt mà
+     * vẫn chỉ thấy nó ⇒ trả nó (màn ảo không dựng lại).
      */
     fun awaitAndPersist(
         shell: SimpleCastShell,
         selfPackage: String,
         attempts: Int = AWAIT_ATTEMPTS,
         sleepMs: (Long) -> Unit = { Thread.sleep(it) },
+        exclude: Int = -1,
         persist: (Int) -> Unit,
     ): Int {
+        var seenExcluded = false
         repeat(attempts.coerceAtLeast(1)) { i ->
-            val id = detectAndPersist(shell, selfPackage, persist)
-            if (id >= 1) return id
+            // 2.90 · R5: không persist id bị loại (màn ảo TRƯỚC lượt đổi theme) — chỉ id mới được ghi.
+            val id = detectAndPersist(shell, selfPackage) { if (it != exclude) persist(it) }
+            if (id >= 1 && id != exclude) return id
+            if (id >= 1) seenExcluded = true
             if (i < attempts - 1) sleepMs(AWAIT_SLEEP_MS)
         }
+        // Hết lượt mà chỉ thấy id cũ ⇒ màn ảo KHÔNG dựng lại [CHƯA BIẾT có xảy ra không — OQ1 spec 290] ⇒ id cũ vẫn là cụm.
+        if (seenExcluded) { runCatching { persist(exclude) }; return exclude }
         return -1
     }
 }

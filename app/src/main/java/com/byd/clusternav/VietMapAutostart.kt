@@ -266,6 +266,8 @@ object VietMapAutostart {
                 Log.w(TAG, "autostart: phiên dadb KHÔNG mở được (${result.reason}, ${result.attempts} lần thử) — VietMap CHƯA auto-start (localhost:5555 chưa sẵn?)")
             }
         }.onFailure { Log.w(TAG, "auto-start VietMap failed: ${it.message}") }
+        // 2.90 · R8 — VietMap có thể vừa được mở/dựng lại bóng ⇒ gửi lại `VM_BUBBLE_VIS` theo công tắc (TẮT ⇒ bản mod gỡ bóng).
+        VmBubbleVisibility.apply(app, "sau lượt tự mở VietMap", force = true)
         } finally {
             finishRun()   // (a) nhả suất chạy dù thành công hay ném — lần autostart kế mới vào được sau cooldown
         }

@@ -83,9 +83,10 @@ data class ClusterProfile(
      */
     val cameraSignature: String? = null,
     /**
-     * CLUSTER-THEME-SAFE B1a: cho phép gửi theme khi màn ảo cụm CÒN mà trống (mức B). MẶC ĐỊNH `false` cho MỌI hồ sơ —
-     * [CHƯA ĐO] (bước đo V4b); không vào [export]/[parse]: một chuỗi share (dữ liệu không tin cậy) không được bật đường chưa
-     * đo có thể làm sập framework [ĐO 05/10].
+     * CLUSTER-THEME-SAFE: cho phép gửi theme khi màn ảo cụm CÒN mà trống (mức B). Mặc định `false`; 2.90 · R1 — [forCarType] bật
+     * cho ĐÚNG tổ hợp đã đo ([VACANT_VD_THEME_CAR_TYPES] + service `AutoContainer`): [ĐO xe 06/10] màn ảo cụm có từ lúc đầu máy
+     * khởi động (mức A không bao giờ gửi được) và gửi `31` khi màn ảo có 0 task + 0 cửa sổ ⇒ không sập, màn ảo dựng lại id mới.
+     * Không vào [export]/[parse]: chuỗi share (không tin cậy) không được bật đường đổi theme [ĐO 05/10: sập khi còn lớp].
      */
     val themeOnVacantVd: Boolean = false,
 ) {
@@ -119,7 +120,9 @@ data class ClusterProfile(
         } else {
             null
         }
-        return if (native == nativeStyle) this else copy(nativeStyle = native)
+        // 2.90 · R1 — mức B chỉ cho tổ hợp đã đo (đời xe + service), kể cả với override (sự thật của CHIẾC xe, không của chuỗi share).
+        val vacant = carType != null && carType in VACANT_VD_THEME_CAR_TYPES && svcName == ProjectionRecipe.SVC_DILINK3
+        return if (native == nativeStyle && vacant == themeOnVacantVd) this else copy(nativeStyle = native, themeOnVacantVd = vacant)
     }
 
     /**
@@ -186,6 +189,12 @@ data class ClusterProfile(
          * "simple mode" [ĐO DashCast INC-20260625]. Thêm mã CHỈ sau khi đo trên xe đó (CLAUDE.md §7, §14).
          */
         val RECT_NATIVE_CAR_TYPES: Set<String> = setOf("138")
+
+        /**
+         * 2.90 · R1 — mã `persist.sys.car.type` ĐÃ ĐO gửi theme an toàn khi màn ảo cụm còn mà trống (mức B): 138 = Seal DiLink 3.0
+         * fw 2602030 [ĐO xe 06/10, `docs/diagnostics/oncar-2026-10-06-cluster-rect.md` F4]. Thêm mã CHỈ sau khi đo trên xe đó.
+         */
+        val VACANT_VD_THEME_CAR_TYPES: Set<String> = setOf("138")
 
         // ★ SEED đã VERIFY trên xe (2026-07-19): Seal DL3, VD XDJA/fission, chiếu 30→16→35, tắt 18→0.
         //   Tái tạo CHÍNH XÁC sequence hiện tại (behavior-preserving): 30 nằm ở styleOps[CURVED] (B1a), chuỗi dây vẫn 30-16-35.

@@ -11,6 +11,7 @@ import android.view.Surface
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.view.WindowManager
+import com.byd.clusternav.modules.clustercast.ClusterOverlayDisplays
 import com.byd.clusternav.launcher.KachiSpace
 import com.byd.clusternav.launcher.KachiBars
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Side
@@ -363,17 +364,16 @@ class CameraOverlayView(private val appCtx: Context) {
     /**
      * Ngữ cảnh của DISPLAY CỤM (`createDisplayContext`) — cả `WindowManager` lẫn `displayMetrics` đều lấy từ nó, để
      * vùng cho phép đo trên **đúng** display ([ĐO logcat 27/09 10:50: `vùng=495x495` = 0,5 × 990 của màn CHÍNH, dù
-     * cửa sổ treo trên VD 1920×720]). Ưu tiên display PRESENTATION ≠ 0 (cụm DiLink3.0 = display 2, KHÔNG hardcode 1
-     * — regression X2); máy ảo: overlay display cũng là PRESENTATION ([ĐO] AOSP 10 `OverlayDisplayAdapter.java:352`,
-     * `DisplayManager.java:290-295`). null nếu chưa có cụm (off-car ⇒ rơi màn chính).
+     * cửa sổ treo trên VD 1920×720]). 2.90 · R10: display = [ClusterOverlayDisplays.resolve] — CÙNG bộ chọn với badge tốc độ (id cụm
+     * sống → tên fission/xdja → PRESENTATION của máy ảo, [ĐO] AOSP 10 `OverlayDisplayAdapter.java:352`); bản cũ rơi về
+     * `dm.displays.firstOrNull { id ≠ 0 }` — có thể là VD ô riêng tư của Kachi. R9: cổng theme đang dọn cụm ⇒ `null` (camera MỚI mở
+     * rơi về màn chính; camera đang trên cụm không bị gỡ — thứ tự "HAL trước, cửa sổ sau" của controller). null nếu chưa có cụm.
      */
     private fun clusterCtx(ctx: Context): Context? = runCatching {
+        if (ClusterOverlayDisplays.paused) return null
         val dm = ctx.getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
             ?: return null
-        val display = dm.getDisplays(android.hardware.display.DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
-            .firstOrNull { it.displayId != 0 }
-            ?: dm.displays.firstOrNull { it.displayId != 0 }
-            ?: return null
+        val display = ClusterOverlayDisplays.resolve(dm) ?: return null
         ctx.createDisplayContext(display)
     }.getOrNull()
 

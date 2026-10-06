@@ -51,7 +51,7 @@ class CastRectFrameKeyTest {
     fun `luu khung Chu nhat khong de khung Bo tron`() {
         val prefs = FakePrefs()
         val curved = DisplayConfig.NORMAL_DEFAULT.copy(bounds = CastBounds(195, 174, 1738, 509))
-        val rect = DisplayConfig.NORMAL_DEFAULT.copy(bounds = ClusterRectLayout.FREE_AREA)
+        val rect = DisplayConfig.NORMAL_DEFAULT.copy(bounds = CastBounds(50, 128, 1285, 555))
         prefs.saveDisplayConfig(pkg, CastProfile.FULL, curved)
         prefs.saveDisplayConfig(pkg, CastProfile.FULL.inStyle(CastStyle.RECT), rect)
         assertEquals(curved, prefs.displayConfigFor(pkg, CastProfile.FULL))
@@ -78,28 +78,27 @@ class CastRectFrameKeyTest {
         assertTrue(ProfileSharePolicy.shareable("config_bounds_${pkg}__RECT"), "khung Chữ nhật là hình học px, không vị trí")
     }
 
-    // ── Khung mặc định (D2) ─────────────────────────────────────────────────────────────────────────────────────────
+    // ── Khung mặc định — 2.90 · R4: trọn cụm, không vùng chừa ────────────────────────────────────────────────────────
 
     @Test
-    fun `khung mac dinh Chu nhat = vung trong, ban luu thieu khung duoc them khung`() {
-        val fresh = ClusterRectLayout.pin(null, ClusterRectLayout.FREE_AREA)
-        assertEquals(CastBounds(50, 128, 1285, 555), fresh.bounds, "D2: vùng không bị nền ADAS che")
-        assertEquals(CastGeometryGuard.DENSITY_RESET, fresh.density, "chưa lưu gì ⇒ repin không chạm DPI")
+    fun `290 - khung mac dinh Chu nhat = tron cum, ban luu thieu khung duoc them khung`() {
+        val fresh = ClusterRectLayout.pin(null, ClusterRectLayout.FULL)
+        assertEquals(CastBounds(0, 0, 1920, 720), fresh.bounds, "owner 06/10: cứ để full resolution")
+        assertEquals(CastGeometryGuard.DENSITY_RESET, fresh.density, "chưa lưu gì ⇒ DPI thường của lượt mở, repin không chạm DPI")
         assertTrue(CastGeometryGuard.isShellSafe(fresh), "bản ghim mặc định phải qua chốt cuối")
         val dpiOnly = DisplayConfig.NORMAL_DEFAULT.copy(density = "160", bounds = null)
-        assertEquals(ClusterRectLayout.FREE_AREA, ClusterRectLayout.pin(dpiOnly, ClusterRectLayout.FREE_AREA).bounds)
-        assertEquals("160", ClusterRectLayout.pin(dpiOnly, ClusterRectLayout.FREE_AREA).density)
-        val mine = DisplayConfig.NORMAL_DEFAULT.copy(bounds = CastBounds(0, 0, 1920, 720))
-        assertEquals(mine, ClusterRectLayout.pin(mine, ClusterRectLayout.FREE_AREA), "khung người lái lưu (kể cả trọn cụm) thắng")
+        assertEquals(ClusterRectLayout.FULL, ClusterRectLayout.pin(dpiOnly, ClusterRectLayout.FULL).bounds)
+        assertEquals("160", ClusterRectLayout.pin(dpiOnly, ClusterRectLayout.FULL).density)
+        val mine = DisplayConfig.NORMAL_DEFAULT.copy(bounds = CastBounds(50, 128, 1285, 555))
+        assertEquals(mine, ClusterRectLayout.pin(mine, ClusterRectLayout.FULL), "khung người lái lưu thắng")
     }
 
     @Test
-    fun `nua o Chu nhat chia vung trong, Bo tron giu dung phep cu`() {
+    fun `290 - nua o Chu nhat = nua tron cum, cung phep Bo tron`() {
         val l = ClusterRectLayout.slotFrame(ClusterSlotSide.LEFT, 50)
         val r = ClusterRectLayout.slotFrame(ClusterSlotSide.RIGHT, 50)
-        assertEquals(CastBounds(50, 128, 667, 555), l)
-        assertEquals(CastBounds(667, 128, 1285, 555), r)
-        listOf(l, r).forEach { assertFalse(ClusterRectLayout.intersects(it, ClusterRectLayout.ADAS_PANEL)) }
+        assertEquals(CastBounds(0, 0, 960, 720), l)
+        assertEquals(CastBounds(960, 0, 1920, 720), r)
         assertEquals(l to r, ClusterRectLayout.splitFrames(CastStyle.RECT, 50, 1920, 720))
         assertEquals(
             CastBounds(0, 0, 576, 720) to CastBounds(576, 0, 1920, 720),
@@ -108,45 +107,37 @@ class CastRectFrameKeyTest {
         )
     }
 
+    /**
+     * 2.90 · R2 — kiểu tin thắng lựa chọn; CHƯA RÕ (cổng bỏ theme, tiến trình chưa gửi gì) ⇒ khung Bo tròn (khoá cũ) + `fullFrame`
+     * (trọn cụm) trên đời xe có opcode kiểu — KHÔNG theo lựa chọn nữa (F3 06/10: khung Chữ nhật trên cụm cong ⇒ đen quanh Maps).
+     * DL5 (không opcode kiểu) không đổi: không fullFrame. Thử ĐỎ: trả nhánh UNKNOWN về `effective(desired)`.
+     */
     @Test
-    fun `kieu khung cua phien - kieu tin thang lua chon, chua ro thi theo lua chon ap duoc`() {
+    fun `290 - kieu khung cua phien - chua ro thi tron cum, khong theo lua chon`() {
         val seal = ProjectionRecipe.SEAL_DL3.copy(nativeStyle = CastStyle.RECT)
         fun plan(b: BelievedStyle) = ClusterStylePlan.Plan(null, b, abort = false, why = "")
-        assertEquals(CastStyle.RECT, CastSessionStyle.of(seal, CastStyle.RECT, plan(BelievedStyle.RECT)).frame)
+        assertEquals(CastSessionStyle(CastStyle.RECT, BelievedStyle.RECT, CastStyle.RECT), CastSessionStyle.of(seal, CastStyle.RECT, plan(BelievedStyle.RECT)))
         assertEquals(CastStyle.CURVED, CastSessionStyle.of(seal, CastStyle.RECT, plan(BelievedStyle.CURVED)).frame,
-            "chọn Chữ nhật mà cụm vẫn Bo tròn (cổng bỏ 31) ⇒ khung theo CỤM")
-        assertEquals(CastStyle.RECT, CastSessionStyle.of(seal, CastStyle.RECT, plan(BelievedStyle.UNKNOWN)).frame)
+            "chọn Chữ nhật mà cụm vẫn Bo tròn ⇒ khung theo CỤM")
+        val unknown = CastSessionStyle.of(seal, CastStyle.RECT, plan(BelievedStyle.UNKNOWN))
+        assertEquals(CastStyle.CURVED, unknown.frame)
+        assertTrue(unknown.fullFrame, "chưa rõ kiểu ⇒ trọn cụm")
         assertEquals(CastStyle.RECT, CastSessionStyle.of(seal, CastStyle.CURVED, plan(BelievedStyle.RECT)).frame,
-            "chọn Bo tròn mà cụm đang Chữ nhật ⇒ khung + km/h theo CỤM")
-        assertEquals(CastStyle.CURVED, CastSessionStyle.of(ProjectionRecipe.SEAL_DL3, CastStyle.RECT, plan(BelievedStyle.UNKNOWN)).frame,
-            "xe không gốc chữ nhật ⇒ Chữ nhật ẩn ⇒ Bo tròn")
+            "chọn Bo tròn mà cụm đang Chữ nhật ⇒ khung theo CỤM")
+        assertFalse(CastSessionStyle.of(seal, CastStyle.CURVED, plan(BelievedStyle.CURVED)).fullFrame)
         val dl5 = ProjectionRecipe(ProjectionRecipe.SVC_DILINK5, listOf(16), listOf(18, 0))
-        assertEquals(CastStyle.CURVED, CastSessionStyle.of(dl5, CastStyle.RECT, null).frame)
+        val d = CastSessionStyle.of(dl5, CastStyle.RECT, null)
+        assertEquals(CastStyle.CURVED, d.frame)
+        assertFalse(d.fullFrame, "DL5 không có opcode kiểu ⇒ đường cũ y nguyên")
     }
 
-    /**
-     * Review 2.89 Pass 3 · cluster-r2-5 — Chữ nhật (31 ⇒ cụm mất km/h gốc) chỉ đi vào lượt mở khi Kachi vẽ được km/h; không quyền vẽ ⇒
-     * Bo tròn (cụm giữ km/h gốc). Bo tròn không bao giờ bị đổi. Thử ĐỎ: trả `withReadout` về `chosen`.
-     */
+    /** "Áp ngay" mời khi phiên chưa rõ kiểu (cụm có thể đang khác lựa chọn) — 2.90 không còn điều kiện quyền vẽ km/h. */
     @Test
-    fun `Pass 3 - Chu nhat chi khi ve duoc km-h, khong thi Bo tron`() {
-        assertEquals(CastStyle.RECT, CastStyleApply.withReadout(CastStyle.RECT, canDrawReadout = true))
-        assertEquals(CastStyle.CURVED, CastStyleApply.withReadout(CastStyle.RECT, canDrawReadout = false))
-        assertEquals(CastStyle.CURVED, CastStyleApply.withReadout(CastStyle.CURVED, canDrawReadout = false))
-        assertEquals(CastStyle.CURVED, CastStyleApply.withReadout(CastStyle.CURVED, canDrawReadout = true))
-    }
-
-    /**
-     * Review 2.89 vòng 3 · r3a-3: chọn Chữ nhật mà chưa có quyền vẽ ⇒ phiên mở ra Bo tròn. Nút "Áp ngay" phải so với kiểu HIỆU LỰC
-     * (Bo tròn) ⇒ không hiện; so với lựa chọn thô (Chữ nhật) thì nút hiện mãi, bấm lại vẫn ra Bo tròn.
-     */
-    @Test
-    fun `ap ngay - chon Chu nhat chua ve duoc km_h va phien Bo tron - khong moi nut`() {
+    fun `ap ngay - phien chua ro kieu thi moi nut, phien dung kieu thi khong`() {
         val curvedSession = CastSessionStyle(CastStyle.CURVED, BelievedStyle.CURVED, CastStyle.CURVED)
-        val effective = CastStyleApply.withReadout(CastStyle.RECT, canDrawReadout = false)
-        assertFalse(CastStyleApply.offer(effective, curvedSession, SimpleCastState.Idle, castEnabled = true))
-        // Đối chứng: có quyền vẽ ⇒ hiệu lực Chữ nhật ≠ phiên Bo tròn ⇒ mời nút như cũ.
-        val drawable = CastStyleApply.withReadout(CastStyle.RECT, canDrawReadout = true)
-        assertTrue(CastStyleApply.offer(drawable, curvedSession, SimpleCastState.Idle, castEnabled = true))
+        assertFalse(CastStyleApply.offer(CastStyle.CURVED, curvedSession, SimpleCastState.Idle, castEnabled = true))
+        assertTrue(CastStyleApply.offer(CastStyle.RECT, curvedSession, SimpleCastState.Idle, castEnabled = true))
+        val unknown = CastSessionStyle(CastStyle.RECT, BelievedStyle.UNKNOWN, CastStyle.CURVED, fullFrame = true)
+        assertTrue(CastStyleApply.offer(CastStyle.CURVED, unknown, SimpleCastState.Idle, castEnabled = true))
     }
 }

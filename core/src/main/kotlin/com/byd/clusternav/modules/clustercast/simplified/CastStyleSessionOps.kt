@@ -14,7 +14,7 @@ package com.byd.clusternav.modules.clustercast.simplified
 internal val SimpleCastCoordinator.frameStyle: CastStyle
     get() = projection.session?.frame ?: CastStyle.CURVED
 
-/** Kiểu cụm của phiên chiếu đang mở (`null` = không có phiên) — cho màn Cài đặt và lớp km/h ở `:app` (chỉ đọc). */
+/** Kiểu cụm của phiên chiếu đang mở (`null` = không có phiên) — cho màn Cài đặt ở `:app` (chỉ đọc). */
 val SimpleCastCoordinator.castSession: CastSessionStyle?
     get() = projection.session
 
@@ -28,21 +28,24 @@ internal fun SimpleCastCoordinator.applySessionPin(pkg: String, pinned: DisplayC
 }
 
 /**
- * Ảnh chụp đầu vào của [SpeedReadoutPolicy] — đọc trường SỐNG của coordinator (không shell, không prefs): trạng thái, kiểu
- * phiên, latch của cổng theme, id cụm ĐÃ XÁC MINH ([SimpleCastCoordinator.liveDisplayId], `-1` = chưa) — lớp km/h ở `:app`
- * chỉ được gắn lên ĐÚNG display này, không bao giờ display 1/0 hay màn ảo của ô.
- *
- * Review 2.89 Pass 2 · cluster-r1-4: lượt dò gần nhất hụt (`liveDisplayId = -1` — một lần `dumpsys` chớp lúc chiếu ô) KHÔNG tắt
- * số km/h cả phiên: rơi về id đã xác minh của PHIÊN ([ProjectionManager.sessionDisplayId], xoá cùng phiên). Id sống mới hơn
- * (≥ 1) luôn thắng. Lệnh đặt / `wm -d` vẫn chỉ theo `liveDisplayId` (R1).
+ * 2.90 · R2 — phiên đang mở có kiểu cụm CHƯA xác nhận trên đời xe có opcode kiểu ([CastSessionStyle.fullFrame]) ⇒ khung trọn cụm.
  */
-fun SimpleCastCoordinator.speedReadoutInputs(): SpeedReadoutPolicy.Inputs =
-    SpeedReadoutPolicy.Inputs(
-        state = state,
-        session = projection.session,
-        latched = themeGuard.latched,
-        liveDisplayId = liveDisplayId.takeIf { it >= 1 } ?: projection.sessionDisplayId,
-    )
+internal val SimpleCastCoordinator.fullFrameSession: Boolean
+    get() = projection.session?.fullFrame == true
+
+/**
+ * 2.90 · R1 — nhãn app bóng nổi đã chặn lượt đổi theme GẦN NHẤT ([ClusterThemeGuard.lastBlockers]); rỗng = không bị chặn. Cho
+ * Cài đặt / Chẩn đoán ở `:app` nói "tắt bóng … rồi Áp ngay" (chỉ đọc).
+ */
+val SimpleCastCoordinator.themeBlockers: List<String>
+    get() = themeGuard.lastBlockers
+
+/**
+ * 2.90 · R9 — lượt đổi theme gần nhất đã DỌN cụm (`VM_BUBBLE_VIS show=false`) mà bóng nổi vẫn còn ⇒ bản mod chưa hỗ trợ ẩn bóng
+ * ([ClusterThemeGuard.lastBubbleOldMod]). Cài đặt đổi câu thành "bản mod VietMap cũ … tắt VietMap rồi Áp ngay" (chỉ đọc).
+ */
+val SimpleCastCoordinator.themeBubbleOldMod: Boolean
+    get() = themeGuard.lastBubbleOldMod
 
 /**
  * Review 2.89 Pass 2 · whole-r1-5 — lượt mở GẦN NHẤT bị cổng theme DỪNG ([ProjectionManager.abortedOn]) và khoảng 15 s giữa hai

@@ -64,7 +64,7 @@ object ProfileSharePolicy {
         put("wallpaper_prefs", R_WALLPAPER)
         listOf(
             "enabled", "nav_cluster_screen_mode", "marquee", "badge_enabled", "show_upcoming_badge", "show_alert_chip",
-            "badge_size_dp", "badge_center_x", "badge_center_y", "vm_bubble_enabled", "vm_bubble_x", "vm_bubble_y",
+            "badge_size_dp", "badge_center_x", "badge_center_y", "vm_bubble_enabled", "vm_bubble_hidden", "vm_bubble_x", "vm_bubble_y",
             "bubbleX", "bubbleY",
         ).forEach { put(it, R_CLUSTER) }
         listOf("voicekey_enabled", "voicekey_bindings", "voicekey_custom_buttons").forEach { put(it, R_KEYS) }

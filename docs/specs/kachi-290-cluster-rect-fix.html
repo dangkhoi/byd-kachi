@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.90 · sửa cụm Chữ nhật — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kachi 2.90 · Phần 1 — sửa cụm (theme khi màn ảo trống · bỏ đoán kiểu · bỏ km/h · khung trọn cụm)</h1>
+<p class="muted">Slug: <code>kachi-290-cluster-rect-fix</code> · Branch <code>feat/key-source-split</code> · gốc <code>c558450</code> (2.89 (191) đã đăng) · <span class="pill ok">Owner duyệt kế hoạch 2026-10-06 ("còn lại OK, làm thôi")</span> · Owner: dangkhoi</p>
+<p class="muted">Tuân thủ <code>CLAUDE.md</code> §2–§16 + <code>.kiro/steering/*</code>. Không thư viện mới (chỉ Kotlin/Android SDK + khối có sẵn) ⇒ không cần Context7.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 4 — 2026-10-06</b>: an toàn hiện trường cho R8 (review): "ẩn bóng" KHÔNG còn suy từ <code>vm_bubble_enabled</code> (mặc định TẮT ⇒ người chưa từng bật công tắc mà chạy bản mod mới sẽ mất bóng sau khi nâng cấp — trước 2.90 mod luôn hiện). Khoá mới <code>vm_bubble_hidden</code> (mặc định false, theo hồ sơ, đi kèm mục <code>vm_bubble_enabled</code>): chỉ <code>true</code> khi người lái chủ động TẮT ở 2.90+. Bump 2.90 (192).</li>
+<li><b>Pass 3 — 2026-10-06</b>: owner duyệt hướng "mod tự ẩn": lệnh <code>VM_BUBBLE_VIS</code> (R8), một hàm "dọn cụm / trả cụm" cho cổng theme (R9), công tắc bóng ẩn/hiện thật (R8), và badge giới hạn tốc độ không hiện sáng 06/10 (R10 — gốc là widget VietMap mất liên kết, không phải id display; id display vẫn được làm cứng). §4.4 · §4.5 · T9–T13.</li>
+<li><b>Pass 2 — 2026-10-06</b>: §4.3 "Tắt bóng thật" — nghiên cứu AOSP r47 về appop <code>SYSTEM_ALERT_WINDOW</code> với cửa sổ phủ đang có (ẩn, không gỡ; vẫn có trong <code>dumpsys window windows</code>). Chưa code — owner đang cân nhắc hướng "mod tự ẩn" thay cho appop.</li>
+<li><b>Review Pass 1 — 2026-10-06</b>: senior review — 1 [P2] (trang Cài đặt sống so theo loại trạng thái ⇒ vá <code>statusKey()</code>) + 1 [P3] doc; chi tiết §10.</li>
+<li><b>Pass 1 — 2026-10-06</b>: Code + test xong theo §5 (off-car). Root-cause F7 tìm được bằng test: lambda <code>{ displayId }</code> trong khối khởi tạo coordinator chụp THAM SỐ seed (che thuộc tính) ⇒ vá <code>{ this.displayId }</code> + 3 lớp phòng thủ. §9 ghi chi tiết.</li>
+<li><b>Pass 0b — 2026-10-06</b>: Owner chốt thêm: <i>"cứ để full resolution nhé, nó over thì user họ tự chỉnh được vị trí, kích thước, DPI mà, nên mình không cần tính gì, chừa gì đâu"</i> ⇒ R4 bỏ MỌI phép tính vùng chừa (FREE_AREA · ADAS_PANEL · STRAY_MPH · SPEED_BOX …), khung mặc định = 0,0,1920,720 ở DPI thường cho cả Chữ nhật lẫn ca UNKNOWN.</li>
+<li><b>Pass 0 — 2026-10-06</b>: Khởi tạo từ buổi xe 06/10 (<code>docs/diagnostics/oncar-2026-10-06-cluster-rect.md</code>) — cổng 2.89 không bao giờ gửi theme trên Seal (màn ảo cụm có sẵn từ lúc đầu máy khởi động), kiểu suy từ sổ sai, overlay đen, km/h thừa, khung bị kẹp, id display cũ, trạng thái Cài đặt không tự cập nhật.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Sự thật đo trên xe 06/10 (Seal, DiLink 3.0, fw 2602030, Kachi 2.89 (191)) — chi tiết + mức bằng chứng ở <code>docs/diagnostics/oncar-2026-10-06-cluster-rect.md</code>:</p>
+<table>
+<tr><th>#</th><th>Sự thật</th><th>Mức</th><th>Hệ quả cho 2.89</th></tr>
+<tr><td>F1</td><td>Màn ảo chiếu cụm <code>fission_bg_xdjaVirtualSurface</code> (owner <code>com.xdja.containerservice</code>) có <b>từ lúc đầu máy khởi động</b> (display 4, uptime 15 h)</td><td>[ĐO]</td><td>Cổng mức A (<code>themeOnVacantVd=false</code>) log <code>VD_PRESENT ⇒ SKIP_KNOWN</code> ở MỌI lượt mở ⇒ theme không bao giờ được gửi</td></tr>
+<tr><td>F2</td><td>Theme cụm <b>giữ qua các lần tắt/nổ máy</b> (cong từ hôm trước, đầu máy không khởi động lại)</td><td>[ĐO]</td><td>Giả định F3 của spec 2.89 ("nổ máy trả theme gốc") SAI trên xe này ⇒ suy kiểu từ sổ/boot không tin được</td></tr>
+<tr><td>F3</td><td>2.89 tin RECT (ngoại lệ <code>31;ok</code> của sổ), ghim Maps <code>FULL__RECT 50,128,1285,555</code> trên cụm đang CONG</td><td>[ĐO]</td><td>ClusterBlack đen lộ quanh Maps ("bị overlay đen")</td></tr>
+<tr><td>F4</td><td>Màn ảo 4 có 0 task + 0 cửa sổ ⇒ <code>service call AutoContainer 2 i32 1000 i32 31 s16 ""</code>: KHÔNG sập (pid system_server/surfaceflinger giữ nguyên), màn ảo dựng lại với <b>id mới 4 → 9</b>, rồi 16 → 35 OK, cụm chữ nhật</td><td>[ĐO]</td><td>Mức B (gửi theme khi màn ảo CÒN mà TRỐNG) an toàn; sau khi gửi phải dò lại id</td></tr>
+<tr><td>F5</td><td>Bóng nổi của mod VietMap giữ 3 cửa sổ <code>TYPE_APPLICATION_OVERLAY</code> của <code>vn.vietmap.live</code> trên màn ảo cụm, kể cả khi tắt chiếu</td><td>[ĐO]</td><td>Màn ảo "không trống" mỗi khi VietMap chạy</td></tr>
+<tr><td>F6</td><td>Ở RECT phím menu vô-lăng chỉ thu nhỏ hình xe/đường; nền ADAS trắng vẫn còn</td><td>[ĐO]</td><td>—</td></tr>
+<tr><td>F7</td><td>Mở Kachi ở RECT: bước đọc lại khung hỏi display CŨ — <code>wm size -d 4</code> → <code>Physical size: 0x0</code> ⇒ "lệch … đọc được ?" ⇒ "VẪN lệch"</td><td>[ĐO]</td><td>Id display cũ lọt vào đường đọc/resize sau mở</td></tr>
+<tr><td>F8</td><td>Cài đặt › Chiếu cụm đứng "Đang mở cụm…" sau khi mở xong; <code>refreshStatus()</code> chỉ chạy sau thao tác của người dùng</td><td>[ĐO] + [SUY đọc mã]</td><td>Nút khung/vị trí khoá tới khi mở lại trang</td></tr>
+<tr><td>F9</td><td>Bộ chỉnh khung RECT kẹp vào <code>FREE_AREA</code> mọi hướng — owner: <i>"bị giới hạn cả cao thấp trái phải, kỳ lắm, mở bung ra cho người ta tự set size"</i></td><td>[ĐO]</td><td>—</td></tr>
+</table>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 · Theme khi màn ảo cụm CÒN mà TRỐNG (mức B)</b> — chỉ cho công thức đã đo (Seal <code>car.type=138</code>, service <code>AutoContainer</code>; khác biệt đời xe ở <code>ClusterProfile</code>). Trước opcode theme: gỡ ClusterBlack của chính Kachi trong tiến trình (<code>finishAndRemoveTask</code>), đọc <code>am stack list</code> + <code>dumpsys window windows</code> trên màn ảo cụm.
+  <ul>
+  <li>Chỉ GỬI khi 0 task + 0 cửa sổ trên màn ảo cụm.</li>
+  <li>Còn cửa sổ lạ mà TOÀN BỘ là cửa sổ phủ của một app "bóng nổi" đã biết (bảng dữ liệu, hôm nay <code>vn.vietmap.live</code> → "VietMap") ⇒ BỎ theme với lý do riêng (<code>BUBBLE</code>) và Cài đặt/Chẩn đoán nói rõ: "tắt bóng VietMap rồi Áp ngay". KHÔNG tự force-stop app bên thứ ba.</li>
+  <li>Sau khi gửi: dò lại id màn ảo — chờ id ≠ id trước khi gửi (đổi 4 → 9 [ĐO F4]).</li>
+  <li>Giữ: khoảng 15 s, sổ <code>pending</code>/<code>ok</code>, opcode cấm 17/41, dạng <code>s16 ""</code>.</li>
+  </ul></li>
+<li><b>R2 · Bỏ đoán kiểu</b> — kiểu tin = kiểu mà Kachi đã GỬI và thấy thành công TRONG đời tiến trình này; còn lại UNKNOWN (bỏ ngoại lệ <code>&lt;opcode gốc&gt;;ok</code> bất kể tiến trình, bỏ luật "sổ ghi opcode gốc ⇒ không gửi"). Khung theo kiểu chọn CHỈ khi theme đã xác nhận; UNKNOWN ⇒ khung trọn 0,0,1920,720 và Cài đặt nói "chưa rõ kiểu ⇒ dùng trọn cụm".</li>
+<li><b>R3 · Bỏ hẳn số km/h của Kachi</b> (owner: <i>"ko cần vẽ kmh … HUD, bản đồ, bóng VietMap đều có"</i>): xoá <code>ClusterSpeedReadoutOverlay</code> · <code>SpeedReadoutPolicy</code> + dây nối, chuỗi, test; Chữ nhật không còn phụ thuộc quyền vẽ trên app khác (bỏ <code>withReadout</code>).</li>
+<li><b>R4 · Khung trọn cụm, không chừa gì</b> — mặc định 0,0,1920,720 ở DPI thường cho Chữ nhật (và UNKNOWN); bộ chỉnh −/+ dải 0..W × 0..H mọi hướng; xoá <code>FREE_AREA</code>/<code>ADAS_*</code>/<code>STRAY_MPH</code>/<code>SPEED_BOX</code>. Người dùng tự chỉnh vị trí/kích thước/DPI.</li>
+<li><b>R5 · Không id display cũ</b> — mọi bước đọc/resize/đọc-lại sau mở dùng id cụm dò LIVE; test hồi quy dựng lại <code>wm size -d 4</code> sau khi màn ảo dời sang 9.</li>
+<li><b>R6 · Trạng thái Cài đặt sống</b> — khi trang hiện: nghe thay đổi trạng thái coordinator (gỡ khi rời trang), Idle/Casting ⇒ dựng lại dòng trạng thái + mở khoá nút.</li>
+<li><b>R8 · Bóng VietMap ẩn/hiện bằng lệnh của Kachi</b> (owner 06/10) — hợp đồng cố định với bản mod: broadcast <code>com.byd.clusternav.VM_BUBBLE_VIS</code>, gói tường minh <code>vn.vietmap.live</code>, extra boolean <code>show</code> (<code>true</code> = hiện/gắn lại bóng trên display cụm; <code>false</code> = GỠ mọi cửa sổ phủ do mod quản: bóng chỉ đường, các ô chạm nhỏ của nó, ô lốp, MiMi). <code>VM_BUBBLE_POS</code> giữ nguyên. Bản mod không hỗ trợ thì bỏ qua. Công tắc "Hiện bong bóng VietMap trên cụm": TẮT ⇒ ghi <code>vm_bubble_hidden=true</code>, gửi <code>show=false</code> và giữ ẩn (gửi lại khi VietMap được Kachi mở/tự mở, khi mở chiếu, ở nhịp làm tươi, khi áp lại hồ sơ); BẬT ⇒ <code>vm_bubble_hidden=false</code>, <code>show=true</code> + tự mở VietMap như cũ. <b>Pass 4 (an toàn hiện trường):</b> giá trị gửi = <code>¬vm_bubble_hidden ∧ ¬đang dọn</code>; <code>vm_bubble_hidden</code> mặc định <code>false</code> ⇒ người chưa từng chạm công tắc ở 2.90+ vẫn thấy bóng như trước 2.90. <code>vm_bubble_enabled</code> giữ nghĩa cũ (tự mở VietMap). Khoá mới theo hồ sơ như <code>vm_bubble_enabled</code> (khai ở <code>SettingsCatalogClusterNav</code> KEYS + COMPANION, <code>ProfileScopeCluster</code> kiểu BOOLEAN, <code>ProfileSharePolicy</code> nhóm cụm). <code>AppPrereqs</code> giữ cấp quyền vẽ nổi khi BẬT — KHÔNG dùng appop để ẩn (§4.3).</li>
+<li><b>R9 · Một hàm "dọn cụm / trả cụm"</b> cho lượt đổi theme: DỌN = gỡ lớp phủ của chính Kachi trên màn ảo cụm (badge tốc độ trong tiến trình; camera không bị gỡ giữa phiên — xem §4.4; ClusterBlack bằng đường gỡ trong tiến trình có sẵn) + <code>VM_BUBBLE_VIS show=false</code> nếu VietMap có cài; rồi đọc lại (<code>am stack list</code> + <code>dumpsys window windows</code>) có trần; luật gửi theme KHÔNG đổi (chỉ gửi khi 0 task + 0 cửa sổ). TRẢ (LUÔN chạy, cả khi hỏng/bỏ) = dò lại id cụm sống, gắn lại lớp của Kachi trên id MỚI, <code>show=true</code> chỉ khi công tắc bóng BẬT. Bóng không biến mất sau lệnh ẩn (mod cũ) ⇒ vẫn bỏ theme lý do <code>BUBBLE</code>, Cài đặt nói "bản mod VietMap cũ chưa hỗ trợ ẩn bóng — tắt VietMap rồi Áp ngay".</li>
+<li><b>R10 · Badge giới hạn tốc độ</b> (owner: <i>"sáng nay ko thấy hiện đâu, chắc tìm sai display ID"</i>) — tìm gốc bằng log thật; display của badge = id cụm sống (cùng nguồn với cổng theme), theo kịp màn ảo dựng lại (gắn lại khi id đổi), không bao giờ hằng <code>1</code>, không bao giờ VD ô của Kachi; test hồi quy dựng từ dòng log.</li>
+<li><b>R7 · Docs</b> — backlog · INDEX · <code>project-context.md</code> (màn ảo có từ lúc khởi động; theme giữ qua nổ máy; gửi theme khi màn ảo trống an toàn [ĐO 06/10]) + chẩn đoán mới.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Đường cũ không đổi thứ tự (CLAUDE.md §6): Bo tròn có theme xác nhận vẫn đúng khoá/khung cũ; DL5 (không opcode kiểu) không đổi hành vi.</li>
+<li>R-nf2. Không chừa đường gửi theme mù: mọi nhánh "không chắc" ⇒ KHÔNG gửi.</li>
+<li>R-nf3. Kotlin ≤ 500 dòng/tệp; hàm mới có call site production; không bump version (owner bump sau).</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Lượt mở chiếu (Seal 138)</h3>
+<div class="flow">
+  <div class="fnode"><b>Dò cụm</b><span>dumpsys display → id A</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Dọn task lạ</b><span>cleanDisplay (có sẵn)</span></div><div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Cổng mức B</b><span>stack + windows trên A</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Chỉ ClusterBlack?</b><span>gỡ trong tiến trình → đọc lại</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>0 task · 0 cửa sổ</b><span>gửi 30/31 → 16 → 35</span></div><div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Dò id MỚI</b><span>chờ id ≠ A</span></div>
+</div>
+<div class="flow">
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Chỉ cửa sổ bóng nổi đã biết</b><span>Reason.BUBBLE</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Bỏ theme</b><span>16 → 35 đi tiếp</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Kiểu UNKNOWN</b><span>khung trọn cụm</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Cài đặt</b><span>"tắt bóng VietMap rồi Áp ngay"</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--card)"></span> khối có sẵn</span><span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới / đổi</span></div>
+
+<h3>4.2 Quyết định</h3>
+<ul>
+<li><b>Mức B bật theo đời xe</b>: <code>ClusterProfile.forCarType</code> đặt <code>themeOnVacantVd = true</code> khi <code>car.type ∈ VACANT_VD_THEME_CAR_TYPES = {138}</code> VÀ service = <code>AutoContainer</code> (đúng tổ hợp đo F4). Không vào chuỗi export (dữ liệu share không được bật đường đổi theme).</li>
+<li><b>Lý do BUBBLE</b>: <code>ClusterThemePlan.decide</code> — có cửa sổ lạ, 0 task lạ, mọi cửa sổ lạ có tên = gói trần thuộc <code>ClusterBubbleApps.KNOWN</code> (bảng gói→nhãn) ⇒ <code>Skip(BUBBLE, apps)</code>. Lời đáp như FOREIGN (màn ảo có từ trước ⇒ SKIP_KNOWN). Cổng lưu <code>lastBlockers</code> (nhãn app) cho Cài đặt; xoá khi lượt sau không bị chặn.</li>
+<li><b>Thứ tự gỡ ClusterBlack</b>: giữ luật 2.89 "lạ trước, gỡ sau" — có cửa sổ lạ ⇒ bỏ theme mà KHÔNG gỡ ClusterBlack (đằng nào cũng không gửi, khỏi 1 lệnh ghi). Chỉ còn ClusterBlack ⇒ gỡ trong tiến trình rồi đọc lại tới khi trống (≤ 4 × 250 ms); còn sót ⇒ STILL_OCCUPIED, không gửi.</li>
+<li><b>Dò id mới sau khi gửi</b>: <code>ClusterDisplayResolver.awaitAndPersist(exclude = A)</code> — bỏ qua id A tới hết lượt chờ (12 × 500 ms); hết lượt mà vẫn chỉ thấy A ⇒ nhận A + log [CHƯA BIẾT] (màn ảo không dựng lại ⇒ A vẫn là cụm), không đóng chiếu.</li>
+<li><b>Kiểu tin</b>: <code>ThemeLedger.believed</code> chỉ còn "<code>ok</code> do chính tiến trình này ghi". <code>ClusterStylePlan.wanted</code> luôn xin opcode của kiểu áp được; trùng thì cổng đỡ bằng dấu RAM <code>SAME_THEME</code>.</li>
+<li><b>Khung UNKNOWN</b>: <code>CastSessionStyle.fullFrame = (đời xe có opcode kiểu) ∧ believed = UNKNOWN</code>. Khi đó khoá lưu = khoá Bo tròn cũ, bản ghim FULL = trọn cụm, ô chia đôi = nửa của trọn cụm (bỏ khung đã lưu), DPI đã lưu giữ nguyên. DL5 (không opcode) không bị ảnh hưởng.</li>
+<li><b>Id cụm cũ (R5)</b> — ba lớp, đều generic:
+  <ol>
+  <li>Dò: nhiều màn ảo cụm CÙNG tên (màn cũ chưa gỡ + màn mới) ⇒ lấy id LỚN nhất (id display không tái dùng — AOSP <code>DisplayManagerService</code> tăng dần); tên khác nhau ⇒ giữ thứ tự cũ (DL5 có nhiều màn fission tên khác — không đổi).</li>
+  <li>Sau gửi theme: loại id trước khi gửi (ở trên).</li>
+  <li>Tầng thi hành: <code>wm size -d N</code> trả <code>0x0</code> ⇒ display N đã mất ⇒ dò lại một lần, lượt resize/đọc lại chạy trên id mới. Tra task theo id sống (bỏ ưu tiên <code>prefs.lastDisplayId()</code> — giá trị bền của tiến trình trước).</li>
+  </ol>
+  <b>Gốc [ĐO test]</b> (tìm khi code): <code>SimpleCastCoordinator</code> dựng <code>CastGeometryController(shell, prefs, { displayId })</code> trong khối khởi tạo, nơi <code>displayId</code> là THAM SỐ dựng (seed = <code>prefs.lastDisplayId</code>) che thuộc tính ⇒ bộ đo kích + đọc-lại khung chụp seed mãi mãi. Vá: <code>{ this.displayId }</code>. Ba lớp trên giữ làm phòng thủ.</li>
+<li><b>Trạng thái Cài đặt sống</b>: <code>SettingsCastSection</code> gắn <code>View.OnAttachStateChangeListener</code> vào dòng trạng thái; attach ⇒ <code>bridge.observeCastState</code> (coordinator <code>addStateListener</code>), detach ⇒ gỡ. Nghe ⇒ <code>post</code> lên luồng chính, chỉ dựng lại khi LOẠI trạng thái đổi.</li>
+<li><b>Xoá km/h</b>: xoá lớp + chính sách + latch của cổng + <code>sessionDisplayId</code> (chỉ phục vụ lớp km/h).</li>
+</ul>
+
+<h3>4.3 Tắt bóng thật (VM-BUBBLE-TOGGLE) — nghiên cứu, CHƯA triển khai</h3>
+<p class="muted">2026-10-06. Owner: <i>"nếu nút tắt (bỏ tick chọn bóng trên cụm) mà không work thì phải làm cho nó work"</i>, sau đó hỏi lại: <i>"sao phải tắt quyền? chỉ cần hiện/không hiện overlay trên cụm"</i> ⇒ <b>chưa code</b>, chỉ ghi nghiên cứu để owner chọn hướng. Nguồn: AOSP <code>android-10.0.0_r47</code> fetch 06/10 từ <code>android.googlesource.com</code>, đường <code>services/core/java/com/android/server/wm/</code> trừ khi ghi khác.</p>
+<p><b>Hiện trạng [ĐO mã]</b>: <code>ClusterNavBridge.setVmBubbleEnabled</code> — BẬT chỉ tự mở VietMap; TẮT không làm gì. 2.89 <code>AppPrereqPlan</code> chỉ cấp <code>SYSTEM_ALERT_WINDOW allow</code> khi công tắc BẬT (<code>Role.BUBBLE</code>), lượt trả lại dùng <code>appops set … default</code>.</p>
+<table>
+<tr><th>Câu hỏi</th><th>Trả lời</th><th>Trích dẫn (r47)</th><th>Mức</th></tr>
+<tr><td>Đổi chế độ op có tới WM không?</td><td>Có — WM nghe <code>OP_SYSTEM_ALERT_WINDOW</code> + <code>OP_TOAST_WINDOW</code> cho mọi gói, mỗi lần đổi duyệt MỌI cửa sổ</td><td><code>WindowManagerService.java:1083-1090</code> → <code>:1846-1850</code> → <code>RootWindowContainer.java:444-448</code></td><td>[ĐO nguồn]</td></tr>
+<tr><td><code>ignore</code>/<code>deny</code> làm gì với cửa sổ ĐANG CÓ?</td><td><b>ẨN, không gỡ</b>: <code>checkOpNoThrow</code> ≠ <code>MODE_ALLOWED</code> và ≠ <code>MODE_DEFAULT</code> ⇒ <code>finishOp</code> + <code>setAppOpVisibilityLw(false)</code> ⇒ <code>hideLw</code> (xoá cờ hiển thị chính sách). Không có lời gọi <code>removeWindow</code>/<code>removeIfPossible</code> nào trên đường này; app không được báo.</td><td><code>WindowState.java:2760-2780</code> · <code>:2722-2737</code> · <code>hideLw</code> <code>:2648-2688</code></td><td>[ĐO nguồn]</td></tr>
+<tr><td>Mặt phủ (layer) còn không?</td><td><b>Còn</b>: lượt vẽ kế thấy <code>!isOnScreen()</code> (vì <code>!isVisibleByPolicy()</code>) ⇒ <code>WindowStateAnimator.hide()</code> ⇒ <code>WindowSurfaceController.hide</code> (giao dịch <code>hide</code>) — không destroy surface</td><td><code>WindowState.java:1534-1544</code> · <code>WindowStateAnimator.java:1092-1094</code> · <code>:282-296</code></td><td>[ĐO nguồn]</td></tr>
+<tr><td><code>dumpsys window windows</code> còn liệt kê?</td><td><b>Còn</b> — in mọi cửa sổ của cây (<code>forAllWindows</code>, không lọc hiển thị), cửa sổ ẩn có thêm dòng <code>mAppOpVisibility=false</code>; <code>mDisplayId=</code> vẫn là màn ảo cụm ⇒ cổng theme vẫn đếm 3 cửa sổ</td><td><code>WindowManagerService.java:5971-5979</code> → <code>RootWindowContainer.java:1022-1031</code> · <code>WindowState.java:3525-3533</code></td><td>[ĐO nguồn] · trên xe [CHƯA ĐO]</td></tr>
+<tr><td>Cho lại (<code>allow</code>)?</td><td>Cùng nhánh: <code>startOpNoThrow</code> = ALLOWED/DEFAULT ⇒ <code>setAppOpVisibilityLw(true)</code> ⇒ <code>showLw</code> ⇒ cửa sổ cũ hiện lại ngay, app không phải làm gì</td><td><code>WindowState.java:2775-2779</code> · <code>:2726-2734</code></td><td>[ĐO nguồn]</td></tr>
+<tr><td><code>default</code> có ẩn được không?</td><td><b>Không</b> — WM coi <code>MODE_DEFAULT</code> = thấy cho cửa sổ đang có ⇒ lệnh trả 2.89 (<code>appops set … default</code>) không bao giờ làm bóng đang chạy biến mất (chỉ chặn cửa sổ MỚI nếu app không có quyền)</td><td><code>WindowState.java:2769-2770</code> · <code>PhoneWindowManager.java:2170-2174</code> (<code>services/core/java/com/android/server/policy/</code>)</td><td>[ĐO nguồn]</td></tr>
+<tr><td><code>ignore</code> hay <code>deny</code>?</td><td><code>ignore</code>: cửa sổ MỚI vẫn <code>ADD_OKAY</code> rồi bị ẩn ngay khi thêm. <code>deny</code> (<code>MODE_ERRORED</code>, targetSdk ≥ M) ⇒ <code>ADD_PERMISSION_DENIED</code> ⇒ <code>ViewRootImpl.setView</code> NÉM <code>BadTokenException</code> ⇒ có thể làm sập VietMap. Nếu đi đường appop thì chỉ <code>ignore</code>.</td><td><code>PhoneWindowManager.java:2157-2169</code> · <code>WindowManagerService.java:1496</code> → <code>WindowState.java:2739-2752</code> · <code>core/java/android/view/ViewRootImpl.java:930-933</code></td><td>[ĐO nguồn]</td></tr>
+<tr><td>Uid mode đè?</td><td><code>appops set &lt;gói&gt;</code> đặt chế độ GÓI; nếu gói có chế độ UID cho op này thì uid thắng ⇒ lệnh ẩn không ăn (đọc lại sẽ lộ)</td><td><code>services/core/java/com/android/server/appop/AppOpsService.java:1862-1866</code> (đã trích ở <code>OverlayOpRead</code>)</td><td>[ĐO nguồn]</td></tr>
+</table>
+<div class="card">
+<p><b>Kết luận cho cổng theme</b> [ĐO nguồn]: ẩn bằng appop chỉ làm bóng <b>vô hình với người lái</b>; 3 <code>WindowState</code> + 3 layer vẫn nằm trên màn ảo cụm và vẫn có trong <code>dumpsys window windows</code> ⇒ luật chặt "0 task + 0 cửa sổ" KHÔNG thoả ⇒ <b>không nới cổng</b>; lý do <code>BUBBLE</code> giữ nguyên. Đổi kiểu cụm khi VietMap đang chạy cần MỘT trong hai: VietMap dừng (cửa sổ bị gỡ thật), hoặc một phép đo trên xe chứng minh layer ẩn an toàn khi màn ảo dựng lại (hai lần sập 05/10 đều có lớp trên màn ảo — memory "thấy sập lần đầu là dừng").</p>
+<p><b>🚗 Phép đo 1 bước (chưa làm, cần owner duyệt vì đổi trạng thái cụm)</b> — VietMap chạy, bóng trên cụm, màn ảo cụm id N, 0 task trên N:
+<code>appops set vn.vietmap.live SYSTEM_ALERT_WINDOW ignore; dumpsys window windows | grep -E 'Window #|mDisplayId=|mAppOpVisibility'; pidof system_server surfaceflinger; service call AutoContainer 2 i32 1000 i32 31 s16 ""; sleep 3; pidof system_server surfaceflinger; dumpsys display | grep -E 'Display [0-9]+:|fission'; appops set vn.vietmap.live SYSTEM_ALERT_WINDOW allow</code>.
+Xanh = cửa sổ hiện <code>mAppOpVisibility=false</code> trên N, pid không đổi, màn ảo dựng lại id mới. Pid đổi ⇒ dừng, không thử lại.</p>
+</div>
+<p><b>Hướng owner gợi ý — "chỉ hiện/không hiện overlay trên cụm", không đụng quyền</b>: cửa sổ là của tiến trình VietMap; ngoài appop (và force-stop, đã loại) Kachi không có API nào ẩn/gỡ cửa sổ của app khác [SUY từ nguồn — <code>WindowManagerService.removeWindow</code> chỉ nhận <code>Session</code> của chính chủ]. Đường không-quyền duy nhất là <b>mod VietMap tự gỡ bóng</b> khi nhận tín hiệu: Kachi đã có kênh broadcast <code>com.byd.clusternav.VM_BUBBLE_POS</code> (<code>VmOverlayPosition.send</code>, chỉ mang <code>x</code>/<code>y</code>; phía mod gọi <code>b.E(x,y)</code> → <code>updateViewLayout</code>). Mod có nhận lệnh ẩn/hiện nào không: [CHƯA BIẾT] — chốt bằng đọc receiver của bản mod đang cài (smali <code>vn.vietmap.live</code> bản trên xe; bản <code>VIETMAP_LIVE_3.0.0_fixGPS</code> trong <code>apk-ref/</code> không chứa <code>VM_BUBBLE_POS</code> ⇒ không phải bản mod). Nếu mod <code>removeView</code> khi tắt thì đó là cách DUY NHẤT vừa đúng ý owner vừa làm trống màn ảo cụm (khi đó cổng theme tự cho gửi, không cần nới).</p>
+<p class="muted">Code thử đường appop đã gỡ khỏi cây theo yêu cầu (chưa có thay đổi mã nào cho mục này).</p>
+
+<h3>4.4 Dọn cụm / trả cụm (R8 · R9) — triển khai Pass 3</h3>
+<div class="flow">
+  <div class="fnode"><b>Cổng theme</b><span>đọc display + stack + cửa sổ</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>FOREIGN/BUBBLE?</b><span>0 task lạ · cửa sổ lạ chỉ là<br>lớp Kachi + bóng đã biết</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>DỌN</b><span>badge tạm gỡ · VM_BUBBLE_VIS false</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Đọc lại ≤ 6×250 ms</b><span>tới khi sạch</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Quyết lại</b><span>luật cũ: 0 task + 0 cửa sổ</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>TRẢ (finally)</b><span>id cụm MỚI · badge gắn lại · show = ¬vm_bubble_hidden</span></div>
+</div>
+<ul>
+<li><b>Thuần ở <code>:core</code></b> — <code>ClusterLayerPause</code>: <code>pausable(tasks, windows, vds, selfPkg)</code> trả <code>Pause</code> chỉ khi 0 task lạ và MỌI cửa sổ lạ trên màn ảo cụm hoặc là cửa sổ phủ của Kachi (tên = gói trần của Kachi) hoặc của app bóng nổi đã biết (<code>ClusterBubbleApps</code>); còn lại <code>null</code> ⇒ luật cũ (FOREIGN). <code>cleared(…)</code> = không còn task/cửa sổ nào ngoài placeholder. <code>resume(liveId, hiddenByUser, installed)</code> ⇒ id gắn lại + giá trị <code>show</code> cần gửi (<code>null</code> = VietMap không cài). <code>bubbleWanted(hiddenByUser, paused) = ¬hiddenByUser ∧ ¬paused</code> (Pass 4 — trước là <code>toggleOn ∧ ¬paused</code>). Cổng <code>ClusterLayerPort</code> (giao diện) do <code>:app</code> cấp.</li>
+<li><b>Tên cửa sổ phủ</b> [ĐO nguồn r47] <code>WindowState.getWindowTag()</code> <code>:3629-3635</code>: tiêu đề rỗng ⇒ <code>mAttrs.packageName</code>; <code>toString()</code> <code>:3638-3646</code> in <code>Window{… u0 &lt;tag&gt;}</code> ⇒ badge của Kachi (không đặt tiêu đề) hiện là <code>Window{… u0 &lt;gói Kachi&gt;}</code>, cùng dạng với bóng VietMap [ĐO dump 14/09]. Trước Pass 3, chính badge của Kachi trên cụm làm cổng ra <code>FOREIGN</code> [SUY đọc mã — chưa thấy trên xe vì badge chưa từng gắn trong log 06/10].</li>
+<li><b>Bộ thi hành</b> — <code>ClusterThemeGuard.admit</code>: lượt đọc đầu ra FOREIGN/BUBBLE mà <code>pausable</code> ≠ null ⇒ DỌN (một lần mỗi lượt mở) ⇒ đọc lại tới khi <code>cleared</code> (trần <code>PAUSE_READS</code>=6 × 250 ms) ⇒ quyết lại TOÀN BỘ từ bản đọc mới (gồm nhánh gỡ ClusterBlack trong tiến trình). Còn <code>BUBBLE</code> sau DỌN ⇒ <code>lastBubbleOldMod = true</code> (Cài đặt). <code>resumeLayers(liveId)</code> idempotent; <code>SimpleCastCoordinator.openProjection</code> gọi trong <code>finally</code> với id dò SAU khi mở (lượt hỏng/bỏ cũng trả). [CHƯA BIẾT] mod gỡ bóng mất bao lâu — quá 1,5 s thì lượt đó coi như mod cũ (an toàn: không gửi theme).</li>
+<li><b>Bốn câu §4</b> cho DỌN: (1) display — chỉ màn ảo cụm dò bằng <code>DETECT_CMD</code>; badge gỡ trong tiến trình (<code>removeView</code> trên WM của nó), không lệnh <code>am</code>/<code>wm</code> nào; (2) app — chỉ cửa sổ của chính Kachi + broadcast tường minh tới <code>vn.vietmap.live</code>; (3) loại — không đụng stack nào ngoài đường gỡ ClusterBlack có sẵn; (4) hoàn tác — TRẢ trong <code>finally</code>; tiến trình chết giữa chừng ⇒ badge dựng lại khi tiến trình mới khởi động (cờ tạm gỡ chỉ trong RAM, mặc định "không tạm gỡ"), bóng: lượt khởi động/nhịp làm tươi gửi lại <code>show</code> theo công tắc (state bền = prefs công tắc, không có cờ "đang ẩn" bền nào — CLAUDE.md §5).</li>
+<li><b>Camera trên cụm</b> — KHÔNG gỡ giữa phiên: <code>CameraSignalController</code> bắt buộc "HAL trước, cửa sổ sau" (<code>CameraSignalController.kt:431-443</code>); gỡ cửa sổ sau lưng nó là phá thứ tự ⇒ camera đang trên cụm ⇒ cửa sổ Kachi còn ⇒ FOREIGN ⇒ bỏ theme (hướng an toàn). Trong lúc tạm gỡ, camera MỚI mở rơi về màn chính. Display cụm của camera dùng cùng bộ chọn với badge (bản cũ rơi về <code>dm.displays.firstOrNull{id≠0}</code> — có thể là VD ô của Kachi).</li>
+<li><b>Công tắc bóng</b> — <code>VmBubbleVisibility</code> (<code>:app</code>): <code>apply(force)</code> gửi <code>show = bubbleWanted(vm_bubble_hidden, đang dọn)</code> khi VietMap có cài; cùng giá trị chỉ gửi lại sau 15 s (<code>ResendGate</code>), <code>force</code> bỏ cổng. Gọi ở: đổi công tắc (force), cuối <code>VietMapAutostart.runNow</code> (force — VietMap vừa được mở), TRẢ cụm (force), nhịp 2 s <code>FloatingBubbleService</code>, áp lại hồ sơ. KHÔNG gate theo Cast ON (bóng nằm trên cụm cả khi tắt chiếu [ĐO F5]).</li>
+</ul>
+
+<h3>4.5 Badge giới hạn tốc độ không hiện (R10) — gốc</h3>
+<table>
+<tr><th>Sự thật</th><th>Nguồn</th><th>Mức</th></tr>
+<tr><td>Overlay badge khởi tạo đúng màn ảo cụm: <code>overlay initialized for display 4 (1920x720)</code> lúc 07:05:19 và 07:12:01 (display 4 = <code>fission_bg_xdjaVirtualSurface</code>)</td><td><code>usage-all.log</code></td><td>[ĐO]</td></tr>
+<tr><td>Từ 07:05 tới 07:52 (đang dẫn đường — <code>NavListener nav dist=…</code> liên tục) <b>không có một dòng <code>ClusterSpeedBadge show</code> nào</b>; chỉ <code>hide gen=1 reason=PROCESS_RESTARTED</code> ⇒ badge không bao giờ nhận được giá trị nào để vẽ</td><td><code>usage-all.log</code> · <code>ClusterSpeedBadgePort.kt:34-35</code></td><td>[ĐO]</td></tr>
+<tr><td>Cả ba widget VietMap: <code>getAppWidgetInfo(38|39|40) returned null for SPEED_LIMIT|ALERTS|ALERT_FULL — keeping saved ID</code> ở cả hai lần khởi động tiến trình</td><td><code>usage-all.log</code> dòng 83-85, 3961-3963</td><td>[ĐO]</td></tr>
+<tr><td><code>getAppWidgetInfo</code> trả <code>null</code> khi widget không còn (<code>lookupWidgetLocked</code> = null) hoặc provider null/zombie; <code>getInstalledProviders</code> loại provider zombie ⇒ provider CÓ trong danh sách cài mà id trả null ⇒ widget đã bị xoá. Gỡ hẳn gói (không phải cập nhật) xoá mọi widget của provider</td><td>r47 <code>AppWidgetServiceImpl.java:1410-1417</code> · <code>:1725</code> · <code>:452-462</code> → <code>:3445</code> → <code>:3430-3442</code> → <code>:2312-2317</code> → <code>:2293-2310</code></td><td>[ĐO nguồn]</td></tr>
+<tr><td>Kachi giữ id chết mãi: <code>restoreBoundViews</code> "keeping saved ID", <code>autoBindMissing</code> bỏ qua ô đã có id ⇒ không dựng <code>AppWidgetHostView</code> ⇒ không có RemoteViews ⇒ <code>speedFreshness</code> không bao giờ FRESH ⇒ không <code>onSpeedLimit</code> ⇒ không <code>show</code>. Tự khoá vĩnh viễn (CLAUDE.md §3 rule đi kèm)</td><td><code>VietMapWidgetBridge.kt:308-379</code> · <code>NavSpeedLimitPusher.kt</code></td><td>[ĐO mã]</td></tr>
+<tr><td>Widget mất vì bản mod VietMap được cài lại kiểu gỡ-rồi-cài (chữ ký mod khác) — <code>PACKAGE_ADDED vn.vietmap.live</code> lúc 07:54:56</td><td><code>live-kachi.txt</code></td><td>[ĐOÁN] — chưa thấy lượt gỡ trong log</td></tr>
+<tr><td>Id display: không phải gốc sáng 06/10. Nhưng mã cũ thử <code>getDisplay(1)</code> TRƯỚC — [ĐO xe 15/09 + máy ảo 05/10] sau khởi động nguội display 1 = <code>kachi-slot-0</code> (VD ô của Kachi, <code>FLAG_PRIVATE</code> — Kachi thấy được vì là chủ: r47 <code>DisplayManagerService.java:584-601</code>, <code>DisplayInfo.java:590-592</code>) ⇒ badge sẽ lên ô màn chính. Và màn ảo dựng lại (4 → 9) khi VD mới đến TRƯỚC khi VD cũ bị gỡ: <code>onDisplayAdded(9)</code> bị bỏ (<code>clusterWm != null</code>), <code>onDisplayRemoved(4)</code> gỡ ⇒ không gắn lại tới giá trị kế</td><td><code>SpeedBadgeOverlay.kt</code> (cũ) :104 · :139</td><td>[ĐO mã] · thứ tự thêm/gỡ [CHƯA BIẾT]</td></tr>
+</table>
+<ul>
+<li><b>Sửa widget</b> — <code>VietMapWidgetRestorePlan.decide</code> (<code>:core</code>, thuần): info null ∧ provider CÓ trong danh sách cài ⇒ <code>DROP_REBIND</code> (xoá id, xoá prefs, <code>autoBindMissing</code> bind lại — cần quyền bind đã cấp; không có ⇒ Chẩn đoán widget như cũ); info null ∧ provider vắng ⇒ <code>KEEP_WAIT</code> (đang cài/zombie lúc khởi động — giữ hành vi cũ); provider lệch ⇒ <code>DROP_MISMATCH</code>; còn lại <code>ATTACH</code>. Gói VietMap <code>ADDED/REPLACED</code> trong lúc nghe ⇒ chạy lại restore + autobind (bản cũ chỉ phát lại snapshot).</li>
+<li><b>Sửa display</b> — <code>ClusterOverlayDisplay.pick</code> (<code>:core</code>, thuần) trên danh sách <code>DisplayManager.getDisplays()</code>: loại id 0 và mọi display <code>FLAG_PRIVATE</code> (VD ô của Kachi); ưu tiên id cụm sống do coordinator công bố (<code>onCastDisplay</code> — cùng lượt dò với cổng theme) nếu còn trong danh sách; không có ⇒ cùng luật tên với <code>DisplayParse.clusterDisplayId</code> (chứa <code>fission</code>/<code>xdja</code>) + id lớn nhất cùng tên (<code>newestSameName</code>); không có nữa ⇒ display <code>PRESENTATION</code> không riêng tư đầu tiên (máy ảo). Không hằng <code>1</code>. <code>SpeedBadgeOverlay</code> chọn lại ở mọi <code>onDisplayAdded/Removed</code> và khi id cụm công bố đổi: id chọn ≠ id đang gắn ⇒ gỡ + gắn lại trên id mới + phát lại giá trị cuối.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>Mức B + BUBBLE + dò id mới sau gửi</td><td><code>ClusterThemePlan.kt</code> · <code>ClusterThemeGuard.kt</code> · <code>ClusterBubbleApps.kt</code> (mới) · <code>ClusterDisplayResolver.kt</code> · <code>SimpleCastCoordinator*.kt</code> · <code>ClusterProfile.kt</code></td></tr>
+<tr><td>T2</td><td>Bỏ đoán kiểu, UNKNOWN ⇒ trọn cụm</td><td><code>ThemeLedger.kt</code> · <code>ClusterStylePlan.kt</code> · <code>ClusterRectLayout.kt</code>(<code>CastSessionStyle</code>) · <code>CastSessionPin.kt</code></td></tr>
+<tr><td>T3</td><td>Xoá km/h</td><td><code>ClusterSpeedReadoutOverlay.kt</code> · <code>SpeedReadoutPolicy.kt</code> (+Test) · <code>FloatingBubbleService.kt</code> · <code>SimpleCastRuntime.kt</code> · <code>ClusterNavBridgeCastStyle.kt</code> · strings ×5</td></tr>
+<tr><td>T4</td><td>Khung trọn cụm, bỏ vùng chừa</td><td><code>ClusterRectLayout.kt</code> · <code>ClusterNavBridgeGeometry.kt</code> · <code>CastGeometryGuard.kt</code></td></tr>
+<tr><td>T5</td><td>Id cụm sống + test hồi quy 4 → 9</td><td><code>ClusterDisplayResolver.kt</code> · <code>DisplayParse.kt</code> · <code>CastGeometryController.kt</code> · <code>ClusterRectStaleDisplayTest.kt</code></td></tr>
+<tr><td>T6</td><td>Trạng thái Cài đặt sống</td><td><code>SettingsSectionsCast.kt</code> · <code>ClusterNavBridgeCast*.kt</code></td></tr>
+<tr><td>T7</td><td>Docs</td><td>chẩn đoán 06/10 · <code>PROJECT-BACKLOG.md</code> · <code>docs/README.md</code> · <code>project-context.md</code></td></tr>
+<tr><td>T8</td><td>Full test 5 module + lint + assembleRelease; grep call site</td><td>—</td></tr>
+<tr><td>T9</td><td>Kế hoạch dọn/trả thuần + cổng</td><td><code>ClusterLayerPause.kt</code> (mới) · <code>ClusterLayerPauseTest.kt</code> (mới)</td></tr>
+<tr><td>T10</td><td>Nối vào cổng theme + coordinator + Cài đặt</td><td><code>ClusterThemeGuard.kt</code> · <code>SimpleCastCoordinator.kt</code> · <code>CastStyleSessionOps.kt</code> · <code>SimpleCastRuntime.kt</code> · <code>ClusterLayerExecutor.kt</code> (mới, <code>:app</code>) · <code>SettingsSectionsCastStyle.kt</code> · strings ×5</td></tr>
+<tr><td>T11</td><td>Lệnh ẩn/hiện bóng + công tắc</td><td><code>VmBubbleVisibility.kt</code> (mới) · <code>ClusterNavBridge.kt</code> · <code>VietMapAutostart.kt</code> · <code>FloatingBubbleService.kt</code> · <code>ClusterNavBridgeReapply.kt</code></td></tr>
+<tr><td>T12</td><td>Badge: display cụm sống + widget tự lành</td><td><code>ClusterOverlayDisplay.kt</code> (mới, core) · <code>ClusterOverlayDisplays.kt</code> (mới, app) · <code>SpeedBadgeOverlay.kt</code> · <code>CameraOverlayView.kt</code> · <code>VietMapWidgetRestorePlan.kt</code> (mới) · <code>VietMapWidgetBridge.kt</code></td></tr>
+<tr><td>T13</td><td>Test hồi quy (dòng log 06/10) + hợp đồng nối dây + docs</td><td><code>ClusterOverlayDisplayTest</code> · <code>VietMapWidgetRestorePlanTest</code> · <code>ClusterThemeLayerPauseTest</code> · <code>ClusterLayerWiringContractTest</code> · backlog · INDEX · project-context</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: <code>:core:test</code> · <code>:app:testDebugUnitTest</code> · <code>:app:testVehicleTestUnitTest</code> · <code>:car-integration:test</code> · <code>:offcar-planner:test</code> xanh; khoá bằng: <code>ClusterThemeBubbleTest</code> (dạng cửa sổ VietMap 06/10), <code>ClusterRectStaleDisplayTest</code> (4 → 9, đã thử ĐỎ trên mã cũ), <code>ClusterRectStaleDisplayTest</code> ca mức B (gửi khi trống, id mới) · <code>CastStatusKeyTest</code> (trang sống), <code>ThemeLedgerTest</code>/<code>ClusterStylePlanTest</code> (không suy kiểu khác tiến trình), <code>CastRectFrameKeyTest</code> (khung trọn cụm).</li>
+<li>V-unit Pass 3: <code>ClusterLayerPauseTest</code> (luật dọn/trả), <code>ClusterThemeLayerPauseTest</code> (cổng: badge Kachi + bóng VietMap biến mất ⇒ SEND; bóng còn ⇒ BUBBLE + mod cũ; trả chạy cả khi bỏ), <code>ClusterOverlayDisplayTest</code> (display 06/10: 0 · 4 fission · 8 kachi-slot private ⇒ 4; 4 → 9 ⇒ 9; display 1 = kachi-slot ⇒ không bao giờ 1), <code>VietMapWidgetRestorePlanTest</code> (dòng log 38/39/40 null + provider có ⇒ bind lại), <code>ClusterLayerWiringContractTest</code> (call site).</li>
+<li>V-oncar 🚗 Pass 3 (cần bản mod có receiver <code>VM_BUBBLE_VIS</code>): (e) VietMap chạy, bóng trên cụm, bấm Chữ nhật → Áp ngay: log <code>dọn cụm: … VM_BUBBLE_VIS show=false</code> → <code>theme 31 … SEND</code> → <code>cluster display: 4 → 9</code> → <code>trả cụm: id=9 … show=true</code>; bóng + badge hiện lại trên cụm mới; pid <code>system_server</code>/<code>surfaceflinger</code> không đổi; (f) công tắc bóng TẮT ⇒ <code>dumpsys window windows | grep -c 'u0 vn.vietmap.live}'</code> trên id cụm = 0, mở/tắt chiếu vẫn 0; BẬT ⇒ bóng hiện lại; (g) badge: log <code>auto-bound SPEED_LIMIT</code> (hoặc <code>widget … đã mất ⇒ bind lại</code>) rồi <code>ClusterSpeedBadge show N km/h</code> và badge nhìn thấy trên cụm; sau đổi theme log <code>overlay initialized for display 9</code>; (h) bản mod cũ: Cài đặt nói "bản mod VietMap cũ chưa hỗ trợ ẩn bóng — tắt VietMap rồi Áp ngay".</li>
+<li>V-oncar 🚗 (buổi xe kế, chưa làm): (a) VietMap tắt hẳn + Kachi tắt chiếu → bật chiếu Chữ nhật: log <code>theme 31 … SEND</code>, <code>cluster display: 4 → 9</code>, không sập (pid <code>system_server</code>/<code>surfaceflinger</code> giữ); (b) VietMap chạy: log <code>BUBBLE</code>, Cài đặt hiện "tắt bóng VietMap rồi Áp ngay", khung trọn cụm; (c) không còn dòng <code>wm size -d &lt;id cũ&gt;</code>; (d) Cài đặt tự chuyển "Đang mở cụm…" → "Sẵn sàng" không cần mở lại trang.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Gửi 30 khi cụm ĐÃ cong (cùng kiểu) — màn ảo có dựng lại không? [CHƯA BIẾT] — mã chịu được cả hai (hết lượt chờ thì nhận id cũ).</li>
+<li>OQ2. Bảng "app bóng nổi" chỉ có VietMap — app khác (vd bản đồ khác có bóng) thêm khi đo được.</li>
+<li>OQ3. Ở ca BUBBLE có nên đề xuất nút "tắt bóng VietMap" (force-stop có xác nhận) không? — owner quyết; hiện chỉ báo, không tự dừng app.</li>
+<li>OQ5. Bản mod có nhớ trạng thái ẩn qua lần VietMap tự khởi động lại không? [CHƯA BIẾT] — Kachi gửi lại ở nhịp 2 s (cổng 15 s) khi nút nổi chạy và sau mỗi lượt tự mở; VietMap tự khởi động khi Kachi không chạy nhịp nào ⇒ bóng có thể hiện tới lượt gửi kế.</li>
+<li>OQ6. Mod gỡ bóng mất bao lâu sau broadcast? [CHƯA BIẾT] — trần đọc lại 1,5 s; đo ở 🚗 (e).</li>
+<li>OQ7. Vì sao widget VietMap mất liên kết trước 07:05 06/10 (gỡ-rồi-cài bản mod?) [ĐOÁN] — xem <code>dumpsys appwidget</code> + lịch sử cài ở buổi xe kế; mã mới tự bind lại khi đã có quyền bind.</li>
+<li>OQ4. Nguồn chính xác của id 4 ở F7 — xem §4.2 R5, cần log buổi xe kế.</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/diagnostics/oncar-2026-10-06-cluster-rect.md</code> (mới) · <code>oncar-2026-10-05-slot-cluster.md</code> · <code>cluster-rect-seal-2026-10-05.md</code></li>
+<li><code>docs/specs/kachi-289-field-fixes.html</code> (B1a/B1b — bị thay một phần bởi spec này)</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li>2026-10-06 · <b>Pass 4 — <code>vm_bubble_hidden</code> + 2.90 (192) [ĐO XML]</b> — <code>PrefsBadge.vmBubbleHidden/setVmBubbleHidden</code>; <code>ClusterNavBridge.setVmBubbleEnabled</code> ghi cờ (<code>!on</code>) TRƯỚC khi gửi; <code>VmBubbleVisibility.apply/keepHidden</code> + <code>ClusterLayerExecutor.bubbleHiddenByUser</code> đọc cờ (mọi điểm gửi lại: nhịp, tự mở, mở chiếu/dò cụm, áp lại hồ sơ, trả cụm, lưới an toàn). Cổng <code>ClusterLayerPort.bubbleToggleOn</code> → <code>bubbleHiddenByUser</code>. Test sửa: <code>ClusterLayerPauseTest</code> (mặc định HIỆN), <code>ClusterThemeLayerPauseTest</code>, <code>ClusterLayerWiringContractTest</code> (cấm <code>vmBubbleEnabled</code> trong <code>VmBubbleVisibility</code>; mặc định <code>false</code>; ghi cờ trước gửi). <code>--rerun-tasks</code>: <code>:core:test</code> 4351/0 · <code>:app:testDebugUnitTest</code> 2069/0 · <code>:app:testVehicleTestUnitTest</code> 2081/0 · <code>:car-integration:test</code> 80/0 · <code>:vehicle-contracts:test</code> 22/0 · <code>:offcar-planner:test</code> 99/0 · <code>:app:lintDebug</code> 0 lỗi · <code>clean :app:assembleRelease</code> xanh.</li>
+<li>2026-10-06 · <b>Pass 3 (R8–R10) — kết quả off-car [ĐO XML]</b> — <code>--rerun-tasks</code>: <code>:core:test</code> 4349/0 · <code>:app:testDebugUnitTest</code> 2069/0 · <code>:app:testVehicleTestUnitTest</code> 2081/0 · <code>:car-integration:test</code> 80/0 · <code>:offcar-planner:test</code> 99/0 · <code>:app:lintDebug</code> 0 lỗi · <code>:app:assembleRelease</code> xanh. Bài mới: <code>ClusterLayerPauseTest</code> (9) · <code>ClusterThemeLayerPauseTest</code> (7) · <code>ClusterOverlayDisplayTest</code> (5) · <code>VietMapWidgetRestorePlanTest</code> (3) · <code>ClusterLayerWiringContractTest</code> (7). Đổi ghim có lý do: <code>SpeedBadgeLifecycleContractTest</code> (cổng <code>onDisplayAdded</code> cũ bỏ lượt thêm màn ảo dựng lại). Call site §8 đã grep cho mọi hàm mới.</li>
+<li>2026-10-06 · <b>Quyết định</b> — nhịp 2 s chỉ GIỮ ẨN (<code>VmBubbleVisibility.keepHidden</code>), không gửi lặp <code>show=true</code> ([CHƯA BIẾT] mod có gắn lại bóng mỗi lần nhận <code>true</code>); <code>true</code> chỉ gửi ở sự kiện (công tắc, trả cụm, tự mở VietMap, dò cụm — cổng 15 s). Camera đang trên cụm không bị gỡ (thứ tự HAL → cửa sổ) ⇒ ca đó vẫn FOREIGN. Lý do log của công tắc/áp lại hồ sơ viết ASCII (bài <code>LauncherI18nContractTest</code>). CHƯA: senior review, quét bảo mật, bump version, 🚗.</li>
+<li><b>2026-10-06 · Bug &amp; cách xử (R5)</b> — triệu chứng F7 <code>wm size -d 4</code> → <code>0x0</code> sau khi cụm là 9 → gốc: <code>SimpleCastCoordinator.kt</code> khối <code>geometry</code> chụp tham số seed (shadowing) → sửa <code>{ this.displayId }</code> → verify: <code>ClusterRectStaleDisplayTest</code> đỏ trên mã cũ (đã thử: gỡ từng lớp vá ⇒ 3/5 bài đỏ), xanh sau vá. Nguồn AOSP trích: <code>DisplayManagerService.java:1033-1034</code>, <code>WindowManagerShellCommand.java:111-113</code>, <code>WindowManagerService.java:4996-5003</code> (A10 r47, fetch 06/10).</li>
+<li><b>Quyết định</b> — <code>fullFrame</code> chỉ cho đời xe CHO CHỌN hai kiểu (<code>offers(CURVED) ∧ offers(RECT)</code>): bản đầu áp cho mọi đời có opcode kiểu ⇒ DL3 không phải 138 (VD có sẵn, cờ mức B tắt ⇒ luôn UNKNOWN) mất khung đã lưu — đổi hành vi đường đang chạy (CLAUDE.md §6); 3 bài cũ (<code>CastSessionPinTest</code>, <code>CastProfileDensityTest</code>, <code>CastDisplayTargetingRegressionTest</code>) đỏ đã lộ ra điều đó.</li>
+<li><b>Quyết định</b> — giữ luật 2.89 "cửa sổ lạ ⇒ bỏ theme TRƯỚC khi gỡ ClusterBlack" (đỡ một lệnh ghi vô ích); chỉ còn ClusterBlack ⇒ gỡ trong tiến trình (<code>OwnPlaceholder</code>) rồi đọc lại ⇒ gửi khi trống. Kết cục y như yêu cầu R1 ("gỡ ClusterBlack rồi đọc").</li>
+<li><b>Trade-off</b> — phiên UNKNOWN dùng khoá Bo tròn cũ cho DPI và lượt chỉnh tay (khung trọn cụm khi mở); lượt chỉnh tay trong phiên UNKNOWN ghi vào khoá Bo tròn.</li>
+<li><b>Sai lệch spec</b> — <code>ClusterStylePlan.wanted</code> giữ tham số <code>ledger</code> (không dùng) để không đổi chữ ký các chỗ gọi.</li>
+<li><b>2026-10-06 · Kết quả off-car [ĐO XML]</b> — <code>--rerun-tasks</code>: <code>:core:test</code> 4323/0 · <code>:app:testDebugUnitTest</code> 2062/0 · <code>:app:testVehicleTestUnitTest</code> 2074/0 · <code>:car-integration:test</code> 80/0 · <code>:offcar-planner:test</code> 99/0 (gốc <code>c558450</code>: 4325 · 2062 · 2074 · 80 · 99, 0 fail) · <code>:app:lintDebug</code> 0 lỗi · <code>:app:assembleRelease</code> xanh. Thử ĐỎ: gỡ từng vá ⇒ <code>ClusterRectStaleDisplayTest</code> 3/5, <code>ClusterThemeBubbleTest</code> 2/6, <code>ClusterProfileTest</code> (mức B), <code>ClusterRectOptionWiringContractTest</code> (trang sống) đỏ. CHƯA: senior review, quét bảo mật, bump version, 🚗.</li>
+<li><b>Gỡ</b> — <code>ClusterSpeedReadoutOverlay.kt</code>, <code>SpeedReadoutPolicy.kt</code>(+Test), latch cổng, <code>ProjectionManager.sessionDisplayId</code>/<code>bindSessionDisplay</code>, <code>CastStyleApply.withReadout</code>, <code>SimpleCastRuntime.canDrawReadout</code>, <code>castStyleReadoutDrawable</code>/<code>castStyleEffective</code>, chuỗi <code>kachi_cast_style_rect_no_overlay</code> ×5, hằng <code>FREE_AREA/ADAS_PANEL/ADAS_POPUP_TEXT/ADAS_SMALL/STRAY_MPH/SPEED_BOX</code> + <code>intersects/contains</code>.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-10-06</h3>
+<p class="muted">Senior review (Opus) toàn bộ diff chưa commit trên gốc <code>c558450</code>. Không thư viện mới ⇒ không có mục tech-freshness (Context7 không kết nối được phiên này; không cần cho thay đổi thuần Kotlin).</p>
+<ul>
+<li><b>Cổng theme (trọng tâm 1)</b> — mọi opcode theme chỉ đi qua <code>ProjectionManager.open/close</code> → <code>ClusterThemeGuard.admit</code>; "Áp ngay"/<code>restoreCluster</code>, <code>ThemeGapReopen</code>, tự chiếu khi nổ máy đều là <code>openProjection()</code> ⇒ cùng cổng. Gửi chỉ khi <code>Decision.Send</code> = 0 task + 0 cửa sổ trên MỌI màn ảo cụm (kể cả màn cũ còn sót) sau khi gỡ ClusterBlack trong tiến trình và đọc lại; đọc hỏng ⇒ UNREADABLE; cửa sổ lạ (kể cả cửa sổ Kachi không phải placeholder) ⇒ FOREIGN/BUBBLE. Mức B chỉ bật qua <code>forCarType</code> (138 + <code>AutoContainer</code>), không qua chuỗi share. Không có <code>force-stop</code> app bên thứ ba. [ĐO mã] Catalog <code>CarExec*Catalog</code> chứa lệnh 30/31 thô là tài liệu bước đo có sẵn từ trước (không đổi ở diff này, không tự chạy) — ngoài phạm vi.</li>
+<li><b>Id cụm sống (trọng tâm 2)</b> — đúng: <code>{ this.displayId }</code>, <code>exclude</code> sau gửi, <code>newestSameName</code>, <code>displayGone</code> + dò lại; <code>prefs.lastDisplayId()</code> chỉ còn ở seed của <code>SimpleCastRuntime</code> (bị đè ở lượt dò đầu, lệnh đặt bị chặn tới khi <code>liveDisplayId ≥ 1</code>).</li>
+<li><b>Kiểu tin / khung (trọng tâm 3)</b> — đời xe không phải 138 và DL5: <code>wanted</code>, <code>believed</code>, <code>CastSessionStyle.of</code> cho cùng kết quả như 2.89 (ngoại lệ sổ chỉ áp khi <code>nativeStyle ≠ null</code>, tức 138; <code>fullFrame</code> chỉ khi đời xe cho chọn hai kiểu). Rủi ro còn lại [SUY]: <code>newestSameName</code> áp cho mọi đời xe — chỉ đổi kết quả khi có ≥ 2 màn ảo fission CÙNG tên cùng lúc, chưa thấy ở dump nào ngoài ca dựng lại 06/10.</li>
+<li><span class="tag p2">P2</span> <b>Trang sống so theo LOẠI trạng thái</b> (<code>javaClass</code>) ⇒ <code>CastingFull(A) → CastingFull(B)</code>, câu lỗi mới, đổi tỉ lệ chia không dựng lại chữ trên trang; và khoá đặt lại lúc gắn ⇒ trang được nhớ rời màn rồi quay lại không bắt kịp trạng thái đổi trong lúc vắng. <b>Vá:</b> <code>SimpleCastState.statusKey()</code> (core, thuần — loại · gói · tỉ lệ · câu lỗi; không gồm bản ghim nên −/+ không dựng lại cả trang); <code>liveStatus</code> giữ khoá của lần dựng gần nhất, bộ nghe phát trạng thái hiện tại ngay khi gắn ⇒ bắt kịp. Test: <code>CastStatusKeyTest</code> (2 bài) + hợp đồng <code>ClusterRectOptionWiringContractTest</code> đòi <code>statusKey()</code>.</li>
+<li><span class="tag p2">P3</span> §6 V-unit ghi tên test không tồn tại (<code>ClusterThemeBubbleFixtureTest</code>, <code>CastThemeSafeCoordinatorTest</code> cho mức B) — sửa thành tên thật.</li>
+<li>Luồng/rò (trọng tâm 4): bộ nghe chỉ chạm <code>shown</code>/<code>unsubscribe</code> trên luồng chính (callback gắn/gỡ + <code>post</code>), gỡ ở <code>onViewDetachedFromWindow</code>; coordinator (singleton tiến trình) không còn giữ View/Activity sau khi rời trang. Xoá km/h (trọng tâm 5): grep 0 tham chiếu lớp/chính sách/chuỗi/latch/<code>sessionDisplayId</code>/<code>canDrawReadout</code>; <code>SpeedProvider</code> còn dùng ở chỗ khác — giữ.</li>
+<li><b>Kết quả [ĐO XML]</b> sau vá: <code>:core:test</code> 4325/0 · <code>:app:testDebugUnitTest</code> 2062/0 · <code>:app:testVehicleTestUnitTest</code> 2074/0 · <code>:car-integration:test</code> 80/0 · <code>:offcar-planner:test</code> 99/0 · <code>:app:lintDebug</code> 0 lỗi. Pass lặp lại trên phần vá: không còn phát hiện [P0]–[P3].</li>
+</ul>
+
+<h3>Pass 3 — 2026-10-06</h3>
+<p class="muted">Senior review (Opus) phần code Pass 3 (R8–R10, §4.4/§4.5, T9–T13): <code>ClusterLayerPause</code> · <code>ClusterLayerExecutor</code> · <code>ClusterOverlayDisplays</code>/<code>ClusterOverlayDisplay.pick</code> · <code>VmBubbleVisibility</code> · <code>ClusterThemeGuard</code> + <code>openProjectionGuarded</code> · <code>SpeedBadgeOverlay.reconcile</code> · <code>VietMapWidgetRestorePlan</code> · camera. Không thư viện mới ⇒ không có mục tech-freshness (Context7 không kết nối được phiên này).</p>
+<ul>
+<li><b>Luật owner</b> [ĐO mã] — không <code>force-stop</code>, không appop; opcode theme vẫn chỉ qua <code>ClusterThemePlan.decide</code> (0 task + 0 cửa sổ, đọc lại SAU dọn); DỌN chỉ khi mức B bật (cờ hồ sơ — Seal 138) ⇒ Bo tròn / đời xe khác: <code>pausable</code> nhận <code>tasks = null</code> ⇒ không dọn, không broadcast từ cổng (CLAUDE.md §6). Lớp Kachi gỡ trong tiến trình, không lệnh <code>am</code>/<code>wm</code>.</li>
+<li><span class="tag p1">P1</span> <b>Badge hiện lại giới hạn ĐÃ XOÁ</b> — <code>hide()</code> (khung xoá, đường không biển) giữ <code>lastSpeedKph</code>; <code>reconcile</code> (giờ chạy ở MỌI đổi id cụm công bố, dọn/trả cụm, thêm/gỡ display) và <code>applyEnabled</code> phát lại bằng <code>doShow</code> ⇒ badge hiện giá trị cũ không còn đúng trên cụm khi đang lái. <b>Vá:</b> <code>lastHidden</code> + <code>replayLast()</code> (ẩn lại trong CÙNG lượt luồng chính ⇒ không khung hình nào vẽ giá trị cũ). Ghim: <code>SpeedBadgeLifecycleContractTest</code>.</li>
+<li><span class="tag p2">P2</span> <b>Nuốt cờ ngắt</b> — <code>ClusterLayerExecutor.flushMain</code> bọc <code>await</code> trong <code>runCatching</code> ⇒ <code>cancel(true)</code> (quá 15 s / Stop ưu tiên) bị nuốt, lượt mở chạy tiếp. <b>Vá:</b> bắt <code>InterruptedException</code>, đặt lại cờ.</li>
+<li><span class="tag p2">P2</span> <b>DỌN ngoài lượt mở không có TRẢ</b> — <code>ProjectionManager.close</code> cũng gọi <code>admit</code> (công thức còn opcode theme trong chuỗi tắt) mà chỉ <code>openProjectionGuarded</code> có <code>finally</code> TRẢ ⇒ badge + bóng nằm ẩn tới lượt mở sau. <b>Vá:</b> <code>openScope</code> — chỉ dọn giữa <code>beginOpen</code> … <code>resumeLayers</code>; ngoài đó luật cũ (bỏ opcode). Test: <code>ClusterThemeLayerPauseTest</code> "cổng ngoài lượt MỞ".</li>
+<li><span class="tag p2">P2</span> <b>TRẢ khi luồng mở kẹt I/O không ngắt được</b> — <code>finally</code> chỉ chạy khi luồng thoát. <b>Vá:</b> lưới an toàn <code>PAUSE_MAX_MS</code> = 20 s (&gt; trần 15 s) trên luồng chính: tự bỏ dọn + gửi lại <code>VM_BUBBLE_VIS</code> theo công tắc; <code>resumeOwn</code> huỷ hẹn. TRẢ thật tới sau vẫn idempotent.</li>
+<li><span class="tag p3">P3</span> <b>"Mod cũ" bỏ sót</b> khi sau dọn quyết định là gỡ ClusterBlack rồi mới ra <code>BUBBLE</code>. <b>Vá:</b> <code>lastBubbleOldMod</code> quyết ở <code>verdict()</code> từ quyết định CUỐI của lượt có dọn.</li>
+<li><span class="tag p3">P3</span> <b>Widget không lành khi Kachi nhận <code>PACKAGE_ADDED</code> trước AppWidgetService</b> (thứ tự nhận broadcast không bảo đảm ⇒ provider chưa có ⇒ <code>KEEP_WAIT</code>). <b>Vá:</b> thử lại MỘT lần sau 2 s nếu còn ô thiếu view; huỷ ở <code>stop</code>.</li>
+<li><b>Thêm test</b>: lượt mở NÉM ở lệnh 16 sau khi đã dọn ⇒ vẫn TRẢ (<code>finally</code>); cổng ngoài lượt mở ⇒ không dọn. Đã soát, không phát hiện: chờ luồng chính ≤ 500 ms (không ANR — chạy trên executor, luồng chính chỉ <code>post</code>); không deadlock (luồng chính không chờ executor; chờ có trần); nhịp 2 s chỉ giữ ẩn, cổng 15 s ⇒ ≤ 1 broadcast/15 s; VietMap không cài ⇒ 0 broadcast (cache 60 s); mod không receiver ⇒ broadcast tường minh rơi, cổng ra <code>BUBBLE</code> + "mod cũ"; badge 4 → 9: <code>pick</code> kiểm id công bố còn trong danh sách, thêm/gỡ/đổi id đều <code>reconcile</code>; widget <code>DROP_REBIND</code> khi chưa cấp quyền bind ⇒ <code>autoBindMissing</code> trả id đã cấp, không hỏi UI (như cũ). Tệp ≤ 500 dòng; call site §8 đã grep.</li>
+<li><b>Cần owner biết</b> [SUY]: công tắc bóng mặc định TẮT ⇒ người dùng chưa từng bật mà có bản mod mới sẽ thấy bóng biến mất sau khi nâng lên 2.90 (đúng R8 — TẮT ⇒ <code>show=false</code>); nêu trong ghi chú phát hành. <b>⇒ Đã xử ở Pass 4</b> (khoá <code>vm_bubble_hidden</code>, mặc định hiện) — không đổi hành vi đang chạy (CLAUDE.md §6).</li>
+<li><b>Kết quả [ĐO XML]</b> sau vá (<code>--rerun-tasks</code>): <code>:core:test</code> 4351/0 · <code>:app:testDebugUnitTest</code> 2069/0 · <code>:app:testVehicleTestUnitTest</code> 2081/0 · <code>:car-integration:test</code> 80/0 · <code>:offcar-planner:test</code> 99/0 · <code>:app:lintDebug</code> 0 lỗi · <code>:app:assembleRelease</code> xanh. Pass lặp lại trên phần vá: không còn phát hiện [P0]–[P3].</li>
+</ul>
+</div></body>
+</html>

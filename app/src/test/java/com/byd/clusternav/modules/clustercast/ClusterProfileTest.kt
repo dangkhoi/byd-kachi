@@ -235,7 +235,8 @@ class ClusterProfileTest {
     @Test fun `export truong 10 - chi khi kieu goc da biet, round-trip, chuoi day giu 30-16-35`() {
         val s138 = ClusterProfile.SEAL_DL3.forCarType("138")
         assertEquals("seal_dl3;3;1920;720;30-16-35;18-0;xdja;AutoContainer;30-31;RECT", s138.export())
-        assertEquals(s138, ClusterProfile.parse(s138.export()))
+        // 2.90 · R1: cờ mức B không đi qua chuỗi — nạp lại rồi áp `forCarType` (đúng đường `resolveCached`) mới ra lại hồ sơ đủ.
+        assertEquals(s138, ClusterProfile.parse(s138.export())!!.forCarType("138"))
         assertEquals(9, ClusterProfile.SEAL_DL3.export().split(";").size, "kiểu gốc chưa biết ⇒ 9 trường (bản cũ nhập được)")
         assertEquals("dilink5;5;1920;720;16;18-0;fission;auto_container;", ClusterProfile.DL5.export())
     }
@@ -261,9 +262,23 @@ class ClusterProfileTest {
         assertEquals(CastStyle.RECT, ClusterProfile.parse(withLabel)?.nativeStyle)
         assertNull(ClusterProfile.parse("seal_dl3;3;1920;720;30-16-35;18-0;xdja;AutoContainer;30-31;RECT;true"), "11 trường ⇒ hỏng")
         assertFalse(ClusterProfile.SEAL_DL3.themeOnVacantVd)
-        assertFalse(ClusterProfile.parse(ClusterProfile.SEAL_DL3.forCarType("138").export())!!.themeOnVacantVd)
+        assertFalse(ClusterProfile.parse(ClusterProfile.SEAL_DL3.forCarType("138").export())!!.themeOnVacantVd, "chuỗi share không mang cờ")
         listOf(ClusterProfile.SEAL_DL3, ClusterProfile.DL5, ClusterProfile.GENERIC_FALLBACK).forEach {
-            assertFalse(it.projectionRecipe().themeOnVacantVd, "${it.id}: mặc định TẮT cho mọi hồ sơ")
+            assertFalse(it.projectionRecipe().themeOnVacantVd, "${it.id}: mặc định TẮT khi chưa biết đời xe")
         }
+    }
+
+    /**
+     * 2.90 · R1 — mức B (gửi theme khi màn ảo cụm còn mà trống) BẬT đúng tổ hợp đã đo [ĐO xe 06/10]: `car.type=138` + `AutoContainer`;
+     * đời xe khác / DL5 (`auto_container`) / mã không đọc được ⇒ TẮT. Áp cả cho override (sự thật của chiếc xe). Thử ĐỎ: bỏ `vacant`
+     * trong `forCarType`.
+     */
+    @Test fun `290 - muc B chi cho Seal 138 AutoContainer`() {
+        assertTrue(ClusterProfile.SEAL_DL3.forCarType("138").projectionRecipe().themeOnVacantVd)
+        assertTrue(ClusterProfile.GENERIC_FALLBACK.forCarType("138").projectionRecipe().themeOnVacantVd)
+        assertFalse(ClusterProfile.SEAL_DL3.forCarType("137").projectionRecipe().themeOnVacantVd)
+        assertFalse(ClusterProfile.SEAL_DL3.forCarType(null).projectionRecipe().themeOnVacantVd)
+        assertFalse(ClusterProfile.DL5.forCarType("138").projectionRecipe().themeOnVacantVd, "DL5 chưa đo")
+        assertFalse(ClusterProfile.SEAL_DL3.forCarType("138").forCarType("137").themeOnVacantVd, "đổi mã ⇒ tắt lại")
     }
 }

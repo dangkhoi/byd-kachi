@@ -188,6 +188,14 @@ object CastGeometryGuard {
      * `CastGeometryController.queryDisplayPhysicalSize` chỉ đọc *Physical*) về một chỗ, giữ đúng hành vi của mỗi bên
      * qua [preferOverride]. Cạnh ≤ 0 hoặc > [DIMENSION_MAX] ⇒ `null` (đầu ra lạ không được thành biên kẹp).
      */
+    /**
+     * 2.90 · R5 — `wm size -d N` của một display KHÔNG còn tồn tại: [ĐO nguồn A10 r47] `WindowManagerShellCommand.java:111-113`
+     * in `Physical size: <x>x<y>` từ `WindowManagerService.getInitialDisplaySize` (`WindowManagerService.java:4996-5003`), hàm
+     * này chỉ điền kích khi `getDisplayContent(N) != null` ⇒ display đã mất in `Physical size: 0x0` ([ĐO xe 06/10] `wm size -d 4`
+     * sau khi màn ảo cụm dời sang 9). Khi đó bên gọi phải dò lại id cụm, không được kẹp theo 1920×720 mặc định trên id chết.
+     */
+    fun displayGone(stdout: String): Boolean = Regex("Physical size:\\s*0x0\\b").containsMatchIn(stdout)
+
     fun parseDisplaySize(stdout: String, preferOverride: Boolean): Pair<Int, Int>? {
         val matches = Regex("(Override|Physical) size:\\s*([0-9]{1,5})x([0-9]{1,5})").findAll(stdout).toList()
         val match = (if (preferOverride) matches.firstOrNull { it.groupValues[1] == "Override" } else null)
@@ -212,8 +220,8 @@ object CastGeometryGuard {
         clampBounds(bounds, bandMin, bandMax, 0, frameHeight)
 
     /**
-     * Review 2.89 Pass 3 · cluster-r2-1 — như trên nhưng dải Y là `[bandTop, bandBottom]` (cụm Chữ nhật: khung app nằm trong
-     * `ClusterRectLayout.FREE_AREA`, không phải `0..H`). `bandTop = 0` ⇒ đúng phép 4 tham số từng số (Bo tròn không đổi).
+     * Review 2.89 Pass 3 · cluster-r2-1 — như trên nhưng dải Y là `[bandTop, bandBottom]` (một nửa / khung tuỳ ý). 2.90 · R4: mọi
+     * chỗ gọi đều truyền `0..H` (không còn vùng chừa) — `bandTop = 0` ⇒ đúng phép 4 tham số từng số.
      */
     fun clampBounds(bounds: CastBounds, bandMin: Int, bandMax: Int, bandTop: Int, bandBottom: Int): CastBounds {
         val hi = bandMax.coerceAtLeast(bandMin)

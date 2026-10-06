@@ -19,8 +19,10 @@ import com.byd.clusternav.modules.clustercast.simplified.CastStyle
  *  2. **Cụm đang ở kiểu nào** khi phiên đang chạy khác lựa chọn (vd chọn Chữ nhật lúc đang chiếu Bo tròn) — đọc kiểu của
  *     PHIÊN (`castStyleSession`), không đọc lựa chọn.
  *  3. **Chữ nhật mất gì**: khung ADAS trắng bên phải là giao diện CỐ ĐỊNH của cụm ở kiểu này — phím menu chỉ đổi ADAS sang nhỏ,
- *     khung vẫn còn [ĐO QML fw 2602030 + owner trên xe 05/10]; số km/h gốc mất nên Kachi tự vẽ (không có khi chiếu CarPlay /
- *     Android Auto — D5).
+ *     khung vẫn còn [ĐO QML fw 2602030 + owner trên xe 05/10 + 06/10]; số km/h gốc mất — 2.90 · R3: Kachi KHÔNG vẽ thay (HUD,
+ *     bản đồ, bóng VietMap đều có tốc độ — owner 06/10). Khung app mặc định trọn cụm, người lái tự chỉnh (R4).
+ *  4. 2.90 — **vì sao chưa đổi được kiểu** (bóng nổi VietMap trên cụm ⇒ "tắt bóng VietMap rồi Áp ngay") và **cụm chưa rõ kiểu ⇒
+ *     khung trọn cụm**.
  *
  * ## Ẩn hẳn khi đời xe không cho Chữ nhật
  * `bridge.castStyleOffered()` — chỉ Seal `car.type=138` (bảng B.2). Xe khác: không hàng nào, không "hiện mà bấm không ăn".
@@ -58,13 +60,16 @@ class SettingsCastStyleBlock(
             bridge.setCastStyle(CastStyle.parse(code))   // CHỈ prefs — 0 lệnh tới cụm
             rebuild()
         })
-        if (chosen == CastStyle.RECT) {
-            box.addView(rows.note(context.getString(R.string.kachi_cast_style_rect_note)))
-            // Pass 3 · cluster-r2-5: chưa có quyền vẽ ⇒ Kachi không vẽ được km/h ⇒ lượt mở dùng Bo tròn — nói thật lý do.
-            if (!bridge.castStyleReadoutDrawable()) box.addView(rows.note(context.getString(R.string.kachi_cast_style_rect_no_overlay)))
-        }
+        if (chosen == CastStyle.RECT) box.addView(rows.note(context.getString(R.string.kachi_cast_style_rect_note)))
         box.addView(rows.note(context.getString(R.string.kachi_cast_style_apply_note)))
-        sessionNote(bridge.castStyleEffective())?.let { box.addView(rows.note(it)) }   // r3a-3: kiểu hiệu lực
+        sessionNote(chosen)?.let { box.addView(rows.note(it)) }
+        // 2.90 · R2 — phiên chưa rõ kiểu ⇒ khung trọn cụm; R1 — bóng nổi chặn đổi theme ⇒ nói đúng app + việc cần làm.
+        if (bridge.castStyleSession()?.fullFrame == true) box.addView(rows.note(context.getString(R.string.kachi_cast_style_full_frame)))
+        bridge.castThemeBlockers().takeIf { it.isNotEmpty() }?.let { apps ->
+            // R9 — đã dọn cụm (`VM_BUBBLE_VIS show=false`) mà bóng vẫn còn ⇒ bản mod cũ: nói đúng việc cần làm (tắt VietMap).
+            val res = if (bridge.castThemeBubbleOldMod()) R.string.kachi_cast_style_bubble_old_mod else R.string.kachi_cast_style_blocked
+            box.addView(rows.note(context.getString(res, apps.joinToString(", "))))
+        }
         if (bridge.castStyleApplyOffered()) {
             box.addView(rows.button(context.getString(R.string.kachi_cast_style_apply_now)) {
                 if (!bridge.applyCastStyleNow()) {

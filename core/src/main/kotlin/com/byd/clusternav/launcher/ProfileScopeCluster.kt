@@ -169,7 +169,7 @@ object ProfileScopeCluster {
         // getBoolean ×4 + getInt ×3 · `VmOverlayPosition.x/y` getInt. Tệp sống thường VẮNG các khoá này (người lái chưa
         // từng kéo/đổi) ⇒ phép so với kiểu sống không bắt được một chuỗi từ tệp nhập — spec §11.4.7 nêu đích danh
         // `enabled`. Khai kiểu = chặn `ClassCastException` trên đường; giá trị đúng kiểu đi qua y như cũ.
-        listOf("enabled", "marquee", "badge_enabled", "show_upcoming_badge", "show_alert_chip", "vm_bubble_enabled")
+        listOf("enabled", "marquee", "badge_enabled", "show_upcoming_badge", "show_alert_chip", "vm_bubble_enabled", "vm_bubble_hidden")
             .forEach { put(it, PrefType.BOOLEAN) }
         listOf("nav_cluster_screen_mode", "badge_size_dp", "badge_center_x", "badge_center_y", "vm_bubble_x", "vm_bubble_y")
             .forEach { put(it, PrefType.INT) }

@@ -21,6 +21,7 @@ import com.byd.clusternav.setBadgeCenterX
 import com.byd.clusternav.setBadgeCenterY
 import com.byd.clusternav.vmBubbleEnabled
 import com.byd.clusternav.setVmBubbleEnabled
+import com.byd.clusternav.setVmBubbleHidden
 import com.byd.clusternav.ThemeMode
 import com.byd.clusternav.VietMapAutostartService
 import com.byd.clusternav.VmOverlayPosition
@@ -350,11 +351,14 @@ class ClusterNavBridge(
     fun vmBubbleEnabled(): Boolean = Prefs.vmBubbleEnabled(app)
 
     /**
-     * Lặp lại `MainActivity.kt:1091–1095`: persist rồi — khi BẬT — auto-start VietMap một lần
-     * (giống hành vi badge tốc độ). Tắt không đụng gì.
+     * Lặp lại `MainActivity.kt:1091–1095`: persist rồi — khi BẬT — auto-start VietMap một lần (giống hành vi badge tốc độ).
+     * 2.90 · R8: gửi NGAY `VM_BUBBLE_VIS` theo công tắc (TẮT ⇒ bản mod gỡ bóng khỏi cụm thật; BẬT ⇒ hiện lại) — trước đây TẮT không làm gì.
+     * Cờ "ẩn" là `vm_bubble_hidden` (mặc định false ⇒ người chưa từng chạm công tắc vẫn thấy bóng như trước 2.90), CHỈ ghi ở đây.
      */
     fun setVmBubbleEnabled(on: Boolean) {
         Prefs.setVmBubbleEnabled(app, on)
+        Prefs.setVmBubbleHidden(app, !on)
+        com.byd.clusternav.VmBubbleVisibility.apply(app, "toggle=$on", force = true)
         if (on) VietMapAutostartService.startForAppOpen(app)
     }
 

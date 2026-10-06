@@ -39,11 +39,12 @@ class ClusterStylePlanTest {
         }
     }
 
+    /** 2.90 · R2 — sổ không bao giờ làm bỏ opcode: Chữ nhật luôn xin 31 (cổng đỡ lượt trùng cùng tiến trình). */
     @Test
-    fun `wanted - Chu nhat tren xe goc chu nhat - so 31 ok thi KHONG gui, con lai xin 31`() {
-        assertNull(ClusterStylePlan.wanted(seal1025, CastStyle.RECT, ok(31)))
-        assertNull(ClusterStylePlan.wanted(seal1025, CastStyle.RECT, ok(31, at = 10)), "31 ok từ lần nổ máy trước: cụm vẫn chữ nhật (ép hoặc gốc)")
-        for (l in listOf(null, ok(30), pending(31), pending(30))) assertEquals(31, ClusterStylePlan.wanted(seal1025, CastStyle.RECT, l), "$l")
+    fun `290 - wanted - Chu nhat tren xe goc chu nhat - luon xin 31, bat ke so`() {
+        for (l in listOf(null, ok(31), ok(31, at = 10), ok(30), pending(31), pending(30))) {
+            assertEquals(31, ClusterStylePlan.wanted(seal1025, CastStyle.RECT, l), "$l")
+        }
     }
 
     @Test

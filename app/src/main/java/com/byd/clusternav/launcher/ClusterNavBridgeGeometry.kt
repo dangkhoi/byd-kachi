@@ -87,8 +87,8 @@ fun ClusterNavBridge.geometryFrame(): Pair<Int, Int> {
 }
 
 /**
- * Dải X mà ô [target] được phép chiếm: FULL ⇒ cả khung; split ⇒ đúng nửa của nó theo tỉ lệ đang chạy. Phiên Chữ nhật ⇒ dải của
- * vùng trống / nửa vùng trống (Pass 3 · cluster-r2-1, [editFrame]).
+ * Dải X mà ô [target] được phép chiếm: FULL ⇒ cả khung; split ⇒ đúng nửa của nó theo tỉ lệ đang chạy — mọi kiểu cụm (2.90 · R4:
+ * Chữ nhật không còn vùng chừa, [editFrame]).
  *
  * Lặp lại `CastGeometryEditor.setupSplitResizeControls` (`resizeView.setSlotBand(bandMinX, bandMaxX)`):
  * kéo ô trái sang phần của ô phải thì hai app chồng nhau trên cụm — lỗi hình mà người lái phải dừng xe
@@ -98,10 +98,9 @@ fun ClusterNavBridge.geometryBand(target: CastGeometryTarget): Pair<Int, Int> =
     editFrame(target).let { it.left to it.right }
 
 /**
- * Review 2.89 Pass 3 · cluster-r2-1 — khung gốc của ô theo KIỂU KHUNG CỦA PHIÊN ([ClusterRectLayout.editFrame]): Bo tròn = cả dải
- * (đúng phép cũ từng số), Chữ nhật = đúng khung phiên ghim (vùng trống / nửa vùng trống). Một nguồn cho dải kẹp X/Y, "Đặt lại"
- * và mặc định khi chưa ghim — trước đây ba chỗ đều theo cả cụm nên ở Chữ nhật hai nửa chồng nhau và "Đặt lại" đặt app dưới nền
- * ADAS rồi lưu vào khoá `__RECT` [ĐO mã].
+ * Khung gốc của ô ([ClusterRectLayout.editFrame]) — một nguồn cho dải kẹp X/Y, "Đặt lại" và mặc định khi chưa ghim. 2.90 · R4
+ * (owner 06/10: "mở bung ra cho người ta tự set size" / "cứ để full resolution"): mọi kiểu = trọn cụm 0..W × 0..H, một nửa = nửa
+ * của trọn cụm; bản 2.89 kẹp Chữ nhật vào vùng trống `FREE_AREA` mọi hướng — đã gỡ.
  */
 private fun ClusterNavBridge.editFrame(target: CastGeometryTarget): CastBounds {
     val (width, height) = geometryFrame()
@@ -134,8 +133,7 @@ fun ClusterNavBridge.setGeometryBounds(target: CastGeometryTarget, bounds: CastB
 }
 
 /**
- * Đưa ô về khung mặc định của nó — nút "Đặt lại" của màn cũ. Bo tròn: cả dải, cao hết cụm (như cũ); Chữ nhật: đúng khung phiên
- * ghim (Pass 3 · cluster-r2-1 — không bao giờ dưới nền ADAS).
+ * Đưa ô về khung mặc định của nó — nút "Đặt lại" của màn cũ: cả dải, cao hết cụm (mọi kiểu — 2.90 · R4).
  */
 fun ClusterNavBridge.resetGeometry(target: CastGeometryTarget) {
     setGeometryBounds(target, editFrame(target))
@@ -168,6 +166,8 @@ data class CastGeometryProfileValue(val density: Int, val bounds: CastBounds)
  */
 fun ClusterNavBridge.geometryProfileDiffers(target: CastGeometryTarget): CastGeometryProfileValue? {
     if (target.side != null && sessionSplitPct() != splitPct()) return null
+    // 2.90 · R2: phiên chưa rõ kiểu dùng trọn cụm bất kể bản lưu ⇒ "áp dụng từ lần chiếu sau" không đúng — không in dòng phụ.
+    if (castStyleSession()?.fullFrame == true) return null
     val fullDefault = DisplayConfig.NORMAL_DEFAULT.takeIf { target.side == null }
     // Pass 3 · cluster-r2-1: phiên Chữ nhật ⇒ "lần chiếu sau" ghim ĐÚNG phép `ClusterRectLayout.pin` (bản `__RECT`, thiếu khung ⇒
     // khung phiên) — so với NORMAL_DEFAULT trọn cụm là in một dòng "Hồ sơ này: … 1920×720" giả.

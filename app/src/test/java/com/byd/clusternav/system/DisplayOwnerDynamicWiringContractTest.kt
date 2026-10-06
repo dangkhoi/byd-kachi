@@ -44,7 +44,7 @@ class DisplayOwnerDynamicWiringContractTest {
 
     @Test
     fun `coordinator publishes on every detection and after every successful close`() {
-        val detect = SourceRoots.body(coordinator, "internal fun detectClusterDisplay(awaitAfterOpen: Boolean = false): Int {")
+        val detect = SourceRoots.body(coordinator, "internal fun detectClusterDisplay(awaitAfterOpen: Boolean = false, exclude: Int = -1): Int {")
         order(detect, "liveDisplayId = resolved", "publishCastDisplay(resolved)", "return resolved")
         val close = SourceRoots.body(coordinator, "fun closeProjection() {")
         order(close, "projection.close(displayId, themeGuard)", "if (ok) publishCastDisplay(-1)")
