@@ -182,7 +182,7 @@ class SlotParkTest {
     }
 
     @Test
-    fun `PARK-1 - xem ban do KHONG lay ra (mat ve doi co truoc, lay ra sau)`() {
+    fun `peek - xem ban do KHONG lay ra (vdOf chi doc, nhan lai vao o moi la take)`() {
         val l = ParkLedger<String>()
         l.park("youtube", "vd")
         assertEquals("vd", l.peek("youtube"))

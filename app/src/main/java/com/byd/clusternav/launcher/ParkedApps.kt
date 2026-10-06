@@ -121,7 +121,8 @@ object ParkedApps {
     /**
      * A2 · 2.89 (backlog `TRIP-MUSIC-IN-SLOT` (2)) — nhận vào ô 7 một màn ảo ĐÃ vẽ vào bề mặt ẩn [sink] (màn ảo dàn dựng ẩn của
      * chuyến lên xe — `StagingDisplay.park`, app [pkg] vừa mở lên đó bằng `HiddenPark`): KHÔNG đổi mặt vẽ, KHÔNG lệnh nào; chỉ
-     * chuyển chủ + ghi sổ. Từ đây app được đối xử y như app đỗ từ ô: đặt vào ô ⇒ [claim] (đổi mặt vẽ, không relaunch), mở toàn
+     * chuyển chủ + ghi sổ. Từ đây app được đối xử y như app đỗ từ ô: đặt vào ô ⇒ [claim] (đổi mặt vẽ; màn ảo ẩn mang cỡ display 0
+     * ⇒ đổi cỡ theo ô — 2.91 · F2, một lượt đổi cấu hình cùng display, KDoc [claim]), mở toàn
      * màn ⇒ [forget], trần [ParkLedger.CAP] ⇒ nhả cũ nhất. Gọi được từ luồng `kachi-behind`: sổ và [SlotVdOwner] đều có khoá.
      */
     internal fun adoptHidden(pkg: String, name: String, lease: VdLease, width: Int, height: Int, sink: OffscreenSink): Boolean {
@@ -188,12 +189,19 @@ object ParkedApps {
      * cỡ sau đó đưa nội dung về cùng cỡ — đúng thứ tự `v.surface = h.surface; resize(w, ht)` mà nhánh thường của `surfaceChanged`
      * đã chạy ngoài hiện trường. Cả hai cờ chờ có thể rơi chung một traversal: `performTraversalLocked` áp cỡ TRƯỚC mặt vẽ (`:281-287`).
      * Lấy ra hỏng / gắn hỏng ⇒ `null` (đường thường; [attach] đã nhả màn ảo).
+     *
+     * Đổi cỡ kéo theo MẬT ĐỘ của ô mới (`VdAppHost.resize` → `SlotDensity.forTablet` theo cạnh ngắn): hai ô có cạnh ngắn hai bên
+     * ngưỡng sw600 thì mật độ cũng đổi (vd nền 200 dpi: ô 1129×610 → 162 dpi, ô 1129×804 → 200 dpi). [ĐO nguồn r47
+     * `ActivityRecord.java`] activity DỰNG LẠI khi có thay đổi nó không khai trong `configChanges` (`:3291`, `:3377`); đổi cỡ màn
+     * chỉ được tính khi vượt ngưỡng tài nguyên của chính app (`:3398-3412`), mật độ thì luôn tính ⇒ ca có đổi mật độ dễ dựng lại
+     * activity hơn ca chỉ đổi cỡ (cùng tiến trình, task không dời). Nhạc có còn hay không: 🚗 OC-291-2 / OQ1.
      */
     fun claim(sv: SurfaceView, pkg: String?, owner: String, slot: Int, w: Int, h: Int): Claim? {
-        val p = pkg?.let(ledger::peek)
-        val step = SlotParkPlan.claim(p?.width, p?.height, w, h)
-        if (p == null || step == SlotParkPlan.ClaimStep.GOLDEN) return null
-        val taken = take(p.pkg) ?: return null
+        // Review 2.91 Pass 1 [P3]: LẤY RA trước rồi mới quyết theo CHÍNH bản sẽ gắn. Sổ có khoá, nhưng `adoptHidden` ghi từ luồng
+        // `kachi-behind`: xem rồi mới lấy là HAI lượt khoá — bản đỗ cùng gói bị thay giữa hai lượt (SAME_PKG) thì bước tính theo cỡ
+        // bản CŨ, có thể bỏ đổi cỡ cho bản MỚI (cỡ display 0) ⇒ lại lệch khung.
+        val taken = pkg?.let { take(it) } ?: return null
+        val step = SlotParkPlan.claim(taken.width, taken.height, w, h)
         if (!attach(taken, sv.holder.surface, owner, slot)) return null
         val resize = step == SlotParkPlan.ClaimStep.ATTACH_RESIZE
         if (resize) Log.i(TAG, "nhận lại ${taken.pkg}: ô ${w}x$h ≠ màn ảo ${taken.width}x${taken.height} ⇒ đổi cỡ màn ảo theo ô (cùng display)")

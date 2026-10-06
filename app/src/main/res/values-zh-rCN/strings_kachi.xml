@@ -414,7 +414,7 @@
     <string name="kachi_bubble_autostart_title">为气泡自动打开VietMap</string>
     <string name="kachi_bubble_autostart_sub">车辆启动或打开Kachi时在后台打开VietMap，让气泡在仪表上随时可用。关闭时，气泡只在VietMap运行时显示。</string>
     <string name="kachi_bubble_need_cast">只有在仪表投屏时位置才会移动——设置仍会保存，但仪表暂不会跟随。</string>
-    <string name="kachi_bubble_need_toggle">打开上方的气泡开关即可调整位置。</string>
+    <string name="kachi_bubble_need_toggle">打开上方的“在仪表上显示VietMap气泡”开关即可调整位置。</string>
     <string name="kachi_bubble_pos_x">气泡位置——横向</string>
     <string name="kachi_bubble_pos_y">气泡位置——纵向</string>
     <string name="kachi_bubble_drag_hint">在框内拖动小窗，即可设定气泡在仪表上的位置。</string>

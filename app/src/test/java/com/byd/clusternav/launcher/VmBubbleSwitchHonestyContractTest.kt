@@ -67,4 +67,21 @@ class VmBubbleSwitchHonestyContractTest {
             }
         }
     }
+
+    /**
+     * Review 2.91 Pass 1 [P3] — từ 2.91 có HAI công tắc bong bóng ở trên bộ chỉnh vị trí, mà câu nhắc cũ chỉ nói *"bật công tắc bong
+     * bóng ở trên"* ⇒ người lái bật nhầm "Tự mở VietMap" (không mở khoá gì). Câu nhắc phải gọi ĐÚNG tên công tắc mở khoá (công tắc
+     * hiện bóng — `applyBubbleGate` đọc `vmBubbleShown()`), ở cả 5 ngôn ngữ. Thử ĐỎ: đổi tên công tắc mà quên câu nhắc.
+     */
+    @Test
+    fun `cau nhac khoa vi tri goi dung ten cong tac hien bong, du 5 ngon ngu`() {
+        fun string(xml: String, name: String): String =
+            Regex("""<string name="$name">(.*?)</string>""", RegexOption.DOT_MATCHES_ALL).find(xml)?.groupValues?.get(1) ?: error("thiếu $name")
+        listOf("values", "values-en", "values-zh-rCN", "values-th", "values-ms").forEach { d ->
+            val xml = SourceRoots.text("src/main/res/$d/strings_kachi.xml")
+            val hint = string(xml, "kachi_bubble_need_toggle")
+            assertTrue(string(xml, "kachi_bubble_enabled_title") in hint, "$d: câu nhắc phải gọi tên công tắc hiện bóng: $hint")
+            assertFalse(string(xml, "kachi_bubble_autostart_title") in hint, "$d: công tắc tự mở VietMap không mở khoá vị trí: $hint")
+        }
+    }
 }

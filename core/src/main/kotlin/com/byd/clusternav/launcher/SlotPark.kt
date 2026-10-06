@@ -7,7 +7,10 @@ package com.byd.clusternav.launcher
  * *"sao ko giả lập 1 ô số 7 gì đó, để nhét các app chạy nền vào đó"* · *"thử cho nó vào nền đi xem nào?"*.
  *
  * [ĐO xe 05/10, Seal DL3, 2.88]: (1) giữ chỗ BEHIND-HOME ném NPE trong system_server ⇒ mọi lượt đẩy app ra sau màn nhà
- * hỏng; (2) dời YouTube từ màn ảo ô sang display 0 ⇒ activity RELAUNCH, dừng phát hẳn. ⇒ đổi display / đổi cỡ = relaunch.
+ * hỏng; (2) dời YouTube từ màn ảo ô sang display 0 ⇒ activity RELAUNCH, dừng phát hẳn. ⇒ đổi display = relaunch. Đổi CỠ màn ảo
+ * đang chạy (mọi ô vẫn làm khi inset đổi) thì CHƯA đo có relaunch không: [ĐO nguồn r47] activity chỉ dựng lại khi thay đổi (cỡ vượt
+ * ngưỡng tài nguyên của app · mật độ) không nằm trong `configChanges` của nó — KDoc `ParkedApps.claim`. 2.91 · F2 đổi cỡ khi nhận
+ * lại vào ô khác cỡ (🚗 OC-291-2).
  * Ô 7 = app ở YÊN trong chính màn ảo của nó; chỉ mặt vẽ đổi sang một bề mặt không ai xem (`ParkedApps` ở `:app`).
  *
  * Hai phần thuần (test off-device): [ParkLedger] — sổ app đang đỗ (thứ tự, trần, đỗ lại cùng gói) · [SlotParkPlan] — app RỜI
@@ -49,7 +52,7 @@ class ParkLedger<T>(private val cap: Int = CAP) {
     /** Lấy RA (gỡ khỏi sổ) bản đỗ của [pkg] — `null` = không đỗ. Nhận lại vào ô là lấy ra: một màn ảo, một chủ. */
     fun take(pkg: String): T? = synchronized(lock) { entries.remove(pkg) }
 
-    /** XEM bản đỗ của [pkg] mà KHÔNG lấy ra (PARK-1: mặt vẽ ô đổi cỡ trước, chỉ lấy ra khi đã đúng cỡ). */
+    /** XEM bản đỗ của [pkg] mà KHÔNG lấy ra — chỉ ĐỌC (`ParkedApps.vdOf`: màn ảo cho bước nhạc của chuyến). Nhận lại vào ô = [take]. */
     fun peek(pkg: String): T? = synchronized(lock) { entries[pkg] }
 
     fun has(pkg: String): Boolean = synchronized(lock) { pkg in entries }

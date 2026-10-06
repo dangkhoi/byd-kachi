@@ -132,10 +132,12 @@ class SlotParkWiringContractTest {
     @Test
     fun `F2 - nhan lai khac co - gan roi doi co man ao theo o, khong ghim, khong khung`() {
         val claim = SourceRoots.body(parked, "fun claim(")
-        order(claim, "val p = pkg?.let(ledger::peek)", "SlotParkPlan.claim(p?.width, p?.height, w, h)",
-            "if (p == null || step == SlotParkPlan.ClaimStep.GOLDEN) return null", "val taken = take(p.pkg) ?: return null",
+        // Review 2.91 Pass 1 [P3] — ĐỔI GHIM có lý do: lấy ra TRƯỚC, quyết theo CHÍNH bản đã lấy (`adoptHidden` ghi sổ từ luồng
+        // `kachi-behind`; xem-rồi-lấy là hai lượt khoá ⇒ bản cùng gói bị thay giữa chừng thì bước tính theo cỡ bản cũ).
+        order(claim, "val taken = pkg?.let { take(it) } ?: return null", "SlotParkPlan.claim(taken.width, taken.height, w, h)",
             "if (!attach(taken, sv.holder.surface, owner, slot)) return null",
             "val resize = step == SlotParkPlan.ClaimStep.ATTACH_RESIZE", "return Claim(taken, resize)")
+        assertFalse("peek" in claim, "nhận lại không xem-rồi-mới-lấy (hai lượt khoá): $claim")
         listOf("setFixedSize", "letterbox", "fun fit(", "fun unfit(", "fun place(", "Gravity", "FrameLayout").forEach {
             assertFalse(it in parked, "'$it' — 2.91 bỏ ghim cỡ + khung viền (nguồn viền đen)")
         }

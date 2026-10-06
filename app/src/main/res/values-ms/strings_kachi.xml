@@ -414,7 +414,7 @@
     <string name="kachi_bubble_autostart_title">Buka VietMap secara automatik untuk gelembung</string>
     <string name="kachi_bubble_autostart_sub">Mulakan VietMap di latar belakang apabila kereta dihidupkan atau Kachi dibuka, supaya gelembung sedia pada panel instrumen. Mati: gelembung hanya muncul semasa VietMap berjalan.</string>
     <string name="kachi_bubble_need_cast">Kedudukan hanya berubah semasa panel instrumen memancar — ia tetap disimpan, tetapi panel instrumen belum akan mengikutinya.</string>
-    <string name="kachi_bubble_need_toggle">Hidupkan suis gelembung di atas untuk melaras kedudukan.</string>
+    <string name="kachi_bubble_need_toggle">Hidupkan suis “Tunjukkan gelembung VietMap pada panel instrumen” di atas untuk melaras kedudukan.</string>
     <string name="kachi_bubble_pos_x">Kedudukan gelembung — melintang</string>
     <string name="kachi_bubble_pos_y">Kedudukan gelembung — menegak</string>
     <string name="kachi_bubble_drag_hint">Seret kotak di dalam bingkai untuk meletakkan gelembung pada panel instrumen.</string>

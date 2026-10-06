@@ -498,7 +498,7 @@
     <string name="kachi_bubble_autostart_title">Auto-open VietMap for the bubble</string>
     <string name="kachi_bubble_autostart_sub">Start VietMap in the background when the car starts or Kachi opens, so the bubble is ready on the cluster. Off: the bubble only shows while VietMap is running.</string>
     <string name="kachi_bubble_need_cast">The position only moves while the cluster is casting — it is still saved, but the cluster will not follow yet.</string>
-    <string name="kachi_bubble_need_toggle">Turn on the bubble switch above to adjust the position.</string>
+    <string name="kachi_bubble_need_toggle">Turn on \"Show the VietMap bubble on the cluster\" above to adjust the position.</string>
     <string name="kachi_bubble_pos_x">Bubble position — across</string>
     <string name="kachi_bubble_pos_y">Bubble position — down</string>
     <string name="kachi_bubble_drag_hint">Drag the box inside the frame to place the bubble on the cluster.</string>

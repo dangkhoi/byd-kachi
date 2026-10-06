@@ -414,7 +414,7 @@
     <string name="kachi_bubble_autostart_title">เปิด VietMap อัตโนมัติสำหรับบับเบิล</string>
     <string name="kachi_bubble_autostart_sub">เปิด VietMap ในพื้นหลังเมื่อสตาร์ทรถหรือเปิด Kachi เพื่อให้บับเบิลพร้อมบนหน้าปัด ปิดไว้: บับเบิลจะแสดงเฉพาะขณะ VietMap ทำงาน</string>
     <string name="kachi_bubble_need_cast">ตำแหน่งจะขยับได้เฉพาะขณะหน้าปัดกำลังฉาย — ค่ายังถูกบันทึกไว้ แต่หน้าปัดจะยังไม่เปลี่ยนตาม</string>
-    <string name="kachi_bubble_need_toggle">เปิดสวิตช์บับเบิลด้านบนเพื่อปรับตำแหน่ง</string>
+    <string name="kachi_bubble_need_toggle">เปิดสวิตช์ “แสดงบับเบิล VietMap บนหน้าปัด” ด้านบนเพื่อปรับตำแหน่ง</string>
     <string name="kachi_bubble_pos_x">ตำแหน่งบับเบิล — แนวนอน</string>
     <string name="kachi_bubble_pos_y">ตำแหน่งบับเบิล — แนวตั้ง</string>
     <string name="kachi_bubble_drag_hint">ลากกล่องภายในกรอบเพื่อวางบับเบิลบนหน้าปัด</string>
