@@ -61,11 +61,12 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
      */
     private var key: Int? = null
 
-    /** A2 · 2.89 — tay cầm + tên + cỡ của màn ảo lượt này: [park] trao NGUYÊN chúng cho ô 7 (`ParkedApps.adoptHidden`). */
+    /** A2 · 2.89 — tay cầm + tên + cỡ (+ mật độ, 2.91 · F2b) của màn ảo lượt này: [park] trao NGUYÊN chúng cho ô 7 (`ParkedApps.adoptHidden`). */
     private var lease: VdLease? = null
     private var vdName: String? = null
     private var width = 0
     private var height = 0
+    private var densityDpi = 0
 
     override fun create(): Int? {
         vdId?.let { return it }
@@ -109,7 +110,7 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
             SlotVdOwner.adopt(OWNER, k, name, l)
             key = k
             vdId = id
-            lease = l; vdName = name; width = m.widthPixels; height = m.heightPixels
+            lease = l; vdName = name; width = m.widthPixels; height = m.heightPixels; densityDpi = m.densityDpi
             LIVE[id] = this
             val mode = runCatching { dm.getDisplay(Display.DEFAULT_DISPLAY)?.mode }.getOrNull()
             val phys = mode?.let { "${it.physicalWidth}x${it.physicalHeight}" } ?: "?"
@@ -164,7 +165,7 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
         val l = lease ?: return false
         val n = vdName ?: return false
         val s = sink ?: return false
-        if (!ParkedApps.adoptHidden(pkg, n, l, width, height, s)) return false
+        if (!ParkedApps.adoptHidden(pkg, n, l, width, height, densityDpi, s)) return false
         key = null; sink = null; lease = null; vdName = null
         LIVE.remove(vd, this)
         vdId = null

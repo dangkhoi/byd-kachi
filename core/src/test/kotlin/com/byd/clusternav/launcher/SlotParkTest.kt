@@ -258,4 +258,21 @@ class SlotParkTest {
         assertEquals(SlotParkPlan.ClaimStep.GOLDEN, c(1129, null, 1129, 804))
         assertEquals(3, SlotParkPlan.ClaimStep.values().size, "không còn bước chờ / ghim / bỏ khung")
     }
+
+    /**
+     * 2.91 · F2b — khoá quyết định điều phối 06/10 (nhạc của app đỗ chạy tiếp): nhận lại vào ô khác cỡ chỉ đổi CỠ, GIỮ mật độ. Ca QA
+     * 05/10: ô 1129×610 (nền 200 dpi ⇒ 162 dpi) mở lại vào ô 1129×804 (⇒ 200 dpi) — không giữ thì lượt nhận lại đổi 162 → 200, và
+     * [ĐO nguồn r47 `ActivityRecord.java:3377`] đổi mật độ luôn dựng lại activity không khai `density`. Màn ảo MỞ MỚI: theo ô như cũ.
+     * Thử ĐỎ: trả `null` cho `keep = true` (lại đổi mật độ khi nhận lại), hoặc trả [currentDpi] khi `keep = false` (đường golden đổi).
+     */
+    @Test
+    fun `F2b - nhan lai giu mat do man ao do, man ao mo moi theo o`() {
+        assertEquals(162, SlotDensity.forTablet(610, 200), "tiền đề ca QA: ô cạnh ngắn 610 ⇒ 162 dpi")
+        assertEquals(200, SlotDensity.forTablet(804, 200), "ô cạnh ngắn 804 ⇒ 200 dpi — khác 162")
+        assertEquals(162, SlotParkPlan.resizeDensity(keep = true, currentDpi = 162), "nhận lại: GIỮ 162, không thành 200")
+        assertEquals(240, SlotParkPlan.resizeDensity(keep = true, currentDpi = 240), "màn ảo ẩn của chuyến (mật độ display 0): giữ")
+        assertNull(SlotParkPlan.resizeDensity(keep = false, currentDpi = 162), "không phải nhận lại ⇒ đường thường: mật độ theo ô")
+        assertNull(SlotParkPlan.resizeDensity(keep = true, currentDpi = 0), "không biết mật độ ⇒ đường thường, không bao giờ đặt 0")
+        assertNull(SlotParkPlan.resizeDensity(keep = true, currentDpi = -1))
+    }
 }

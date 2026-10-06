@@ -67,6 +67,11 @@ class VdAppHost(
     private var vdDisplayId: Int? = null
     private var dispW = 0                 // B4: cỡ VirtualDisplay (để map toạ độ ô→display; = cỡ surface nên map đồng nhất)
     private var dispH = 0
+    /**
+     * 2.91 · F2b — mật độ màn ảo đang mang (tạo · đổi cỡ thành công · nhận lại) và [keepDpi]: màn ảo NHẬN LẠI từ ô 7 giữ mật độ app
+     * đã dựng theo cho MỌI lượt đổi cỡ về sau của host này ([SlotParkPlan.resizeDensity]); mật độ theo ô chỉ về khi app MỞ MỚI.
+     */
+    private var dispDpi = 0; private var keepDpi = false
     private var pkg: String? = null
     private var shell: ((String) -> String)? = null
     private var launched = false
@@ -127,13 +132,14 @@ class VdAppHost(
                     // xoay nay làm bằng `wm set-fix-to-user-rotation` qua shell SAU khi tạo VD (xem [maybeLaunch]) —
                     // khoá hướng mà KHÔNG đổi cờ hiển thị nên không đổi đường composite (app vẫn vẽ vào ô như cũ).
                     val name = "kachi-slot-$slot-${System.currentTimeMillis()}"
+                    val dpi = slotDensity(w, ht)   // đường golden (mở mới): mật độ theo ô như trước 2.91 — F2b chỉ GHI LẠI nó
                     // lint WrongConstant: 256 = VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL là hằng @hide của
                     // DisplayManager (8 = OWN_CONTENT_ONLY là public). Cờ ẩn dùng CỐ Ý — đường cast đang chạy ngoài
                     // hiện trường (CLAUDE.md §6): KHÔNG đổi giá trị, chỉ tắt cảnh báo tại đúng một dòng.
                     @SuppressLint("WrongConstant")
-                    val created = dm.createVirtualDisplay(name, w, ht, slotDensity(w, ht), h.surface, 8 or 256)
+                    val created = dm.createVirtualDisplay(name, w, ht, dpi, h.surface, 8 or 256)
                     vd = created
-                    dispW = w; dispH = ht; vdName = name   // B4: VD cỡ = surface cỡ → map toạ độ chạm đồng nhất
+                    dispW = w; dispH = ht; vdName = name; dispDpi = dpi   // B4: VD cỡ = surface cỡ → map toạ độ chạm đồng nhất
                     // B2b: đăng ký display của VD (thuộc LAUNCHER) TRƯỚC maybeLaunch — nếu không, cổng ownership
                     // của launcherSeam sẽ REJECT lệnh `am start --display <vdId>` (fail-safe deny display không chủ).
                     created?.display?.displayId?.let { id ->
@@ -155,52 +161,23 @@ class VdAppHost(
     }
 
     /**
-     * ═══ V3 · R15 — ĐỔI CỠ màn ảo của ô, **một đường duy nhất** ═══════════════════════════════════════════
-     *
-     * ## Bệnh nó chữa — [ĐO xe 2026-09-16] `carlog-0916/slot-insets-bug.png`
-     * Lúc khởi động, khi thanh trên/dưới của ROM còn hiện, ô được đo theo khung **đã bị co**: màn ảo dựng đúng
-     * cỡ hụt ấy, app trong ô (YouTube) bố trí theo nó, và khi thanh ẩn đi thì ô rộng ra nhưng ảnh trong ô vẫn
-     * giữ khung cũ ⇒ **dải xám ở trên**. Bấm Home lần nữa (lúc thanh đã ẩn) thì đúng.
-     *
-     * ## Vì sao là một hàm có TÊN, không phải ba dòng trong `surfaceChanged`
-     * Từ 1.66 có **hai** thời điểm biết được cỡ ô đã đổi: `surfaceChanged` (đường cũ) và lượt bố trí lại do
-     * inset đổi ([WorkspaceView] — đường mới). Hai chỗ tự viết ba dòng giống nhau là bản sao thứ hai của một
-     * phép tính có **đòn bẩy mật độ** bên trong; một bên quên [slotDensity] là ô đó hiện chữ to gấp rưỡi ô bên
-     * cạnh mà không ai hiểu vì sao.
-     *
-     * **Trùng cỡ ⇒ không làm gì**: đây là điều khiến đường mới không phải "cơ chế thứ hai" mà chỉ là một cái
-     * kích thêm — gọi thừa bao nhiêu lần cũng vô hại, và `VirtualDisplay.resize` thì KHÔNG rẻ (nó đẩy một lượt
-     * đổi cấu hình vào app đang chạy trong ô).
+     * ═══ V3 · R15 — ĐỔI CỠ màn ảo của ô, **một đường duy nhất** — bệnh đã chữa + vì sao là một hàm có tên: KDoc [VdAppHostResize]
+     * (phần thi hành tách sang đó, 2.91 · F2b). **Trùng cỡ ⇒ không làm gì**: gọi thừa vô hại; `VirtualDisplay.resize` thì KHÔNG
+     * rẻ (đẩy một lượt đổi cấu hình vào app đang chạy trong ô). 2.91 · F2b: màn ảo nhận lại từ ô 7 ([keepDpi]) chỉ đổi CỠ, GIỮ mật độ.
      */
     fun resize(w: Int, h: Int) {
         if (w <= 0 || h <= 0) return
         if (w == dispW && h == dispH) return
         val v = vd ?: return
-        Log.i(TAG, "[slot-resize] ô $slot ${dispW}x$dispH → ${w}x$h")
-        runCatching { v.resize(w, h, slotDensity(w, h)) }
-            .onFailure { Log.w(TAG, "[slot-resize] ô $slot hỏng", it) }
+        val keep = SlotParkPlan.resizeDensity(keepDpi, dispDpi)
+        if (keep != null) Log.i(TAG, "[slot-density] keep $keep on unpark ô $slot ${dispW}x$dispH → ${w}x$h")
+        VdAppHostResize.apply(slot, v, dispW, dispH, w, h) { keep ?: slotDensity(w, h) }?.let { dispDpi = it }
         // B4: giữ cỡ VD đồng bộ để map toạ độ chạm đúng sau resize.
         dispW = w; dispH = h
     }
 
-    /**
-     * R5 · ĐÒN BẨY MẬT ĐỘ (generic, spec §4.4). Mật độ thật đặt cho màn ảo của ô = [SlotDensity.forTablet] theo
-     * **cạnh ngắn** của ô, để `smallestScreenWidthDp ≥ 600` ⇒ app có layout tablet không đòi portrait ⇒ không rơi
-     * size-compat (bug "YouTube co dải dọc giữa ô khi play", owner 2026-09-15). Truyền NGAY lúc
-     * `createVirtualDisplay`/`resize` (không qua `wm density` shell ⇒ không ghi `display_settings.xml`, không cần
-     * đường trả lại — CLAUDE §5). Không hỏi tên gói, không hỏi to/bé; ô đã ≥600dp thì giữ [densityDpi] nguyên.
-     * Kỳ vọng: app đầy khung; video 16:9 chỉ full-pixel ở fullscreen player. Log một dòng để đo trên xe.
-     */
-    private fun slotDensity(w: Int, h: Int): Int {
-        val short = minOf(w, h)
-        val dpi = SlotDensity.forTablet(short, densityDpi)
-        Log.i(
-            TAG,
-            "[slot-density] slot=$slot short=$short dpi=$densityDpi→$dpi" +
-                " (%.1fdp→%.1fdp)".format(SlotDensity.dpOf(short, densityDpi), SlotDensity.dpOf(short, dpi)),
-        )
-        return dpi
-    }
+    /** R5 · ĐÒN BẨY MẬT ĐỘ theo cạnh ngắn của ô (KDoc + dòng nhật ký `[slot-density]`: [VdAppHostResize.slotDensity]). */
+    private fun slotDensity(w: Int, h: Int): Int = VdAppHostResize.slotDensity(slot, w, h, densityDpi)
 
     /** Bind the package + the uid-2000 shell seam; launches once the surface/VD is ready. */
     fun bind(pkg: String, shell: (String) -> String) {
@@ -354,16 +331,20 @@ class VdAppHost(
         val v = vd; val id = vdDisplayId; val name = vdName; val p = pkg
         if (v == null || id == null || name == null || p == null) return false
         if (!SlotParkPlan.parkable(released, launched, true, p, dead, full.isDetached, SlotLiveProbe.watching(probeKey))) return false
-        if (!ParkedApps.park(p, name, VdLease(v, id, unregisterVd), dispW, dispH, protect)) return false
+        if (!ParkedApps.park(p, name, VdLease(v, id, unregisterVd), dispW, dispH, dispDpi, protect)) return false
         SlotLiveProbe.unwatch(probeKey); gesture.reset(); full.reset()
         released = true; vd = null; vdDisplayId = null; pkg = null; launched = false
         surface.visibility = INVISIBLE   // khung cuối không đứng lại trên ô trong lúc chờ lượt render dựng lại ô
         return true
     }
 
-    /** Ô 7 · C — màn ảo đỗ [p] ĐÃ gắn ([ParkedApps.claim]): KHÔNG `force-stop`/`am start` (đổi cỡ, nếu cần, do bên gọi qua [resize]); app đã rời nó ⇒ mở như thường. */
+    /**
+     * Ô 7 · C — màn ảo đỗ [p] ĐÃ gắn ([ParkedApps.claim]): KHÔNG `force-stop`/`am start` (đổi cỡ, nếu cần, do bên gọi qua [resize] —
+     * 2.91 · F2b GIỮ mật độ [p] mang, [keepDpi]); app đã rời nó ⇒ mở như thường.
+     */
     private fun unpark(p: ParkedApps.Parked) {
         vd = p.lease.vd; vdDisplayId = p.lease.displayId; vdName = p.name; dispW = p.width; dispH = p.height; launched = true
+        dispDpi = p.densityDpi; keepDpi = true
         shell?.let { sh -> SlotLiveProbe.watch(probeKey, p.pkg, p.lease.displayId, sh, onMissing = ::reopen) { onAppClosed() } }
         inputClient?.let { c -> Thread { runCatching { c.ensureStarted() } }.start() }   // như đường golden (B4)
     }

@@ -50,7 +50,7 @@ class L4TripBehindContractTest {
             "VdLease(v, id, dispatcher::unregisterLauncherVirtualDisplay)", "SlotVdOwner.adopt(OWNER, k, name, l)")
         // Trao cho ô 7: KHÔNG nhả (không SlotVdOwner.release, không đóng mặt vẽ), rời sổ LIVE (thu hồi không đụng tới nữa).
         val park = SourceRoots.body(staging, "override fun park(vd: Int, pkg: String): Boolean {")
-        order(park, "if (vd != vdId) return false", "ParkedApps.adoptHidden(pkg, n, l, width, height, s)", "LIVE.remove(vd, this)")
+        order(park, "if (vd != vdId) return false", "ParkedApps.adoptHidden(pkg, n, l, width, height, densityDpi, s)", "LIVE.remove(vd, this)")
         assertFalse("SlotVdOwner.release(" in park || "close()" in park || "\"am " in park, "trao ≠ nhả, 0 lệnh shell: $park")
         assertTrue(staging.contains("val NEXT_KEY = AtomicInteger(-1)"), "khoá âm, giảm dần")
         val release = SourceRoots.body(staging, "fun release() {")

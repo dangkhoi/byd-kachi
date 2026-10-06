@@ -83,7 +83,14 @@ class SlotParkWiringContractTest {
         assertEquals(1, Regex("""::reopen""").findAll(unpark).count())
         // 2.91 · F2 — ĐỔI GHIM có lý do: bỏ ghim cỡ (nguồn viền đen [ĐO máy ảo QA 05/10]); màn ảo nhận lại đổi cỡ qua đường DUY NHẤT.
         val resize = SourceRoots.body(host, "fun resize(")
-        order(resize, "if (w <= 0 || h <= 0) return", "if (w == dispW && h == dispH) return", "v.resize(w, h, slotDensity(w, h))", "dispW = w; dispH = h")
+        order(resize, "if (w <= 0 || h <= 0) return", "if (w == dispW && h == dispH) return",
+            "val keep = SlotParkPlan.resizeDensity(keepDpi, dispDpi)",
+            "VdAppHostResize.apply(slot, v, dispW, dispH, w, h) { keep ?: slotDensity(w, h) }?.let { dispDpi = it }", "dispW = w; dispH = h")
+        // 2.91 · F2b — phần THI HÀNH tách nguyên văn sang `VdAppHostResize` (trần 500 dòng): dòng `[slot-resize]` TRƯỚC, mật độ + đổi
+        // cỡ SAU, cùng một rào lỗi — đúng thứ tự trước khi tách.
+        order(SourceRoots.body(code("VdAppHostResize.kt"), "fun apply("), "Log.i(TAG, \"[slot-resize] ô \$slot",
+            "runCatching { dpi().also { v.resize(w, h, it) } }", ".onFailure { Log.w(TAG, \"[slot-resize] ô \$slot hỏng\", it) }")
+        assertFalse(".resize(w, h, " in host, "VdAppHost không tự gọi VirtualDisplay.resize — một đường qua VdAppHostResize")
         assertFalse("pinned" in host, "không còn cờ ghim cỡ màn ảo nhận lại")
     }
 
@@ -148,11 +155,39 @@ class SlotParkWiringContractTest {
             "chạm map theo mặt vẽ ↔ cỡ màn ảo (dispW/dispH cập nhật trong resize)")
     }
 
+    /**
+     * 2.91 · F2b — khoá quyết định điều phối 06/10 (nhạc của app đỗ chạy tiếp): đường NHẬN LẠI không bao giờ đổi MẬT ĐỘ màn ảo; đường
+     * golden (mở mới) giữ y nguyên mật độ theo ô. [ĐO nguồn r47 `ActivityRecord.java:3377`] đổi mật độ luôn dựng lại activity không
+     * khai `density`. Luật thuần + bảng ở `:core` (`SlotParkTest › F2b`); ở đây canh dây nối. Thử ĐỎ: bỏ `keepDpi = true` ở `unpark`
+     * (lượt đổi cỡ sau gắn lại tính mật độ theo ô), hoặc cho `slotDensity(` vào `unpark`.
+     */
+    @Test
+    fun `F2b - nhan lai khong bao gio doi mat do, duong golden giu mat do theo o`() {
+        val unpark = SourceRoots.body(host, "private fun unpark(")
+        order(unpark, "dispW = p.width; dispH = p.height", "dispDpi = p.densityDpi; keepDpi = true")
+        assertFalse("slotDensity(" in unpark, "nhận lại không tính mật độ theo ô")
+        assertEquals(1, Regex("""\bkeepDpi = true""").findAll(host).count(), "chỉ đường nhận lại bật giữ mật độ")
+        assertTrue("private var dispDpi = 0; private var keepDpi = false" in host, "host mới (mở mới) mặc định KHÔNG giữ")
+        // Nhận lại khác cỡ: gắn → unpark (bật giữ) → resize — resize gặp `keepDpi` nên đặt lại ĐÚNG mật độ màn ảo đỗ.
+        order(SourceRoots.body(host, "override fun surfaceChanged("), "val c = ParkedApps.claim(surface, pkg, owner, slot, w, ht)",
+            "if (c != null) { unpark(c.parked); if (c.resize) resize(w, ht); return }")
+        val resize = SourceRoots.body(host, "fun resize(")
+        order(resize, "val keep = SlotParkPlan.resizeDensity(keepDpi, dispDpi)",
+            "if (keep != null) Log.i(TAG, \"[slot-density] keep \$keep on unpark", "{ keep ?: slotDensity(w, h) }")
+        // Đường golden y nguyên: tạo màn ảo bằng mật độ theo ô, chỉ GHI LẠI nó.
+        order(SourceRoots.body(host, "override fun surfaceChanged("), "val dpi = slotDensity(w, ht)",
+            "dm.createVirtualDisplay(name, w, ht, dpi, h.surface, 8 or 256)", "dispW = w; dispH = ht; vdName = name; dispDpi = dpi")
+        // Mật độ của màn ảo đỗ đi cùng nó qua ô 7 (đỗ từ ô · màn ảo ẩn của chuyến).
+        assertTrue("val densityDpi: Int," in parked, "bản đỗ mang mật độ")
+        assertTrue("ParkedApps.adoptHidden(pkg, n, l, width, height, densityDpi, s)" in
+            SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/behind/StagingDisplay.kt"), "màn ảo ẩn của chuyến trao cả mật độ")
+    }
+
     @Test
     fun `do - host tha moi thu NHU da nha nhung khong force-stop, khong nha man ao`() {
         val park = SourceRoots.body(host, "fun park(")
         order(park, "SlotParkPlan.parkable(released, launched, true, p, dead, full.isDetached, SlotLiveProbe.watching(probeKey))",
-            "ParkedApps.park(p, name, VdLease(v, id, unregisterVd), dispW, dispH, protect)", "SlotLiveProbe.unwatch(probeKey)",
+            "ParkedApps.park(p, name, VdLease(v, id, unregisterVd), dispW, dispH, dispDpi, protect)", "SlotLiveProbe.unwatch(probeKey)",
             "released = true; vd = null; vdDisplayId = null; pkg = null; launched = false", "surface.visibility = INVISIBLE")
         forbidden.forEach { assertFalse(it in park, "'$it' trong park") }
         assertFalse("SlotVdOwner.release(" in park, "đỗ KHÔNG nhả màn ảo — DESTROY_CONTENT_ON_REMOVAL sẽ kết thúc app")
@@ -166,12 +201,13 @@ class SlotParkWiringContractTest {
         // A2 · 2.89 — ĐỔI GHIM có lý do (DRY): ghi sổ của `park` và `adoptHidden` (màn ảo ẩn của chuyến lên xe) đi MỘT lối
         // `enter`; thứ tự giữ: đổi mặt vẽ → chuyển chủ (không nhả) → sổ → nhả bản bị đẩy ra.
         order(SourceRoots.body(parked, "fun park("), "OffscreenSink.open(width, height, \"kachi-park\")", "lease.vd.surface = sink.surface",
-            "enter(pkg, name, lease, width, height, sink, protect, ")
+            "enter(pkg, name, lease, width, height, densityDpi, sink, protect, ")
         order(SourceRoots.body(parked, "private fun enter("),
-            "SlotVdOwner.move(OWNER, key, name, lease)", "ledger.park(pkg, Parked(pkg, name, lease, width, height, key, sink), protect)",
+            "SlotVdOwner.move(OWNER, key, name, lease)", "ledger.park(pkg, Parked(pkg, name, lease, width, height, densityDpi, key, sink), protect)",
             "drop(it.handle, it.why.name)")
         val adopt = SourceRoots.body(parked, "internal fun adoptHidden(")
-        assertTrue("enter(pkg, name, lease, width, height, sink, emptySet()" in adopt && "surface" !in adopt, "nhận màn ảo đã ẩn: không đổi mặt vẽ")
+        assertTrue("enter(pkg, name, lease, width, height, densityDpi, sink, emptySet()" in adopt && "surface" !in adopt, "nhận màn ảo đã ẩn: không đổi mặt vẽ")
+        assertTrue("densityDpi <= 0) return false" in adopt, "F2b: màn ảo ẩn không rõ mật độ thì không nhận vào ô 7 (không giữ được)")
         order(SourceRoots.body(parked, "fun attach("), "p.lease.vd.surface = s", "drop(p, \"attach-failed\")", "return false",
             "p.sink.close()", "SlotVdOwner.move(owner, slot, p.name, p.lease)")
         order(SourceRoots.body(parked, "private fun drop("), "SlotVdOwner.release(OWNER, p.key)", "p.sink.close()")

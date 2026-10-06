@@ -82,13 +82,17 @@ object ParkedApps {
      */
     private val keys = AtomicInteger(-1_000_000)
 
-    /** Một app đang đỗ: màn ảo ([lease], tên [name]) giữ NGUYÊN cỡ [width]×[height] lúc đỗ. */
+    /**
+     * Một app đang đỗ: màn ảo ([lease], tên [name]) giữ NGUYÊN cỡ [width]×[height] và mật độ [densityDpi] lúc đỗ (2.91 · F2b: nhận lại
+     * vào ô khác cỡ GIỮ mật độ này — KDoc [claim]).
+     */
     class Parked internal constructor(
         val pkg: String,
         val name: String,
         val lease: VdLease,
         val width: Int,
         val height: Int,
+        val densityDpi: Int,
         internal val key: Int,
         internal val sink: OffscreenSink,
     )
@@ -96,11 +100,11 @@ object ParkedApps {
     private val ledger = ParkLedger<Parked>()
 
     /**
-     * ĐỖ app [pkg] đang ở màn ảo [lease] (tên [name], cỡ [width]×[height]): mặt vẽ → bề mặt ẩn cùng cỡ, màn ảo sang chủ
+     * ĐỖ app [pkg] đang ở màn ảo [lease] (tên [name], cỡ [width]×[height], mật độ [densityDpi]): mặt vẽ → bề mặt ẩn cùng cỡ, màn ảo sang chủ
      * [OWNER]. Vượt trần ⇒ nhả bản đỗ cũ nhất KHÔNG thuộc [protect] (app sắp được nhận lại ở cùng lượt). `false` = chưa đỗ
      * (không dựng được bề mặt ẩn / hệ từ chối đổi mặt vẽ) ⇒ bên gọi giữ host như cũ.
      */
-    fun park(pkg: String, name: String, lease: VdLease, width: Int, height: Int, protect: Set<String> = emptySet()): Boolean {
+    fun park(pkg: String, name: String, lease: VdLease, width: Int, height: Int, densityDpi: Int, protect: Set<String> = emptySet()): Boolean {
         val sink = try {
             OffscreenSink.open(width, height, "kachi-park")
         } catch (e: RuntimeException) {
@@ -114,7 +118,7 @@ object ParkedApps {
             Log.w(TAG, "đỗ $pkg: đổi mặt vẽ display ${lease.displayId} hỏng", e)
             return false
         }
-        enter(pkg, name, lease, width, height, sink, protect, via = "")
+        enter(pkg, name, lease, width, height, densityDpi, sink, protect, via = "")
         return true
     }
 
@@ -125,9 +129,9 @@ object ParkedApps {
      * ⇒ đổi cỡ theo ô — 2.91 · F2, một lượt đổi cấu hình cùng display, KDoc [claim]), mở toàn
      * màn ⇒ [forget], trần [ParkLedger.CAP] ⇒ nhả cũ nhất. Gọi được từ luồng `kachi-behind`: sổ và [SlotVdOwner] đều có khoá.
      */
-    internal fun adoptHidden(pkg: String, name: String, lease: VdLease, width: Int, height: Int, sink: OffscreenSink): Boolean {
-        if (pkg.isBlank() || width <= 0 || height <= 0) return false
-        enter(pkg, name, lease, width, height, sink, emptySet(), via = " via=trip")
+    internal fun adoptHidden(pkg: String, name: String, lease: VdLease, width: Int, height: Int, densityDpi: Int, sink: OffscreenSink): Boolean {
+        if (pkg.isBlank() || width <= 0 || height <= 0 || densityDpi <= 0) return false
+        enter(pkg, name, lease, width, height, densityDpi, sink, emptySet(), via = " via=trip")
         return true
     }
 
@@ -135,11 +139,13 @@ object ParkedApps {
      * Một lối ghi sổ cho [park] + [adoptHidden]: khoá âm mới → chuyển chủ màn ảo → sổ (nhả bản bị đẩy ra) → một dòng nhật ký
      * ([via] = đuôi ASCII cho nhật ký: `""` = đỗ từ ô, `" via=trip"` = màn ảo ẩn của chuyến lên xe).
      */
-    private fun enter(pkg: String, name: String, lease: VdLease, width: Int, height: Int, sink: OffscreenSink, protect: Set<String>, via: String) {
+    private fun enter(
+        pkg: String, name: String, lease: VdLease, width: Int, height: Int, densityDpi: Int, sink: OffscreenSink, protect: Set<String>, via: String,
+    ) {
         val key = keys.getAndDecrement()
         SlotVdOwner.move(OWNER, key, name, lease)
-        ledger.park(pkg, Parked(pkg, name, lease, width, height, key, sink), protect).forEach { drop(it.handle, it.why.name) }
-        Log.i(TAG, "đỗ $pkg display=${lease.displayId} ${width}x$height ⇒ ô 7 = ${ledger.pkgs()}$via")
+        ledger.park(pkg, Parked(pkg, name, lease, width, height, densityDpi, key, sink), protect).forEach { drop(it.handle, it.why.name) }
+        Log.i(TAG, "đỗ $pkg display=${lease.displayId} ${width}x$height@$densityDpi ⇒ ô 7 = ${ledger.pkgs()}$via")
     }
 
     /** A2 · 2.89 — màn ảo đỗ của [pkg] (`null` = không đỗ): link của bước nhạc đi vào CHÍNH màn ảo đó (`TripMusicPlan.ViewRoute.Parked`). */
@@ -147,7 +153,7 @@ object ParkedApps {
 
     /** Lấy RA bản đỗ của [pkg] (`null` = không đỗ) — chỉ [claim] gọi, và [attach] ngay (một màn ảo, một chủ). */
     private fun take(pkg: String): Parked? = ledger.take(pkg)?.also {
-        Log.i(TAG, "nhận lại $pkg display=${it.lease.displayId} ${it.width}x${it.height} ⇒ ô 7 = ${ledger.pkgs()}")
+        Log.i(TAG, "nhận lại $pkg display=${it.lease.displayId} ${it.width}x${it.height}@${it.densityDpi} ⇒ ô 7 = ${ledger.pkgs()}")
     }
 
     /**
@@ -190,11 +196,12 @@ object ParkedApps {
      * đã chạy ngoài hiện trường. Cả hai cờ chờ có thể rơi chung một traversal: `performTraversalLocked` áp cỡ TRƯỚC mặt vẽ (`:281-287`).
      * Lấy ra hỏng / gắn hỏng ⇒ `null` (đường thường; [attach] đã nhả màn ảo).
      *
-     * Đổi cỡ kéo theo MẬT ĐỘ của ô mới (`VdAppHost.resize` → `SlotDensity.forTablet` theo cạnh ngắn): hai ô có cạnh ngắn hai bên
-     * ngưỡng sw600 thì mật độ cũng đổi (vd nền 200 dpi: ô 1129×610 → 162 dpi, ô 1129×804 → 200 dpi). [ĐO nguồn r47
-     * `ActivityRecord.java`] activity DỰNG LẠI khi có thay đổi nó không khai trong `configChanges` (`:3291`, `:3377`); đổi cỡ màn
-     * chỉ được tính khi vượt ngưỡng tài nguyên của chính app (`:3398-3412`), mật độ thì luôn tính ⇒ ca có đổi mật độ dễ dựng lại
-     * activity hơn ca chỉ đổi cỡ (cùng tiến trình, task không dời). Nhạc có còn hay không: 🚗 OC-291-2 / OQ1.
+     * 2.91 · F2b — đổi CỠ, GIỮ MẬT ĐỘ (quyết định điều phối 06/10: nhạc của app đỗ phải chạy tiếp). [ĐO nguồn r47 `ActivityRecord.java`]
+     * activity DỰNG LẠI khi có thay đổi nó không khai trong `configChanges` (`:3291`, `:3377`); đổi cỡ màn chỉ được tính khi vượt ngưỡng
+     * tài nguyên của chính app (`:3398-3412`), đổi mật độ thì luôn tính. Mật độ theo ô (`SlotDensity.forTablet`, cạnh ngắn) khác nhau
+     * giữa hai ô có cạnh ngắn hai bên ngưỡng sw600 (vd nền 200 dpi: ô 1129×610 → 162 dpi, ô 1129×804 → 200 dpi) ⇒ host GIỮ
+     * [Parked.densityDpi] (`VdAppHost.keepDpi`, [SlotParkPlan.resizeDensity]); mật độ theo ô chỉ về khi app được MỞ MỚI (đường
+     * golden). Đánh đổi đã biết: ô hẹp hơn ô gốc ở mật độ giữ lại có thể dưới 600dp (bệnh R5 `SlotDensity`) tới lần mở mới. 🚗 OC-291-2.
      */
     fun claim(sv: SurfaceView, pkg: String?, owner: String, slot: Int, w: Int, h: Int): Claim? {
         // Review 2.91 Pass 1 [P3]: LẤY RA trước rồi mới quyết theo CHÍNH bản sẽ gắn. Sổ có khoá, nhưng `adoptHidden` ghi từ luồng
@@ -204,7 +211,7 @@ object ParkedApps {
         val step = SlotParkPlan.claim(taken.width, taken.height, w, h)
         if (!attach(taken, sv.holder.surface, owner, slot)) return null
         val resize = step == SlotParkPlan.ClaimStep.ATTACH_RESIZE
-        if (resize) Log.i(TAG, "nhận lại ${taken.pkg}: ô ${w}x$h ≠ màn ảo ${taken.width}x${taken.height} ⇒ đổi cỡ màn ảo theo ô (cùng display)")
+        if (resize) Log.i(TAG, "nhận lại ${taken.pkg}: ô ${w}x$h ≠ màn ảo ${taken.width}x${taken.height} ⇒ đổi cỡ theo ô, giữ ${taken.densityDpi} dpi (cùng display)")
         return Claim(taken, resize)
     }
 

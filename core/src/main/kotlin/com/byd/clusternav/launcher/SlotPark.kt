@@ -10,7 +10,7 @@ package com.byd.clusternav.launcher
  * hỏng; (2) dời YouTube từ màn ảo ô sang display 0 ⇒ activity RELAUNCH, dừng phát hẳn. ⇒ đổi display = relaunch. Đổi CỠ màn ảo
  * đang chạy (mọi ô vẫn làm khi inset đổi) thì CHƯA đo có relaunch không: [ĐO nguồn r47] activity chỉ dựng lại khi thay đổi (cỡ vượt
  * ngưỡng tài nguyên của app · mật độ) không nằm trong `configChanges` của nó — KDoc `ParkedApps.claim`. 2.91 · F2 đổi cỡ khi nhận
- * lại vào ô khác cỡ (🚗 OC-291-2).
+ * lại vào ô khác cỡ, F2b GIỮ mật độ ([SlotParkPlan.resizeDensity]) — 🚗 OC-291-2.
  * Ô 7 = app ở YÊN trong chính màn ảo của nó; chỉ mặt vẽ đổi sang một bề mặt không ai xem (`ParkedApps` ở `:app`).
  *
  * Hai phần thuần (test off-device): [ParkLedger] — sổ app đang đỗ (thứ tự, trần, đỗ lại cùng gói) · [SlotParkPlan] — app RỜI
@@ -109,7 +109,7 @@ object SlotParkPlan {
     /**
      * Một bước của lượt NHẬN LẠI (`ParkedApps.claim` ở `:app` chỉ THI HÀNH bước này): [GOLDEN] = không có bản đỗ ⇒ đường thường
      * (tạo màn ảo mới) · [ATTACH] = cùng cỡ ⇒ lấy ra + gắn · [ATTACH_RESIZE] = khác cỡ ⇒ lấy ra + gắn rồi ĐỔI CỠ màn ảo theo ô
-     * (`VdAppHost.resize` — đúng đường đổi cỡ mọi ô đã chạy khi inset đổi).
+     * (`VdAppHost.resize` — đúng đường đổi cỡ mọi ô đã chạy khi inset đổi), GIỮ mật độ màn ảo đỗ ([resizeDensity], 2.91 · F2b).
      */
     enum class ClaimStep { GOLDEN, ATTACH, ATTACH_RESIZE }
 
@@ -119,13 +119,27 @@ object SlotParkPlan {
      *
      * Trước 2.91 khác cỡ ⇒ ghim cỡ mặt vẽ theo màn ảo đỗ + khung viền giữ tỉ lệ ⇒ [ĐO máy ảo QA 05/10] app 1129×610 nằm trong ô
      * 1129×804: viền đen, góc trong vuông. Nay khác cỡ ⇒ màn ảo đổi cỡ theo ô (CÙNG display — app không dời màn, cùng tiến trình;
-     * app nhận một lượt đổi cấu hình như khi ô đổi cỡ do inset). Cỡ ô hỏng (≤ 0) ⇒ gắn, không đổi cỡ.
+     * app nhận một lượt đổi cấu hình như khi ô đổi cỡ do inset). Cỡ ô hỏng (≤ 0) ⇒ gắn, không đổi cỡ. Mật độ: [resizeDensity].
      */
     fun claim(parkedW: Int?, parkedH: Int?, w: Int, h: Int): ClaimStep = when {
         parkedW == null || parkedH == null -> ClaimStep.GOLDEN
         w <= 0 || h <= 0 || (w == parkedW && h == parkedH) -> ClaimStep.ATTACH
         else -> ClaimStep.ATTACH_RESIZE
     }
+
+    /**
+     * 2.91 · F2b (quyết định điều phối 06/10 — ưu tiên số một của ô 7 là nhạc CHẠY TIẾP; owner 05/10 trên xe: một lượt relaunch dừng cả
+     * YouTube Premium) — mật độ cho MỘT lượt đổi cỡ màn ảo ô. [keep] = màn ảo này được NHẬN LẠI từ ô 7 (app không mở mới) ⇒ GIỮ
+     * [currentDpi], mọi lượt đổi cỡ về sau của host đó cũng vậy. [ĐO nguồn r47 `ActivityRecord.java`] activity dựng lại khi có thay đổi
+     * nó không khai trong `configChanges` (`:3291`, `:3377`); đổi cỡ thuần chỉ được tính khi vượt ngưỡng tài nguyên của chính app
+     * (`:3398-3412`), đổi mật độ thì LUÔN tính ⇒ giữ mật độ bỏ hẳn nguồn dựng lại chắc chắn nhất (giảm, không triệt tiêu: đổi cỡ vượt
+     * ngưỡng của app vẫn có thể dựng lại). `null` = đường thường: mật độ theo ô (`SlotDensity.forTablet`, bên gọi tính) — màn ảo MỞ
+     * MỚI (đường golden) không đổi gì. [currentDpi] ≤ 0 (không biết) ⇒ `null`: không bao giờ đặt mật độ 0.
+     *
+     * Đánh đổi đã biết: nhận lại vào ô HẸP hơn ô gốc ở mật độ giữ lại có thể làm cạnh ngắn < 600dp (bệnh R5 của [SlotDensity] — app coi
+     * ô là điện thoại) tới lần app được mở mới; ngược lại (ô rộng hơn) thì vô hại.
+     */
+    fun resizeDensity(keep: Boolean, currentDpi: Int): Int? = if (keep && currentDpi > 0) currentDpi else null
 
     /** Gói app sẽ HIỆN trong bố cục [next] — được che chắn khỏi trần ô 7 ở lượt đỗ cùng lượt dựng lại ([ParkLedger.park]). */
     fun shown(next: List<SlotContent>): Set<String> = next.mapNotNullTo(HashSet()) { (it as? SlotContent.App)?.pkg }
