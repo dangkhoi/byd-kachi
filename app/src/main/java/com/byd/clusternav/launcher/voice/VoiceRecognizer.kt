@@ -189,7 +189,6 @@ class VoiceRecognizer private constructor(
          * tiếng Anh vào bằng dạng đọc tiếng Việt). Tên **app** vẫn chỉ vào qua cách gọi đã khai, không vào bằng
          * nhãn máy. Chỉ bias khi engine có bpe vocab.
          */
-        @Suppress("UNUSED_PARAMETER")
         fun open(
             ctx: Context,
             profiles: List<String>,
@@ -203,7 +202,8 @@ class VoiceRecognizer private constructor(
             places: List<String> = emptyList(),
         ): VoiceRecognizer? {
             val rec = VoiceEngine.recognizer(ctx) ?: return null
-            val hot = if (VoiceEngine.biasingReady()) SherpaBiasing.hotwordsFile(places, profiles) else ""
+            val taught = VoiceTaughtSource.forHotwords(ctx, apps, installed)   // 2.91 R8 — tên đã dạy (nguồn giọng) của hồ sơ
+            val hot = if (VoiceEngine.biasingReady()) SherpaBiasing.hotwordsFile(places, profiles, taught) else ""
             return VoiceRecognizer(rec, hot)
         }
 

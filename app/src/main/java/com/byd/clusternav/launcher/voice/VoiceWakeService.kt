@@ -238,6 +238,7 @@ class VoiceWakeService : Service() {
         // listener wake; wake OFF ⇒ sau khi phiên xong service ĐỨNG XUỐNG (BG-20, xem [standDownTask]).
         // FIX286 · VK1 — chế độ đọc từ ảnh chụp TƯƠI mỗi lượt start (START_STICKY dựng lại cũng qua đây), không tin cờ cũ.
         val mode = mode()
+        VoiceTeachRelay.onWakeStart(this, intent, mode)   // 2.91 VOICE-APP-NAMES — lượt DẠY ở `:wake` (ack + chạy; OFF ⇒ không ack)
         if (intent?.action == ACTION_LISTEN_NOW) {
             Log.i(TAG, "LISTEN_NOW — mở phiên nghe headless (overlay, không kéo launcher)")
             // VK6 — lối vào + chế độ + trạng thái mô hình lúc NHẬN lệnh (logcat `KachiWakeSession` + phiếu cho nhật ký bền).

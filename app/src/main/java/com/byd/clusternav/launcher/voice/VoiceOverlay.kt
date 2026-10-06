@@ -171,9 +171,25 @@ class VoiceOverlay(
         // thì hiện chữ đó; chưa có thì hiện gợi ý ngắn của trạng thái (`titleRes`, vd "Thử nói…"/"Đang nghe…").
         val line = if (text.isNotBlank()) text else ctx.getString(titleRes)
         body.text = line
-        action.visibility = if (actionText == null) View.GONE else View.VISIBLE
-        action.text = actionText.orEmpty()
-        action.setOnClickListener { onAction?.invoke() }
+        // 2.91 VOICE-APP-NAMES — nút ĐÃ GẮN ([arm]) còn hạn thì giữ, trừ khi chỗ gọi tự đưa một nút khác.
+        val armedNow = armed?.takeIf { android.os.SystemClock.elapsedRealtime() < it.until }
+        val shown = actionText ?: armedNow?.text
+        val tap = if (actionText != null) onAction else armedNow?.onTap
+        action.visibility = if (shown == null) View.GONE else View.VISIBLE
+        action.text = shown.orEmpty()
+        action.setOnClickListener { tap?.invoke() }
+    }
+
+    private class Armed(val text: String, val until: Long, val onTap: () -> Unit)
+
+    @Volatile private var armed: Armed? = null
+
+    /**
+     * 2.91 VOICE-APP-NAMES · lối (c) — GẮN một nút cho [forMs] tới (*"Dạy tên «…»"*, OQ5: 8 s): mọi lượt [render] trong
+     * hạn mà không mang nút riêng sẽ hiện nút này (câu trả lời *"không tìm thấy"* tới SAU lời gọi này, qua `say`).
+     */
+    fun arm(text: String, forMs: Long, onTap: () -> Unit) {
+        armed = Armed(text, android.os.SystemClock.elapsedRealtime() + forMs, onTap)
     }
 
     // ── dựng view ────────────────────────────────────────────────────────────────────────────────

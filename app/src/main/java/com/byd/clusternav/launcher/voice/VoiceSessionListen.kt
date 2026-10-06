@@ -38,8 +38,7 @@ internal fun VoiceSession.runListen(my: Int) {
         if (!capture.hasPermission()) { fail(my, R.string.kachi_voice_no_mic, openSettingsAction = true); return }
         if (!VoiceModelStore.isReady(ctx)) { fail(my, R.string.kachi_voice_no_model, openSettingsAction = true); return }
 
-        val labels = appsByLabel()
-        val rec = VoiceRecognizer.open(ctx, profiles(), labels.keys.toList(), labels.values.toSet(), places())
+        val rec = openCommandRecognizer()
         if (rec == null) { fail(my, R.string.kachi_voice_engine_failed, openSettingsAction = true); return }
 
         rec.use {

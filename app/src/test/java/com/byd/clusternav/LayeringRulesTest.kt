@@ -239,6 +239,10 @@ class LayeringRulesTest {
         // nguyên văn khỏi `KachiTopStrip.refreshChips` (2.88 gỡ bộ giải độ đục từng đọc chung nó; bảng vẫn là chỗ khai duy
         // nhất). "Thuần" theo phép đo chỉ vì không nhắc chữ View — `:core` chỉ nói SẮC THÁI ([ChipTone]), không màu.
         "TopStripChipInk.kt" to "bảng map ChipTone → vai màu KachiTheme (:app) — KachiTopStrip vẽ, một chỗ khai",
+        // 2.91 VOICE-APP-NAMES (spec §4.5 bảng khai phạm vi): cổng của trang Dạy tên app + bản thật là hàm mở rộng của
+        // `HomeViewModel` (`:app`, giữ repository Android) — cùng khuôn `ShortcutSettingsPort` (khai trong tệp Settings của :app).
+        // "Thuần" theo phép đo chỉ vì tệp không nhắc chữ View/Context; chuyển giao diện sang :core là tách nó khỏi bản thật duy nhất.
+        "VoiceNamesPort.kt" to "cổng trang Dạy tên app + hàm mở rộng HomeViewModel (:app) — cùng khuôn ShortcutSettingsPort",
     )
 
     @Test

@@ -1,0 +1,25 @@
+S1	lưu tên «google đ» cho com.google.android.apps.docs	1	{"ok":true,"cmd":"teach","ms":794,"pkg":"com.google.android.apps.docs","label":"Drive","heard":"mở google đ","probe_error":null,"name":"google đ","takes":2,"reject":null,"verdict":"WARN","reasons":["STEALS_FUZZY","NEAR_OTHER_APP"],"saved":true,"refused":null,"regression_changed":[],"reachable":t
+S2	lưu tên «cửa rôm» cho com.android.chrome	1	{"ok":true,"cmd":"teach","ms":448,"pkg":"com.android.chrome","label":"Chrome","heard":"mở cửa rôm","probe_error":null,"name":"cửa rôm","takes":4,"reject":null,"verdict":"NEW","reasons":[],"saved":true,"refused":null,"regression_changed":[],"reachable":true,"taught_count":1}
+W1	WAV thử (tốc độ khác) «mở google đ» ⇒ mở «Drive»	1	Mở ứng dụng Drive
+T1	say «mở google đ» ⇒ OpenApp «Drive»	1	Mở ứng dụng Drive
+O1	say «đưa google đ vào ô số hai» ⇒ OpenApp ô 2	1	Mở ứng dụng Drive vào ô 2 · ['✓ Mở ứng dụng Drive vào ô 2']
+C1	say «đóng google đ» ⇒ Unknown (APP_CLOSE, không mở app)	1	Chưa đóng được app bằng giọng — bấm phím Home, hoặc mở app khác đè lên: "đóng google đ"
+W2	WAV thử (tốc độ khác) «mở cửa rôm» ⇒ mở «Chrome»	1	Mở ứng dụng Chrome
+T2	say «mở cửa rôm» ⇒ OpenApp «Chrome»	1	Mở ứng dụng Chrome
+O2	say «đưa cửa rôm vào ô số hai» ⇒ OpenApp ô 2	1	Mở ứng dụng Chrome vào ô 2 · ['✓ Mở ứng dụng Chrome vào ô 2']
+C2	say «đóng cửa rôm» ⇒ Unknown (APP_CLOSE, không mở app)	1	Chưa đóng được app bằng giọng — bấm phím Home, hoặc mở app khác đè lên: "đóng cửa rôm"
+B:đèn đọc	teach_text «đèn đọc» ⇒ BLOCK, không lưu	1	BLOCK ['COMMAND', 'COMMAND_PREFIX']
+B:nhiệt	teach_text «nhiệt» ⇒ BLOCK, không lưu	1	BLOCK ['COMMAND_PREFIX', 'ONE_WORD']
+B:xem phim	teach_text «xem phim» ⇒ BLOCK, không lưu	1	BLOCK ['RESERVED_WORD']
+B:cài đặt	teach_text «cài đặt» ⇒ BLOCK, không lưu	1	BLOCK ['COMMAND', 'OTHER_APP']
+R1	say «bật đèn đọc» vẫn ⇒ Control	1	Bật Đèn đọc
+P1	hồ sơ «Mặc định 2»: «mở google đ» KHÔNG mở «Drive»	1	Mở ứng dụng Google
+P2	về «Mặc định»: «mở google đ» mở lại «Drive»	1	Mở ứng dụng Drive
+U1	gỡ com.android.chrome: «mở cửa rôm» không mở «Chrome»	1	Không tìm thấy thứ đó trong xe hay trong ứng dụng: "mở cửa rôm"
+U2	cài lại com.android.chrome: «mở cửa rôm» mở lại «Chrome»	1	Mở ứng dụng Chrome
+D1	teach_clear com.google.android.apps.docs ⇒ «mở google đ» không còn mở «Drive»	1	Mở ứng dụng Google
+SH1	MỘT lượt «cơm» (3 chữ cái) ⇒ CHẶN, chưa lưu	1	{"ok":true,"cmd":"teach","ms":1287,"pkg":"com.android.chrome","label":"Chrome","heard":"mở cơm","probe_error":null,"name":"cơm","takes":1,"reject":null,"verdict":"BLOCK","reasons":["ONE_WORD","SHORT_ONE_TAKE"],"saved":false,"refused":null,"regression_changed":[],"reachable":null,"taught_count":0
+SH2	lượt 2 ra ĐÚNG «cơm» ⇒ lưu được	1	{"ok":true,"cmd":"teach","ms":427,"pkg":"com.android.chrome","label":"Chrome","heard":"mở cơm","probe_error":null,"name":"cơm","takes":2,"reject":null,"verdict":"WARN","reasons":["ONE_WORD"],"saved":true,"refused":null,"regression_changed":[],"reachable":true,"taught_count":1}
+SH3	say «mở cơm» ⇒ OpenApp «Chrome»	1	Mở ứng dụng Chrome
+SH4	sau tên ngắn: say «bật đèn đọc» vẫn ⇒ Control	1	Bật Đèn đọc
+SHG	«ghe» (= «ghế») ⇒ CHẶN dù đã 2 lượt (tiền tố lệnh ghế), không lưu	1	{"ok":true,"cmd":"teach","ms":102,"pkg":"com.google.android.gm","label":"Gmail","heard":"mở ghe","probe_error":null,"name":"ghe","takes":2,"reject":null,"verdict":"BLOCK","reasons":["COMMAND_PREFIX","ONE_WORD"],"saved":false,"refused":null,"regression_changed":[],"reachable":null,"taught_count":0}

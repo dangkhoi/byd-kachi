@@ -42,7 +42,7 @@ object VoiceAppLabelPick {
 
     /**
      * @property labels nhãn→gói đã khử trùng, **giữ thứ tự xuất hiện đầu tiên** của nhãn (để phép sinh cách đọc
-     *   ở [VoiceWiring.withPhonetics] không đổi thứ tự cắm bí danh).
+     *   ở [VoiceAppIndex.build] không đổi thứ tự cắm bí danh).
      * @property ambiguous chỉ những nhãn có **≥2 gói khác nhau**, giá trị là danh sách gói đã xếp theo đúng luật
      *   chọn — **phần tử đầu là gói đã thắng**. Rỗng = không có gì nhập nhằng (ca thường).
      */

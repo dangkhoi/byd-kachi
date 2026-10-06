@@ -95,7 +95,9 @@ enum class VoiceHomeAction(
      */
     ASSIGN_APP_TO_SLOT("assign_app_to_slot", awaitsResult = true),
     /** Tham số = [VoiceHomeRelay.encodeLayout] (`LayoutPreset.name`). Activity thi hành bằng lambda `onLayout`. */
-    SET_LAYOUT("set_layout", awaitsResult = true);
+    SET_LAYOUT("set_layout", awaitsResult = true),
+    /** 2.91 VOICE-APP-NAMES R4(c) — mở trang *Dạy tên app* với MẪU ĐANG CHỜ = tham số (phần đuôi vừa nghe). */
+    TEACH_APP("teach_app");
 
     companion object {
         /** `null`/lạ ⇒ `null`: intent bừa từ gói khác không được làm gì (cùng luật với `EXTRA_OPEN_SETTINGS_GROUP`). */

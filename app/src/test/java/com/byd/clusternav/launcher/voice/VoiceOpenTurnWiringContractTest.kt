@@ -50,8 +50,10 @@ class VoiceOpenTurnWiringContractTest {
     @Test
     fun `chi cac luot nhan MOT CAU cua nguoi lai bat open-turn`() {
         val on = voiceSources().filter { (_, src) -> src.contains("openTurn = true") }.map { it.first }.sorted()
+        // 2.91 VOICE-APP-NAMES (spec §4.4) — + `VoiceTeachSession.kt` CÓ CHỦ Ý: lượt DẠY phải nghe bằng ĐÚNG tham số của
+        // lượt chính (người dùng nói cả câu "mở <tên>" như lúc lái; mẫu thu bằng cấu hình khác sẽ in ra chữ khác lúc dùng).
         assertEquals(
-            listOf("VoiceSessionListen.kt", "VoiceSessionTurns.kt"), on,
+            listOf("VoiceSessionListen.kt", "VoiceSessionTurns.kt", "VoiceTeachSession.kt"), on,
             "`openTurn = true` chỉ được ở lượt nghe CHÍNH và lượt NỐI; thấy: $on",
         )
         assertTrue(

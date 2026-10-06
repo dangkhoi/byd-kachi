@@ -144,7 +144,7 @@ class VoiceWakeHomeRelayWiringContractTest {
         assertTrue(ack > done, "ack phải SAU khi thi hành, mang đúng kết quả")
         assertTrue(fromIntent.contains("intent.removeExtra(com.byd.clusternav.launcher.EXTRA_VOICE_HOME_NONCE)"), "singleTask: extra ở lại getIntent() ⇒ xoá")
         // KachiHomeWiring: sáu lambda, hai cái mới là đúng hai cái dispatcher in-process nhận (assignAppToSlot · onLayout).
-        assertTrue(wiring.contains("VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout, slotCount = { VoiceSlotPlace.slotCountOf(state()) })"))
+        assertTrue(wiring.contains("VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout, slotCount = { VoiceSlotPlace.slotCountOf(state()) },"))
         // Đính chính owner 01/10 (spec shortcuts-autostart §2.2): giọng nói "vào ô n" là đặt TẠM ⇒ lambda in-process là
         // CHÍNH `slots.placeTemporary` (cùng lớp `KachiHomeSlots` lo cả state lẫn cửa sổ), không còn `slots.assignApp`.
         assertTrue(activity.contains("assignAppToSlot = { idx, pkg -> slots.placeTemporary(idx, pkg) }"), "Activity vẫn truyền CHÍNH lối đặt tạm của KachiHomeSlots")

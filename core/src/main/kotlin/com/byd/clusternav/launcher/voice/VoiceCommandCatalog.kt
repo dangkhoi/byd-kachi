@@ -107,6 +107,8 @@ object VoiceCommandCatalog {
         places: List<String> = emptyList(),
         confirmIds: Set<String> = emptySet(),
         lang: Lang = Strings.current,
+        /** 2.91 — tên app đã dạy còn sống (nguồn động THỨ TƯ của parser) ⇒ nhóm *"Tên app đã dạy"* ([VoiceCommandCatalogTaught]). */
+        aliases: List<VoiceAppAlias> = emptyList(),
     ): List<VoiceCommandGroup> {
         val out = ArrayList<VoiceCommandGroup>(Domain.entries.size + FAMILY_TITLES.size)
         Domain.entries.forEach { d ->
@@ -117,6 +119,7 @@ object VoiceCommandCatalog {
             val ex = familyPairs(id, profiles, apps, places).map { ex(it, confirmIds, lang) }
             if (ex.isNotEmpty()) out.add(VoiceCommandGroup(id, title(lang), null, ex))
         }
+        VoiceCommandCatalogTaught.group(aliases, lang) { ex(it, confirmIds, lang) }?.let { out.add(it) }
         return out
     }
 

@@ -170,6 +170,7 @@ class KachiTestBridge : BroadcastReceiver() {
             // `hal` đã xử lý sớm (không cần hooks) — không thể tới đây.
             TestBridgeCommands.REAPPLY -> runReapply(hooks, reply)
             TestBridgeCommands.DIAG -> runDiag(app, hooks, reply)
+            in TestBridgeTeachCommands.NAMES -> TestBridgeTeach.run(app, cmd, hooks, reply)   // 2.91 · A7 (tệp riêng)
             else -> reply.fail(TestBridgeCommands.ERR_UNKNOWN_CMD)
         }
     }

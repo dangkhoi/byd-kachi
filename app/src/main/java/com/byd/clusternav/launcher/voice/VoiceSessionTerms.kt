@@ -20,5 +20,8 @@ package com.byd.clusternav.launcher.voice
  * `VoiceSession.profiles`/`appsByLabel` là lambda chứ không phải danh sách chụp sẵn). Phần tĩnh bên trong
  * [VoiceGrammar.terms] đã `by lazy` nên giá mỗi lượt chỉ là vài cụm động.
  */
-internal fun VoiceSession.sessionTerms(): List<VoiceTerm> =
-    VoiceGrammar.terms(profiles(), appsByLabel().keys.toList())
+internal fun VoiceSession.sessionTerms(): List<VoiceTerm> {
+    val labels = appsByLabel()
+    // 2.91 VOICE-APP-NAMES — cùng nguồn tên đã dạy với `VoiceDispatcher` (VoiceWiring.aliases): câu hỏi lại cũng biết chúng.
+    return VoiceGrammar.terms(profiles(), labels.keys.toList(), VoiceWiring.aliases(ctx, labels))
+}

@@ -286,6 +286,17 @@ class HomeViewModel(
     }
 
     /**
+     * 2.91 VOICE-APP-NAMES (spec §4.3) — **tên app tự dạy** của hồ sơ đang dùng: cổng ghi DUY NHẤT của trang *Dạy tên app*
+     * (tầng UI 0 lần ghi bền), cùng khuôn [setAppShortcuts]. Không có trường state: phiên nghe đọc prefs (tiến trình
+     * chính) / ảnh chụp (`:wake`) mỗi lượt. `false` = không ghi (dữ liệu phiên bản lạ ⇒ chỉ đọc).
+     */
+    fun setVoiceAppNames(names: List<com.byd.clusternav.launcher.voice.TaughtName>): Boolean = repository.setVoiceAppNames(names)
+
+    fun voiceAppNames(): List<com.byd.clusternav.launcher.voice.TaughtName> = repository.voiceAppNames()
+
+    fun voiceAppNamesReadOnly(): Boolean = repository.voiceAppNamesReadOnly()
+
+    /**
      * F2/F3 — **chuyến lên xe** của hồ sơ đang dùng (spec shortcuts-autostart R2.1/R3.1). Cùng khuôn [setAppShortcuts]:
      * state + lưu bền một lượt, qua phép làm sạch của `:core` ([TripAppCodec.sanitize] — trần 6, ≤ 1 app *Mở bình
      * thường*; [TripMusicCodec.clean]) để state không mang thứ đĩa sẽ không giữ.

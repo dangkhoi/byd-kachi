@@ -63,7 +63,7 @@ internal object TestBridgeWav {
      * đọc được (gõ nhầm tên — hay gặp nhất), tệp quá lớn (đẩy nhầm một bản ghi dài làm đầy bộ nhớ xe). Tên tệp
      * ĐÍCH là hằng của [VoiceWavProbe] nên không có phần nào của chuỗi vào được đường dẫn ghi.
      */
-    private fun stage(app: Context, path: String): String? {
+    internal fun stage(app: Context, path: String): String? {
         if (path.isBlank()) return null
         if (path.contains("..")) return KachiTestBridge.ERR_BAD_PATH
         val src = File(path)

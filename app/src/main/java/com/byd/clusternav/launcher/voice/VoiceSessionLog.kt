@@ -30,7 +30,24 @@ import android.util.Log
  * Lớp gọi vẫn KHÔNG chặn: [VoiceUtteranceLog.record] chỉ chép khúc PCM rồi đẩy hết sang luồng nền của nó.
  */
 internal fun VoiceSession.logHeard(rec: VoiceRecognizer, heard: VoiceCapture.Heard, sentence: String) {
-    val meta = VoiceUtteranceLog.Meta(
+    val meta = utteranceMetaOf(ctx, rec, heard, sentence)
+    utteranceMeta = meta
+    utteranceStamp = runCatching { VoiceUtteranceLog.record(ctx, heard.pcm, heard.samples, meta) }
+        .onFailure { Log.w(VoiceSession.TAG, "không ghi được nhật ký lượt nói", it) }
+        .getOrNull()
+}
+
+/**
+ * Nửa TRƯỚC của một mục nhật ký (chữ + số đo của lượt nghe) — dời nguyên văn khỏi [logHeard] (2.91 VOICE-APP-NAMES:
+ * lượt DẠY ở chế độ kiểm thử ghi cùng định dạng, `VoiceTeachSession.logIfTestMode`) để không có bản chép thứ hai.
+ */
+internal fun utteranceMetaOf(
+    ctx: android.content.Context,
+    rec: VoiceRecognizer,
+    heard: VoiceCapture.Heard,
+    sentence: String,
+): VoiceUtteranceLog.Meta =
+    VoiceUtteranceLog.Meta(
         heard = heard.text,
         sentence = sentence,
         micSource = heard.micSource,
@@ -44,11 +61,6 @@ internal fun VoiceSession.logHeard(rec: VoiceRecognizer, heard: VoiceCapture.Hea
         listenMs = heard.listenMs,
         decodeMs = heard.decodeMs,
     )
-    utteranceMeta = meta
-    utteranceStamp = runCatching { VoiceUtteranceLog.record(ctx, heard.pcm, heard.samples, meta) }
-        .onFailure { Log.w(VoiceSession.TAG, "không ghi được nhật ký lượt nói", it) }
-        .getOrNull()
-}
 
 /**
  * ═══ Nửa SAU — ý định + câu trả lời, thứ chỉ biết được sau khi đã thi hành ════════════════════════════

@@ -178,6 +178,8 @@ class SettingsCatalogControlContractTest {
             // 2.74 · R3 — danh sách câu nói được. Dấu vết là **lời gọi bộ sinh** (hành vi), không phải nhãn: đổi
             // chữ tiêu đề thì bài này vẫn xanh, còn gỡ danh sách đi thì đỏ ngay.
             "voice_commands" to ("SettingsVoiceSection" to "VoiceCommandCatalog.groups("),
+            // 2.91 VOICE-APP-NAMES — dòng "Dạy Kachi tên app" mở trang danh sách mọi app (khoá `voice_app_names`).
+            "voice_app_names_list" to ("SettingsVoiceSection" to "SettingsVoiceNamesPage(context, deps).open()"),
             // V1 pha NÓI · R4/T8 — hai công tắc đọc phản hồi + nút tải gói giọng offline (tệp `voice/`, xem KDoc).
             "voice_speak_replies" to ("VoiceModelSettings" to "deps.bridge.setVoiceSpeakReplies("),
             "voice_prefer_offline" to ("VoiceModelSettings" to "deps.bridge.setVoicePreferOffline("),

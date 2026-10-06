@@ -180,6 +180,11 @@ class LauncherI18nLocalesContractTest {
             "kachi_voice_note" to listOf("bật đèn đọc", "đặt nhiệt độ 22", "đóng hết kính", "xem pin", "mở Cài đặt"),
             // Cài đặt › Sổ địa chỉ — câu dẫn đường tới địa chỉ đã lưu
             "kachi_places_note" to listOf("về nhà", "đến công ty", "đi &lt;tên&gt;"),
+            // 2.91 VOICE-APP-NAMES — hộp/trang Dạy tên app: người dùng NÓI câu lệnh thật để dạy (spec §4.2) ⇒ ví dụ là câu nói
+            "kachi_vn_page_note" to listOf("mở &lt;tên&gt;"),
+            "kachi_vn_dialog_hint" to listOf("mở %1\$s"),
+            "kachi_vn_r_slot" to listOf("vào ô số …"),
+            "kachi_vn_r_is_command" to listOf("mở …"),
         )
 
         /** `%1$s` / `%s` / `%.1f` — KHÔNG nhận cờ dấu cách (`50 % của` không phải tham số). `%%` bị bỏ qua ở [args]. */

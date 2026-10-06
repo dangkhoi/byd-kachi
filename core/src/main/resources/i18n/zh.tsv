@@ -811,3 +811,7 @@ Cổng theme: đã đọc (không gửi lệnh nào)	Theme gate: read (no comman
 Cỡ thanh nút xe	Car bar size	车控栏大小
 # 2.91 · F1 — mục Cài đặt › Dẫn đường "Tự mở VietMap cho bong bóng" (khoá vm_bubble_enabled, nghĩa cũ: tự mở VietMap).
 Tự mở VietMap cho bong bóng	Auto-open VietMap for the bubble	为气泡自动打开VietMap
+# 2.91 VOICE-APP-NAMES — dạy tên app bằng giọng (spec docs/specs/kachi-290-voice-app-names.html).
+Tên app đã dạy	Taught app names	已教的应用名称
+Nếu đó là tên app, hãy dạy Kachi trong Cài đặt, Giọng nói	If that is an app name, teach Kachi in Settings, Voice	如果那是应用名称，请在设置、语音中教 Kachi
+Dạy tên app	Teach app names	教应用名称

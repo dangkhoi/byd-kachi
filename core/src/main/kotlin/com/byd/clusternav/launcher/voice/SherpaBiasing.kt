@@ -32,8 +32,20 @@ object SherpaBiasing {
      *   **hai từ tiếng Việt thường** — ra *"hồ sơ định"* (rụng chữ đầu). Tên tiếng Việt thì biasing kéo về được;
      *   tên tiếng Anh vào tệp qua **dạng đọc tiếng Việt** ([VoiceAppPhonetics]). Xem [VoiceProfileNames.phrases].
      */
-    fun hotwordsFile(places: List<String> = emptyList(), profiles: List<String> = emptyList()): String =
-        SherpaHotwords.phraseFile(SherpaPhraseHotwords.phrases(places, profiles), SherpaPhraseHotwords.appNames())
+    fun hotwordsFile(
+        places: List<String> = emptyList(),
+        profiles: List<String> = emptyList(),
+        /**
+         * 2.91 VOICE-APP-NAMES R8 — tên app ĐÃ DẠY còn sống của hồ sơ đang dùng (chỉ nguồn GIỌNG được bias, OQ3).
+         * Rỗng ⇒ tệp y nguyên bản trước. Luật đơn điệu (tệp mới ⊇ tệp cũ) ở [SherpaTaughtHotwords].
+         */
+        taught: List<TaughtName> = emptyList(),
+    ): String {
+        val phrases = SherpaPhraseHotwords.phrases(places, profiles)
+        val appNames = SherpaPhraseHotwords.appNames()
+        val base = SherpaHotwords.phraseFile(phrases, appNames)
+        return SherpaTaughtHotwords.file(base, phrases, appNames, taught)
+    }
 
     /*
      * ## Lịch sử — vì sao không còn `accentedControlPhrases()` (nhãn + động từ + danh từ RỜI)

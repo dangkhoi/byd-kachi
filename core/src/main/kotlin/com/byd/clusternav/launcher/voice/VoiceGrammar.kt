@@ -16,7 +16,13 @@ enum class VoiceTermKind { CONTROL, TELEMETRY, MACRO, LAUNCHER, PROFILE, APP, ME
  * Một cụm từ **đã chuẩn hoá** trỏ tới một đích.
  * @property words các từ đã bỏ dấu (khớp theo dãy); dài hơn ⇒ được xét trước (xem [VoiceGrammar.matchAt]).
  */
-data class VoiceTerm(val words: List<String>, val kind: VoiceTermKind, val id: String)
+data class VoiceTerm(
+    val words: List<String>,
+    val kind: VoiceTermKind,
+    val id: String,
+    /** 2.91 — chỉ cụm của một TÊN ĐÃ DẠY mang: mã bảng đích của gói ([VoiceAppAlias.targetKey]) — xem `appAfterMarker`. */
+    val target: String? = null,
+)
 
 /**
  * ═══ V1 · TỪ VỰNG **SINH TỪ BỘ ĐĂNG KÝ** ══════════════════════════════════════════════════════════════════════
@@ -188,11 +194,20 @@ object VoiceGrammar {
      * @param apps nhãn ứng dụng đã cài. Cũng động, và cũng là lý do bộ phân tích **không** hardcode tên gói nào
      *   (CLAUDE.md §7): app nào có mặt thì gọi được app đó, không app nào được viết cứng vào mã.
      */
-    fun terms(profiles: List<String> = emptyList(), apps: List<String> = emptyList()): List<VoiceTerm> {
-        if (profiles.isEmpty() && apps.isEmpty()) return STATIC_SORTED
-        val dyn = ArrayList<VoiceTerm>(profiles.size + apps.size)
+    fun terms(
+        profiles: List<String> = emptyList(),
+        apps: List<String> = emptyList(),
+        /**
+         * 2.91 VOICE-APP-NAMES — tên app đã dạy còn sống ([VoiceAppIndex.aliasesOf]): cụm [VoiceTermKind.APP] với
+         * `id` = NHÃN THẬT của gói (spec §4.6), đứng ngay SAU nhãn máy (nhãn thật thắng khi hoà — thứ tự ổn định).
+         */
+        aliases: List<VoiceAppAlias> = emptyList(),
+    ): List<VoiceTerm> {
+        if (profiles.isEmpty() && apps.isEmpty() && aliases.isEmpty()) return STATIC_SORTED
+        val dyn = ArrayList<VoiceTerm>(profiles.size + apps.size + aliases.size)
         profiles.forEach { p -> term(p, VoiceTermKind.PROFILE, p)?.let { dyn.add(it) } }
         apps.forEach { a -> term(a, VoiceTermKind.APP, a)?.let { dyn.add(it) } }
+        aliases.forEach { a -> if (a.words.isNotEmpty()) dyn.add(VoiceTerm(a.words, VoiceTermKind.APP, a.labelKey, a.targetKey)) }
         // Thứ tự ghép giữ NGUYÊN như bản dựng-mỗi-lần: …registry → hồ sơ → app → từ khoá nhạc/dẫn đường. Nó là
         // thứ tự phân xử khi hai cụm **bằng nhau về độ dài** (`VoiceIntentParser.choose` lấy phần tử đầu), nên
         // đảo nó là lặng lẽ đổi cách hiểu của một câu.

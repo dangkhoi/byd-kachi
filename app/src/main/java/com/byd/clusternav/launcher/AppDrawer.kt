@@ -80,7 +80,7 @@ class AppDrawer(
     private var placeBtn: TextView? = null
 
     /** Phần danh sách ứng dụng (tách tệp vì trần 500 dòng) — xem [AppDrawerApps]. */
-    private val apps = AppDrawerApps(context, onPickApp)
+    private val apps = AppDrawerApps(context, onPickApp, onLongPressApp = if (mode == Mode.OPEN_APP) AppDrawerApps.teachMenu(context) { onClose() } else null)
 
     /** Câu nhắc trần ô ở thanh đáy — rỗng khi chưa đầy (đủ thì im lặng). */
     private var capHint: TextView? = null

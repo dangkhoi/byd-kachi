@@ -92,7 +92,7 @@ class VoiceAppNameAndMishearTest {
 
     /**
      * H3(c) — app KHÔNG có trong bảng đích (Zalo · CarPlay · Android Auto) đi qua [VoiceAppPhonetics]: cách đọc
-     * sinh từ chính NHÃN, rồi `VoiceWiring.withPhonetics` cắm chúng vào bản đồ nhãn→gói.
+     * sinh từ chính NHÃN, rồi `VoiceAppIndex.build` (2.91 — thay `withPhonetics`) cắm chúng vào bản đồ nhãn→gói.
      *
      * Bài này dựng lại đúng bộ khoá ấy rồi thả vào bộ phân tích — chứng minh đường đi có thật, không cần Android.
      */

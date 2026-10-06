@@ -106,6 +106,7 @@ internal object TestBridgeState {
                 "inputd" to TestBridgeJson.Raw(inputd(ctx)),
                 "permissions" to TestBridgeJson.Raw(permissions(ctx, shell)),
                 "voice_model" to TestBridgeJson.Raw(voiceModel(ctx)),
+                "voice_names" to TestBridgeTeach.stateJson(hooks),   // 2.91 VOICE-APP-NAMES — chỉ SỐ
                 "tts" to TestBridgeJson.Raw(tts(ctx)),
                 "cast_enabled" to castEnabled(ctx),
                 "test_mode_minutes_left" to TestBridgeStore.remainingMinutes(ctx),

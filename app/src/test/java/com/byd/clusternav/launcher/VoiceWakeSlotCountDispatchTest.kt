@@ -46,6 +46,7 @@ class VoiceWakeSlotCountDispatchTest {
             assignAppToSlot = { idx, pkg -> placed += idx to pkg; true },
             onLayout = { true },
             slotCount = { VoiceSlotPlace.slotCountOf(real) },
+            teachApp = {},
         )
 
         /** Giao thức relay thuần: mã hoá ở `:wake` → Activity thi hành + ack → `:wake` giải mã. */

@@ -36,6 +36,8 @@ class HomePanels(
     private val shortcuts: ShortcutSettingsPort,
     /** F2/F3 · U6 — trang Cài đặt chuyến lên xe; chuyển thẳng xuống [SettingsDeps.trip]. */
     private val trip: TripSettingsPort,
+    /** 2.91 VOICE-APP-NAMES — trang *Dạy tên app*; chuyển thẳng xuống [SettingsDeps.voiceNames]. */
+    private val voiceNames: VoiceNamesPort,
     private val runAction: (String, Int) -> Boolean,
     private val readInfo: (String) -> String?,
     private val onApplyLayout: (GridLayout?) -> Unit,
@@ -150,8 +152,12 @@ class HomePanels(
      * chúng ([SettingsPanel.pages]) — dựng lại vì một cú bấm từ bong bóng là vứt hết chỗ đó đi.
      */
     fun openSettings(group: SettingsGroup? = null) {
+        // 2.91 VOICE-APP-NAMES — lối (b)/(c) gửi `TEACH_APP` ⇒ yêu cầu đang chờ ⇒ nhóm Giọng nói + mở trang Dạy tên app.
+        val teach = com.byd.clusternav.launcher.voice.VoiceTeachPending.take()
+        val target = group ?: if (teach != null) SettingsGroup.VOICE else null
         settingsPanel?.let { open ->
-            group?.let { open.show(it) }
+            target?.let { open.show(it) }
+            teach?.let { SettingsVoiceNamesPage(activity, open.deps).open(it) }
             return
         }
         val deps = SettingsDeps(
@@ -178,6 +184,7 @@ class HomePanels(
             onDockEdge = { e -> onDockEdge(e) },
             shortcuts = shortcuts,
             trip = trip,
+            voiceNames = voiceNames,
             runAction = { id, arg -> runAction(id, arg) },
             readInfo = { id -> readInfo(id) },
             // R11: đổi đơn vị ⇒ lưu bền + áp lại NGAY cho cả thanh nút và ô giữa màn (không cần mở lại app).
@@ -221,12 +228,13 @@ class HomePanels(
         )
         val panel = SettingsPanel(activity, deps) { closeSettings() }
         settingsPanel = panel
-        group?.let { panel.show(it) }
+        target?.let { panel.show(it) }
         rootFrame.addView(
             panel,
             FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT),
         )
         onPanelsChanged()
+        teach?.let { SettingsVoiceNamesPage(activity, deps).open(it) }
     }
 
     fun closeSettings() {

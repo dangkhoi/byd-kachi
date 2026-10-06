@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test
  *  2. nó đi qua **đúng** luật chọn ở `:core` (không có bản sao thứ hai của luật ở tầng Android);
  *  3. nhãn nhập nhằng được **ghi log** — nếu không thì ngày nó xảy ra trên xe, không ai có gì để đọc.
  *
- * Và một ràng buộc cũ **không được vỡ**: bí danh sinh từ cách đọc (`withPhonetics`) phải giữ `putIfAbsent`, tức
- * một cách đọc suy ra được KHÔNG BAO GIỜ đè nhãn thật của app khác.
+ * Và một ràng buộc cũ **không được vỡ**: bí danh sinh từ cách đọc (nay ở `VoiceAppIndex.build`, 2.91 — thay
+ * `withPhonetics`) phải giữ `putIfAbsent`, tức một cách đọc suy ra được KHÔNG BAO GIỜ đè nhãn thật của app khác.
  */
 class VoiceOpenAppLabelWiringContractTest {
 
@@ -53,10 +53,19 @@ class VoiceOpenAppLabelWiringContractTest {
 
     @Test
     fun `bi danh cach doc VAN khong duoc de nhan that`() {
+        // 2.91 VOICE-APP-NAMES (senior review Pass 1, P3) — bản đồ nay dựng ở `VoiceAppIndex.build` (`:core`); bản đầu của
+        // bài này quét `putIfAbsent` trong VoiceWiring.kt và chỉ còn xanh nhờ `withPhonetics` — hàm ĐÃ CHẾT (0 chỗ gọi). Canh
+        // ĐÚNG chỗ đang chạy: VoiceWiring đi qua `VoiceAppIndex.build`, và trong `build` mọi khoá SUY (nhãn phụ + dạng đọc)
+        // chỉ `putIfAbsent` sau khi nhãn thật đã cắm. Hành vi khoá ở `VoiceAppIndexTest` (`:core`).
+        assertTrue(wiring.contains("VoiceAppIndex.build(picked.labels"), "bảng gọi app phải dựng qua VoiceAppIndex.build")
+        assertFalse(wiring.contains("fun withPhonetics("), "đường dựng thứ hai (đã chết) không được sống lại")
+        val build = SourceRoots.body(
+            SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceAppIndex.kt"), "fun build(",
+        )
+        assertTrue(build.contains("labels.forEach { (label, pkg) -> out[label] = pkg }"), "nhãn thật cắm TRƯỚC, đè được")
         assertTrue(
-            wiring.contains("putIfAbsent"),
-            "`withPhonetics` phải giữ `putIfAbsent`: nhãn là chữ người dùng NHÌN THẤY, một cách đọc suy ra được " +
-                "không bao giờ được thắng nó",
+            build.contains("out.putIfAbsent(key, pkg)"),
+            "khoá SUY phải `putIfAbsent`: nhãn là chữ người dùng NHÌN THẤY, một cách đọc suy ra được không bao giờ thắng nó",
         )
     }
 }

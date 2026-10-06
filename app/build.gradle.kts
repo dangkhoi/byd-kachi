@@ -92,8 +92,12 @@ android {
         // ⚠ bản chính thức kế tiếp phải ≥ 191 (xe đã mang 190).
         // 2.89 (191) — bản OTA chính thức sau buổi xe 05/10 (spec kachi-289-field-fixes): ô 7 đỗ ẩn · cổng
         // CLUSTER-THEME-SAFE · nhạc chuyến đi trong ô · đóng ô chờ lắng · mở ô không force-stop · bo góc khung ô.
-        versionCode = 192
-        versionName = "2.90"
+        // 2.90 (192) — sau buổi xe 06/10 (spec kachi-290-cluster-rect-fix): theme khi màn cụm có-nhưng-trống · dọn/trả cụm
+        // + VM_BUBBLE_VIS · Chữ nhật trọn 1920×720 · bỏ km/h Kachi vẽ · ô biển tốc độ theo màn cụm sống.
+        // 2.91 (193) — dạy tên app bằng giọng (spec kachi-290-voice-app-names) + sửa nhỏ (spec kachi-291-small-fixes):
+        // công tắc bóng nói thật · ô 7 nhận lại vào ô khác cỡ giữ mật độ · kiểm VietMap mỗi lần thức · ghi chú ADAS Chữ nhật.
+        versionCode = 193
+        versionName = "2.91"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

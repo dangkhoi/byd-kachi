@@ -299,7 +299,7 @@ class VoiceSession(
         // 1.70 — MỘT dòng quyết định mỗi lượt: [ĐO xe 2026-09-17] log xe có *"nghe được: …"* mà không có dòng nào
         // nói bộ phân tích đã hiểu ra gì ⇒ không tra được vì sao *"chỉnh lại hai mươi lăm độ nhiệt độ"* không
         // làm gì. Cùng chuỗi đi vào nhật ký lượt nói (`decision`, xem [logDone]).
-        lastDecision = VoiceDecision.describe(intents)
+        lastDecision = VoiceDecision.describe(intents); armTeachHint(intents, heard)   // 2.91 · lối (c) "Dạy tên «…»"
         Log.i(TAG, "quyết định: \"$heard\" ⇒ $lastDecision")
         overlay?.render(R.string.kachi_voice_heard, heard)
         // ═══ V3 · R8 — CẢ CÂU không hiểu ⇒ HỎI LẠI, không đóng phiên ═════════════════════════════

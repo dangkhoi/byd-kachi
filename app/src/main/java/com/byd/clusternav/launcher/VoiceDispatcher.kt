@@ -7,6 +7,9 @@ import com.byd.clusternav.launcher.voice.VoiceReply
 import com.byd.clusternav.launcher.voice.VoiceAppIntents
 import com.byd.clusternav.launcher.voice.VoiceAppPhonetics
 import com.byd.clusternav.launcher.voice.VoiceAppTargets
+import com.byd.clusternav.launcher.voice.VoiceAppAlias
+import com.byd.clusternav.launcher.voice.VoiceTeachHint
+import com.byd.clusternav.launcher.voice.VoiceTeachHintCounter
 import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceRisk
 import com.byd.clusternav.launcher.voice.VoiceRiskTable
@@ -44,6 +47,11 @@ class VoiceDispatcher(
     private val media: () -> MediaTransport,
     /** Nhãn app → tên gói. Danh sách động (app đã cài) ⇒ KHÔNG gói nào bị viết cứng (CLAUDE.md §7). */
     private val appsByLabel: () -> Map<String, String>,
+    /**
+     * 2.91 VOICE-APP-NAMES — tên app đã dạy còn sống của ĐÚNG bảng [appsByLabel] vừa đọc ([VoiceAppIndex.aliasesOf]).
+     * Mặc định rỗng: bài test/bề mặt chưa nối giữ nguyên hành vi (không có tên đã dạy). `VoiceWiring.dispatcher` nối thật.
+     */
+    private val appAliases: (Map<String, String>) -> List<VoiceAppAlias> = { emptyList() },
     private val openApp: (String) -> Boolean,
     private val openAppList: () -> Unit,
     private val openSettings: () -> Unit,
@@ -282,6 +290,7 @@ class VoiceDispatcher(
             // mà bảng Cài đặt đang vẽ; mở một cửa `WorkspacePrefs` thứ hai ở đây là dựng đường đọc bền song song
             // ([SOÁT P1-1]), và hai đường thì màn hình hiện một sổ còn câu *"về nhà"* đi theo sổ khác.
             VoicePlaces.labelsOf(state().savedPlaces),
+            aliases = appAliases(labels),
         )
 
     // ── Thi hành ─────────────────────────────────────────────────────────────────────────────────
@@ -314,7 +323,7 @@ class VoiceDispatcher(
                 } else {
                     VoiceReply.layoutNotHere(intent, lang)
                 })
-            is VoiceIntent.Unknown -> say(VoiceReply.unknown(intent, lang))
+            is VoiceIntent.Unknown -> say(VoiceReply.unknown(intent, lang) + teachTail(intent))
             // Req2 (owner 2026-09-24) — câu kết thúc: nói ngắn rồi để phiên tự đóng (không mở hội thoại nối).
             VoiceIntent.EndSession -> say(VoiceReply.bye(lang))
         }
@@ -446,8 +455,20 @@ class VoiceDispatcher(
     private fun displayName(pkg: String, labels: Map<String, String>): String? =
         VoiceAppPhonetics.canonicalLabel(labels.filterValues { it == pkg }.keys.toList())
 
+    /**
+     * 2.91 VOICE-APP-NAMES (OQ5) — *"mở &lt;tên lạ&gt;"* không hiểu ⇒ đọc thêm *"nếu là tên app, dạy Kachi…"* ở
+     * [VoiceTeachHint.SPOKEN_TIMES] lần đầu (đếm RAM theo tiến trình — KDoc [VoiceTeachHintCounter]; không đọc `state()`).
+     */
+    private fun teachTail(u: VoiceIntent.Unknown): String =
+        if (VoiceTeachHint.pendingOf(listOf(u), u.text) != null && VoiceTeachHintCounter.takeSpoken(TEACH_HINT_SCOPE)) {
+            " — " + VoiceTeachHint.spokenTail(lang)
+        } else ""
+
     private companion object {
         const val TAG = "KachiVoice"
+
+        /** Khoá đếm của [teachTail] — một bộ đếm cho cả tiến trình (xem KDoc). */
+        const val TEACH_HINT_SCOPE = "process"
 
         /** Chuỗi `TelemetryReadout` trả về khi xe chưa có số — cùng ký hiệu mà ô đọc đang vẽ. */
         const val NO_VALUE = "—"

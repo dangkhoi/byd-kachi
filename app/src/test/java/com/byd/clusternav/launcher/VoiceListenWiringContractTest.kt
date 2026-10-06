@@ -131,8 +131,12 @@ class VoiceListenWiringContractTest {
         // dùng) ⇒ trình biên dịch KHÔNG còn báo khi `profiles` rụng khỏi lời gọi. Bỏ nó thì tên hồ sơ lặng lẽ biến
         // khỏi tệp hotword: compile xanh, `:core` xanh, xe vẫn nghe *"chuyển sang hồ sơ"* mà rụng tên
         // (VOICE-PROFILE-NAME-PHONETIC, [ĐO xe 2026-09-26] 8/8 lượt) — đúng bẫy CLAUDE.md §8, nên khoá bằng văn bản.
-        assertTrue(rec.contains("SherpaBiasing.hotwordsFile(places, profiles)"),
-            "tên hồ sơ phải ĐI VÀO tệp hotword (VOICE-PROFILE-NAME-PHONETIC) — `profiles` không được rụng khỏi lời gọi")
+        // 2.91 VOICE-APP-NAMES (spec §4.8 Pass 1) — needle đổi CÓ CHỦ Ý: lời gọi nay mang thêm `taught` (tên app đã dạy,
+        // nguồn giọng). Tính chất cũ GIỮ NGUYÊN (`profiles` có mặt) + thêm vế mới (`taught` có mặt, không rụng khỏi lời gọi).
+        assertTrue(rec.contains("SherpaBiasing.hotwordsFile(places, profiles, taught)"),
+            "tên hồ sơ + tên app đã dạy phải ĐI VÀO tệp hotword — `profiles`/`taught` không được rụng khỏi lời gọi")
+        assertTrue(rec.contains("VoiceTaughtSource.forHotwords(ctx, apps, installed)"),
+            "tên đã dạy phải lấy từ VoiceTaughtSource (đúng tiến trình: prefs ở chính, ảnh chụp ở `:wake`)")
         assertFalse(rec.contains("AudioRecord"),
             "bộ nhận dạng KHÔNG tự mở micro — micro chỉ ở [VoiceCapture] (trong trần 8 s + tầm bài canh mạng)")
     }

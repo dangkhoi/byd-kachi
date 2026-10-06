@@ -411,7 +411,7 @@ object TestBridgeCommands {
         // FIX286 · SR6 — cùng hình dạng `a11ylog`: chỉ đọc, `n` tuỳ chọn, kẹp qua [ctlLogTail].
         Spec(CTLLOG, emptyList(), listOf(EXTRA_SLOT)),
         Spec(WAKELOG, emptyList(), listOf(EXTRA_SLOT)),   // FIX286 · VK6 — cùng hình dạng `ctllog`
-    )
+    ) + TestBridgeTeachCommands.SPECS   // 2.91 VOICE-APP-NAMES · A7 — tệp riêng (trần 500 dòng)
 
     /** Tên mọi lệnh — cho tài liệu và cho bài canh "mã lệnh không trùng nhau". */
     val NAMES: List<String> = SPECS.map { it.name }
@@ -457,6 +457,7 @@ object TestBridgeCommands {
         // WP7 · [CAPTEST]: op lạ bị chặn ở TẦNG PHÂN TÍCH (cùng luật danh sách trắng của `prefs_set`) — gõ sai
         // `--es op mark` mà lệnh vẫn trả `ok:true` thì script đọc thành "đã đóng dấu" trong khi không có gì được ghi.
         val cap = if (name == CAPTEST) op.ifEmpty { CapTestOps.LIST } else op
+        if (!TestBridgeTeachCommands.validOp(name, op)) return TestBridgeParse.Err(ERR_BAD_OP + op)
         if (name == CAPTEST) {
             if (cap !in CapTestOps.ALL) return TestBridgeParse.Err(ERR_BAD_OP + cap)
             val id = (extras[EXTRA_ID] as? String)?.trim().orEmpty()

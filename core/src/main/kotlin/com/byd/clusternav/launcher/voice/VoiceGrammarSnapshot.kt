@@ -49,6 +49,9 @@ import com.byd.clusternav.launcher.voiceLangOf
  *   (chỉ tiến trình chính ghi biến đó) và không được gọi `WorkspacePrefs.langMode()` (nó tự ghi khi migrate) ⇒ đây là
  *   đường DUY NHẤT để phiên phím vô-lăng biết người dùng đọc tiếng gì. `null` = tệp cũ / chưa ghi ⇒ [voiceLang] = VI
  *   (đúng hành vi `:wake` trước bản này) và tài nguyên của `:wake` giữ locale máy.
+ * @property aliases 2.91 VOICE-APP-NAMES — tên app đã dạy của hồ sơ đang dùng; bản ghi `alias	<gói>	<S|T>	<có dấu>`
+ *   (thêm cột nguồn so với spec §4.5: chỉ tên GIỌNG vào hotword, `:wake` phải biết). Tệp cũ không có ⇒ rỗng; bản giải
+ *   mã CŨ gặp loại lạ ⇒ bỏ dòng (tương thích hai chiều, giữ header `v1`).
  */
 data class VoiceGrammarSnapshot(
     val profiles: List<String> = emptyList(),
@@ -57,6 +60,7 @@ data class VoiceGrammarSnapshot(
     val writtenAtMs: Long = 0L,
     val wake: VoiceWakePrefs = VoiceWakePrefs.EMPTY,
     val uiLang: Lang? = null,
+    val aliases: List<TaughtName> = emptyList(),
 ) {
 
     /** Nhãn sổ địa chỉ cho hotword + parser — cùng hàm mà đường in-process dùng ([VoicePlaces.labelsOf]). */
@@ -96,6 +100,10 @@ data class VoiceGrammarSnapshot(
         wake.navDefault?.let { append(REC_NAV).append(SEP).append(cleanName(it)).append('\n') }
         wake.musicDefault?.let { append(REC_MUSIC).append(SEP).append(cleanName(it)).append('\n') }
         uiLang?.let { append(REC_LANG).append(SEP).append(it.code).append('\n') }
+        aliases.forEach { a ->
+            append(REC_ALIAS).append(SEP).append(a.pkg).append(SEP).append(a.source.code).append(SEP)
+                .append(TaughtNamesCodec.cleanAccented(a.accented)).append('\n')
+        }
     }
 
     /** Kết quả [decode]: [snapshot] luôn dùng được; [problem] ≠ `null` khi có gì đó bị bỏ (để chỗ gọi ghi log). */
@@ -118,6 +126,7 @@ data class VoiceGrammarSnapshot(
 
         /** spec `kachi-i18n-zh-th-ms.html` R6 — [uiLang] bằng [Lang.code] (`vi`/`en`/`zh`/`th`/`ms`). */
         private const val REC_LANG = "lang"
+        private const val REC_ALIAS = "alias"
         private const val ID_SEP = ","
 
         private fun bit(b: Boolean): String = if (b) "1" else "0"
@@ -159,6 +168,7 @@ data class VoiceGrammarSnapshot(
             val places = ArrayList<SavedPlace>()
             var wake = VoiceWakePrefs.EMPTY
             var uiLang: Lang? = null
+            val aliases = ArrayList<TaughtName>()
             var problem: String? = null
             fun note(msg: String) { if (problem == null) problem = msg }
             // Bit hỏng ⇒ bỏ bản ghi (trường giữ `null` = chỗ đọc lùi về đường cũ), không đoán 0/1.
@@ -184,10 +194,21 @@ data class VoiceGrammarSnapshot(
                     // Mã lạ ⇒ bỏ bản ghi (`null` = VI cho giọng, locale máy cho tài nguyên), không đoán một tiếng.
                     REC_LANG -> Lang.entries.firstOrNull { it.code == value.trim() }?.let { uiLang = it }
                         ?: note("dòng $row: ngôn ngữ lạ ${safe(value)}")
+                    REC_ALIAS -> aliasOf(value)?.let { aliases += it } ?: note("dòng $row: tên đã dạy hỏng")
                     else -> note("dòng $row: bản ghi lạ ${safe(kind)}")
                 }
             }
-            return Decoded(VoiceGrammarSnapshot(profiles, active, places.take(SavedPlaces.MAX), at, wake, uiLang), problem)
+            val names = aliases.take(TaughtNamesCodec.MAX_PER_PROFILE)
+            return Decoded(VoiceGrammarSnapshot(profiles, active, places.take(SavedPlaces.MAX), at, wake, uiLang, names), problem)
+        }
+
+        /** `<gói>\t<S|T>\t<có dấu>` ⇒ tên, hoặc `null` (dòng hỏng — lý do ở chỗ gọi chỉ nói số dòng, không chữ người dùng). */
+        private fun aliasOf(value: String): TaughtName? {
+            val c = value.split(SEP)
+            val source = TaughtSource.entries.firstOrNull { it.code == c.getOrNull(1) } ?: return null
+            val pkg = c.getOrNull(0).orEmpty().trim()
+            val name = TaughtName(pkg, source, TaughtNamesCodec.cleanAccented(c.getOrNull(2).orEmpty()), label = "")
+            return name.takeIf { TaughtNamesCodec.validPackage(pkg) && it.words.isNotEmpty() }
         }
     }
 }

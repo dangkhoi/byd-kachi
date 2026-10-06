@@ -96,6 +96,7 @@ object ProfileScope {
             // F2/F3 (owner 01/10, spec shortcuts-autostart R2.1/R3.1) — app mở khi nổ máy + nhạc lên xe: lựa chọn của MỘT
             // người lái như `launcher_autostart` ngay cạnh (S4 "mọi cấu hình theo hồ sơ"). Khoá mới, không có bản chung.
             "ignition_apps", "ignition_music",
+            "voice_app_names",   // 2.91 VOICE-APP-NAMES R5 — tên app tự dạy: chữ mô hình in ra cho giọng của MỘT người
         )
 
     /**

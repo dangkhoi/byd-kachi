@@ -93,9 +93,10 @@ internal object VoiceTailClause {
     internal fun withTarget(
         after: List<Token>,
         kind: VoiceAppKind,
+        terms: List<VoiceTerm> = emptyList(),
         make: (List<Token>, String?) -> VoiceIntent,
     ): VoiceIntent {
-        val hit = appAfterMarker(after, kind)
+        val hit = appAfterMarker(after, kind, terms)
         val body = if (hit == null) after else after.subList(0, hit.second)
         return make(body, hit?.first)
     }
@@ -116,13 +117,20 @@ internal object VoiceTailClause {
      * nằm trong từ vựng chung.
      */
     @Suppress("ReturnCount")
-    internal fun appAfterMarker(after: List<Token>, kind: VoiceAppKind): Pair<String, Int>? {
+    internal fun appAfterMarker(after: List<Token>, kind: VoiceAppKind, terms: List<VoiceTerm> = emptyList()): Pair<String, Int>? {
         after.indices.forEach { i ->
             if (after[i].norm !in VoiceLexicon.BY_APP_MARKERS) return@forEach
             // (1) mệnh đề phải chạm CUỐI câu ⇒ phần đuôi chỉ có đúng một độ dài; (3) trần LONGEST_SPOKEN.
             val len = after.size - i - 1
-            if (len !in 1..VoiceAppTargets.LONGEST_SPOKEN) return@forEach
+            if (len !in 1..maxOf(VoiceAppTargets.LONGEST_SPOKEN, TeachSample.MAX_WORDS)) return@forEach
             val words = (i + 1 until after.size).map { after[it].norm }
+            // 2.91 VOICE-APP-NAMES (spec §4.6) — TÊN ĐÃ DẠY của một app thuộc bảng đích, đúng loại, khớp NGUYÊN dãy:
+            // xét TRƯỚC mọi cách nói của bảng (chữ mô hình in cho giọng người này thắng bảng đoán). Tên đã dạy của
+            // app KHÔNG thuộc bảng đích không có `target` ⇒ không cắt (Kachi không giao chuỗi cho app ấy được).
+            terms.firstOrNull { t ->
+                t.target != null && t.words == words && VoiceAppTargets.byKey(t.target)?.kind == kind
+            }?.target?.let { return it to i }
+            if (len > VoiceAppTargets.LONGEST_SPOKEN) return@forEach
             // Ba tầng, nới dần, và **thứ tự là hợp đồng**: khớp CHÍNH XÁC trước; rồi cụm rụng âm cuối
             // (*"vietma"* ⇒ VietMap); rồi cụm bị ASR bóp méo có NEO TIỀN TỐ (*"vietna"* ⇒ VietMap, [ĐO xe
             // 2026-09-20 §5]). Cả hai đường nới chỉ có ở đây, sau cụm đánh dấu — xem KDoc [VoiceAppTargets.bySpokenFuzzy].
@@ -168,8 +176,8 @@ internal object VoiceTailClause {
      * ═══ H3 · CÁCH GỌI APP **≥ 2 TỪ** ngay sau động từ THẮNG một nhãn NGẮN nằm giữa câu ══════════════════════
      *
      * ## Bệnh nó chữa — [ĐO máy ảo 2026-09-16], hai ca **MỞ NHẦM APP** (tệ hơn hẳn *"không hiểu"*)
-     *  • *"mở việt máp"* ⇒ mở **Google Maps**. `VoiceWiring.withPhonetics` sinh dạng đọc cho MỌI nhãn app đã
-     *    cài, nên nhãn *"Maps"* đẻ ra cụm MỘT từ `máp`, và cụm ấy đi vào **từ vựng chung**. Vòng quét (d) của
+     *  • *"mở việt máp"* ⇒ mở **Google Maps**. [VoiceAppIndex.build] (trước 2.91: `withPhonetics`) sinh dạng đọc
+     *    cho MỌI nhãn app đã cài, nên nhãn *"Maps"* đẻ ra cụm MỘT từ `máp`, và cụm ấy đi vào **từ vựng chung**. Vòng quét (d) của
      *    [VoiceIntentParser] đi từ trái sang: vị trí 0 (`việt`) không khớp gì, vị trí 1 khớp `máp` ⇒ trả ngay
      *    một ý định *có nghĩa* rồi dừng. Cách gọi HAI từ *"việt máp"* của [VoiceSynonyms.APP_TARGETS] không bao
      *    giờ được hỏi tới.

@@ -84,8 +84,12 @@ class VoiceEntryRouteWiringContractTest {
         val fn = SourceRoots.body(wiring, "internal fun Activity.voiceSession(")
         // 2.69 (VOICE-WAKE-SLOT-LAYOUT): 4 → 6 — thêm đúng hai lambda Boolean mà dispatcher in-process đã nhận.
         // VOICE-WAKE-SLOTCOUNT — thêm `slotCount` (state THẬT của màn) cho việc gắn ô; sáu lambda giữ nguyên thứ tự.
-        assertTrue(fn.contains("VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout, slotCount = { VoiceSlotPlace.slotCountOf(state()) }))"),
+        assertTrue(fn.contains("VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout, slotCount = { VoiceSlotPlace.slotCountOf(state()) },"),
             "VoiceHomeActions phải là CÙNG sáu lambda mà VoiceWiring.dispatcher dùng — không mở đường thứ hai")
+        // 2.91 VOICE-APP-NAMES (spec R4 lối b/c) — needle trên bỏ `))` CÓ CHỦ Ý: thêm tham số thứ tám `teachApp` (mở trang
+        // Dạy tên app qua yêu cầu đang chờ + CHÍNH lambda `openSettings`, không đường thứ hai). Sáu lambda cũ giữ nguyên.
+        assertTrue(fn.contains("teachApp = { r -> VoiceTeachPending.offer(r); openSettings() }"),
+            "TEACH_APP phải đi qua yêu cầu đang chờ + CÙNG `openSettings` của dispatcher")
         assertTrue(fn.contains("entry = entry"), "VoiceSession của màn chính phải nhận entry")
     }
 

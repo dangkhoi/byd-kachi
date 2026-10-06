@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.system.PackageQueries
@@ -26,7 +27,15 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * khác loại với ô khả năng. Nhưng **khe và chiều cao hàng** vẫn đi qua [CapabilityTileGrid] như mọi lưới khác: một
  * vùng cuộn phải có một nhịp.
  */
-class AppDrawerApps(private val context: Context, private val onPickApp: (String) -> Unit) {
+class AppDrawerApps(
+    private val context: Context,
+    private val onPickApp: (String) -> Unit,
+    /**
+     * 2.91 VOICE-APP-NAMES · R4(b) — nhấn giữ một app ⇒ menu *"Dạy tên gọi bằng giọng"*. Chỉ ở chế độ ngăn kéo THƯỜNG
+     * (`AppDrawer.Mode.OPEN_APP`, OQ6); `null` ở mọi chế độ chọn ⇒ ô không có nhấn giữ (y nguyên trước bản này).
+     */
+    private val onLongPressApp: ((View, String) -> Unit)? = null,
+) {
 
     /**
      * Một ô trong lưới app: gói (để tra hàng "Gần đây"), nhãn, **cách lấy** icon, việc làm khi chạm.
@@ -86,6 +95,7 @@ class AppDrawerApps(private val context: Context, private val onPickApp: (String
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             setOnClickListener { item.onTap() }
+            onLongPressApp?.let { lp -> setOnLongClickListener { v -> lp(v, item.pkg); true } }
             addView(ImageView(context).apply {
                 layoutParams = LinearLayout.LayoutParams(dpi(context, Sp.ICON_XL), dpi(context, Sp.ICON_XL))
                 // Bung icon trên luồng nền rồi gắn về luồng vẽ — xem KDoc [Item]. Ô giữ nguyên KÍCH THƯỚC từ
@@ -111,7 +121,22 @@ class AppDrawerApps(private val context: Context, private val onPickApp: (String
             })
         }
 
-    private companion object {
+    companion object {
+        /**
+         * Menu nhấn giữ của ngăn kéo thường — MỘT mục; chạm ⇒ ĐÓNG ngăn kéo ([closeDrawer]) rồi mở trang *Dạy tên app* với
+         * hộp dạy cho gói ấy. [ĐO máy ảo 06/10] không đóng thì trang mở NẰM DƯỚI lớp ngăn kéo — người dùng thấy như chưa có gì.
+         */
+        fun teachMenu(context: Context, closeDrawer: () -> Unit): (View, String) -> Unit = { anchor, pkg ->
+            android.widget.PopupMenu(context, anchor).apply {
+                menu.add(context.getString(R.string.kachi_vn_drawer_teach))
+                setOnMenuItemClickListener {
+                    closeDrawer()
+                    com.byd.clusternav.launcher.voice.VoiceTeachHome.open(context, com.byd.clusternav.launcher.voice.VoiceTeachHint.Request(pkg = pkg))
+                    true
+                }
+            }.show()
+        }
+
         /**
          * Luồng bung icon — **daemon**, hai luồng, dùng chung cho mọi lần mở ngăn kéo.
          *

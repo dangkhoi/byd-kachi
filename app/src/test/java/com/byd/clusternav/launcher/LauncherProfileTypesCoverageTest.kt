@@ -35,6 +35,8 @@ class LauncherProfileTypesCoverageTest {
         "WorkspacePrefsSlotHead.kt",
         // 2.89 · B3 DOCK-SCALE — `dock_scale` đọc/ghi ở tệp riêng (cùng lẽ: WorkspacePrefs.kt 499/500 dòng).
         "WorkspacePrefsDockScale.kt",
+        // 2.91 VOICE-APP-NAMES — `voice_app_names` đọc/ghi ở tệp riêng (cùng lẽ: WorkspacePrefs.kt 499/500 dòng).
+        "WorkspacePrefsVoiceNames.kt",
     )
 
     private fun code(file: String) = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$file")

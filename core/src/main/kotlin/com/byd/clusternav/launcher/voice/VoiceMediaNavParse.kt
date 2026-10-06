@@ -15,8 +15,8 @@ internal object VoiceMediaNavParse {
     private val SEARCH_HEADS = listOf(listOf("tim", "kiem"), listOf("tim"))
 
     /** *"nhạc"/"bài"* + động từ: có đuôi ⇒ tên bài/thể loại (từ vựng mở), không đuôi ⇒ lệnh phát đơn thuần. */
-    fun media(verb: VoiceVerb, after: List<Token>, original: String): VoiceIntent =
-        VoiceTailClause.withTarget(after, VoiceAppKind.MUSIC) { body, app ->
+    fun media(verb: VoiceVerb, after: List<Token>, original: String, terms: List<VoiceTerm> = emptyList()): VoiceIntent =
+        VoiceTailClause.withTarget(after, VoiceAppKind.MUSIC, terms) { body, app ->
             when (verb) {
                 VoiceVerb.PAUSE, VoiceVerb.OFF, VoiceVerb.CLOSE -> VoiceIntent.Media(VoiceMediaOp.PAUSE)
                 VoiceVerb.NEXT -> VoiceIntent.Media(VoiceMediaOp.NEXT)
@@ -30,14 +30,14 @@ internal object VoiceMediaNavParse {
 
     /** (b''') *"tìm [kiếm] &lt;từ-nhạc&gt; &lt;tên bài&gt;"* ⇒ Media QUERY, `null` nếu không (⇒ NO_VERB hỏi lại). Ba cổng:
      * *"tìm"* · TỪ-NHẠC ngay sau (*"tìm trạm xăng"* không có ⇒ `null`, không đoán) · còn tên bài. */
-    fun mediaSearch(t: List<Token>): VoiceIntent? {
+    fun mediaSearch(t: List<Token>, terms: List<VoiceTerm> = emptyList()): VoiceIntent? {
         val head = SEARCH_HEADS.firstOrNull { VoiceLexicon.phraseAt(t, 0, it) } ?: return null
         val rest = dropFillers(t.subList(head.size, t.size))
         val mw = VoiceSynonyms.MEDIA_WORDS.map { it.split(" ") }.sortedByDescending { it.size }
             .firstOrNull { VoiceLexicon.phraseAt(rest, 0, it) } ?: return null
         val after = dropFillers(rest.subList(mw.size, rest.size))
         if (after.isEmpty()) return null
-        return media(VoiceVerb.PLAY, after, "")
+        return media(VoiceVerb.PLAY, after, "", terms)
     }
 
     /**
@@ -51,8 +51,8 @@ internal object VoiceMediaNavParse {
      * nhãn chuẩn): bắn chữ *"nhà"* cho app bản đồ là dẫn người ta tới một quán tên *"Nhà"* — máy làm một việc
      * khác việc được bảo. Tầng thi hành tra sổ và nói thẳng nếu chưa lưu (R4).
      */
-    fun nav(after: List<Token>, places: List<String>, original: String): VoiceIntent =
-        VoiceTailClause.withTarget(after, VoiceAppKind.NAV) { body, app ->
+    fun nav(after: List<Token>, places: List<String>, original: String, terms: List<VoiceTerm> = emptyList()): VoiceIntent =
+        VoiceTailClause.withTarget(after, VoiceAppKind.NAV, terms) { body, app ->
             val saved = VoicePlaces.match(body.map { it.norm }, places)
             when {
                 saved != null -> VoiceIntent.NavigateSaved(saved, app)

@@ -171,6 +171,8 @@ class VoiceHomeActions(
      * là không biên dịch được (đúng lẽ `VoiceDispatcher.onListen`), vì `:wake` không có nguồn nào khác cho con số này.
      */
     val slotCount: () -> Int,
+    /** 2.91 VOICE-APP-NAMES — mở trang *Dạy tên app* ([VoiceHomeAction.TEACH_APP], tham số [VoiceTeachHint.decode]). */
+    val teachApp: (VoiceTeachHint.Request) -> Unit,
 ) {
     /**
      * `done = false` ⇒ thiếu/hỏng tham số (đổi hồ sơ không tên · ô/gói/bố cục sai dạng) — không đoán, có log ở chỗ
@@ -186,6 +188,7 @@ class VoiceHomeActions(
             VoiceHomeRelay.ackOf(VoiceSlotPlace.decide(s.slot, slotCount()) { assignAppToSlot(s.slot, s.pkg) })
         } ?: FAILED
         VoiceHomeAction.SET_LAYOUT -> VoiceHomeRelay.decodeLayout(arg)?.let { VoiceHomeRelay.Ack(onLayout(it)) } ?: FAILED
+        VoiceHomeAction.TEACH_APP -> { teachApp(VoiceTeachHint.decode(arg)); DONE }
     }
 
     /**

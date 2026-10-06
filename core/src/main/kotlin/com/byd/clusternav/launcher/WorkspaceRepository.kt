@@ -122,6 +122,16 @@ interface WorkspaceRepository {
     /** Ghi bền cả danh sách lối tắt (phép sửa là hàm thuần ở [ShortcutSelection]). Mặc định: không lưu (bản giả). */
     fun setAppShortcuts(items: List<AppShortcut>) {}
 
+    /**
+     * 2.91 VOICE-APP-NAMES — tên app tự dạy của hồ sơ đang dùng (khoá `voice_app_names`). [setVoiceAppNames] trả `false`
+     * khi KHÔNG ghi (dữ liệu đang có là của một phiên bản lạ ⇒ chỉ đọc) — mặc định `false`: bề mặt chưa nối thì nói ra.
+     */
+    fun voiceAppNames(): List<com.byd.clusternav.launcher.voice.TaughtName> = emptyList()
+
+    fun voiceAppNamesReadOnly(): Boolean = false
+
+    fun setVoiceAppNames(names: List<com.byd.clusternav.launcher.voice.TaughtName>): Boolean = false
+
     /** F2/F3 — cấu hình chuyến lên xe của hồ sơ đang dùng (`ignition_apps` + `ignition_music`). Mặc định rỗng = mặc định đĩa. */
     fun tripConfig(): TripConfig = TripConfig()
 

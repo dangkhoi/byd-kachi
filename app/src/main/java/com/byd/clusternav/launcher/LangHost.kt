@@ -101,6 +101,9 @@ internal object LangHost {
         Lang.VI, Lang.EN, Lang.TH, Lang.MS -> "EEEE, dd/MM"
     }
 
+    /** 2.91 VOICE-APP-NAMES — locale CỦA một tiếng (nhãn app locale thứ hai, `AppAltLabels`): cùng bảng [localeOf]. */
+    fun localeFor(lang: Lang): Locale = localeOf(lang)
+
     /** `when` VÉT CẠN — thêm một [Lang] mà quên ở đây là lỗi biên dịch, không phải màn rơi về tiếng Việt im lặng. */
     private fun localeOf(lang: Lang): Locale = when (lang) {
         Lang.VI -> VIETNAMESE

@@ -46,10 +46,21 @@ object VoiceWiring {
      * cái tên, một app **khác** mở lên, không dòng log nào. Luật chọn nay nằm ở [VoiceAppLabelPick] (`:core`,
      * thuần, kiểm off-car); ở đây chỉ còn hai việc mà chỉ tầng Android làm được: **đọc máy** và **ghi log**.
      */
-    fun appsByLabel(ctx: Context): Map<String, String> {
+    fun appsByLabel(ctx: Context): Map<String, String> = appIndex(ctx).keys
+
+    /**
+     * 2.91 VOICE-APP-NAMES · A2 — bảng gọi app ĐẦY ĐỦ của phiên ([VoiceAppIndex]): nhãn thật › tên đã dạy của hồ sơ đang
+     * dùng ([VoiceTaughtSource], đúng tiến trình) › nhãn locale thứ hai ([AppAltLabels], chỉ bộ nhớ) + dạng đọc. Một lượt
+     * hỏi `PackageManager`. `keys` giữ nguyên hợp đồng [appsByLabel] cũ: không tên đã dạy + không nhãn phụ ⇒ y nguyên bản
+     * đồ H3(c) cũ (nhãn thật trước, dạng đọc `putIfAbsent` sau — bài `VoiceAppIndexTest` khoá). Lượt hỏi
+     * `PackageManager` ~100 ms trên đầu xe ⇒ đúng MỘT lượt ở đây, mọi tầng sau nhận danh sách đã đọc.
+     */
+    fun appIndex(ctx: Context, taught: List<TaughtName> = VoiceTaughtSource.names(ctx)): VoiceAppIndex {
+        val t0 = System.nanoTime()
         val pm = ctx.packageManager
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val entries = PackageQueries.queryActivities(pm, intent)
+        val infos = PackageQueries.queryActivities(pm, intent)
+        val entries = infos
             .mapNotNull { ri ->
                 val info = ri.activityInfo ?: return@mapNotNull null
                 VoiceAppLabelPick.Entry(ri.loadLabel(pm).toString(), info.packageName, isSystem(info.applicationInfo))
@@ -60,8 +71,24 @@ object VoiceWiring {
         picked.ambiguous.forEach { (label, pkgs) ->
             Log.w(TAG, "nhãn \"$label\" trùng ở ${pkgs.size} gói (${pkgs.joinToString(" · ")}) → chọn ${pkgs.first()}")
         }
-        return withPhonetics(picked.labels)
+        val installed = entries.mapTo(LinkedHashSet()) { it.pkg }
+        AppAltLabels.warm(ctx, infos)
+        val alt = AppAltLabels.cached(installed)
+        val tb = System.nanoTime()
+        val idx = VoiceAppIndex.build(picked.labels, installed, taught, alt)
+        val t1 = System.nanoTime()
+        lastBuildMicros = (t1 - tb) / NANOS_PER_MICRO
+        lastIndexMicros = (t1 - t0) / NANOS_PER_MICRO
+        // Chỉ ĐẾM — không in tên người dùng dạy (R-nf3).
+        if (idx.shadowed.isNotEmpty()) Log.i(TAG, "tên đã dạy bị che: ${idx.shadowed.size} (nhãn app khác / trùng giữa hai app)")
+        return idx
     }
+
+    private const val NANOS_PER_MICRO = 1_000L
+
+    /** Tên đã dạy còn sống của bảng [keys] — cùng hàm thuần cho mọi bề mặt ([VoiceAppIndex.aliasesOf]). */
+    fun aliases(ctx: Context, keys: Map<String, String>): List<VoiceAppAlias> =
+        VoiceAppIndex.aliasesOf(keys, VoiceTaughtSource.names(ctx))
 
     /**
      * Gói có thuộc ảnh hệ thống không — gồm cả bản hệ thống **đã được cập nhật** (`FLAG_UPDATED_SYSTEM_APP`):
@@ -74,33 +101,15 @@ object VoiceWiring {
         app != null && (app.flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0
 
     /**
-     * H3(c) — bản đồ nhãn→gói **cộng thêm cách đọc âm Việt** của từng nhãn ([VoiceAppPhonetics.spokenForms]).
-     *
-     * ## Vì sao ở tầng này, và vì sao không phải một lượt hỏi `PackageManager` thứ hai
-     * Owner 2026-09-16: *"mở app chatgpt → có mở được không, có lấy được các app đang có trong xe để mở không?"*.
-     * Bảng đích ([VoiceSynonyms.APP_TARGETS]) chỉ phủ bảy app được khai tay; mọi app **khác** đang cài chỉ gọi
-     * được bằng **nhãn hệ thống** (*"ChatGPT"*), mà mô hình `zipformer-vi` là mô hình tiếng Việt nên nó in ra
-     * *"chát gi pi ti"* ([ĐO] `voice-mishear-2026-09-16.md` §3: loại `app` đúng 12,8 %, thấp nhất bảng).
-     * Cách đọc **sinh từ chính cái nhãn** ⇒ không tên gói nào bị viết cứng (CLAUDE.md §7), và app mới cài hôm nay
-     * là gọi được ngay hôm nay.
-     *
-     * ## Hai ràng buộc, mỗi cái chặn một lỗi im lặng
-     *  1. **Không đè nhãn thật.** `putIfAbsent`: nếu một cách đọc trùng đúng nhãn của app khác (*"maps"* của một
-     *     app tên *Maps*) thì nhãn thật giữ nguyên gói của nó. Nhãn là chữ người dùng NHÌN THẤY; một bí danh suy
-     *     ra được không bao giờ thắng nó.
-     *  2. **Một lượt hỏi `PackageManager` duy nhất.** Hàm này nhận danh sách đã đọc xong, không tự hỏi lại —
-     *     lượt hỏi ấy tốn ~100 ms trên đầu xe và mỗi phiên nghe đã gọi nó một lần.
-     *
-     * Nhãn thuần Việt (*"Cài đặt"*, *"Ứng dụng của tôi"*) tự không sinh cách đọc nào ⇒ bản đồ không phình vô ích.
+     * 2.91 VOICE-APP-NAMES · R-nf6 — thời gian (µs) của lượt dựng bảng gọi app GẦN NHẤT trong tiến trình: [lastBuildMicros]
+     * = riêng [VoiceAppIndex.build] (phần 2.91 thêm: tên đã dạy + nhãn phụ + dạng đọc), [lastIndexMicros] = cả
+     * [appIndex] (gồm lượt hỏi `PackageManager` có từ trước). Chỉ để đo (cầu kiểm thử `state.voice_names`); `-1` = chưa dựng.
      */
-    fun withPhonetics(labels: List<Pair<String, String>>): Map<String, String> {
-        val out = LinkedHashMap<String, String>(labels.size * 2)
-        labels.forEach { (label, pkg) -> out[label] = pkg }
-        labels.forEach { (label, pkg) ->
-            VoiceAppPhonetics.spokenForms(label).forEach { form -> out.putIfAbsent(form, pkg) }
-        }
-        return out
-    }
+    @Volatile var lastBuildMicros: Long = -1L
+        private set
+
+    @Volatile var lastIndexMicros: Long = -1L
+        private set
 
     /**
      * Dựng cầu sang các đường đang chạy.
@@ -162,6 +171,8 @@ object VoiceWiring {
         state = state,
         media = { MediaBridge(ctx) },
         appsByLabel = appsByLabel,
+        // 2.91 VOICE-APP-NAMES — tên đã dạy của CÙNG bảng mà lượt nói này đọc (prefs ở chính · ảnh chụp ở `:wake`).
+        appAliases = { keys -> aliases(ctx, keys) },
         openApp = openApp,
         openAppList = openAppList,
         openSettings = openSettings,

@@ -302,6 +302,8 @@ internal object SettingsCatalogEntries {
         // mục IA v2: rail đếm số mục của nhóm, và `SettingsCatalogControlContractTest` canh hai chiều *"mục ⇔ có
         // control thật trên màn"*. Một bề mặt đã vẽ mà không có mục là một hàng lậu.
         SettingsEntry("voice_commands", SettingsGroup.VOICE, "Câu lệnh nói được", labelEn = "Spoken commands"),
+        // 2.91 VOICE-APP-NAMES (spec §4.5) — khoá hồ sơ `voice_app_names`; trang danh sách mọi app + hộp dạy bằng giọng.
+        SettingsEntry("voice_app_names_list", SettingsGroup.VOICE, "Dạy tên app", "voice_app_names", "Teach app names"),
         // ── V3 · "nhanh + tự nhiên" (spec `kachi-voice-fast-natural.html`) ──
         // R7 — mục liệt kê MỌI việc có thể hỏi lại, mỗi việc một ô tích; mặc định KHÔNG tích cái nào (owner
         // 2026-09-16: *"cái nào nguy hiểm lái xe mới hỏi, chứ mở cửa hỏi làm gì"*).

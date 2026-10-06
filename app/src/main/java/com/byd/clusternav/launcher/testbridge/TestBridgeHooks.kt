@@ -18,6 +18,7 @@ import com.byd.clusternav.launcher.SettingsGroup
 import com.byd.clusternav.launcher.Strings
 import com.byd.clusternav.launcher.VoiceDispatcher
 import com.byd.clusternav.launcher.voiceLangOf
+import com.byd.clusternav.launcher.voiceNamesPort
 import com.byd.clusternav.launcher.clusterNavBridge
 import com.byd.clusternav.launcher.voice.VoiceSession
 import com.byd.clusternav.launcher.voice.VoiceWiring
@@ -114,6 +115,8 @@ internal class TestBridgeHooks(
      * bao lâu (một lượt `getBitmap` ~10 ms; một lượt FBO 5120×960 + đọc 20 MB thì không).
      */
     val cameraFrameRaw: (Int, Int) -> IntArray? = { _, _ -> null },
+    /** 2.91 VOICE-APP-NAMES · A7 — CÙNG cổng ViewModel mà trang *Dạy tên app* ghi qua. Không mặc định: quên nối ⇒ không biên dịch. */
+    val voiceNames: () -> com.byd.clusternav.launcher.VoiceNamesPort,
 ) {
     private val ownerRef = WeakReference(owner)
 
@@ -246,6 +249,7 @@ internal fun Activity.attachTestBridge(
                 val c = com.byd.clusternav.AppContainer.get(this)
                 if (c.cameraSignalCreated) c.cameraSignal.grabRawFrame(w, h) else null
             },
+            voiceNames = { viewModel.voiceNamesPort() },
         )
     KachiTestHooks.attach(hooks)
     val host = application

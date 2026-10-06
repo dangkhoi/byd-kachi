@@ -21,8 +21,9 @@ import com.byd.clusternav.launcher.voice.VoiceWiring
  *  4. **Câu lệnh nói được** (2.74 · R3) — danh sách gập/mở, SINH từ [VoiceCommandCatalog]. Đứng **CUỐI** theo yêu
  *     cầu owner: nó là phần để ĐỌC, không phải để cài, nên nó không được chen giữa các công tắc.
  *
- * KHÔNG mang thêm khoá lưu bền mới: mọi công tắc đi qua `deps.bridge` (theo XE) như trước — chỉ đổi CHỖ ĐỨNG trong
- * cây Cài đặt, không đổi cách lưu.
+ * Khoá lưu bền: mọi công tắc đi qua `deps.bridge` (theo XE) như trước — chỉ đổi CHỖ ĐỨNG trong cây Cài đặt. NGOẠI LỆ duy
+ * nhất từ 2.91 (VOICE-APP-NAMES, spec §4.3): dòng *"Dạy Kachi tên app"* mở trang [SettingsVoiceNamesPage] — khoá THEO HỒ SƠ
+ * `voice_app_names`, ghi qua [VoiceNamesPort] (ViewModel), đứng giữa khối *Nói với xe* và *Nhạc*.
  */
 class SettingsVoiceSection(
     private val context: Context,
@@ -75,6 +76,15 @@ class SettingsVoiceSection(
         // Nói với xe: mô hình NGHE + giọng ĐỌC + công tắc + hỏi-xác-nhận + nguồn micro.
         com.byd.clusternav.launcher.voice.VoiceModelSettings(context, rows, deps).build(body)
 
+        // 2.91 VOICE-APP-NAMES · R4(a) — trang danh sách mọi app + hộp dạy bằng giọng (spec §4.3).
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_vn_row_title)))
+        val taughtApps = deps.voiceNames.names().map { it.pkg }.distinct().size
+        body.addView(rows.listRow(
+            context.getString(R.string.kachi_vn_page_title),
+            context.getString(R.string.kachi_vn_row_sub, taughtApps),
+            context.getString(R.string.kachi_vn_teach),
+        ) { SettingsVoiceNamesPage(context, deps).open() })
+
         // App NHẠC mặc định (owner 2026-09-21) — nói "phát nhạc" không nêu app + không có nhạc đang phát ⇒ dùng cái
         // này; có tên ⇒ app đó; "Tự chọn" (rỗng) ⇒ giữ hành vi cũ (app đang phát / app nhạc đầu tiên đã cài).
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_music_section)))
@@ -111,6 +121,8 @@ class SettingsVoiceSection(
             apps = appLabels,
             places = VoicePlaces.labelsOf(st.savedPlaces),
             confirmIds = deps.bridge.voiceConfirmIds(),
+            // 2.91 VOICE-APP-NAMES — nguồn động THỨ TƯ của parser (KDoc trên: cùng bộ với `VoiceDispatcher.parse`).
+            aliases = VoiceWiring.aliases(context, appMap),
         ).forEach { g ->
             // `getQuantityString` chứ không `getString`: bản một-chuỗi in *"1 phrases"* ở tiếng Anh (finding #18).
             val n = g.examples.size
@@ -129,13 +141,14 @@ class SettingsVoiceSection(
      * dựng trang chỉ cần dò `PackageManager` **một** lần (cùng lối `VoiceTextConsole`).
      *
      * ## ⚠ [SOÁT 2.74] Thứ tự khoá là thứ có ý nghĩa ở đây
-     * Bảng ấy mang **cả cách đọc âm Việt** của mỗi nhãn ([VoiceWiring.withPhonetics]) — cố ý, để lượt NGHE nhận
-     * *"mở du túp"*. Danh sách trong Cài đặt chỉ bày vài ví dụ đầu, và nó **đọc được chữ**: nó chỉ đẹp vì
-     * `withPhonetics` chèn **hết nhãn thật trước**, rồi mới tới bí danh (`LinkedHashMap`). Đảo hai vòng lặp ở đó
+     * Bảng ấy mang **cả cách đọc âm Việt** của mỗi nhãn (`VoiceAppIndex.build`, 2.91 thay `withPhonetics`) — cố ý, để
+     * lượt NGHE nhận *"mở du túp"*. Danh sách trong Cài đặt chỉ bày vài ví dụ đầu, và nó **đọc được chữ**: nó chỉ đẹp vì
+     * `VoiceAppIndex.build` chèn **hết nhãn thật trước**, rồi mới tới bí danh (`LinkedHashMap`). Đảo hai vòng lặp ở đó
      * ⇒ màn Cài đặt bỗng quảng cáo *"mở du túp"* như một tên app. Cần đúng-nhãn-thật thì phải lọc ở đây, đừng đổi
      * thứ tự bên ấy (bên ấy là đường NGHE đã đo trên xe).
      */
-    private val appLabels: List<String> by lazy { VoiceWiring.appsByLabel(context).keys.toList() }
+    private val appMap: Map<String, String> by lazy { VoiceWiring.appsByLabel(context) }
+    private val appLabels: List<String> by lazy { appMap.keys.toList() }
 
     /** Nhãn app nhạc — rỗng = "Tự chọn"; còn lại là tên thương hiệu (danh từ riêng, VI=EN). */
     private fun musicAppLabel(key: String): String = when (key) {

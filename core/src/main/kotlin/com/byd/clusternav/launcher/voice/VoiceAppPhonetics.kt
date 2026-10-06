@@ -184,14 +184,14 @@ object VoiceAppPhonetics {
      * Trong các khoá cùng trỏ về **một gói**, khoá nào là **nhãn THẬT** (chữ người dùng nhìn thấy)?
      *
      * ## Vì sao cần — [ĐO máy ảo 2026-09-16], năm ca `t73`–`t78`
-     * Bản đồ nhãn→gói của `VoiceWiring.withPhonetics` cố ý chứa **cả** nhãn thật lẫn các dạng đọc sinh ra từ nó,
+     * Bản đồ nhãn→gói của [VoiceAppIndex.build] cố ý chứa **cả** nhãn thật lẫn các dạng đọc sinh ra từ nó,
      * vì tầng hiểu cần khớp được cả hai. Nhưng khi câu *"mở du túp"* khớp bằng dạng ĐỌC, ý định mang theo đúng
      * chuỗi đã khớp, nên Kachi **đọc to**: *"Mở ứng dụng du túp"*. Owner đã chốt Kachi nói phản hồi thành tiếng
      * (D-C3), nên đây không còn là chuyện thẩm mỹ: người lái nghe máy gọi tên app bằng một chuỗi phiên âm mà
      * chính họ không viết bao giờ, và không có cách nào biết máy đã mở **đúng** app hay chưa.
      *
      * ## Phép chọn KHÔNG dựa vào thứ tự chèn
-     * Cách rẻ nhất là *"lấy khoá đầu tiên trỏ về gói ấy"* — đúng với `withPhonetics` (nhãn thật chèn trước,
+     * Cách rẻ nhất là *"lấy khoá đầu tiên trỏ về gói ấy"* — đúng với [VoiceAppIndex.build] (nhãn thật chèn trước,
      * `putIfAbsent` không đè), nhưng nó đúng nhờ một tính chất nằm ở **tệp khác**. Hàm công khai thì không được
      * đúng kiểu đó (cùng lý do KDoc [SherpaHotwords.dropPrefixes] nêu). Ở đây hỏi thẳng: khoá nào **không phải**
      * dạng đọc sinh ra từ một khoá khác trong cùng nhóm. Nhóm chỉ vài phần tử nên phép so đôi một là miễn phí.

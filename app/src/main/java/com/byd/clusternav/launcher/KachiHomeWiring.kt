@@ -18,6 +18,7 @@ import com.byd.clusternav.launcher.voice.VoiceHomeActions
 import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceSession
 import com.byd.clusternav.launcher.voice.VoiceSlotPlace
+import com.byd.clusternav.launcher.voice.VoiceTeachPending
 import kotlinx.coroutines.launch
 import com.byd.clusternav.launcher.voice.VoiceWiring
 
@@ -137,6 +138,7 @@ internal fun homePanels(
     openDockPicker = openDockPicker,
     shortcuts = shortcuts,
     trip = trip,
+    voiceNames = viewModel.voiceNamesPort(),   // 2.91 VOICE-APP-NAMES — trang Dạy tên app (ghi qua ViewModel)
     // T6 · R-UI (m): tập người dùng vừa chốt đã được `DockSelection.apply` gấp thành cấu hình ở tầng Cài đặt;
     // ở đây chỉ còn một intent — **không** ghi bền trực tiếp (`GridSeamGuardTest.chi ViewModel duoc ghi ben`).
     onDockConfig = { config -> viewModel.setDockConfig(config) },
@@ -288,7 +290,8 @@ internal fun Activity.voiceSession(
     VoiceGrammarSnapshotStore.write(WorkspacePrefs(this))
     // CLOSE-3 / 2.69 — cùng SÁU lambda ở dưới (không mở đường thứ hai): `:wake` trả việc cần Activity về đây qua intent;
     // VOICE-WAKE-SLOTCOUNT — số ô từ state THẬT (`:wake` không có bố cục thật, giao nguyên lệnh gắn ô về đây).
-    val entry = VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout, slotCount = { VoiceSlotPlace.slotCountOf(state()) }))
+    val entry = VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout, slotCount = { VoiceSlotPlace.slotCountOf(state()) },
+        teachApp = { r -> VoiceTeachPending.offer(r); openSettings() }))   // 2.91 — `HomePanels.openSettings` lấy yêu cầu ra, mở trang Dạy tên app
     session = VoiceSession(
         ctx = this,
         entry = entry,

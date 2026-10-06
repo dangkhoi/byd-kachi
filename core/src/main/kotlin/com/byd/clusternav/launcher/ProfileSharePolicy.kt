@@ -30,6 +30,9 @@ object ProfileSharePolicy {
                 "chỉ) + app — tức lịch đi lại của một người",
         "nav_automation_fired" to
             "sổ đã-dẫn (ảnh clusternav_prefs): ngày nào luật nào đã chạy = nhật ký chuyến đi thật",
+        // 2.91 VOICE-APP-NAMES (spec OQ2) — bản FULL vẫn mang; bản CHIA SẺ thì không.
+        "voice_app_names" to
+            "tên app tự dạy: chữ chép từ GIỌNG của một người + biệt danh tự đặt (có thể là tên người) — vô ích với giọng khác",
     )
 
     private const val R_LAYOUT = "bố cục/ô/thanh nút/chip — chỉ tên gói app, mã widget, thứ tự; không vị trí"

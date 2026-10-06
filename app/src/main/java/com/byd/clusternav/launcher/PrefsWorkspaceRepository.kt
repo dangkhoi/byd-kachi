@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.launcher.voice.TaughtName
+
 import android.content.Context
 import com.byd.clusternav.launcher.trip.TripConfig
 
@@ -290,6 +292,12 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     override fun appShortcuts(): List<AppShortcut> = prefs.appShortcuts()
 
     override fun setAppShortcuts(items: List<AppShortcut>) = prefs.setAppShortcuts(items)
+
+    override fun voiceAppNames(): List<TaughtName> = prefs.voiceAppNames()
+
+    override fun voiceAppNamesReadOnly(): Boolean = prefs.voiceAppNamesDecoded().readOnly
+
+    override fun setVoiceAppNames(names: List<TaughtName>): Boolean = prefs.setVoiceAppNames(names)
 
     override fun tripConfig(): TripConfig = prefs.tripConfig()
 

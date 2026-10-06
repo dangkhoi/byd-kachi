@@ -87,6 +87,8 @@ class SettingsDeps(
     val shortcuts: ShortcutSettingsPort,
     /** F2/F3 · U6 — chọn app nổ máy + ghi cấu hình chuyến (chủ: `KachiHomeTrip`); xem [TripSettingsPort]. */
     val trip: TripSettingsPort,
+    /** 2.91 VOICE-APP-NAMES — trang *Dạy tên app* (đọc tên đã dạy + ghi qua ViewModel); xem [VoiceNamesPort]. */
+    val voiceNames: VoiceNamesPort,
     /**
      * Công cụ kiểm tra từng nút (owner 2026-09-15): chạy MỘT hành động xe theo id + tham số ([CarControlPort.actByKind]).
      * Trả `true` nếu lệnh gửi được (off-car / chưa map ⇒ `false`). KHÔNG gate — người dùng tự chấm kết quả bằng mắt.
@@ -173,9 +175,10 @@ class SettingsDeps(
     /**
      * UX-OVERHAUL · WP7 — **dựng lại trang đang xem** sau khi một công tắc đổi *cấu trúc* trang (không chỉ giá trị).
      *
-     * Chỗ gọi duy nhất hiện nay là công tắc *Chế độ kiểm thử qua adb*: từ WP7 nó là **cổng** của khối đồ đo
-     * ([DevMode]), nên tích vào phải làm khối đó xuất hiện ngay. Trang Cài đặt được **nhớ lại**
-     * ([SettingsPanel.pages]) nên không có đường nào khác để một trang tự dựng lại chính nó.
+     * Hai chỗ gọi: công tắc *Chế độ kiểm thử qua adb* (từ WP7 nó là **cổng** của khối đồ đo [DevMode], nên tích vào
+     * phải làm khối đó xuất hiện ngay) · đóng trang *Dạy tên app* sau khi có lượt ghi (2.91 — dòng đếm + nhóm *"Tên app
+     * đã dạy"* của trang Giọng nói). Trang Cài đặt được **nhớ lại** ([SettingsPanel.pages]) nên không có đường nào
+     * khác để một trang tự dựng lại chính nó.
      *
      * ⚠ KHÔNG dùng cho các công tắc thường: chúng chỉ đổi GIÁ TRỊ, mà `checkRow` đã tự tô lại ô tích — dựng lại cả
      * trang cho một cú tích là vứt luôn chỗ đang cuộn của người dùng.
@@ -210,7 +213,7 @@ class SettingsDeps(
  */
 class SettingsPanel(
     context: Context,
-    private val deps: SettingsDeps,
+    internal val deps: SettingsDeps,
     private val onClose: () -> Unit,
 ) : FrameLayout(context) {
 

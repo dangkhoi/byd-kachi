@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.Log
 import com.byd.clusternav.launcher.LangHost
 import com.byd.clusternav.launcher.WorkspacePrefs
+import com.byd.clusternav.launcher.voiceAppNames
 import java.io.File
 import java.io.IOException
 
@@ -21,8 +22,8 @@ import java.io.IOException
  *     chúng — ghi từ đó là chép dữ liệu cũ đè lên ảnh chụp mới (đúng cái lỗi tệp này sinh ra để chữa). Bài canh
  *     `VoiceGrammarSnapshotWiringContractTest` khoá `VoiceWakeService.kt` không gọi [write].
  *  3. **Ghi ĐỒNG BỘ trên luồng gọi**, không đẩy sang executor: hai lượt ghi liên tiếp (đổi hồ sơ A rồi B) mà chạy
- *     nền có thể **đảo thứ tự** ⇒ ảnh chụp cuối là A. Tệp ≤ 2 KB, một `renameTo` — vài ms, cùng mức `apply()` của
- *     chính `SharedPreferences` mà chỗ gọi vừa làm.
+ *     nền có thể **đảo thứ tự** ⇒ ảnh chụp cuối là A. Tệp ≤ 2 KB (2.91: + tên đã dạy, ≤ 120 × ~50 B ⇒ ≤ ~8 KB), một
+ *     `renameTo` — vài ms, cùng mức `apply()` của chính `SharedPreferences` mà chỗ gọi vừa làm.
  *
  * ## Vì sao gắn ở tầng LƯU (`WorkspacePrefs`), không ở UI/ViewModel
  * Hồ sơ đổi từ ≥ 5 đường (Cài đặt · voice · autostart hồ sơ lúc nổ máy · nhập tệp · chuyển cảnh S4). Gắn ở từng UI là
@@ -84,6 +85,10 @@ object VoiceGrammarSnapshotStore {
                 uiLang = runCatching { LangHost.resolved(prefs) }
                     .onFailure { Log.w(TAG, "không đọc được ngôn ngữ cho `:wake` — ảnh chụp không mang phần ấy", it) }
                     .getOrNull(),
+                // 2.91 VOICE-APP-NAMES — tên app tự dạy của hồ sơ đang dùng (đổi hồ sơ đã gọi `write` ⇒ tự mang bộ mới).
+                aliases = runCatching { prefs.voiceAppNames() }
+                    .onFailure { Log.w(TAG, "không đọc được tên đã dạy cho `:wake` — ảnh chụp không mang phần ấy", it) }
+                    .getOrDefault(emptyList()),
             )
             // `PrefsWorkspaceRepository.persist` gọi `setActiveProfile` ở MỌI lượt lưu (đổi ô, đổi chủ đề…) ⇒ nội dung
             // thường không đổi. So với bản tiến trình này vừa ghi (bỏ mốc giờ) — chỉ tiến trình chính ghi, nên bản
@@ -140,6 +145,6 @@ object VoiceGrammarSnapshotStore {
      * `false` = KHÔNG ghi: bỏ một lượt ghi chỉ làm ảnh chụp trễ tới lượt sau, còn ghi nhầm từ tiến trình cache cũ
      * là dữ liệu sai.
      */
-    private fun isMainProcess(ctx: Context): Boolean =
+    internal fun isMainProcess(ctx: Context): Boolean =
         runCatching { Application.getProcessName() == ctx.packageName }.getOrDefault(false)
 }
