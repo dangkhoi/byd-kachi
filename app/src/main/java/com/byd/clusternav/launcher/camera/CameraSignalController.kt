@@ -214,6 +214,7 @@ class CameraSignalController(private val appCtx: Context) {
         // 2.92 KIỂU HÌNH: quy theo đường vẽ + vùng KHUNG/NỘI DUNG suy ở `:core`; Nắn thẳng ⇒ đúng `cropFor` cũ.
         val asked = Prefs.cameraProjection(appCtx)   // R6: TV không có shader ⇒ Thẳng rộng hiện như Gương cầu — log nói cả hai
         val mode = CameraViewMode.effective(asked, render)
+        val zoom = Prefs.cameraZoom(appCtx)   // MỘT lượt đọc cho cả uniform GL lẫn tỉ lệ TV/đường rơi (soát 06/10 [P3])
         val crops = CameraViewPlan.crops(
             mode = mode,
             view = view,
@@ -237,7 +238,7 @@ class CameraSignalController(private val appCtx: Context) {
         // được, và lệch thì không ai thấy vì ảnh vẫn ra hình). `null` ở hai đường kia ⇒ không đọc một khoá nào.
         val gl = if (CameraSignalPolicy.rotatesInShader(render)) {
             Prefs.cameraGlUniforms(
-                appCtx, mode = mode, crops = crops,
+                appCtx, mode = mode, zoomPct = zoom, crops = crops,
                 strip = effStrip,
                 rotationDeg = rot, streamW = streamW, streamH = streamH,
                 // Dấu của `camera_dewarp_pan_x` theo BÊN: hai camera gương soi gương nhau ([ĐO khung thô
@@ -250,14 +251,16 @@ class CameraSignalController(private val appCtx: Context) {
             null
         }
         // 2.92: tỉ lệ MÀN cho ma trận TextureView (đường TV + đường RƠI của GL) — `null` ở *Nắn thẳng* 100 % ⇒ y hệt.
-        val videoScale = CameraViewPlan.tvScale(mode, Prefs.cameraZoom(appCtx), crops, streamW, streamH, rot)
-        Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop?.joinToString() ?: "-"} kiểu=$mode${if (asked != mode) " (chọn $asked)" else ""} nội-dung=${crops.content?.joinToString() ?: "-"} vùng=$span hình=$shape ảnh-tổng-hợp=$synth overlay $side góc=$corner kết xuất=$render rot=$rot lật=$mirror")
+        val videoScale = CameraViewPlan.tvScale(mode, zoom, crops, streamW, streamH, rot)
+        Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop?.joinToString() ?: "-"} kiểu=$mode${if (asked != mode) " (chọn $asked)" else ""} thu-phóng=$zoom% nội-dung=${crops.content?.joinToString() ?: "-"} vùng=$span hình=$shape ảnh-tổng-hợp=$synth overlay $side góc=$corner kết xuất=$render rot=$rot lật=$mirror")
         // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
         // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).
         // Ghi lại NGỮ CẢNH của khung đang hiện cho lệnh chẩn đoán `camera_frame` (chỉ ĐỌC). Ghi ở đây —
         // đúng chỗ đã quyết — chứ không để cầu kiểm thử tự tra lại prefs: bản tra thứ hai sẽ nói theo
         // prefs HIỆN TẠI, không theo cái khung đang treo trên màn (owner đổi chip giữa hai lượt xi-nhan).
-        shown = Shown(view.name, camId, crops.content?.joinToString(",") ?: "", rot, gl?.describe() ?: "mode=$mode render=$render")
+        shown = Shown(view.name, camId, crops.content?.joinToString(",") ?: "", rot,
+            gl?.describe() ?: "mode=$mode${if (asked != mode) " asked=$asked" else ""} zoom=$zoom% render=$render")
+        openedSessions++
         hal.open(view)
         // CAM-ROT-2 (owner 2026-09-26 "không muốn có viền đen … đúng tỷ lệ camera"): cửa sổ overlay lấy tỉ lệ
         // vùng crop SAU xoay ⇒ cần cỡ ảnh nguồn. `view.hintW/hintH` chỉ là **gợi ý** cho lượt dựng đầu;
@@ -350,6 +353,13 @@ class CameraSignalController(private val appCtx: Context) {
     /** Một dòng ngữ cảnh của phiên đang treo (kiểu + bộ uniform) — cho nút *Khung thô* ở Chẩn đoán. Chỉ ĐỌC. */
     fun sessionNote(): String = shown?.note.orEmpty()
 
+    /** 2.92 · số hiệu PHIÊN, tăng ở mỗi [openSession] (xi-nhan · đổi bên · áp lại · xem thử). Chỉ main ghi. */
+    @Volatile
+    private var openedSessions = 0L
+
+    /** Số hiệu phiên vừa dựng — nút *Khung thô* chụp + đóng ĐÚNG phiên nó mở ([endPreview]). Chỉ ĐỌC. */
+    fun sessionSeq(): Long = openedSessions
+
     @Volatile
     private var shown: Shown? = null
 
@@ -436,9 +446,12 @@ class CameraSignalController(private val appCtx: Context) {
         openSession(turn)
     }
 
-    /** 2.92 — đóng lượt xem thử do nút *Khung thô* (Chẩn đoán) mở. Gọi trên main. */
-    fun endPreview() {
-        if (current != Turn.NONE) stop()
+    /**
+     * 2.92 — đóng lượt xem thử do nút *Khung thô* (Chẩn đoán) mở, CHỈ khi phiên đang treo vẫn là phiên ấy ([seq]): xi-nhan
+     * thật / lượt khác đã thay phiên thì để yên (spec R8 *"đóng nếu chính nút đã mở"*). Gọi trên main.
+     */
+    fun endPreview(seq: Long) {
+        if (current != Turn.NONE && openedSessions == seq) stop()
     }
 
     private fun stop() {

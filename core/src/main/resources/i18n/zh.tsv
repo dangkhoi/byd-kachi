@@ -816,7 +816,7 @@ Tên app đã dạy	Taught app names	已教的应用名称
 Nếu đó là tên app, hãy dạy Kachi trong Cài đặt, Giọng nói	If that is an app name, teach Kachi in Settings, Voice	如果那是应用名称，请在设置、语音中教 Kachi
 Dạy tên app	Teach app names	教应用名称
 # 2.92 CAMERA-FULL-VIEW — màn Chẩn đoán › 📷 Khung thô trái/phải (spec docs/specs/kachi-292-camera-full-view.html R8).
-Bật «Bật camera khi xi-nhan» trong Cài đặt trước	Turn on «Camera on turn signal» in Settings first	请先在设置中开启«转向灯联动摄像头»
+Bật «Bật camera khi xi-nhan» trong Cài đặt trước	Turn on «Camera on turn signal» in Settings first	请先在设置中开启«打转向灯时显示摄像头»
 Chụp hỏng: {0}	Capture failed: {0}	拍摄失败：{0}
 Không có khung nào trong 3 giây — camera chưa lên	No frame within 3 s — the camera did not start	3 秒内没有画面——摄像头未启动
 Đường vẽ SurfaceView không chụp được — đổi sang TextureView hoặc GL	The SurfaceView path cannot be captured — switch to TextureView or GL	SurfaceView 绘制方式无法截取——请改用 TextureView 或 GL

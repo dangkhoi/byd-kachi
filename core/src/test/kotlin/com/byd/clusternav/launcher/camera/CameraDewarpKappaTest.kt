@@ -224,4 +224,42 @@ class CameraDewarpKappaTest {
             assertTrue(abs(u - 0.5f) > 0.3f, "90° nằm gần mép đuôi, không ở giữa (u=$u)")
         }
     }
+
+    // ── (5) không NaN/∞ trên toàn miền núm (soát Opus 06/10 [P3]) ─────────────────────────────────────────────────
+
+    /**
+     * Một NaN/∞ lọt vào toạ độ lấy mẫu là khung ĐEN CÂM trên xe — không ném, không log. Quét các góc của miền mà
+     * `prefs_set` ghi được (κ 100–800 %, F/K/S 25–400 %, dịch ±50 %, thu phóng 50–150 %) × tròn/chữ nhật × xoay, kể cả
+     * điểm khung NGOÀI `[0,1]²` và tia vượt `κ·90°`: [CameraDewarp.sample] phải trả `null` (đen trung thực) hoặc số hữu
+     * hạn, và nghịch đảo [forwardSrcToDst] cũng vậy (quá tầm với ⇒ `null`, không bao giờ `tan` nổ ra ∞).
+     */
+    @Test fun `khong NaN khong vo cuc tren toan mien nut, ke ca tia qua 90 do va ngoai khung`() {
+        var n = 0
+        for (mode in listOf(CameraViewMode.STRAIGHT, CameraViewMode.WIDE)) for (kappa in listOf(100, 150, 800))
+            for (f in listOf(25, 100, 400)) for (k in listOf(25, 400)) for (s in listOf(25, 400)) for (pan in listOf(-50, 50))
+                for (zoom in listOf(50, 150)) for (round in listOf(false, true)) for (rot in listOf(0, 90)) {
+                    val shape = if (round) CameraSignalPolicy.SHAPE_ROUND else CameraSignalPolicy.SHAPE_RECT
+                    val crops = seal(left = true, mode = mode, shape = shape).first
+                    val knobs = sealStraight.copy(focalPct = f, kPct = k, scalePct = s, panXPct = pan,
+                        wideKappaPct = kappa, wideFocalPct = f, widePanXPct = pan)
+                    val gl = CameraViewPlan.gl(mode, zoom, crops, 1, streamW, streamH, rot, false, true, knobs, true)
+                    val rect = CameraDewarp.srcRect(crops.content)
+                    for (i in 0..6) for (j in 0..6) {
+                        val u = -0.25f + i * 0.25f
+                        val v = -0.25f + j * 0.25f
+                        val got = CameraDewarp.sample(u, v, rot, gl.dewarp, gl.aspect, rect, gl.fit)
+                        if (got != null) {
+                            assertTrue(got.first.isFinite() && got.second.isFinite(), "$mode ($u,$v) κ$kappa F$f K$k S$s → $got")
+                        }
+                        n++
+                    }
+                    val p = gl.dewarp
+                    for (t in 0..12) {
+                        val rSrc = p.reachableSrcRadius * t / 10f
+                        val back = CameraDewarp.forwardSrcToDst(p.centerX + rSrc / 2f, p.centerY, p, gl.aspect)
+                        if (back != null) assertTrue(back.first.isFinite() && back.second.isFinite(), "nghịch đảo r=$rSrc → $back")
+                    }
+                }
+        assertEquals(2 * 3 * 3 * 2 * 2 * 2 * 2 * 2 * 2 * 49, n)
+    }
 }

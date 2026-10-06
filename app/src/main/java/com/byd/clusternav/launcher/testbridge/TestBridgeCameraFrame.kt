@@ -49,7 +49,9 @@ import android.os.Looper
 internal object TestBridgeCameraFrame {
 
     // 2.92: tiền tố tệp / trần 10 ảnh / mốc giờ / chất lượng PNG chuyển sang `CameraFrameFiles` (một chỗ cho cả nút
-    // *Khung thô* ở Chẩn đoán — CLAUDE.md §4.1 DRY). Hành vi của lệnh này không đổi một byte.
+    // *Khung thô* ở Chẩn đoán — CLAUDE.md §4.1 DRY). Tệp ghi ra + lời đáp THÀNH CÔNG không đổi một byte; hai lời đáp HỎNG
+    // hiếm đổi nhẹ (thiếu thư mục ngoài ⇒ thêm `path: ""`; `createBitmap` hỏng ⇒ lý do không còn kèm cỡ, `pixels` vẫn
+    // có) — mã lỗi `write_failed` giữ nguyên (soát Opus 06/10 [P3]: chú thích cũ hứa "không đổi một byte" là quá lời).
 
     /** Overlay chưa hiện ⇒ không có gì để chụp. Mã ASCII cho script; câu cho người đọc đi trong `reason`. */
     private const val ERR_NO_OVERLAY = "overlay_not_showing"

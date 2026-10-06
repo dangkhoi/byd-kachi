@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.camera
 
 import com.byd.clusternav.testsupport.SourceRoots
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -85,11 +86,46 @@ class CameraFullViewWiringContractTest {
         assertTrue("grabRawFrame(" in raw, "GL ⇒ chụp khung THÔ qua FBO (khung đang hiện có thể đã nắn)")
         assertTrue("CameraFrameFiles.savePng(" in raw && "CameraFrameFiles.copyToPictures(" in raw,
             "ghi PNG vào kachi-logs VÀ chép vào Thư viện ảnh")
-        assertTrue(Regex("""finally\s*\{\s*onMain\s*\{\s*c\.endPreview\(\)""").containsMatchIn(raw),
-            "lượt xem thử phải ĐÓNG trong finally — kể cả khi chụp hỏng/hết giờ")
+        // Soát Opus 06/10: đóng + chụp theo SỐ HIỆU PHIÊN — xi-nhan thật / lượt khác thay phiên thì không đóng nhầm,
+        // không chụp nhầm bên (spec R8 "đóng nếu chính nút đã mở").
+        assertTrue("onMain { c.previewSide(left); c.sessionSeq() }" in raw, "số hiệu đọc CÙNG nhịp main với lượt mở")
+        assertTrue(
+            Regex("""finally\s*\{\s*onMain\s*\{\s*c\.endPreview\(if \(seq != NO_SEQ\) seq else c\.sessionSeq\(\)\)""")
+                .containsMatchIn(raw),
+            "lượt xem thử phải ĐÓNG trong finally — kể cả khi lượt mở ném/hết giờ — và chỉ đúng phiên đã mở",
+        )
+        assertTrue(raw.indexOf("var seq = NO_SEQ") in 0 until raw.indexOf("try {"), "số hiệu khai TRƯỚC try ⇒ finally luôn chạy")
+        val grab = SourceRoots.body(raw, "private fun grab(")
+        assertEquals(2, Regex("""c\.sessionSeq\(\) == seq""").findAll(grab).count(), "chụp CÙNG nhịp main với phép so phiên (GL lẫn TV)")
+        val end = SourceRoots.body(controller, "fun endPreview(seq: Long)")
+        assertTrue("openedSessions == seq" in end && "stop()" in end, "endPreview chỉ dỡ khi phiên vẫn là phiên của nút")
+        assertTrue("openedSessions++" in SourceRoots.body(controller, "private fun openSession("), "mỗi lượt dựng = một số hiệu mới")
+        // Hai lượt chạm liền tay (trái rồi phải) xếp hàng trên MỘT luồng — không giành một phiên camera.
+        assertTrue("ThreadPoolExecutor(0, 1, IDLE_S" in raw && "worker.execute" in raw, "lượt chụp phải xếp hàng, luồng tự tắt khi rảnh")
+        assertFalse("Thread({" in raw, "không dựng luồng rời mỗi lượt chạm")
         listOf("Prefs.set", ".edit()", "putString(", "putInt(", "putBoolean(").forEach {
             assertFalse(it in raw, "nút chẩn đoán không được đổi cấu hình người lái: $it")
         }
+    }
+
+    /**
+     * (3b) Soát Opus 06/10 [P2] — "đã có khung" phải là khung THẬT ở mọi đường TextureView:
+     *  • `isAvailable` chỉ nói `SurfaceTexture` đã có; layer chưa nhận buffer ⇒ `getBitmap` trả bitmap nguyên số 0
+     *    ([ĐO AOSP r47] `LayerDrawable.cpp:145`, `Readback.cpp:184-188`, `TextureView.java:574-590`) ⇒ phải dò điểm ảnh;
+     *  • GL đã RƠI về TextureView (`glFellBack=1`) không có bộ đếm `frames=` ⇒ phải đi đường TextureView, không chờ khung GL.
+     */
+    @Test fun `nut khung tho cho khung that, ke ca duong TV va GL da roi`() {
+        val wait = SourceRoots.body(raw, "private fun awaitFrame(")
+        assertTrue("hasPixels(probe)" in wait, "TextureView: đòi điểm ảnh thật, không tin isAvailable")
+        assertFalse("shot.available" in wait, "isAvailable KHÔNG phải 'đã có khung'")
+        assertTrue("drawsInShader(shot)" in wait, "GL chỉ chờ bộ đếm khi luồng vẽ THẬT đang chạy")
+        val shader = SourceRoots.body(raw, "private fun drawsInShader(")
+        assertTrue("CameraVideoLayer.GL_FELL_BACK !in shot.glStats" in shader, "GL đã rơi ⇒ đường TextureView")
+        assertTrue("if (b != null && !hasPixels(b))" in SourceRoots.body(raw, "private fun grab("),
+            "bitmap rỗng (layer chưa có buffer) không được ghi thành 'khung thô'")
+        val layer = app("launcher/camera/CameraVideoLayer.kt")
+        assertTrue("const val GL_FELL_BACK = \"glFellBack=1\"" in layer && "GL_FELL_BACK else renderer?.stats()" in layer,
+            "một chỗ khai dấu 'đã rơi' — glStats và nút chụp đọc CÙNG hằng")
     }
 
     /** (4) R8 — bản sao Thư viện: MediaStore ảnh, thư mục `Pictures/Kachi`, không cần quyền (API 29+). */

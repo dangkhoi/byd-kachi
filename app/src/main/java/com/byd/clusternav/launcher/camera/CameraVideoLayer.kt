@@ -60,7 +60,7 @@ internal class CameraVideoLayer private constructor(
      *
      * (2.77: ngân sách khung đầu của 2.76 R3 — thứ từng ĐỌC chuỗi này — đã gỡ cùng nguồn *Một camera*.)
      */
-    fun glStats(): String = if (fellBack?.get(0) == true) "glFellBack=1" else renderer?.stats().orEmpty()
+    fun glStats(): String = if (fellBack?.get(0) == true) GL_FELL_BACK else renderer?.stats().orEmpty()
 
     /** Cỡ ảnh tổng hợp đang bơm, rỗng khi không bật `camera_synth`. Chỉ ĐỌC. */
     fun synthSize(): String = synth?.size.orEmpty()
@@ -82,6 +82,9 @@ internal class CameraVideoLayer private constructor(
     }
 
     companion object {
+
+        /** Dấu *"đường GL đã RƠI về TextureView"* của [glStats] — một chỗ khai; nút *Khung thô* đọc nó (2.92). */
+        const val GL_FELL_BACK = "glFellBack=1"
 
         /**
          * Dựng lớp video cho [render].

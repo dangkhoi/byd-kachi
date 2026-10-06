@@ -203,9 +203,11 @@ fun Prefs.setCameraGlTexMatrix(ctx: Context, v: Boolean) =
  * ở `:core` ([CameraGlUniforms.of]) và test được off-car; hàm này chỉ **đọc đĩa**.
  *
  * 2.92: phép quyết theo KIỂU HÌNH nằm ở `:core` [CameraViewPlan.gl] (có test hình học thật); hàm này chỉ đọc mười một
- * khoá + thu phóng. *Nắn thẳng* ở 100 % ⇒ đúng bộ uniform của 2.91 (bài `CameraViewPlanTest` ghim từng trường).
+ * khoá. *Nắn thẳng* ở 100 % ⇒ đúng bộ uniform của 2.91 (bài `CameraViewPlanTest` ghim từng trường).
  *
  * @param mode kiểu đã quy theo đường vẽ ([CameraViewMode.effective]).
+ * @param zoomPct thu phóng ([cameraZoom]) do chỗ gọi đọc MỘT lần — cùng giá trị nuôi tỉ lệ ma trận TV/đường rơi
+ *   (`CameraViewPlan.tvScale`); đọc lại ở đây là hai lượt tra lệch được (soát 06/10 [P3]).
  * @param crops vùng cắt khung + nội dung đã suy ([CameraViewPlan.crops]) — cùng giá trị truyền cho overlay, KHÔNG tính
  *   lại (hai lượt tính là hai kết quả lệch được).
  * @param strip chỉ số dải đang xem — quyết tâm quang ([CameraGlUniforms.sourceCentre]).
@@ -220,6 +222,7 @@ fun Prefs.setCameraGlTexMatrix(ctx: Context, v: Boolean) =
 fun Prefs.cameraGlUniforms(
     ctx: Context,
     mode: String,
+    zoomPct: Int,
     crops: CameraViewPlan.Crops,
     strip: Int,
     rotationDeg: Int,
@@ -229,7 +232,7 @@ fun Prefs.cameraGlUniforms(
     mirror: Boolean,
 ): CameraGlUniforms = CameraViewPlan.gl(
     mode = mode,
-    zoomPct = cameraZoom(ctx),
+    zoomPct = zoomPct,
     crops = crops,
     strip = strip,
     streamW = streamW,

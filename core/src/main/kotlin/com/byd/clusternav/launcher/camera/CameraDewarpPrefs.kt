@@ -115,9 +115,6 @@ object CameraDewarpPrefs {
     /** κ mặc định của MỌI phép nắn = 1 (Nắn thẳng hôm nay). Kiểu *Thẳng rộng* có mặc định riêng ở [CameraViewMode]. */
     const val KAPPA_DEFAULT = 100
 
-    /** Bước `25 %`: κ 1 → 1,25 đã đổi rõ mép khung (research §4.3 quét 1 · 1,5 · 2). */
-    const val KAPPA_STEP = 25
-
     /** `camera_wide_kappa` đọc lên có dùng được không. */
     fun isKappaPct(v: Int): Boolean = v in KAPPA_MIN..KAPPA_MAX
 

@@ -305,21 +305,27 @@ fun ClusterNavBridge.setCameraGlTexMatrix(v: Boolean) = Prefs.setCameraGlTexMatr
  *
  * Chọn *Nắn thẳng* khi ô tích *Nắn hình* đời 2.91 đang TẮT (amount 0) ⇒ đặt lại nắn đủ: nếu không, chip nói "Nắn
  * thẳng" mà ảnh vẫn thô (khoá amount không còn hàng nào để người lái tự bật lại).
+ *
+ * Chỉ dựng lại khi thứ ĐANG ÁP thật sự đổi (spec R1 *"chip đổi"*; soát 06/10 [P3]): `chipRow` gọi `onPick` cả khi chạm lại
+ * đúng chip đang sáng, và mỗi lượt dựng lại là một vòng dỡ/mở `AVMCamera` vô ích (màn đen chớp).
  */
 fun ClusterNavBridge.cameraProjection(): String = Prefs.cameraProjection(app)
 fun ClusterNavBridge.setCameraProjection(v: String) {
+    var changed = Prefs.cameraProjection(app) != v   // so với kiểu ĐÃ QUY (đời cũ amount 0 ⇒ Gương cầu)
     Prefs.setCameraProjection(app, v)
     if (v == com.byd.clusternav.launcher.camera.CameraViewMode.STRAIGHT &&
         Prefs.cameraDewarpAmount(app) == com.byd.clusternav.launcher.camera.CameraDewarpPrefs.AMOUNT_MIN
     ) {
         Prefs.setCameraDewarpAmount(app, com.byd.clusternav.launcher.camera.CameraDewarpPrefs.AMOUNT_MAX)
+        changed = true
     }
-    reapplyCamera()
+    if (changed) reapplyCamera()
 }
 fun ClusterNavBridge.cameraZoom(): Int = Prefs.cameraZoom(app)
 fun ClusterNavBridge.setCameraZoom(v: Int) {
+    val changed = Prefs.cameraZoom(app) != v
     Prefs.setCameraZoom(app, v)
-    reapplyCamera()
+    if (changed) reapplyCamera()
 }
 
 private fun ClusterNavBridge.reapplyCamera() {
