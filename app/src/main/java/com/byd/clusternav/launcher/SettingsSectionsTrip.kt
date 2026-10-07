@@ -177,7 +177,7 @@ class SettingsTripMusicSection(
             }
         })
         // L4 · D3(iii) — kiểu không "phát tiếp" ([TripMusicMode.resumable], dữ liệu của kiểu — lúc chạy vẫn quyết bằng phiên đo
-        // được) mà ô "Phát gì" trống ⇒ nói thật: chỉ mở app; dán link để tự phát, hoặc chọn YT Music.
+        // được) mà ô "Phát gì" trống ⇒ nói thật. 2.94 · R3: Kachi phát tiếp video xem gần nhất (`YoutubeResume`), không thấy thì chỉ mở app.
         if (!cfg.music.mode.resumable && q.isEmpty()) extra.addView(rows.note(context.getString(R.string.kachi_trip_music_link_hint)))
         extra.addView(rows.note(context.getString(R.string.kachi_trip_music_note)))
     }

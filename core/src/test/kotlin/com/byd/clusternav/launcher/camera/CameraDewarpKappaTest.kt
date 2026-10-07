@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test
  *     một pixel (CLAUDE.md §6).
  *  2. κ = 2 là **stereographic** đóng (`r_dst = 2F·tan(θ/2)`), nghịch đảo khứ hồi ở κ ∈ {1; 1,5; 2}.
  *  3. Nguyên nhân lời phàn nàn 06/10: bộ Seal hôm nay dừng ở mép đuôi **x = 140,6 px ⇒ θ 76°** (@376 px/rad).
- *  4. Bộ *Thẳng rộng* mặc định tới **≥ 93°** phía đuôi ở hàng giữa, hàng giữa **không đen**, toàn khung đen **≤ 2 %**,
- *     ở CẢ hai gương (đối xứng gương: đuôi −x ở dải trái, +x ở dải phải).
+ *  4. Bộ *Thẳng rộng* mặc định (2.94 R1: phép TRỤ, [CameraDewarpCylinder]) tới **84–90°** phía đuôi ở hàng giữa, hàng
+ *     giữa **không đen**, toàn khung đen **≤ 2 %**, ở CẢ hai gương (đối xứng gương: đuôi −x ở dải trái, +x ở dải phải).
  */
 class CameraDewarpKappaTest {
 
@@ -163,15 +163,22 @@ class CameraDewarpKappaTest {
 
     // ── (4) bộ Thẳng rộng mặc định ─────────────────────────────────────────────────────────────────────────────
 
+    /**
+     * ĐỔI GHIM (2.94 R1, có lý do): *Thẳng rộng* của camera gương nay là phép TRỤ (owner 07/10). Mép đuôi ≥ 93° của κ
+     * xuyên tâm 2.92 KHÔNG còn đạt được — điểm tụ của đường song song thân xe ở đúng 90°, phép chiếu giữ chúng thẳng
+     * không vẽ được quá đó (research README §2) ⇒ cửa sổ mới 84–90° (research 86,3°).
+     */
     @Test fun `Thang rong mac dinh toi sau xa, hang giua khong den, ca hai guong`() {
         for (left in listOf(true, false)) {
             val (crops, gl) = seal(left = left, mode = CameraViewMode.WIDE)
             assertEquals(1.5f, gl.dewarp.kappa)
             assertEquals(1f, gl.dewarp.amount)
+            assertTrue(gl.dewarp.cylinder, "Thẳng rộng = phép trụ")
             val tailU = if (left) 0f else 1f                      // đuôi: −x dải trái, +x dải phải (research §2.1)
             val tail = stripPx(tailU, 0.5f, crops, gl)
             assertNotNull(tail, "mép đuôi không được đen")
-            assertTrue(thetaDeg(tail!!.first, tail.second) >= 93.0, "mép đuôi ${thetaDeg(tail.first, tail.second)}° < 93°")
+            val tailDeg = thetaDeg(tail!!.first, tail.second)
+            assertTrue(tailDeg in 84.0..90.0, "mép đuôi $tailDeg° ngoài 84–90°")
             for (i in 0..400) assertNotNull(stripPx(i / 400f, 0.5f, crops, gl), "hàng giữa đen tại u=${i / 400f}")
             var black = 0
             for (i in 0..120) for (j in 0..120) if (stripPx(i / 120f, j / 120f, crops, gl) == null) black++
@@ -205,13 +212,21 @@ class CameraDewarpKappaTest {
         }
     }
 
-    /** Hướng 90° phía đuôi (chân trời) rơi TRONG khung ra ở Thẳng rộng — và NGOÀI khung ở Nắn thẳng. */
-    @Test fun `tia 90 do phia duoi nam trong khung Thang rong, ngoai khung Nan thang`() {
+    /**
+     * Hướng 90° phía đuôi (chân trời) rơi TRONG khung ra ở họ κ XUYÊN TÂM 1,5 — và NGOÀI khung ở Nắn thẳng.
+     * ĐỔI GHIM (2.94 R1): *Thẳng rộng* sản phẩm nay là trụ (không vẽ được 90° — bài trên); bài này giữ tính chất của
+     * nhánh xuyên tâm κ (vẫn trong [CameraDewarp.mapDstToSrc], cờ trụ tắt) với bộ số 2.93 (F 100 %, dịch −20 %).
+     */
+    @Test fun `tia 90 do phia duoi nam trong khung kappa xuyen tam, ngoai khung Nan thang`() {
         for (left in listOf(true, false)) {
             val dirX = if (left) -1f else 1f
             fun dstU(mode: String): Float? {
                 val (_, gl) = seal(left = left, mode = mode)
-                val p = gl.dewarp
+                val p = if (mode == CameraViewMode.WIDE) {
+                    gl.dewarp.copy(cylinder = false, focal = gl.dewarp.k, panX = if (left) -0.2f else 0.2f)
+                } else {
+                    gl.dewarp
+                }
                 val rSrc = (p.gain * PI / 2).toFloat()
                 val local = CameraDewarp.forwardSrcToDst(p.centerX + dirX * rSrc / 2f, p.centerY, p, gl.aspect) ?: return null
                 return local.first - p.panX                        // rot 0 · vừa khung (1,1) ⇒ bỏ dịch là ra toạ độ khung

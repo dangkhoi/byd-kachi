@@ -237,6 +237,7 @@ class CameraSignalController(private val appCtx: Context) {
                 left = which == CameraWhich.LEFT,
                 mirror = mirror,
                 panXSign = which.panXSign,
+                fullAmount = CameraViewMode.forcesFullAmount(s.asked, mode),
             )
         } else {
             null

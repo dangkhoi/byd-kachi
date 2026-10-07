@@ -793,7 +793,7 @@
     <string name="kachi_trip_why_unread">tidak diketahui — apl telah dimulakan, tetapi Kachi tidak dapat membaca semula keadaan tetingkap (saluran kawalan terputus)</string>
     <string name="kachi_trip_why_slot_not_ready">dilangkau — apl berada dalam petak, tetapi petak belum sedia untuk menerima pautan</string>
     <string name="kachi_trip_system_bg">%1$s ialah apl sistem — Kachi tidak menjalankan apl sistem di latar belakang. Pilih Buka biasa, atau letakkan apl dalam petak.</string>
-    <string name="kachi_trip_music_link_hint">YouTube tidak menyambung sendiri: jika kosong, Kachi hanya membuka apl. Tampal pautan video untuk main secara automatik, atau pilih YT Music.</string>
+    <string name="kachi_trip_music_link_hint">Jika kosong: Kachi menyambung video YouTube terakhir yang anda tonton, pada saat ia berhenti (Kachi mengingatnya semasa YouTube dimainkan; lebih 3 hari atau tidak dijumpai, ia hanya membuka apl). Tampal pautan atau taip kata kunci untuk main yang lain.</string>
     <string name="kachi_trip_now_running">Kali ini kereta dihidupkan: sedang berjalan…</string>
     <string name="kachi_trip_now_wait_channel">Kali ini kereta dihidupkan: belum dijalankan — saluran kawalan tetingkap belum sedia</string>
     <string name="kachi_trip_now_wait_home">Kali ini kereta dihidupkan: belum dijalankan — menunggu skrin utama sedia</string>

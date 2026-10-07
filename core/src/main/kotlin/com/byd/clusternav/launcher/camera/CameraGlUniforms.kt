@@ -107,9 +107,9 @@ data class CameraGlUniforms(
      * nó cấp phát chuỗi; chỗ gọi duy nhất là lượt dựng overlay.
      */
     fun describe(): String = ("kiểu=%s srcRect=[%.4f,%.4f,%.4f,%.4f] rot=%.0f lật=%b aspect=%.4f amount=%.3f F=%.4f K=%.4f" +
-        " S=%.3f κ=%.2f tâm=(%.4f,%.4f) dịch=(%.3f,%.3f) vừa=(%.3f,%.3f) texMatrix=%b")
+        " S=%.3f κ=%.2f trụ=%b tâm=(%.4f,%.4f) dịch=(%.3f,%.3f) vừa=(%.3f,%.3f) texMatrix=%b")
         .format(mode, srcRect[0], srcRect[1], srcRect[2], srcRect[3], rotationDeg, mirror, aspect,
-            dewarp.amount, dewarp.focal, dewarp.k, dewarp.scale, dewarp.kappa, centerX, centerY, panX, panY,
+            dewarp.amount, dewarp.focal, dewarp.k, dewarp.scale, dewarp.kappa, dewarp.cylinder, centerX, centerY, panX, panY,
             fit[0], fit[1], texMatrix)
 
     /** `data class` với hai `FloatArray` ⇒ phải tự so nội dung, nếu không hai bộ giống nhau vẫn báo khác. */
@@ -130,7 +130,7 @@ data class CameraGlUniforms(
          */
         val VALUE_UNIFORMS: List<String> = listOf(
             "uTexMatrix", "uSrcRect", "uRotation", "uAmount", "uFocal", "uK", "uScale", "uAspect", "uCenter",
-            "uPan", "uFit", "uKappa",
+            "uPan", "uFit", "uKappa", "uCyl",
         )
 
         /** `uFit = (0, 0)` ⇒ shader bỏ hẳn bước vừa khung (KDoc [fit]). Mảng dùng chung — KHÔNG được ghi vào. */
@@ -183,6 +183,7 @@ data class CameraGlUniforms(
          * @param kappaPct κ họ phép chiếu, `%` tuyệt đối ([CameraDewarpPrefs.isKappaPct]); `100` = phối cảnh thẳng.
          * @param fit `uFit` đã tính ([CameraViewFit]); [NO_FIT] = bỏ bước vừa khung (đường cũ).
          * @param mode kiểu hình để ghi nhật ký — giá trị uniform KHÔNG phụ thuộc trường này ([CameraViewPlan] dựng số).
+         * @param cylinder 2.94 R1 — `uCyl`: phép chiếu TRỤ ([DewarpParams.cylinder]); chỉ *Thẳng rộng* bật.
          */
         fun of(
             crop: FloatArray?,
@@ -206,6 +207,7 @@ data class CameraGlUniforms(
             kappaPct: Int = CameraDewarpPrefs.KAPPA_DEFAULT,
             fit: FloatArray = NO_FIT,
             mode: String = CameraViewMode.STRAIGHT,
+            cylinder: Boolean = false,
         ): CameraGlUniforms {
             // Trục t của texture đi LÊN ⇒ đổi trục SAU khi dựng rect theo trục y của ảnh. Xem ⚠ ở KDoc lớp.
             val rect = textureT(CameraDewarp.srcRect(crop, flipH, flipV))
@@ -236,7 +238,7 @@ data class CameraGlUniforms(
                     panXPct = if (panXSign < 0) -panXPct else panXPct,
                     panYPct = panYPct,
                     kappaPct = kappaPct,
-                ),
+                ).copy(cylinder = cylinder),
                 texMatrix = texMatrix,
                 fit = fit,
                 mode = mode,

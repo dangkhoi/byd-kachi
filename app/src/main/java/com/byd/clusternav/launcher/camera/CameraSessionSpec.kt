@@ -95,7 +95,8 @@ internal class CameraSessionSpec(
             val span = if (which.side) Prefs.cameraSpan(ctx) else CameraSignalPolicy.SPAN_STRIP
             val render = Prefs.cameraRender(ctx)   // CLOSE-14: mã lưu bền, đọc mỗi lượt dựng (theo hồ sơ xe)
             val asked = Prefs.cameraProjectionOf(ctx, which)   // R6: TV không có shader ⇒ Thẳng rộng hiện như Gương cầu
-            val mode = CameraViewMode.effective(asked, render)
+            // 2.94 R1: sau/trước ⇒ *Thẳng rộng* = *Nắn thẳng* (theo VAI camera, trước khi quy theo đường vẽ).
+            val mode = CameraViewMode.effective(CameraViewMode.forCamera(asked, which), render)
             val shape = Prefs.cameraShapeOf(ctx, which)
             val crops = CameraViewPlan.crops(
                 mode = mode,

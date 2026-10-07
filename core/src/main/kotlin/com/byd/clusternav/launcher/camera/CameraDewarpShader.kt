@@ -30,6 +30,7 @@ package com.byd.clusternav.launcher.camera
  * | `uPan` | `vec2` | **dịch cửa sổ** ra, đơn vị bề ô, trong ô **CHƯA XOAY** ([CameraDewarp.panLocal]). Tâm quang KHÔNG đổi ⇒ ảnh vẫn thẳng; đây là đường duy nhất để *"dịch khung ra sau"* mà không làm cong (2.75) |
  * | `uFit` | `vec2` | **vừa khung** (2.92): ô ra ↔ ô nội dung khác tỉ lệ ([CameraDewarp.fitLocal], hệ số từ [CameraViewFit]). `x ≤ 0` ⇒ **bỏ hẳn** bước này — nhánh *Nắn thẳng* 100 % đi đúng đường cũ |
  * | `uKappa` | `float` | **κ** họ phép chiếu khung ra (2.92, [DewarpParams.kappa]): `θ = κ·atan(r, κ·F)`; `1` ⇒ phối cảnh thẳng **từng bit** cũ |
+ * | `uCyl` | `float` | 2.94 R1 — `1` ⇒ phép chiếu **TRỤ** trục = local a ([DewarpParams.cylinder], [CameraDewarpCylinder]; κ dọc trục); `0` ⇒ nhánh xuyên tâm **từng bit** cũ. Chỉ *Thẳng rộng* của camera gương bật |
  *
  * `:app` còn phải khớp **cửa sổ**: [CameraOverlayFrame.fit] đã cho khung đúng tỉ lệ vùng crop sau xoay, và phép nắn
  * dựa vào đúng điều đó — nếu khung lệch tỉ lệ thì ảnh vẫn nắn đúng *trong không gian nguồn* nhưng bị giãn không
@@ -64,6 +65,7 @@ object CameraDewarpShader {
         "uPan",
         "uFit",
         "uKappa",
+        "uCyl",
     )
 
     /** Tên attribute của [VERTEX]. */
@@ -104,6 +106,7 @@ object CameraDewarpShader {
         uniform vec2 uPan;
         uniform vec2 uFit;
         uniform float uKappa;
+        uniform float uCyl;
         varying vec2 vTexCoord;
         void main() {
             // 1. xoay quanh tam o, TRONG KHONG GIAN O DA CHUAN HOA (khop CameraOverlayTransform:
@@ -135,16 +138,36 @@ object CameraDewarpShader {
             if (amount > 0.0001 && uFocal > 0.0 && gain > 0.0) {
                 vec2 p = vec2((local.x - uCenter.x) * 2.0,
                               (local.y - uCenter.y) * 2.0 / uAspect);
-                float pLen = length(p);
-                if (pLen > 0.000001) {
-                    vec2 radialDir = p / pLen;
-                    // kappa (2.92): ho phep chieu khung ra; k = 1 => phoi canh thang, dung phep cu tung bit;
-                    //   k = 2 => stereographic (khop CameraDewarp.mapDstToSrc).
-                    float theta = uKappa * atan(pLen, uKappa * uFocal);
-                    float rSrc = gain * theta;
-                    vec2 projected = vec2(uCenter.x + (radialDir.x * rSrc * 0.5),
-                                          uCenter.y + (radialDir.y * rSrc * 0.5 * uAspect));
-                    corrected = mix(local, projected, amount);
+                if (uCyl > 0.5) {
+                    // 2.94 R1 — TRU, truc = local a (than xe o camera guong; khop CameraDewarpCylinder.map):
+                    //   duong song song than xe => phi khong doi => THANG. Vuot cuc |lam| => DEN (khong gap anh).
+                    float lam = uKappa * atan(p.x, uKappa * uFocal);
+                    float phi = p.y / uFocal;
+                    if (abs(lam) >= 1.5697963 || abs(phi) >= 3.1415927) {
+                        corrected = vec2(-1.0, -1.0);
+                    } else {
+                        vec3 ray = vec3(sin(lam), cos(lam) * sin(phi), cos(lam) * cos(phi));
+                        float rho = length(ray.xy);
+                        vec2 cylProjected = uCenter;
+                        if (rho > 0.000001) {
+                            float rSrcCyl = gain * atan(rho, ray.z);
+                            cylProjected = vec2(uCenter.x + (ray.x / rho * rSrcCyl * 0.5),
+                                                uCenter.y + (ray.y / rho * rSrcCyl * 0.5 * uAspect));
+                        }
+                        corrected = mix(local, cylProjected, amount);
+                    }
+                } else {
+                    float pLen = length(p);
+                    if (pLen > 0.000001) {
+                        vec2 radialDir = p / pLen;
+                        // kappa (2.92): ho phep chieu khung ra; k = 1 => phoi canh thang, dung phep cu tung bit;
+                        //   k = 2 => stereographic (khop CameraDewarp.mapDstToSrc).
+                        float theta = uKappa * atan(pLen, uKappa * uFocal);
+                        float rSrc = gain * theta;
+                        vec2 projected = vec2(uCenter.x + (radialDir.x * rSrc * 0.5),
+                                              uCenter.y + (radialDir.y * rSrc * 0.5 * uAspect));
+                        corrected = mix(local, projected, amount);
+                    }
                 }
             }
 

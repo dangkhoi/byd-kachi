@@ -948,7 +948,7 @@
     <string name="kachi_trip_why_unread">chưa rõ — đã mở app nhưng Kachi không đọc lại được cửa sổ (kênh điều khiển bị gián đoạn)</string>
     <string name="kachi_trip_why_slot_not_ready">bỏ qua — app ở trong một ô nhưng ô chưa sẵn sàng để nhận link</string>
     <string name="kachi_trip_system_bg">%1$s là app hệ thống — Kachi không chạy nền app hệ thống. Chọn Mở bình thường, hoặc đặt app vào một ô.</string>
-    <string name="kachi_trip_music_link_hint">YouTube không tự phát tiếp: để trống thì Kachi chỉ mở app. Dán link một video để tự phát, hoặc chọn YT Music.</string>
+    <string name="kachi_trip_music_link_hint">Để trống: Kachi phát tiếp video YouTube bạn xem gần nhất, đúng giây đang dừng (Kachi tự nhớ khi YouTube đang phát; bài cũ quá 3 ngày hoặc không tìm thấy thì chỉ mở app). Dán link hoặc gõ từ khoá để phát bài khác.</string>
     <string name="kachi_trip_now_running">Lần nổ máy này: đang chạy…</string>
     <string name="kachi_trip_now_wait_channel">Lần nổ máy này: chưa chạy — kênh điều khiển cửa sổ chưa lên</string>
     <string name="kachi_trip_now_wait_home">Lần nổ máy này: chưa chạy — đang chờ màn nhà sẵn sàng</string>

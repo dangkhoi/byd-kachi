@@ -351,9 +351,12 @@ class CameraDewarpTest {
         assertTrue(fs.contains("uSrcRect.xy + (corrected * uSrcRect.zw)"))
         assertTrue(fs.contains("(uTexMatrix * vec4(raw, 0.0, 1.0)).xy"))
         assertTrue(vs.contains("vTexCoord = aTexCoord;"))
-        // Loại trừ vét cạn như RE §3.3 đã làm với Electro: đúng MỘT atan, không pow/asin/sqrt, `tan(` chỉ trong atan.
-        assertEquals(1, Regex(Regex.escape("atan(")).findAll(fs).count())
-        assertEquals(1, Regex(Regex.escape("tan(")).findAll(fs).count())
+        // Loại trừ vét cạn như RE §3.3 đã làm với Electro: không pow/asin/sqrt, `tan(` chỉ trong atan.
+        // ĐỔI GHIM (2.94 R1, có lý do): 1 → 3 atan — nhánh xuyên tâm vẫn ĐÚNG MỘT atan (dòng ghim ở trên, nguyên văn);
+        // hai atan thêm là của khối trụ `if (uCyl > 0.5)` (λ dọc trục + θ của tia), ghim riêng ở CameraDewarpCylinderTest.
+        assertEquals(3, Regex(Regex.escape("atan(")).findAll(fs).count())
+        assertEquals(3, Regex(Regex.escape("tan(")).findAll(fs).count())
+        assertEquals(1, Regex(Regex.escape("atan(pLen")).findAll(fs).count(), "nhánh xuyên tâm: đúng một atan")
         for (banned in listOf("pow(", "asin(", "sqrt(")) {
             assertFalse(fs.contains(banned), "$banned khong thuoc mo hinh dang khoang")
         }

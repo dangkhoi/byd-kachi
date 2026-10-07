@@ -10,6 +10,7 @@ import android.media.session.PlaybackState
 import android.net.Uri
 import com.byd.clusternav.NavNotificationListener
 import com.byd.clusternav.launcher.trip.TripMusicPlan
+import com.byd.clusternav.launcher.trip.YoutubeResume
 
 /** Ảnh chụp phiên nhạc đang phát cho widget nhạc. Mọi field nullable/rỗng-an-toàn → widget "—" khi không có. */
 data class MediaSnapshot(
@@ -135,6 +136,26 @@ class MediaBridge(context: Context) : MediaTransport {
      * `trip/tm3u-ytmusic.txt`] YT Music đổi đúng bài, 0 sự kiện cửa sổ; khác ý-định VIEW (che màn nhà, `tm3-ytmusic.txt`).
      */
     fun playFromUri(pkg: String, url: String): Boolean = onPackage(pkg) { it.playFromUri(Uri.parse(url), null) }
+
+    /**
+     * 2.94 · R3 — mọi phiên kèm tiêu đề · kênh · vị trí · mốc cập nhật · tốc độ · thời lượng (`YoutubeResume.Live`) cho bên
+     * lưu bài + vòng chờ đúng bài lúc phát tiếp. `null` = KHÔNG ĐỌC ĐƯỢC (cùng nghĩa [sessions]). [ĐO xe 07/10] phiên YouTube
+     * có TITLE · ARTIST · DURATION, `PlaybackState` có position + `updated` + speed.
+     */
+    fun lives(): List<YoutubeResume.Live>? = activeControllers()?.map { c ->
+        val r = Real(c)
+        val st = runCatching { c.playbackState }.getOrNull()
+        YoutubeResume.Live(
+            c.packageName, r.title(), r.artist(), r.playing(), r.positionMs(),
+            st?.lastPositionUpdateTime ?: 0L, st?.playbackSpeed ?: 0f, r.durationMs(),
+        )
+    }
+
+    /**
+     * 2.94 · R3 — `seekTo` vào ĐÚNG phiên của [pkg]. [ĐO máy ảo 07/10] YouTube: `seekTo(98871)` sau khi phiên hiện ⇒ 4 s sau
+     * `position=98871` (còn `&t=` trong link VIEW thì KHÔNG tua). `false` = gói không có phiên.
+     */
+    fun seekPackage(pkg: String, ms: Long): Boolean = onPackage(pkg) { it.seekTo(ms) }
 
     private fun onPackage(pkg: String, block: (MediaController.TransportControls) -> Unit): Boolean = runCatching {
         val c = activeControllers()?.firstOrNull { it.packageName == pkg } ?: return false

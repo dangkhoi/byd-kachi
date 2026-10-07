@@ -7,7 +7,7 @@ import android.util.Log
  * ═══ VỊ TRÍ + GÁN uniform/attribute của program nắn — tách khỏi [CameraGlRenderer] (2.92, trần 500 dòng) ════════
  *
  * Spec `docs/specs/kachi-292-camera-full-view.html` T0. Tách thuần: cùng các lời gọi `glGet*Location` / `glUniform*`
- * của 2.74–2.91 cộng **hai** uniform mới của 2.92 (`uFit`, `uKappa`). Phải gọi trên luồng đang giữ `EGLContext`
+ * của 2.74–2.91 cộng **hai** uniform mới của 2.92 (`uFit`, `uKappa`) và `uCyl` của 2.94 R1. Phải gọi trên luồng đang giữ `EGLContext`
  * (luồng vẽ của [CameraGlRenderer]) — một lời gọi GL từ luồng khác không ném gì, nó chỉ không làm gì.
  *
  * [bind] nằm trong **đường khung hình** (15 fps): không cấp phát, không log, không định dạng chuỗi — bài canh
@@ -32,6 +32,7 @@ internal class CameraGlBindings {
     private var uCenter = -1
     private var uFit = -1
     private var uKappa = -1
+    private var uCyl = -1
 
     /**
      * Vị trí uniform/attribute, lấy **theo TÊN** ngay sau khi liên kết program.
@@ -56,6 +57,7 @@ internal class CameraGlBindings {
         uCenter = GLES20.glGetUniformLocation(program, "uCenter")
         uFit = GLES20.glGetUniformLocation(program, "uFit")
         uKappa = GLES20.glGetUniformLocation(program, "uKappa")
+        uCyl = GLES20.glGetUniformLocation(program, "uCyl")
         val missing = CameraDewarpShader.UNIFORMS.filter { GLES20.glGetUniformLocation(program, it) < 0 }
         if (missing.isNotEmpty()) Log.w(PanoramaHal.TAG, "GL uniform KHÔNG tìm thấy: $missing (khung sẽ sai)")
     }
@@ -84,5 +86,7 @@ internal class CameraGlBindings {
         // 2.92 — `uFit = (0,0)` ⇒ shader bỏ hẳn bước vừa khung; `uKappa = 1` ⇒ phối cảnh thẳng từng bit cũ.
         GLES20.glUniform2f(uFit, u.fit[0], u.fit[1])
         GLES20.glUniform1f(uKappa, d.kappa)
+        // 2.94 R1 — `uCyl = 1` ⇒ phép TRỤ của *Thẳng rộng* (camera gương); `0` ⇒ nhánh xuyên tâm từng bit cũ.
+        GLES20.glUniform1f(uCyl, if (d.cylinder) 1f else 0f)
     }
 }

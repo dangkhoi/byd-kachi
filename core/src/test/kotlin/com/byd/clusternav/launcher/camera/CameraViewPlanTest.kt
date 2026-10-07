@@ -119,16 +119,18 @@ class CameraViewPlanTest {
 
     // ── R4 · Thẳng rộng ────────────────────────────────────────────────────────────────────────────────────────
 
-    @Test fun `Thang rong - tron dai, kappa 1 5, nan du, F 100, dich ve duoi theo ben`() {
+    /** ĐỔI GHIM (2.94 R1, có lý do): bộ mặc định theo phép TRỤ — F 100 → 122 %, dịch −20 → −15 %, `uCyl` bật. */
+    @Test fun `Thang rong - tron dai, kappa 1 5, nan du, F 122, dich ve duoi theo ben, tru`() {
         for (left in listOf(true, false)) for (span in CameraSignalPolicy.SPANS) {
             val strip = CameraPanoCrop.defaultStrip(left)
             val c = crops(CameraViewMode.WIDE, left, span, CameraSignalPolicy.SHAPE_RECT)
             val gl = CameraViewPlan.gl(CameraViewMode.WIDE, 100, c, strip, w, h, 0, false, left, seal, true)
             assertEquals(1.5f, gl.dewarp.kappa)
             assertEquals(1f, gl.dewarp.amount)
-            assertEquals(gl.dewarp.k, gl.dewarp.focal, 1e-6f, "F 100 % của bộ suy ra (= K của trọn dải)")
+            assertEquals(gl.dewarp.k * 1.22f, gl.dewarp.focal, 1e-6f, "F 122 % của bộ suy ra (≈ F 0,55 research)")
+            assertTrue(gl.dewarp.cylinder, "Thẳng rộng = phép trụ (uCyl 1)")
             assertEquals(1.3f, gl.dewarp.scale, 1e-6f, "S của xe (mô hình ống kính) dùng chung")
-            assertEquals(if (left) -0.2f else 0.2f, gl.dewarp.panX, 1e-6f, "đuôi: −x dải trái, +x dải phải")
+            assertEquals(if (left) -0.15f else 0.15f, gl.dewarp.panX, 1e-6f, "đuôi: −x dải trái, +x dải phải")
             assertEquals(0f, gl.dewarp.panY)
             assertEquals(0.25f, kotlin.math.abs(gl.srcRect[2]), 1e-6f, "lấy TRỌN dải kể cả khi vùng gương là NARROW")
             assertArrayEquals(floatArrayOf(1f, 1f), gl.fit, 1e-5f)

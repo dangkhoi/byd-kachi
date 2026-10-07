@@ -793,7 +793,7 @@
     <string name="kachi_trip_why_unread">未知——应用已启动，但Kachi无法回读窗口状态（控制通道中断）</string>
     <string name="kachi_trip_why_slot_not_ready">已跳过——应用在某个格位中，但该格位尚未准备好接收链接</string>
     <string name="kachi_trip_system_bg">%1$s是系统应用——Kachi不会在后台运行系统应用。请选择正常打开，或把该应用放进一个格位。</string>
-    <string name="kachi_trip_music_link_hint">YouTube不会自动继续播放：留空时Kachi只会打开应用。粘贴一个视频链接即可自动播放，或选择YT Music。</string>
+    <string name="kachi_trip_music_link_hint">留空时：Kachi会从上次停下的位置继续播放您最近观看的YouTube视频（Kachi在YouTube播放时自动记住；超过3天或找不到时只打开应用）。粘贴链接或输入关键词可播放其他内容。</string>
     <string name="kachi_trip_now_running">本次上电：正在运行…</string>
     <string name="kachi_trip_now_wait_channel">本次上电：尚未运行——窗口控制通道尚未连接</string>
     <string name="kachi_trip_now_wait_home">本次上电：尚未运行——正在等待主屏幕就绪</string>

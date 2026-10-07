@@ -793,7 +793,7 @@
     <string name="kachi_trip_why_unread">ไม่ทราบ — เปิดแอปแล้ว แต่ Kachi อ่านสถานะหน้าต่างกลับมาไม่ได้ (ช่องทางควบคุมขาดหาย)</string>
     <string name="kachi_trip_why_slot_not_ready">ข้าม — แอปอยู่ในช่อง แต่ช่องยังไม่พร้อมรับลิงก์</string>
     <string name="kachi_trip_system_bg">%1$s เป็นแอประบบ — Kachi ไม่ทำงานเบื้องหลังให้แอประบบ เลือกเปิดตามปกติ หรือวางแอปไว้ในช่อง</string>
-    <string name="kachi_trip_music_link_hint">YouTube ไม่เล่นต่อเอง: ถ้าเว้นว่าง Kachi จะแค่เปิดแอป วางลิงก์วิดีโอเพื่อให้เล่นอัตโนมัติ หรือเลือก YT Music</string>
+    <string name="kachi_trip_music_link_hint">เว้นว่าง: Kachi จะเล่นวิดีโอ YouTube ที่คุณดูล่าสุดต่อจากวินาทีที่หยุดไว้ (Kachi จำไว้เองขณะ YouTube กำลังเล่น ถ้าเก่ากว่า 3 วันหรือหาไม่พบ จะแค่เปิดแอป) วางลิงก์หรือพิมพ์คำค้นเพื่อเล่นอย่างอื่น</string>
     <string name="kachi_trip_now_running">การสตาร์ทรถครั้งนี้: กำลังทำงาน…</string>
     <string name="kachi_trip_now_wait_channel">การสตาร์ทรถครั้งนี้: ยังไม่ได้ทำงาน — ช่องทางควบคุมหน้าต่างยังไม่พร้อม</string>
     <string name="kachi_trip_now_wait_home">การสตาร์ทรถครั้งนี้: ยังไม่ได้ทำงาน — กำลังรอให้หน้าจอหลักพร้อม</string>

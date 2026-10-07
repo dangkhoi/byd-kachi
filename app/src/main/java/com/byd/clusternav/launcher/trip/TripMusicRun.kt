@@ -29,6 +29,8 @@ import com.byd.clusternav.launcher.voice.VoiceYoutubeResolver
  *  5. chờ phiên của app → `playFromUri` (phiên nhận URI) · K4-VIEW ([Ports.view], có link mà không phiên nhận — L4 · D3(ii);
  *     app ở ô ⇒ `--display <màn ảo ô>`, app ở ô 7 ⇒ `--display <màn ảo đỗ>` — cùng display thì không `reparentToDisplay`)
  *     · `play()` (không link) · chỉ mở (`NO_SESSION` — Cài đặt nói rõ: đặt link để tự phát).
+ *  6. 2.94 · R3 — "Phát gì" trống với kiểu không tự phát tiếp (YouTube): bài lưu khớp tiêu đề ⇒ link của nó đi bước 5, rồi
+ *     chờ đúng bài + `seekTo` ([TripMusicResume]). Không có / không khớp ⇒ bước 5 như cũ.
  *
  * Trả MỘT [Done]: mã bước cho sổ (Cài đặt dịch thành câu; app ở ô ⇒ bước mang số ô — *"Nhạc (YouTube ở ô 1)"*) + một ghi chú
  * ASCII cho nhật ký `KachiTrip`.
@@ -68,6 +70,7 @@ internal class TripMusicRun(
     data class Done(val step: TripStep, val note: String)
 
     private val bridge = MediaBridge(app)
+    private val resumer = TripMusicResume(app, bridge, sleep)
     private val audio: AudioManager? = app.getSystemService(AudioManager::class.java)
 
     private fun musicActive(): Boolean = runCatching { audio?.isMusicActive == true }.getOrDefault(false)
@@ -104,7 +107,10 @@ internal class TripMusicRun(
         if (TripMusicPlan.preexisting(pkg, before, inSlot = inSlot)) {
             return verified(id, pkg, "music:$pkg:resume-existing=${bridge.playPackage(pkg)}$over", VERIFY_TRIES, slot0)
         }
-        val url = urlFor(target, pkg, music.query)
+        // 2.94 · R3 — "Phát gì" trống + kiểu không tự phát tiếp ⇒ tìm lại bài YouTube đã lưu (tiêu đề phải khớp). Không có / không
+        // khớp ⇒ `null` ⇒ đúng đường cũ bên dưới. Có ⇒ link đi CHÍNH đường link của ô "Phát gì" (phiên nhận URI · K4-VIEW).
+        val resume = resumer.prepare(target, music)
+        val url = resume.ready?.url ?: urlFor(target, pkg, music.query)
         val start = when (val st = start(pkg, id, slot0, deadlineAt, progress)) {
             is Start.Stop -> return st.done
             is Start.Go -> st
@@ -116,15 +122,15 @@ internal class TripMusicRun(
             TripMusicPlan.Recheck.SELF_PLAYING -> return done(id, TripStepCode.PLAYING, "music:$pkg:${start.note}:self-playing$over", slot)
             TripMusicPlan.Recheck.UNKNOWN_MEDIA -> return done(id, TripStepCode.UNKNOWN_MEDIA, "music:$pkg:${start.note}:recheck-UNKNOWN_MEDIA", slot)
         }
-        val base = "music:$pkg:${start.note}$over:"
+        val base = "music:$pkg:${start.note}$over:" + if (resume.note.isEmpty()) "" else "${resume.note}:"
         return when (val p = TripMusicPlan.play(url, session)) {
-            is TripMusicPlan.Play.FromUri -> verified(id, pkg, base + "uri=${bridge.playFromUri(pkg, p.url)}", VERIFY_TRIES, slot)
+            is TripMusicPlan.Play.FromUri -> verified(id, pkg, base + "uri=${bridge.playFromUri(pkg, p.url)}", VERIFY_TRIES, slot, resume.ready)
             TripMusicPlan.Play.Resume -> verified(id, pkg, base + "resume=${bridge.playPackage(pkg)}", VERIFY_TRIES, slot)
             // Review 287 [P2]: không dùng ảnh chụp ô ĐẦU chuyến — cổng đọc lại lúc giao. Không lệnh nào đi ⇒ mã NOOP, không "đã gửi".
             is TripMusicPlan.Play.View -> ports.view(pkg, p.url, slot != null).let { o ->
                 val code = TripOutcome.ofView(slot != null, o?.result)
                 if (code.result == TripStepCode.Result.NOOP) done(id, code, base + "view:${o?.result ?: code}", slot)
-                else verified(id, pkg, base + "view(${o?.result})", VIEW_VERIFY_TRIES, slot)
+                else verified(id, pkg, base + "view(${o?.result})", VIEW_VERIFY_TRIES, slot, resume.ready)
             }
             TripMusicPlan.Play.OpenOnly -> done(id, TripStepCode.NO_SESSION, base + "open-only (no session)", slot)
         }
@@ -192,8 +198,15 @@ internal class TripMusicRun(
         }
     }
 
-    /** Đọc lại sau lệnh (không quyết gì — để sổ nói thật: ĐANG PHÁT hay mới chỉ gửi). [slot] = ô của app (nếu có) cho câu Cài đặt. */
-    private fun verified(id: String, pkg: String, note: String, tries: Int, slot: Int?): Done {
+    /**
+     * Đọc lại sau lệnh (không quyết gì — để sổ nói thật: ĐANG PHÁT hay mới chỉ gửi). [slot] = ô của app (nếu có) cho câu Cài đặt.
+     * [resume] ≠ `null` (2.94 · R3) ⇒ chờ ĐÚNG bài đã lưu phát rồi tua ([TripMusicResume.finish]) thay cho vòng chờ "đang phát".
+     */
+    private fun verified(id: String, pkg: String, note: String, tries: Int, slot: Int?, resume: TripMusicResume.Ready? = null): Done {
+        if (resume != null) {
+            val (playing, how) = resumer.finish(pkg, resume)
+            return done(id, if (playing) TripStepCode.PLAYING else TripStepCode.SENT, "$note $how", slot)
+        }
         repeat(tries) {
             sleep(TripMusicPlan.SESSION_POLL_MS)
             if (bridge.sessions().orEmpty().any { it.pkg == pkg && it.playing }) return done(id, TripStepCode.PLAYING, "$note playing", slot)

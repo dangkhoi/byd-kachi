@@ -42,7 +42,7 @@ object TripGate {
     /** R2.3(a) — chưa thấy BOOT_COMPLETED của lần khởi động này thì chờ ít nhất chừng này từ lúc thức. */
     const val BOOT_WAIT_MS = 20_000L
 
-    /** Ba khoá THEO XE của chuyến (tệp `clusternav_state`, cùng chỗ `kachi_behind_marks`). Đổi tên = mất sổ của máy đang chạy. */
+    /** Ba khoá THEO XE của chuyến (+ bài phát tiếp [YoutubeResume.KEY] trong [DEVICE_KEYS]) (tệp `clusternav_state`, cùng chỗ `kachi_behind_marks`). Đổi tên = mất sổ của máy đang chạy. */
     const val KEY_LEDGER = "kachi_trip_ledger"
     const val KEY_LAST = "kachi_trip_last"
     const val KEY_BOOT_SEEN = "kachi_boot_seen"
@@ -60,6 +60,9 @@ object TripGate {
             "một lựa chọn",
         KEY_BOOT_SEEN to "trạng thái máy — khoá lần khởi động mà BOOT_COMPLETED đã tới Kachi (R2.3a); thuộc phần cứng " +
             "đang chạy, không thuộc người lái",
+        YoutubeResume.KEY to "2.94 R3 — bài YouTube đang phát + vị trí (để lên xe phát tiếp): sự thật của app YouTube trên chiếc " +
+            "xe này, không phải lựa chọn; theo hồ sơ thì đổi hồ sơ giữa hai chuyến là mất bài, và tiêu đề người dùng xem sẽ đi " +
+            "theo bản xuất hồ sơ (KDoc `YoutubeResume`)",
     )
 
     enum class Phase { CLAIMED, FIRED }

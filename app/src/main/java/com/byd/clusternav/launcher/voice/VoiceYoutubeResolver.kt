@@ -67,7 +67,21 @@ object VoiceYoutubeResolver {
             "Chrome/120.0.0.0 Safari/537.36"
 
     /** video_id bài đầu cho [query], hoặc `null` (mạng/không khớp). Chạy blocking — gọi từ luồng nền. */
-    fun firstVideoId(query: String): String? = runCatching {
+    fun firstVideoId(query: String): String? = search(query, quiet = false) { YoutubeSearchParse.firstVideoId(it, MAX_CHARS) }
+
+    /**
+     * 2.94 · R3 (phát tiếp YouTube) — bài đầu KÈM tiêu đề ([YoutubeSearchParse.firstVideo]) để bên gọi kiểm đúng bài trước
+     * khi phát. CÙNG một lượt GET + UA + trần với [firstVideoId] — không đường mạng thứ hai.
+     *
+     * Soát 2.94 Pass 1 [P2]: [query] ở đây là *"<tiêu đề> <kênh>"* người dùng ĐÃ XEM ⇒ nhật ký lỗi/quá hạn chỉ ghi ĐỘ DÀI
+     * ([shown]), không ghi chữ (spec §4.3: nhật ký không mang tiêu đề; logcat đi theo bộ chụp chẩn đoán).
+     */
+    fun firstVideo(query: String): YoutubeSearchParse.Hit? = search(query, quiet = true) { YoutubeSearchParse.firstVideo(it, MAX_CHARS) }
+
+    /** Truy vấn trong nhật ký: giọng nói (`quiet = false`) nguyên câu như trước; phát tiếp (`quiet`) chỉ độ dài. */
+    private fun shown(query: String, quiet: Boolean): String = if (quiet) "<len=${query.length}>" else query
+
+    private fun <T> search(query: String, quiet: Boolean, parse: (java.io.Reader) -> T?): T? = runCatching {
         val url = "https://www.youtube.com/results?search_query=" + URLEncoder.encode(query, "UTF-8")
         val conn = HttpConn.open(url, READ_TIMEOUT_MS, accept = "text/html")
         // Ghi đè UA "updater" thành UA trình duyệt + bỏ qua trang đồng ý EU, nếu không YouTube trả trang khác.
@@ -75,26 +89,34 @@ object VoiceYoutubeResolver {
         conn.setRequestProperty("Accept-Language", "en-US,en;q=0.9")
         conn.setRequestProperty("Cookie", "CONSENT=YES+1")
         try {
-            if (conn.responseCode != 200) { Log.w(TAG, "HTTP ${conn.responseCode} cho \"$query\""); return null }
+            if (conn.responseCode != 200) { Log.w(TAG, "HTTP ${conn.responseCode} cho \"${shown(query, quiet)}\""); return null }
             // Quét THEO DÒNG CHẢY, dừng ở khớp đầu: khớp nằm ở ~765 K ký tự nên bản cũ (gom cả trang vào một
             // `StringBuilder` rồi mới bóc) vừa phải giữ ~2,6 MB trong RAM vừa bị trần 600 K cắt trước khi tới id.
-            conn.inputStream.bufferedReader(Charsets.UTF_8).use {
-                YoutubeSearchParse.firstVideoId(it, MAX_CHARS)
-            }
+            conn.inputStream.bufferedReader(Charsets.UTF_8).use(parse)
         } finally {
             conn.disconnect()
         }
-    }.getOrElse { Log.w(TAG, "giải video_id lỗi cho \"$query\"", it); null }
+    }.getOrElse {
+        // Phát tiếp: lời nhắn ngoại lệ có thể mang URL (= truy vấn) ⇒ chỉ tên lớp. Giọng nói: như trước.
+        if (!quiet) Log.w(TAG, "giải video_id lỗi cho \"$query\"", it)
+        else Log.w(TAG, "giải video_id lỗi cho \"${shown(query, true)}\": ${it.javaClass.simpleName}")
+        null
+    }
 
     /**
      * [firstVideoId] có **thời hạn CỨNG** [TOTAL_BUDGET_MS] — mạng xe treo nửa chừng không được giữ luồng nền mãi.
      * Luồng phụ là daemon (ca treo là điều kiện mạng cố định, không nên níu tiến trình). Quá hạn ⇒ `null` ⇒ lùi.
      */
-    fun firstVideoIdBounded(query: String): String? {
-        var out: String? = null
-        val worker = Thread { out = firstVideoId(query) }.apply { isDaemon = true; start() }
+    fun firstVideoIdBounded(query: String): String? = bounded(query, quiet = false, ::firstVideoId)
+
+    /** [firstVideo] với cùng hạn cứng [TOTAL_BUDGET_MS] (2.94 · R3). Quá hạn / lỗi ⇒ `null` ⇒ bên gọi lùi về chỉ mở app. */
+    fun firstVideoBounded(query: String): YoutubeSearchParse.Hit? = bounded(query, quiet = true, ::firstVideo)
+
+    private fun <T> bounded(query: String, quiet: Boolean, work: (String) -> T?): T? {
+        var out: T? = null
+        val worker = Thread { out = work(query) }.apply { isDaemon = true; start() }
         worker.join(TOTAL_BUDGET_MS)
-        if (worker.isAlive) Log.w(TAG, "giải video_id quá hạn ${TOTAL_BUDGET_MS}ms cho \"$query\" — lùi search-play")
+        if (worker.isAlive) Log.w(TAG, "giải video_id quá hạn ${TOTAL_BUDGET_MS}ms cho \"${shown(query, quiet)}\" — lùi")
         return out
     }
 }

@@ -19,7 +19,7 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy.CamView
  * | | *Nắn thẳng* | *Thẳng rộng* | *Gương cầu* |
  * |---|---|---|---|
  * | độ nắn | pref | 100 % | 0 |
- * | F / κ | pref / 1 | `wide_focal` / `wide_kappa` | (bỏ) / 1 |
+ * | F / κ | pref / 1 | `wide_focal` / `wide_kappa` — **trụ** (`uCyl` 1, 2.94 R1) | (bỏ) / 1 |
  * | K · S · tâm | pref (chung — mô hình ống kính của xe) | pref | pref (không dùng) |
  * | dịch | pref | `wide_pan_x` × dấu bên, 0 | 0, 0 |
  * | `uFit` | [CameraViewFit.zoomOnly] | [CameraViewFit.letterbox] | [CameraViewFit.letterbox] |
@@ -125,7 +125,7 @@ object CameraViewPlan {
                 amountPct = CameraDewarpPrefs.AMOUNT_MAX, focalPct = knobs.wideFocalPct, kPct = knobs.kPct,
                 scalePct = knobs.scalePct, centerXPct = knobs.centerXPct, centerYPct = knobs.centerYPct,
                 panXPct = widePanX, panYPct = CameraDewarpPrefs.PAN_DEFAULT, panXSign = sign,
-                texMatrix = texMatrix, kappaPct = knobs.wideKappaPct, fit = fit, mode = m,
+                texMatrix = texMatrix, kappaPct = knobs.wideKappaPct, fit = fit, mode = m, cylinder = true,
             )
             CameraViewMode.FISHEYE -> CameraGlUniforms.of(
                 crop = crops.content, srcCentreX = centre[0], srcCentreY = centre[1],

@@ -68,6 +68,8 @@ import kotlin.math.tan
  * proj   = (cx + dir.x·r_src·0.5, cy + dir.y·r_src·0.5·aspect)
  * out    = mix(local, proj, clamp(amount, 0, 1))
  * ```
+ * 2.94 R1: [DewarpParams.cylinder] ⇒ thay bốn dòng giữa bằng phép TRỤ trục = local a ([CameraDewarpCylinder]).
+ * [forwardSrcToDst]/[effectiveSrcRadius] (`CameraDewarpInverse.kt`) chỉ là nghịch đảo của nhánh XUYÊN TÂM.
  * ⚠ `amount` là một phép **TRỘN**, không phải mô hình: chỉ `amount == 1` mới thật sự là equidistant. Ở giữa,
  * `r_eff = (1−a)·r_dst + a·K·SCALE·atan(r_dst/F)` — không thuộc mô hình quang học có tên nào (RE §3.3). Vì vậy mặc
  * định là `1.0`; thanh trượt tồn tại để owner *hạ* xuống nếu nắn quá tay, không phải để tìm một mô hình khác.
@@ -112,6 +114,12 @@ data class DewarpParams(
      * sau xa của vòng ảnh (76–97° ở Seal) lọt vào khung. Research `camera-rear-coverage-2026-10-06.md` §4.3.
      */
     val kappa: Float = DEFAULT_KAPPA,
+    /**
+     * **Phép chiếu TRỤ** (2.94 R1 · uniform `uCyl`): `true` ⇒ khung ra là trụ trục = local a (thân xe ở camera gương),
+     * κ/F áp DỌC trục, F áp quanh trục — [CameraDewarpCylinder]. `false` (mặc định) ⇒ nhánh xuyên tâm, **từng bit** cũ.
+     * Chỉ [CameraViewPlan.gl] bật nó, cho kiểu *Thẳng rộng*.
+     */
+    val cylinder: Boolean = false,
 ) {
     /** `K·SCALE` — hệ số f-theta hiệu dụng, đúng một tham số tỉ lệ như RE §3.3 đã gộp. */
     val gain: Float get() = k * scale
@@ -144,6 +152,7 @@ data class DewarpParams(
         panX = panX.sane(DEFAULT_PAN).coerceIn(MIN_PAN, MAX_PAN),
         panY = panY.sane(DEFAULT_PAN).coerceIn(MIN_PAN, MAX_PAN),
         kappa = kappa.sane(DEFAULT_KAPPA).coerceIn(MIN_KAPPA, MAX_KAPPA),
+        cylinder = cylinder,
     )
 
     private fun Float.sane(fallback: Float): Float = if (isNaN() || isInfinite()) fallback else this
@@ -263,7 +272,9 @@ object CameraDewarp {
     const val FORMULA =
         "local=rot(dst); if(fit.x>0) local=0.5+(local-0.5)*fit; local=local+pan; p=((a-cx)*2,(b-cy)*2/aspect); " +
             "theta=kappa*atan(|p|,kappa*F); r_src=(K*SCALE)*theta; " +
-            "proj=(cx+dir.x*r_src*0.5, cy+dir.y*r_src*0.5*aspect); out=mix(local,proj,clamp(amount,0,1))"
+            "proj=(cx+dir.x*r_src*0.5, cy+dir.y*r_src*0.5*aspect); out=mix(local,proj,clamp(amount,0,1)); " +
+            "cyl: lam=kappa*atan(p.x,kappa*F); |lam|>=pi/2-1e-3 => black; phi=p.y/F; |phi|>=pi => black; " +
+            "ray=(sin lam, cos lam*sin phi, cos lam*cos phi); theta=atan(|ray.xy|,ray.z)"
 
     /** Dưới ngưỡng này coi như đang đứng đúng tâm quang ⇒ trả về chính nó (giới hạn đúng của công thức). */
     internal const val CENTER_EPS = 1e-6f
@@ -338,6 +349,8 @@ object CameraDewarp {
         val asp = if (aspect > 0f && !aspect.isNaN() && !aspect.isInfinite()) aspect else 1f
         val px = (u - p.centerX) * 2f
         val py = (v - p.centerY) * 2f / asp
+        // 2.94 R1 — trụ (chỉ *Thẳng rộng*); cờ tắt ⇒ đi tiếp đúng các dòng cũ dưới đây, không một phép tính nào thêm.
+        if (p.cylinder) return CameraDewarpCylinder.map(u, v, px, py, p, asp)
         val rDst = hypot(px.toDouble(), py.toDouble()).toFloat()
         if (rDst <= CENTER_EPS) return u to v
         val dirX = px / rDst

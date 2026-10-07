@@ -22,6 +22,8 @@ enum class TripMusicMode(val code: String, val targetKey: String?, val resumable
      * [resumable] = app có "phát tiếp" khi ô "Phát gì" để trống (YT Music giữ hàng chờ — [ĐO máy ảo] e5/e4a; YouTube không có
      * API tiếp tục — [SUY] từ e3: không phiên nào trên trang chủ). CHỈ dùng cho câu gợi ý trong Cài đặt (L4 · D3(iii)); lúc chạy
      * nhánh do PHIÊN ĐO ĐƯỢC quyết ([TripMusicPlan.play]), không do kiểu/tên gói (CLAUDE.md §7).
+     * 2.94 · R3: kiểu PHÁT được mà không [resumable] = Kachi phát tiếp hộ ([YoutubeResume.watchedTargets] — nhớ tiêu đề + vị
+     * trí, lên xe tìm lại + `seekTo`); câu gợi ý Cài đặt nói điều đó.
      */
 
     val plays: Boolean get() = targetKey != null

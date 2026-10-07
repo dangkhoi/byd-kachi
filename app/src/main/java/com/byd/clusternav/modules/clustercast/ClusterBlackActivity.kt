@@ -2,7 +2,9 @@ package com.byd.clusternav.modules.clustercast
 
 import android.app.Activity
 import android.content.Context
-import android.graphics.Color
+import android.content.Intent
+import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -11,6 +13,8 @@ import android.view.View
 import android.view.Window
 import android.view.WindowManager
 import com.byd.clusternav.ThemeMode
+import com.byd.clusternav.modules.clustercast.simplified.ClusterBackdrop
+import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -30,6 +34,9 @@ import java.util.concurrent.atomic.AtomicInteger
  * tiến trình nào — nguồn AOSP trích ở KDoc `ClusterThemeGuard`), thay cho `am stack remove` (giết `:tts` khi Kachi là HOME).
  */
 class ClusterBlackActivity : Activity() {
+    /** Nền đang hiện (luồng chính) — [onNewIntent] tô lại. */
+    private var backdrop: View? = null
+
     override fun attachBaseContext(newBase: Context) {
         // Locale của NGƯỜI DÙNG (không phải của máy) cho tài nguyên — spec kachi-i18n-zh-th-ms R9.
         super.attachBaseContext(com.byd.clusternav.launcher.LangHost.localized(ThemeMode.wrap(newBase)))
@@ -46,8 +53,33 @@ class ClusterBlackActivity : Activity() {
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
         )
         val view = View(this)
-        view.setBackgroundColor(Color.BLACK)
+        backdrop = view
+        paintBackdrop(view, "tạo")
         setContentView(view)
+    }
+
+    /**
+     * Review 2.94 Pass 1 · r2-backdrop: `singleInstance` ⇒ lượt mở chiếu sau `am start` vào thực thể CÒN SỐNG (vd tiến trình bị
+     * giết rồi dựng lại Activity khi phiên chưa ghim ⇒ `castFrame()` = `null` ⇒ màu Bo tròn) — tô lại theo phiên vừa ghim
+     * (`ProjectionManager.open` ghim kiểu TRƯỚC `am start`). Không đổi gì khác của placeholder.
+     */
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        backdrop?.let { paintBackdrop(it, "mở lại") }
+    }
+
+    /**
+     * 2.94 · CLUSTER-BACKDROP-DAY: sáng/tối của HỆ THỐNG xe (không qua ThemeMode.wrap của Kachi — cụm theo xe, [ĐO 07/10]);
+     * đổi chế độ ⇒ Activity dựng lại (không khai configChanges; A10 `ActivityRecord.java:3291-3334`, Activity đang STOPPED dưới
+     * app chiếu dựng lại khi hiện ra — `:3202`) ⇒ màu mới. `Resources.getSystem()` nhận cấu hình toàn cục ở
+     * `ResourcesManager.java:1028` (`updateSystemConfiguration`). Luật màu thuần ở :core ClusterBackdrop.
+     */
+    private fun paintBackdrop(view: View, why: String) {
+        val night = (Resources.getSystem().configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+        val color = ClusterBackdrop.color(night, SimpleCastRuntime.castFrame())
+        Log.i(TAG, "nền màn chiếu ($why): hệ thống ${if (night) "tối" else "sáng"} ⇒ #%08X".format(color))
+        view.setBackgroundColor(color)
     }
 
     override fun onDestroy() {

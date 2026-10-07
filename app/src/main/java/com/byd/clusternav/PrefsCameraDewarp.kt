@@ -220,6 +220,8 @@ fun Prefs.setCameraGlTexMatrix(ctx: Context, v: Boolean) =
  *   không gian NGUỒN trước xoay/dịch/nắn. Cũng **không** có mặc định, cùng lẽ với [left]: đây là pref theo bên.
  * @param panXSign 2.93 — dấu dịch x của CAMERA đang xem (`CameraWhich.panXSign`: trái +1 · phải −1 · sau/trước 0 ⇒ hai
  *   núm dịch theo bên không áp). KHÔNG mặc định: chỗ gọi duy nhất (`CameraSignalController.openSession`) nói từ camera.
+ * @param fullAmount 2.94 QA F1 — [CameraViewMode.forcesFullAmount]: nắn đủ [CameraDewarpPrefs.AMOUNT_MAX] cho riêng lượt
+ *   dựng này, KHÔNG ghi đè `camera_dewarp_amount` đã lưu. Cũng không mặc định, cùng lẽ với [panXSign].
  */
 @Suppress("LongParameterList")
 fun Prefs.cameraGlUniforms(
@@ -234,6 +236,7 @@ fun Prefs.cameraGlUniforms(
     left: Boolean,
     mirror: Boolean,
     panXSign: Int,
+    fullAmount: Boolean,
 ): CameraGlUniforms = CameraViewPlan.gl(
     mode = mode,
     zoomPct = zoomPct,
@@ -244,7 +247,7 @@ fun Prefs.cameraGlUniforms(
     rotationDeg = rotationDeg,
     mirror = mirror,
     left = left,
-    knobs = cameraViewKnobs(ctx),
+    knobs = cameraViewKnobs(ctx).let { if (fullAmount) it.copy(amountPct = CameraDewarpPrefs.AMOUNT_MAX) else it },
     texMatrix = cameraGlTexMatrix(ctx),
     panXSign = panXSign,
 )

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.94 kế hoạch</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--diag:#0071e3;--user:#1a7f37;--deny:#bf5f00}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--diag:#2997ff;--user:#30d158;--deny:#ff9f0a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+svg .root{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+svg .dg{fill:none;stroke:var(--diag);stroke-width:2}
+svg .us{fill:none;stroke:var(--user);stroke-width:2}
+svg .tx{fill:var(--fg);font-size:12px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .sm{fill:var(--muted);font-size:10.5px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .wire{stroke:var(--line);stroke-width:1.5}
+svg .x{stroke:var(--deny);stroke-width:2}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.94 — Kế hoạch: Thẳng rộng thẳng thật · nền màn chiếu theo sáng/tối · YouTube phát tiếp</h1>
+<p class="muted">Slug: <code>kachi-294-plan</code> · Branch <code>feat/key-source-split</code> (từ 2.93 (195) <code>2d540af</code>) · Owner: dangkhoi · Buổi xe 07/10 sáng (adb thẳng tới xe qua hotspot). Owner 07/10: <i>"cần thẳng rộng nó phải thẳng, chứ nó đang cong quá"</i> · <i>"làm mảng đen projection theo mode, tối thì giữ nguyên đen, sáng thì lấy màu cụm ban ngày"</i> · <i>"lấy đúng cái link bài đang phát + thời gian … lưu lại latest, khi nào xe mở thì lại phát tiếp đúng cái đó"</i> · <i>"phương án chốt OK"</i>.</p>
+<p class="muted">Mức bằng chứng theo CLAUDE.md §2: <b>[ĐO]</b> đo thật · <b>[SUY]</b> suy luận khớp dữ liệu · <b>[ĐOÁN]</b> · <b>[CHƯA BIẾT]</b>.</p>
+
+<h2>1. Changelog</h2>
+<ul><li><b>Pass 0 — 2026-10-07</b>: Lập kế hoạch sau buổi xe 07/10 sáng; ba việc + một kết luận "không làm" (ADAS Chữ nhật).</li></ul>
+
+<h2>2. Context</h2>
+<ul>
+<li>Xe chạy 2.93 (195) [ĐO <code>dumpsys package</code>], rồi bản thử <b>2.93.1 (196)</b> cài tay (chỉ thêm R2) — chưa đăng. ⇒ 2.94 phải có <code>versionCode ≥ 197</code>.</li>
+<li>Phản hồi owner: YouTube không tự mở bài (YT Music được) · camera sau/trái/phải "chưa thẳng, cong" · nền đen của màn chiếu chói mắt khi cụm ở chế độ sáng · hỏi lại thu nhỏ ADAS ở Chữ nhật.</li>
+</ul>
+
+<h2>3. Requirements</h2>
+<ul>
+<li><b>R1 — Thẳng rộng THẲNG</b>: kiểu hình <i>Thẳng rộng</i> giữ góc nhìn rộng (≈ như 2.93) nhưng đường thẳng của thế giới dọc thân xe (mép xe, cột, vạch) hiện THẲNG; áp cho mọi camera dùng kiểu này (trái · phải · sau · trước). Owner duyệt ẢNH SO trước khi vào mã.</li>
+<li><b>R2 — Nền màn chiếu theo sáng/tối của XE</b>: hệ thống tối ⇒ đen; hệ thống sáng ⇒ màu nền ban ngày của theme cụm đang chiếu (Chữ nhật <code>#B5C6D4</code>, Bo tròn <code>#C0CFDB</code>); đổi chế độ ⇒ đổi màu. Không bao giờ nền sáng trên cụm tối.</li>
+<li><b>R3 — YouTube phát tiếp</b>: Kachi lưu bài YouTube đang phát + vị trí (≈ mỗi phút, chạy ngầm, không chạm giao diện); lên xe với kiểu nhạc YouTube và ô <i>Phát gì</i> trống ⇒ mở lại đúng bài đó và tua tới đúng giây. Ô <i>Phát gì</i> có chữ ⇒ như cũ.</li>
+<li><b>R4</b> — CLAUDE.md §6/§14: không đổi đường đang chạy tốt ngoài phạm vi; cơ chế mới phải có bằng chứng đo trước khi nối dây.</li>
+</ul>
+
+<h2>4. Design</h2>
+<div class="flow">
+  <div class="fnode new"><b>R1 · camera</b><span>chiếu hình trụ cho Thẳng rộng</span></div>
+  <div class="fnode new"><b>R2 · cụm</b><span>ClusterBackdrop theo uiMode hệ thống</span></div>
+  <div class="fnode new"><b>R3 · nhạc</b><span>nhớ bài YouTube + seekTo lúc lên xe</span></div>
+</div>
+<h3>4.1 R1 — vì sao cong, sửa thế nào</h3>
+<ul>
+<li>[ĐO log xe 07/10 07:50] cả ba camera chạy <code>kiểu=WIDE</code>: κ = 1,50 · F = K = 0,4523 · S = 1,3 · dịch −0,2 về đuôi. WIDE là phép chiếu <b>theo bán kính</b> <code>θ = κ·atan(r, κF)</code> ⇒ chỉ đường qua tâm quang là thẳng; mọi đường khác cong, càng ra mép càng cong.</li>
+<li>[ĐO A/B trên xe 08:14, camera trái] chuyển <i>Nắn thẳng</i> (κ = 1, phối cảnh thẳng) ⇒ cột + mép xe thẳng — xác nhận nguồn cong là phép chiếu, không phải tham số ống kính.</li>
+<li>Hướng: <b>chiếu hình trụ</b> — trục trụ theo hướng thân xe (sau khi xoay overlay); đường song song trục trụ giữ thẳng, góc quanh trục vẫn rộng. Chọn trục + tham số bằng ẢNH SO trên khung bãi xe 07/10 (<code>~/.kachi/camraw-1007</code>, ngoài repo) ⇒ owner duyệt ⇒ viết vào <code>CameraDewarp.mapDstToSrc</code> + GLSL (bài <code>CameraDewarpTest</code> ghim hai bản khớp nhau).</li>
+<li><b>Quyết định owner 07/10</b> (sau ảnh so): <i>"cam trái phải thì theo hướng trụ, cam sau trước thì lấy option 3"</i> ⇒ trái/phải: trụ trục = thân xe; sau/trước: <i>Thẳng rộng</i> vẽ ĐÚNG <i>Nắn thẳng</i> (thay phần "mọi camera" của R1).</li>
+<li><b>Ghi chú triển khai (2026-10-07, mã R1)</b>:
+<ul>
+<li>Công thức (p-space, đơn vị nửa bề ngang ô; <code>CameraDewarpCylinder.map</code> + khối GLSL <code>if (uCyl &gt; 0.5)</code>, dịch từng dòng): <code>λ = κ·atan(p.x, κF)</code> · <code>|λ| ≥ π/2 − 1e-3 ⇒ đen</code> (chốt cực) · <code>φ = p.y/F</code> · tia <code>(sin λ, cos λ·sin φ, cos λ·cos φ)</code> · <code>θ = atan(|tia.xy|, tia.z)</code> · <code>r_src = K·S·θ</code> · <code>src = c + tia.xy/|tia.xy|·r_src·(0,5; 0,5·aspect)</code> · <code>mix(local, src, amount)</code>. Trục = <b>local a</b> (thân xe ở camera gương — sự thật lắp đặt, không suy từ góc xoay ⇒ không có uniform chọn trục).</li>
+<li>Uniform mới <code>uCyl</code> (float 0/1) ← <code>DewarpParams.cylinder</code>; chỉ <code>CameraViewPlan.gl</code> nhánh WIDE bật. Cờ tắt ⇒ nhánh xuyên tâm nguyên văn trong <code>else</code> ⇒ <i>Nắn thẳng</i>/<i>Gương cầu</i> từng bit cũ (bài κ = 1 so với bản sao 2.91 vẫn xanh).</li>
+<li>Vai camera: <code>CameraViewMode.forCamera(mode, which)</code> (<code>:core</code>) — WIDE + camera giữa (<code>!which.side</code>) ⇒ STRAIGHT; gọi ở <code>CameraSessionSpec.read</code> TRƯỚC <code>effective</code> (camera sau trên TV vẫn Nắn thẳng). Pref không bị ghi đè; giao diện + chuỗi không đổi.</li>
+<li>Bộ mặc định đổi (ba khoá theo xe giữ nguyên nghĩa trên trụ): <code>camera_wide_kappa</code> 150 (κ dọc trục) · <code>camera_wide_focal</code> 100 → <b>122</b> (F = 0,5518 ≈ 0,55) · <code>camera_wide_pan_x</code> −20 → <b>−15</b> (dấu theo bên như cũ — đã kiểm: âm = về đuôi ở gương trái, giống research). Ai đã <code>prefs_set</code> giữ số của mình. Thu phóng vẫn áp (qua <code>uFit</code>, trước phép trụ). [ĐO tính, test] gương trái rot −90: đen 0,87 % · đuôi 86,3° (khớp bản port numpy).</li>
+<li>🚗 còn lại: owner nhìn trái/phải trên xe (giả định camera không lệch yaw so với thân xe — README §5.1); camera phải mới chỉ có ảnh xem trước tổng hợp.</li>
+</ul></li>
+</ul>
+<h3>4.2 R2 — nguồn sáng/tối</h3>
+<ul>
+<li>[ĐO xe 07/10 08:2x] chuyển Tối trong Cài đặt xe ⇒ <code>ui_night_mode=2</code>, night = yes; owner xác nhận <i>"cả cụm và màn đều tối"</i>. Tín hiệu đèn <code>LIGHT_DAY_NIGHT_MODE_STATUS</code> (980418626) đứng <b>0</b> suốt lượt ấy và khi bật đèn cos ⇒ không dùng.</li>
+<li>[ĐO nguồn QML theme2 2602030] cụm chọn ảnh nền ngày/đêm theo <code>dayNightMode</code>; vành ảnh nền quanh lỗ chiếu trong suốt một phần (alpha ≈ 86) ⇒ lớp nền của Kachi lộ ra.</li>
+<li>Thi hành: <code>ClusterBackdrop.color(systemNight, frame)</code> (<code>:core</code>, thuần) · <code>ClusterBlackActivity</code> đọc <code>Resources.getSystem().configuration.uiMode</code> (KHÔNG qua lựa chọn sáng/tối của Kachi) + kiểu khung phiên (<code>SimpleCastRuntime.castFrame</code>). [ĐO bản thử 2.93.1 trên xe] điểm ảnh nền = (181,198,212) = <code>#B5C6D4</code>.</li>
+<li>[CHƯA BIẾT] vào hầm có đổi <code>uiMode</code> không (chế độ Tự động của xe tính theo giờ mặt trời). Owner gửi ảnh nếu thấy cụm tối mà nền sáng.</li>
+</ul>
+<h3>4.3 R3 — lấy bài + vị trí</h3>
+<ul>
+<li>[ĐO xe 07/10] phiên YouTube: TITLE · ARTIST · DURATION · cỡ video; KHÔNG mediaId/URI. [ĐO máy ảo kachi_play, YouTube 21.35.442] không nguồn ngầm nào có link video đang phát (phiên, queue, extras, thông báo, PendingIntent, logcat, cây a11y); intent của task chỉ có link khi mở bằng link. Share = thao tác giao diện ⇒ không dùng (lúc lái, Android 10 chặn đọc clipboard nền).</li>
+<li>[ĐO máy ảo, 1 lần] <code>watch?v=…&amp;t=12s</code> KHÔNG nhảy giây; phiên có <code>SEEK_TO</code> ⇒ phát tiếp = mở + chờ phiên + <code>TransportControls.seekTo</code>.</li>
+<li>[ĐO máy ảo 07/10 09:30, kachi_play] đủ 4 bước của đường phát tiếp: (1) phiên đang phát cho tiêu đề + kênh + vị trí; (2) tìm <code>results?search_query=&lt;tiêu đề&gt; &lt;kênh&gt;</code> (cùng UA + phép bóc của <code>VoiceYoutubeResolver</code>) ra đúng video, tiêu đề khớp từng chữ: <b>3/3</b> (video quốc tế · M/V Việt · live Việt có dấu “|”); (3) mở <code>watch?v=</code>; (4) <code>TransportControls.seekTo(98871)</code> ⇒ 4 s sau <code>position=98871</code>, video đúng chỗ.</li>
+<li>Lưu (≈ 60 s/lần, chỉ khi YouTube đang phát): tiêu đề + kênh + vị trí; kèm link nếu video do Kachi mở bằng link và tiêu đề khớp. Lên xe: link đã lưu ⇒ mở link; không ⇒ tìm theo tiêu đề + kênh (bộ tìm có sẵn của ô <i>Phát gì</i>) ⇒ mở ⇒ seek. Cần đo trước khi nối dây: seek sau khi mở, tìm theo tiêu đề + kênh ra đúng video.</li>
+<li><b>Ghi chú triển khai (2026-10-07, mã R3)</b>:
+<ul>
+<li><code>:core</code> <code>launcher/trip/YoutubeResume.kt</code> (thuần): <code>Live</code>/<code>Saved</code>/<code>Plan</code> · <code>watchedTargets()</code> = kiểu nhạc <code>plays &amp;&amp; !resumable</code> (dữ liệu, không tên gói) · <code>wanted(music)</code> = kiểu đó + ô <i>Phát gì</i> trống · <code>sample()</code> chỉ khi ĐANG PHÁT + có tiêu đề, vị trí = position + (now − updated) × speed, kẹp [0, thời lượng] (live ⇒ chỉ kẹp dưới, đồng hồ lùi ⇒ không cộng) · <code>resumePlan()</code> · <code>matches()</code> (NFC + chữ thường + gộp khoảng trắng) · mã hoá <code>v1|đích|vị trí|thời lượng|lúc lưu|tiêu đề%|kênh%</code> (URLEncoder ⇒ không tab/xuống dòng; “|” thành <code>%7C</code>). <code>YoutubeSearchParse.firstVideo()</code> trả id + tiêu đề của CHÍNH renderer đầu (một <code>"videoId"</code> thứ hai đứng trước tiêu đề ⇒ <code>null</code>), giải thoát JSON.</li>
+<li>Luật: bài cũ hơn <code>MAX_AGE_MS</code> = 3 ngày [ĐOÁN] ⇒ không phát tiếp (tuổi âm do đồng hồ xe lùi vẫn nhận trong cùng biên); còn &lt; 15 s tới hết video ⇒ coi như xem xong, không phát tiếp [ĐOÁN]; live (thời lượng 0) hoặc vị trí &lt; 5 s ⇒ mở, không tua. Bài đầu khác tiêu đề / mạng hỏng / quá 7 s ⇒ đúng đường cũ (chỉ mở app) — không bao giờ phát bài chưa khớp.</li>
+<li>Phạm vi: <b>THEO XE</b> — khoá <code>kachi_yt_resume</code> ở tệp <code>clusternav_state</code>, khai qua <code>TripGate.DEVICE_KEYS</code> (⇒ <code>ProfileScope.DEVICE_KEYS</code> + <code>SettingsCatalog.NOT_SETTINGS</code>). Lý do: bài đang phát là sự thật của app YouTube trên xe, không phải lựa chọn của hồ sơ; không đi theo xuất hồ sơ. Không vào sổ <code>profile_keys_filled</code> (không phải khoá hồ sơ).</li>
+<li><code>:app</code>: <code>YoutubeResumeSampler</code> (luồng daemon <code>kachi-yt-resume</code>, 60 s, cài ở <code>KachiApplication.onCreate</code> trước dòng chốt <code>EarlyShellChannel.start</code>) — cổng: đang giữ → <code>isMusicActive</code> → <code>wanted(hồ sơ đang dùng)</code> → <code>MediaBridge.lives()</code>; ghi <code>commit()</code>; nhật ký <code>KachiYtResume</code> một dòng khi đổi bài / tối đa 5 phút, KHÔNG tiêu đề. <code>TripMusicResume</code>: <code>prepare</code> (tìm “tiêu đề kênh” qua <code>VoiceYoutubeResolver.firstVideoBounded</code> → khớp tiêu đề → <code>TripMusicPlan.watchUrl</code>) thay URL cho đường cũ của <code>TripMusicRun</code> (phiên nhận URI ⇒ <code>playFromUri</code> · không ⇒ K4-VIEW); <code>finish</code> chờ phiên PHÁT ĐÚNG bài ≤ 45 nhịp 1 s (quảng cáo đầu video ⇒ chờ tiếp) ⇒ <code>MediaBridge.seekPackage</code> ⇒ đọc lại vị trí. Bên lưu bị giữ từ <code>prepare</code> tới hết <code>finish</code> (trần 180 s) để mẫu giây 0 không đè vị trí. Ghi chú sổ: <code>resume:none|search-fail|mismatch|found</code> + <code>resume-seek=&lt;ms&gt;:ok@…|sent|no-session</code> · <code>resume-noseek</code> · <code>resume-wait-timeout</code>; mã bước dùng lại <code>PLAYING</code>/<code>SENT</code> (không mã mới ⇒ không chuỗi mới).</li>
+<li>Không làm phần "kèm link nếu Kachi mở bằng link": ô <i>Phát gì</i> có link thì đã không đi phát tiếp, còn tìm theo tiêu đề + kênh đã đo 3/3.</li>
+<li>Câu gợi ý Cài đặt (<code>kachi_trip_music_link_hint</code>, 5 tiếng) nói: để trống ⇒ phát tiếp video xem gần nhất đúng giây; quá 3 ngày / không thấy ⇒ chỉ mở app.</li>
+<li>🚗 cần kiểm trên xe: (1) dòng <code>KachiYtResume saved …</code> xuất hiện khi xem YouTube; (2) tắt–nổ máy ⇒ sổ chuyến có <code>resume:found</code> + <code>resume-seek=…:ok</code>, video đúng bài/giây; (3) mạng yếu / quảng cáo dài ⇒ <code>resume-wait-timeout</code> vẫn không phát nhầm. [CHƯA BIẾT] YouTube trên xe có tự phát khi mở bằng VIEW lúc màn chính đang che (đã đo ở máy ảo).</li>
+</ul></li>
+</ul>
+<h3>4.4 Không làm — ADAS Chữ nhật</h3>
+<ul><li>[ĐO nguồn + disasm, 3 firmware; xe 06/10] tấm ADAS ở theme2 hiện khi <code>adasInterfaceDisplay ≠ 0</code>, giá trị chỉ do lib ghi từ CAN (máy ON ⇒ 1/2); không opcode/HAL/phím phía Android đặt 0 (<code>docs/diagnostics/cluster-rect-adas-shrink-2026-10-06.md</code>). Mở khoá: firmware đổi điều kiện, hoặc root (owner quyết). Hôm nay: Bo tròn + phím menu.</li></ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Phụ thuộc</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>R2 mã + test (bản thử đã chạy trên xe) → review</td><td>—</td><td>đang làm</td></tr>
+<tr><td>T2</td><td>R1 ảnh so (cũ · trụ · Nắn thẳng) cho trái/phải/sau → owner duyệt</td><td>—</td><td>✅ owner duyệt 07/10 (trái/phải trụ · sau/trước Nắn thẳng)</td></tr>
+<tr><td>T3</td><td>R1 mã Kotlin + GLSL + test ghim</td><td>T2</td><td>mã + test off-car ✅ · 🚗 owner nhìn trên xe</td></tr>
+<tr><td>T4</td><td>R3 đo máy ảo (seek · tìm theo tiêu đề + kênh) ✅ → mã + test</td><td>—</td><td>mã + test off-car ✅ · 🚗 chờ xe</td></tr>
+<tr><td>T5</td><td>Bump ≥ 197 · bộ đủ + lint · senior review · QA máy ảo · quét bảo mật · đăng OTA</td><td>T1, T3, T4</td><td>✅ đăng 07/10</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>Bộ đủ</b> [ĐO 2026-10-07, cây CUỐI, JUnit XML]: <b>9 437 / 0</b> (core 4 818 · app debug 2 203 · vehicleTest 2 215 · car-integration 80 · vehicle-contracts 22 · offcar-planner 99 chạy riêng) · lint 0 lỗi · APK vc197 / 2.94, sha <code>1e2861c3…bdbc</code>, 46 565 140 B, cùng khoá, không debuggable.</li>
+<li><b>QA máy ảo</b> [ĐO, clusternav10 + kachi_play]: đạt — 0 crash/ANR; nâng cấp thật 2.93 → 2.94; camera trụ trái/phải; YouTube phát tiếp đúng video + giây (tua 115 542 ms = mốc lưu); nền sáng/tối đổi đúng (đường chiếu thật BLOCKED máy ảo); 1 lỗi P2 (sau/trước khi đã tắt nắn) đã vá. F1 vá: <code>CameraViewMode.forcesFullAmount</code> (Thẳng rộng quy về Nắn thẳng ⇒ nắn đủ, không ghi khoá); QA đã đo mức nắn 100 ⇒ WIDE ≡ STRAIGHT 0 px khác ⇒ phần vá ép đúng mức ấy. R2 đường chiếu thật không có trên máy ảo ⇒ kiểm Activity trực tiếp (C0CFDB ↔ 000000 khi đổi uimode, dựng lại).</li>
+<li>🚗 sau OTA: owner nhìn Thẳng rộng (trái/phải/sau) · nền ngày/đêm trên cụm Chữ nhật + Bo tròn · lên xe YouTube phát tiếp đúng bài/giây.</li></ul>
+
+<h2>7. Open Questions</h2>
+<ul><li>OQ1 [CHƯA BIẾT] hầm có đổi uiMode? — chờ ảnh owner.</li></ul>
+
+<h2>8. References</h2>
+<ul><li><code>docs/specs/kachi-293-plan.html</code> · <code>kachi-292-camera-full-view.html</code> · <code>docs/diagnostics/cluster-rect-adas-shrink-2026-10-06.md</code> · <code>docs/PROJECT-BACKLOG.md</code>.</li></ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul><li>2026-10-07 — Buổi xe sáng: đo + bản thử 2.93.1 (196) cho R2 (cài tay, đo điểm ảnh đúng màu).</li>
+<li><b>Ghi chú — 2026-10-07 (R3 mã)</b>: YouTube phát tiếp xong off-car. Tệp mới: <code>core/…/trip/YoutubeResume.kt</code> + test (15) · <code>app/…/trip/YoutubeResumeSampler.kt</code> (kèm <code>YoutubeResumeStore</code>) · <code>app/…/trip/TripMusicResume.kt</code> · <code>app/src/test/…/YoutubeResumeWiringContractTest.kt</code> (7). Sửa: <code>YoutubeSearchParse.firstVideo</code> (+6 test) · <code>VoiceYoutubeResolver.firstVideo[Bounded]</code> (cùng một GET) · <code>MediaBridge.lives/seekPackage</code> · <code>TripMusicRun</code> (prepare/finish) · <code>TripGate.DEVICE_KEYS</code> · <code>KachiApplication</code> · chuỗi gợi ý 5 tiếng. Chi tiết §4.3. <code>:core:test</code> 4807/0 lỗi · <code>:app:testDebugUnitTest</code> 2201/0 lỗi · <code>assembleRelease</code> xanh. Chưa: senior review, 🚗.</li>
+<li><b>Ghi chú — 2026-10-07 (R1 mã)</b>: Thẳng rộng = trụ cho camera gương, sau/trước = Nắn thẳng. Tệp mới: <code>core/…/camera/CameraDewarpCylinder.kt</code> · <code>core/src/test/…/camera/CameraDewarpCylinderTest.kt</code> (8: ghim GLSL, số vàng port numpy, đường song song thân xe thẳng, hàng khung = mặt phẳng chứa trục, cờ tắt từng bit, chốt cực, vai camera, bộ mặc định). Sửa: <code>CameraDewarp</code> (cờ <code>cylinder</code> + nhánh) · <code>CameraDewarpShader</code> (<code>uCyl</code>) · <code>CameraGlUniforms</code> · <code>CameraViewPlan</code> · <code>CameraViewMode</code> (<code>forCamera</code> + mặc định) · <code>app/…/CameraGlBindings</code> · <code>app/…/CameraSessionSpec</code>. ĐỔI GHIM có lý do: số <code>atan(</code> trong shader 1 → 3; bộ WIDE mặc định trong <code>CameraViewPlanTest</code>/<code>CameraDewarpKappaTest</code> (đuôi ≥ 93° → 84–90°). Test camera: <code>:core</code> 297/0 · <code>:app</code> 102/0. Chưa: senior review, 🚗.</li></ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only.</p>
+<h3>Pass 1 — 2026-10-07 (soát Opus — R1 camera: Thẳng rộng trụ + sau/trước ⇒ Nắn thẳng)</h3>
+<p class="muted">Rule global §5 + CLAUDE.md §2 · §3 · §7 · §8 · §10. Phạm vi: <code>CameraDewarpCylinder.kt</code> (mới) · <code>CameraDewarp.kt</code> · <code>CameraDewarpShader.kt</code> · <code>CameraGlUniforms.kt</code> · <code>CameraViewPlan.kt</code> · <code>CameraViewMode.kt</code> · <code>CameraDewarpInverse.kt</code> · <code>app/…/CameraGlBindings.kt</code> · <code>app/…/CameraSessionSpec.kt</code> + bốn lớp test; đối chiếu research <code>README nghiên cứu (công cụ ngoài repo)</code> + <code>render_validated.py</code>. Không gradle / adb / xe. Bản vá biên dịch NGOÀI gradle (<code>kotlin-compiler-embeddable</code> 2.4.10) vào thư mục nháp, JUnit chạy trực tiếp. Context7 KHÔNG kết nối (ENOTFOUND); lượt này không thêm thư viện/API.</p>
+<ul>
+<li><span class="tag p2">P3</span> <b>Phép trụ LẶP ẢNH khi F nhỏ</b> [ĐO tính, bản port + JUnit]: <code>φ = p.y/F</code> không có chặn, mà <code>sin/cos φ</code> tuần hoàn 2π. Với <code>camera_wide_focal</code> 25 % (<code>prefs_set</code> ghi được, <code>CameraDewarpPrefs.isPct</code>), hàng khung <code>b ≈ 0,95</code> có <code>φ = 2π − 0,3</code> ⇒ lấy mẫu tại nguồn (0,628; 0,390) — đúng tia của <code>φ = −0,3</code> ⇒ ảnh lặp lại trong khung (trái ý chốt cực <i>"không gập ảnh"</i>). Bộ mặc định không chạm (|φ| ≤ 1,36 ở thu phóng 100 %, ≤ 2,7 ở 50 %). <i>Đã vá</i>: chốt <code>|φ| ≥ π ⇒ đen</code> ở cả Kotlin (<code>CameraDewarpCylinder.PHI_GUARD_RAD</code>) lẫn GLSL (gộp vào cùng <code>if</code> với chốt cực: <code>abs(lam) &gt;= 1.5697963 || abs(phi) &gt;= 3.1415927</code>), <code>FORMULA</code> thêm vế; <code>|φ| = π</code> đã là tia sau lưng camera (ngoài vòng ảnh 97°) ⇒ không mất pixel thật. Bài mới <code>chot quanh truc - F nho khong lap anh</code> — gỡ chốt bên Kotlin ⇒ ĐỎ (đã thử trên bản sao ngoài repo), dòng GLSL ghim trong <code>khoi tru GLSL ghim tung dong voi Kotlin</code>.</li>
+<li><span class="tag p2">P3</span> <b>Ghi lại, KHÔNG vá</b>: <code>forwardSrcToDst</code>/<code>effectiveSrcRadius</code> (<code>CameraDewarpInverse.kt</code>) bỏ qua cờ <code>cylinder</code> — trả nghịch đảo XUYÊN TÂM cho bộ số trụ. Không có chỗ gọi sản phẩm (chỉ bài test + KDoc <code>CameraDewarp</code> đã ghi rõ); bài quét NaN của <code>CameraDewarpKappaTest</code> gọi nó với bộ WIDE nhưng chỉ đòi số hữu hạn ⇒ vô hại. Nếu sau này dùng để vẽ vạch/ảnh kiểm tra ở Thẳng rộng thì phải thêm nghịch đảo trụ.</li>
+<li><b>Đã soát, đúng</b> [ĐO mã]:
+  Kotlin ↔ GLSL dịch từng dòng (λ · chốt cực · φ · tia · ρ · θ = atan(ρ, z) · mix), số vàng 7 điểm khớp port numpy ≤ 2e-5; nhánh xuyên tâm nằm nguyên văn trong <code>else</code> ⇒ Nắn thẳng/Gương cầu từng bit cũ (bài so bit). GLSL ES 1.00 (§8.1): <code>atan(y, x)</code> chỉ bất định khi x = y = 0 — <code>atan(p.x, uKappa*uFocal)</code> có x &gt; 0 (κ ≥ 1 do <code>clamped</code>, <code>uFocal &gt; 0</code> do cổng ngoài), <code>atan(rho, ray.z)</code> chỉ chạy khi <code>rho &gt; 1e-6</code>; highp có cổng <code>GL_FRAGMENT_PRECISION_HIGH</code> (Adreno 610 có highp ở fragment), rẽ nhánh theo uniform ⇒ không phân kỳ; giá thêm ≈ 4 sin/cos + 2 atan mỗi điểm ảnh ở 371×495 @15 fps — nhỏ.
+  <code>uCyl</code>: có trong <code>UNIFORMS</code> + <code>VALUE_UNIFORMS</code> (bài so với khai báo GLSL), <code>CameraGlBindings</code> lấy vị trí theo tên + gán mỗi khung; vị trí −1 ⇒ <code>glUniform1f</code> bị bỏ qua im lặng theo GLES 2.0 §2.10.4, uniform giữ 0 ⇒ rơi về nhánh xuyên tâm (khung vẫn có hình, có dòng log <i>"GL uniform KHÔNG tìm thấy"</i>) — không đen, không ném.
+  Vai camera: <code>forCamera</code> có đúng MỘT chỗ gọi (<code>CameraSessionSpec.read:99</code>), trước <code>effective</code>; <code>s.mode</code> là nguồn duy nhất của <code>CameraViewPlan.gl/crops/tvScale</code> + overlay ⇒ camera sau/trước không bao giờ tới nhánh trụ; pref <code>asked</code> không bị ghi đè, nhật ký phiên in <i>"(chọn wide)"</i>. Quyết theo <code>CameraWhich.side</code> (dữ liệu), không tên gói (§7). Hệ quả có chủ đích: camera sau trên đường TV trước rơi về Gương cầu, nay là Nắn thẳng (đúng "option 3" của owner, có bài).
+  <code>cylinder</code> đi qua <code>clamped()</code> và <code>.copy</code> ở <code>CameraGlUniforms.of</code>; <code>equals</code> so <code>dewarp</code> (data class) ⇒ đổi cờ là đổi bộ uniform. Trục = local a không phụ thuộc chip Xoay (xoay ở bước 1) — đúng; lật gương đi qua <code>uSrcRect</code> sau bước nắn ⇒ trục không đổi.
+  Phạm vi khoá: <code>camera_wide_*</code> là <code>R_OPTICS</code> theo XE (<code>ProfileScopeCluster.kt:119</code>) ⇒ đổi mặc định F 100 → 122 · dịch −20 → −15 áp cho mọi xe CHƯA <code>prefs_set</code>, không đụng hồ sơ; F 122 trong dải <code>isPct</code>.
+  File ≤ 500 dòng (<code>CameraDewarp.kt</code> 463). Hàm mới có chỗ gọi: <code>CameraDewarpCylinder.map</code> ← <code>mapDstToSrc:353</code>; <code>forCamera</code> ← <code>CameraSessionSpec:99</code>.</li>
+<li><b>Kiểm</b> [ĐO, JUnit trực tiếp trên bản vá]: <code>CameraDewarpCylinderTest</code> 9/9 · cùng lượt với <code>CameraDewarpTest</code> · <code>CameraDewarpKappaTest</code> · <code>CameraViewPlanTest</code> · <code>CameraGlUniformsTest</code> · <code>CameraDewarpRotatePanTest</code> · <code>CameraMirrorTest</code>: 84/84 (lớp test ngoài <code>CameraDewarpCylinderTest</code> lấy từ <code>core/build</code> — điều phối chạy lại bằng gradle). Đột biến gỡ chốt φ ⇒ đúng 1 bài đỏ.</li>
+<li><b>🚗 còn lại</b>: (1) đọc <code>prefs --es file clusternav_prefs</code> xem xe owner có ghi tay <code>camera_wide_focal/_pan_x</code> chưa — nếu có, mặc định mới KHÔNG áp và ảnh trụ dùng F 100 % (đen nhiều hơn); (2) camera phải: dấu dịch + trục chỉ là giả định đối xứng (ảnh xem trước tổng hợp); (3) yaw camera so với thân xe (README §5.1).</li>
+<li><b>Scope R1</b>: ✅ trái/phải = trụ trục thân xe · ✅ sau/trước = Nắn thẳng theo vai camera · ✅ Kotlin ↔ GLSL ghim · ✅ bộ mặc định + bài đen/đuôi · 🚗 owner nhìn trên xe.</li>
+<li><b>Verdict</b>: <b>APPROVED</b> (sau vá P3; điều phối chạy <code>:core:testDebugUnitTest</code>/<code>:core:test</code> nhóm camera + <code>:app</code> camera).</li>
+</ul>
+<h3>Pass 1 — 2026-10-07 (soát Opus — R2 nền màn chiếu theo sáng/tối hệ thống)</h3>
+<ul>
+<li><b>Phạm vi</b>: <code>core/…/simplified/ClusterBackdrop.kt</code> + <code>ClusterBackdropTest</code> · <code>app/…/ClusterBlackActivity.kt</code> · <code>SimpleCastRuntime.castFrame</code> · <code>ClusterBackdropWiringContractTest</code>. Nguồn AOSP đã fetch <code>android-10.0.0_r47</code> (frameworks/base).</li>
+<li><b>Nguồn sáng/tối</b> [ĐO nguồn A10]: <code>Resources.getSystem()</code> nhận cấu hình toàn cục ở <code>ResourcesManager.java:1028</code> (<code>Resources.updateSystemConfiguration</code>), gọi từ <code>ActivityThread.java:5537/5599/7129</code>; <code>uiMode</code> toàn cục đặt ở <code>UiModeManagerService.java:564-575</code> rồi <code>ActivityTaskManager.updateConfiguration</code> <code>:598-602</code>. Lớp bọc <code>ThemeMode.wrap</code> chỉ là <code>createConfigurationContext</code> phía client ⇒ không chạm <code>getSystem()</code> lẫn quyết định dựng lại của server. Đúng nguồn.</li>
+<li><b>[P2] (báo, không vá — §14)</b> A10 <code>UiModeManagerService</code> KHÔNG theo dõi <code>Secure.UI_NIGHT_MODE</code> (observer duy nhất là setup-wizard <code>:205/:304</code>); <code>uiMode</code> chỉ đổi qua <code>setNightMode</code>/twilight. Nếu Cài đặt BYD ghi thẳng <code>ui_night_mode</code> mà không qua <code>setNightMode</code> thì cấu hình toàn cục đứng ⇒ nền sáng trên cụm tối (trái bất biến R2). "night = yes" ở §4.2 nhiều khả năng là đầu ra <code>cmd uimode night</code> (đọc <code>mNightMode</code>, không phải <code>Configuration</code>) ⇒ [SUY]: màn chính tối theo lời owner gợi ý cấu hình đã đổi, chưa đo trực tiếp. 🚗 chốt: chuyển Tối ⇒ logcat <code>ClusterBlack</code> phải có <code>nền màn chiếu (…): hệ thống tối ⇒ #FF000000</code> (dòng log đã có sẵn).</li>
+<li><b>Dựng lại khi đổi chế độ</b> [ĐO nguồn A10]: không khai <code>configChanges</code> ⇒ <code>shouldRelaunchLocked</code> <code>ActivityRecord.java:3363-3377</code> đúng; Activity STOPPED dưới app chiếu bị bỏ qua <code>:3202</code> và dựng lại khi hiện ra; Activity đang <code>finishing</code> bỏ qua <code>:3195</code>. Phía client <code>handleRelaunchActivityInner</code> gọi <code>handleDestroyActivity</code> rồi <code>handleLaunchActivity</code> TRONG CÙNG một lượt luồng chính (<code>ActivityThread.java:5255/5279</code>) ⇒ lượt <code>finishOwn</code> (post lên luồng chính) chỉ thấy thực thể cũ HOẶC mới, <code>taskId</code> giữ nguyên ⇒ giao thức <code>LIVE</code>/gỡ an toàn. Lưu ý: đổi <code>uiMode</code> không phải đổi-cỡ ⇒ <code>preserveWindow=false</code> <code>:3296</code> ⇒ cửa sổ trên màn ảo cụm gỡ-rồi-gắn lại vài chục ms khi ClusterBlack đang ở trên cùng (không app chiếu) — [SUY] ngắn hơn nhiều hạn tự đóng của firmware; 🚗 nhìn một lần đổi Sáng↔Tối khi chiếu trống.</li>
+<li><b>[P3] đã vá</b> <code>ClusterBlackActivity.kt</code>: <code>singleInstance</code> ⇒ <code>am start</code> của lượt mở sau rơi vào <code>onNewIntent</code> của thực thể còn sống (vd tiến trình bị BYD giết, Activity dựng lại trước khi có phiên ⇒ <code>castFrame()</code> = <code>null</code> ⇒ màu Bo tròn trên cụm Chữ nhật). Tách <code>paintBackdrop(view, why)</code>, gọi ở <code>onCreate</code> và <code>onNewIntent</code> (phiên đã ghim TRƯỚC <code>am start</code> — <code>ProjectionManager.open</code> :112 rồi <code>SimpleCastCoordinatorOps</code> :123). Test mới <code>mo lai vao thuc the con song thi to lai theo phien moi</code>; bài cũ chuyển sang soi thân <code>paintBackdrop</code> + cấm <code>Color.BLACK</code>/<code>resources.configuration</code> trên CẢ tệp.</li>
+<li><b>[P3] (ghi nhận)</b> <code>castFrame()</code> = <code>null</code> lúc tạo chỉ xảy ra ngoài lượt mở (phiên ghim trước <code>am start</code>); hệ quả chỉ là sắc sáng Bo tròn thay Chữ nhật — tối luôn đen, không bao giờ nền sáng trên cụm tối vì lỗi này.</li>
+<li><b>Khác</b>: <code>castFrame</code> chỉ đọc hai trường <code>@Volatile</code> (<code>instance</code>, <code>ProjectionManager.session</code>), không dựng coordinator, không shell — rẻ trên luồng chính. <code>"#%08X".format(Int âm)</code> in đúng bù hai. <code>ClusterBackdrop</code> thuần, không nhánh tên gói (§7). Tệp 148 dòng.</li>
+<li><b>Test cần chạy</b>: <code>:core:test --tests '*ClusterBackdropTest'</code> · <code>:app:testDebugUnitTest --tests '*ClusterBackdropWiringContractTest'</code> · <code>assembleRelease</code>.</li>
+<li><b>Verdict: APPROVED</b> (sau vá P3; P2 là việc 🚗 xác nhận nguồn đêm, không chặn — dòng log chẩn đoán đã có).</li>
+</ul>
+<h3>Pass 1 — 2026-10-07 (soát Opus — R3 YouTube phát tiếp)</h3>
+<p class="muted">Rule global §5 + CLAUDE.md §2 · §5 · §7 · §8 · §14. Đọc spec §3 · §4.3 · §5 · §9 rồi TOÀN BỘ phạm vi R3: <code>YoutubeResume.kt</code> + test · <code>YoutubeSearchParse.firstVideo</code> + test · <code>YoutubeResumeSampler.kt</code> (kèm <code>YoutubeResumeStore</code>) · <code>TripMusicResume.kt</code> · phần đổi của <code>TripMusicRun.kt</code> · <code>MediaBridge.lives/seekPackage</code> · <code>VoiceYoutubeResolver.firstVideo*</code> · <code>TripGate.DEVICE_KEYS</code> · dòng cài ở <code>KachiApplication</code> · chuỗi <code>kachi_trip_music_link_hint</code> 5 tiếng · <code>YoutubeResumeWiringContractTest</code>. Không gradle / máy ảo / adb / xe (luật lượt song song) ⇒ kết luận về test là [SUY — chưa chạy], điều phối chạy lại. Context7 KHÔNG kết nối được (ENOTFOUND); lượt vá không thêm thư viện/API.</p>
+<ul>
+<li><span class="tag p2">P2</span> <b>Tiêu đề người dùng xem lọt logcat qua bộ tìm</b> [ĐO mã]: <code>VoiceYoutubeResolver.search/bounded</code> ghi nguyên truy vấn vào <code>Log.w</code> khi HTTP ≠ 200, khi lỗi (kèm ngoại lệ) và khi quá hạn 7 s. Với phát tiếp, truy vấn = <i>"&lt;tiêu đề&gt; &lt;kênh&gt;"</i> đã xem ⇒ đúng ca mạng xe yếu là tiêu đề vào logcat, mà <code>KachiReadyLog</code> đọc logcat theo pid — trái spec §4.3 (<i>"nhật ký KHÔNG tiêu đề"</i>). <i>Đã vá</i>: tham số <code>quiet</code> — <code>firstVideo</code>/<code>firstVideoBounded</code> chỉ ghi độ dài (<code>&lt;N ký tự&gt;</code>) và tên lớp ngoại lệ (lời nhắn có thể mang URL); đường giọng nói (<code>firstVideoId*</code>) giữ nguyên chữ như trước. Chốt <code>YoutubeResumeWiringContractTest</code> (<code>quiet = true</code> ở cả hai lối phát tiếp + nhãn chỉ độ dài).</li>
+<li><span class="tag p2">P2</span> <b>Cờ giữ bên lưu có thể hết TRƯỚC khi tua</b> [ĐO mã]: <code>hold()</code> đặt trần 180 s ở <code>prepare</code>, nhưng từ đó tới <code>finish</code> còn: chờ ô (<code>TripMusicPlace.SLOT_WAIT_MS</code> 90 s) + dàn app (park/behind) + <code>awaitSession</code> (15 s) + VIEW, rồi <code>finish</code> ≤ 45 + 6 s ⇒ có thể vượt 180 s ⇒ một lượt lưu lọt vào khe, ghi bài vừa mở ở giây ~0 (hoặc quảng cáo) đè vị trí cần tua — đúng thứ cờ giữ sinh ra để chặn. <i>Đã vá</i>: <code>finish</code> gọi lại <code>YoutubeResumeSampler.hold()</code> ở đầu (vòng của nó ≤ 51 s &lt; trần) + chốt thứ tự trong bài canh.</li>
+<li><span class="tag p2">P2</span> <b>[CHƯA BIẾT] phiên YouTube báo gì lúc QUẢNG CÁO</b> [SUY]: spec viết <i>"quảng cáo đầu video mang tiêu đề khác ⇒ chờ tiếp"</i> nhưng chưa có phép đo nào về metadata/vị trí phiên trong lúc quảng cáo. Hai hệ quả: (a) bên lưu chạy mỗi 60 s ⇒ một quảng cáo giữa video có thể bị lưu — nếu phiên mang tiêu đề QUẢNG CÁO thì chuyến sau tìm đúng video quảng cáo đó (khớp từng chữ) và phát nó; nếu mang tiêu đề VIDEO mà vị trí của quảng cáo thì tua sai giây (chỉ khi tắt máy trong phút ấy); (b) nếu tiêu đề video hiện ngay trong quảng cáo đầu, <code>seekTo</code> có thể bị YouTube bỏ qua ⇒ sổ <code>resume-seek=…:sent</code>, video chạy từ 0 (không nhầm bài). <b>Không vá</b> (CLAUDE.md §14 — chưa đo thì không dựng cơ chế). Cách chốt: máy ảo <code>kachi_play</code>, video có quảng cáo, <code>dumpsys media_session</code> mỗi 2 s qua quảng cáo đầu + giữa. Thêm vào 🚗/máy ảo của T5.</li>
+<li><span class="tag p3">P3</span> <b>Cờ giữ rò ở lối thoát sớm</b> [ĐO mã]: sau <code>prepare</code> tìm thấy, các lối <code>Start.Stop</code> (SLOT_WAIT/SYSTEM_APP/NOOP) · <code>recheck</code> SELF_PLAYING/UNKNOWN_MEDIA · VIEW NOOP trả về mà không <code>release()</code> ⇒ bên lưu im tối đa 180 s. Vô hại (chỉ hoãn lưu), KDoc <code>HOLD_MAX_MS</code> đã nói rõ. Không vá.</li>
+<li><span class="tag p3">P3</span> <b>Tua quá cuối nếu bài khớp tiêu đề là bản tải lại ngắn hơn</b> [SUY]: <code>playingRight</code> chỉ so tiêu đề; <code>Plan</code> không mang thời lượng ⇒ không so được thời lượng phiên với bài đã lưu. Truy vấn có kênh nên rất hiếm. Gợi ý (cần đo độ ổn định của <code>DURATION</code> trước): bỏ tua khi <code>seekMs ≥ thời lượng phiên − END_GUARD_MS</code>. Không vá.</li>
+<li><b>Đã soát, không lỗi</b>: luồng <code>kachi-yt-resume</code> daemon, một lượt / 60 s <code>scheduleWithFixedDelay</code>, ranh giới lỗi giữ lượt sau; cổng rẻ nhất <code>isMusicActive</code> (1 binder/phút khi không gì phát) · cài sau cổng tiến trình nền ⇒ chỉ tiến trình chính, cùng tiến trình với <code>kachi-trip</code> ⇒ <code>hold/release</code> tới đúng thể hiện. <code>MediaBridge.lives</code> dùng CHÍNH <code>getActiveSessions(NavNotificationListener)</code> (đường quyền nghe thông báo đang có; thiếu quyền ⇒ <code>SecurityException</code> trong <code>runCatching</code> ⇒ <code>null</code> ⇒ bỏ lượt, không cần <code>MEDIA_CONTENT_CONTROL</code>). <code>commit()</code> trên luồng nền, tệp <code>clusternav_state</code> (≤ 60 lần ghi/giờ khi đang xem — không đáng kể), <code>allowBackup=false</code>; BYD giết lúc tắt máy ⇒ mất tối đa ~60 s, vị trí ngoại suy theo <code>lastPositionUpdateTime</code>. <code>firstVideo</code>: tiêu đề vắt khối không bị cắt cụt (regex cần dấu đóng), <code>videoId</code> thứ hai trước tiêu đề ⇒ <code>null</code> ⇒ không phát. Đường phát chỉ thay URL của đường cũ (FromUri/VIEW, ô ⇒ VD của ô), không tên gói, mọi hàm mới có call site (§8). Chuỗi gợi ý 5 tiếng đúng nghĩa (3 ngày · không thấy ⇒ chỉ mở app). Tệp đều &lt; 500 dòng.</li>
+<li><b>Tệp vá</b>: <code>app/…/voice/VoiceYoutubeResolver.kt</code> · <code>app/…/trip/TripMusicResume.kt</code> · <code>app/src/test/…/YoutubeResumeWiringContractTest.kt</code>. <b>Điều phối phải chạy</b>: <code>:app:testDebugUnitTest --tests '*YoutubeResumeWiringContractTest' --tests '*VoiceMusicPlayTest' --tests '*VoiceListenWiringContractTest' --tests '*TripWiringContractTest' --tests '*VoiceCommandWiringContractTest'</code> + <code>:core:test --tests '*YoutubeResumeTest' --tests '*YoutubeSearchParseTest'</code> + <code>assembleRelease</code>.</li>
+<li><b>Verdict: APPROVED (kèm điều kiện)</b> — 2 × [P2] đã vá; [P2] quảng cáo là [CHƯA BIẾT] cần một phép đo máy ảo trước khi đăng (không chặn mã, có thể dẫn tới phát video quảng cáo — owner quyết có đăng trước khi đo không). Scope R3: ✅ lưu ngầm · ✅ mở lại + tua · ✅ "Phát gì" có chữ ⇒ như cũ · ✅ không phát bài chưa khớp · 🚗 3 mục §4.3 còn chờ xe.</li>
+</ul>
+<h3>Pass 1b — 2026-10-07 (điều phối — hai điểm còn mở của Pass 1)</h3>
+<ul>
+<li><b>R2 [P2] "tối trong Cài đặt xe có tới cấu hình chung không"</b>: đã có số đo lúc owner chuyển Tối (08:2x): <code>dumpsys uimode</code> ⇒ <code>mCurUiMode=0x21</code> (bit <code>UI_MODE_NIGHT_YES</code> nằm trong cấu hình hệ thống đã áp) [ĐO] — đúng thứ <code>Resources.getSystem()</code> đọc. Giữ 🚗: dòng log <code>ClusterBlack: nền màn chiếu … hệ thống tối ⇒ #FF000000</code> sau một lần chuyển Tối.</li>
+<li><b>R3 [P2] quảng cáo</b>: [ĐO máy ảo kachi_play 07/10] 4 video, không ra quảng cáo nào ⇒ chưa đo được phiên lúc quảng cáo. Vá chặn rẻ: <code>YoutubeResume.MIN_DURATION_MS = 60 s</code> — thời lượng 1..59 999 ms không lưu (quảng cáo 6–30 s không bao giờ thành "bài cuối"); live (0) vẫn lưu. Bài <code>YoutubeResumeTest.thoi luong ngan nhu quang cao thi khong luu</code>.</li>
+</ul>
+
+</div></body>
+</html>
