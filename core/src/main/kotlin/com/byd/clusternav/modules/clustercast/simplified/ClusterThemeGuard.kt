@@ -16,7 +16,7 @@ import com.byd.clusternav.modules.clustercast.WmParse
  *    CÓ — [ClusterDisplayResolver.DETECT_CMD] + [WmParse.clusterDisplayIds] − màn ảo của chính Kachi) và sổ theme
  *    ([ThemeLedger], khoảng 15 s); quyết bằng [ClusterThemePlan.decide]. B1a: có màn ảo cụm mà hồ sơ không bật
  *    `themeOnVacantVd` ⇒ `VD_PRESENT` ngay, 0 lệnh đọc thêm; chưa có màn ảo ⇒ không đọc stack/cửa sổ (không có
- *    lớp nào để đọc). Cờ bật (mức B — 2.90 bật cho Seal 138 sau phép đo 06/10, `oncar-2026-10-06-cluster-rect.md` F4): đọc `am stack list` + `dumpsys window windows`; nếu chỉ còn
+ *    lớp nào để đọc). Cờ bật (mức B — 2.90 Seal 138 sau phép đo 06/10, 2.95 mọi đời `AutoContainer`; `oncar-2026-10-06-cluster-rect.md` F4): đọc `am stack list` + `dumpsys window windows`; nếu chỉ còn
  *    `ClusterBlack` của Kachi ⇒ gỡ đúng stack của nó, đọc lại tới khi trống (trần [SETTLE_READS] × [SETTLE_STEP_MS]) rồi
  *    quyết LẦN HAI. Lời đáp [ThemeVerdict] qua [ClusterThemePlan.verdict]; quyết cuối ở [ClusterStylePlan].
  *  • [inspect]: CÙNG các lượt đọc + quyết định, KHÔNG gỡ, KHÔNG ghi sổ — cho `ClusterDiag` "Cổng theme (chỉ đọc)".

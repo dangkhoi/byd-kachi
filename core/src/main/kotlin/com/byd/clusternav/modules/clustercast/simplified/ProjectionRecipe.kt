@@ -56,8 +56,8 @@ data class ProjectionRecipe(
      */
     val nativeStyle: CastStyle? = null,
     /**
-     * Cho phép gửi theme khi màn ảo cụm CÒN nhưng trống (mức B). Mặc định `false`; 2.90 bật CHỈ cho đời xe đã đo
-     * (`ClusterProfile.forCarType`: Seal `car.type=138` + `AutoContainer`) — [ĐO xe 06/10] màn ảo có 0 task + 0 cửa sổ ⇒ gửi
+     * Cho phép gửi theme khi màn ảo cụm CÒN nhưng trống (mức B). Mặc định `false`; `ClusterProfile.forCarType` bật cho
+     * mọi hồ sơ service `AutoContainer` (2.95 — 2.90 chỉ Seal `car.type=138`; [ĐO log SL6 07/10]) — [ĐO xe Seal 06/10] màn ảo có 0 task + 0 cửa sổ ⇒ gửi
      * `31` không sập, màn ảo dựng lại với id MỚI (4 → 9) (`docs/diagnostics/oncar-2026-10-06-cluster-rect.md` F4). DashCast ghi
      * màn ảo tạo lại làm hỏng sổ display của ATM (`ClusterManager.kt:37`) ⇒ bên gọi dò lại id sau khi gửi. Không vào chuỗi export.
      */

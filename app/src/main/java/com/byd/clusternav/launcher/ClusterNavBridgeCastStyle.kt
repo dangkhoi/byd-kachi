@@ -18,7 +18,7 @@ import com.byd.clusternav.modules.clustercast.simplified.themeBubbleOldMod
  *  1. **Ghi lựa chọn = CHỈ prefs** ([setCastStyle]) — 0 lệnh AutoContainer, kể cả khi đang chiếu. Coordinator đọc lựa chọn MỘT
  *     lần đầu lượt mở chiếu và ghim theo phiên (`ProjectionManager.session`).
  *  2. **"Áp ngay" chỉ khi không có app đang chiếu** ([applyCastStyleNow] kiểm LẠI trạng thái lúc chạy — CLAUDE.md §5) và đi
- *     đúng đường [restoreCluster] ⇒ lượt mở qua cổng theme: 2.90 mức B (Seal 138) — màn ảo cụm trống thì gửi, còn cửa sổ lạ (vd
+ *     đúng đường [restoreCluster] ⇒ lượt mở qua cổng theme: mức B (2.95: mọi đời `AutoContainer`) — màn ảo cụm trống thì gửi, còn cửa sổ lạ (vd
  *     bóng nổi VietMap) thì bỏ và nói lý do ([castThemeBlockers]).
  *  3. **Hàng chỉ hiện khi đời xe cho Chữ nhật** ([castStyleOffered]) — Seal `car.type=138` (bảng B.2); xe khác ẩn hẳn, không
  *     "hiện mà bấm không ăn" (opcode 31 trên cụm 8.8" đẩy cụm về simple mode [ĐO DashCast INC-20260625]).

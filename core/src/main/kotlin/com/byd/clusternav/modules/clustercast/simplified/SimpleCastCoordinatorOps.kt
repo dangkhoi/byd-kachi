@@ -69,7 +69,7 @@ internal fun SimpleCastCoordinator.openProjectionBody() {
         projection.resetState(false)
         probeRecipeOnce()
         // CLUSTER-THEME-SAFE (2.89, P0): opcode theme chỉ đi qua cổng [ClusterThemeGuard] + kế hoạch [ClusterStylePlan] —
-        // gửi khi CHƯA có màn ảo cụm (mức A) hoặc — 2.90, đời xe đã đo (Seal 138) — màn ảo có 0 task + 0 cửa sổ (mức B, sau khi
+        // gửi khi CHƯA có màn ảo cụm (mức A) hoặc — mức B (2.95: mọi đời `AutoContainer`) — màn ảo có 0 task + 0 cửa sổ (mức B, sau khi
         // gỡ ClusterBlack của chính Kachi), cách lần trước ≥ 15 s (sổ bền); còn lại bỏ theme, 16/35 đi tiếp hoặc DỪNG khi không
         // chứng minh được kiểu cụm (KDoc [ClusterStylePlan]).
         themeGuard.beginOpen()

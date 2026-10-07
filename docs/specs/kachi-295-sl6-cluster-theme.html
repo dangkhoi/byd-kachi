@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.95 cụm SL6</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--diag:#0071e3;--user:#1a7f37;--deny:#bf5f00}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--diag:#2997ff;--user:#30d158;--deny:#ff9f0a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+svg .root{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+svg .dg{fill:none;stroke:var(--diag);stroke-width:2}
+svg .us{fill:none;stroke:var(--user);stroke-width:2}
+svg .tx{fill:var(--fg);font-size:12px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .sm{fill:var(--muted);font-size:10.5px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .wire{stroke:var(--line);stroke-width:1.5}
+svg .x{stroke:var(--deny);stroke-width:2}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.95 — Sửa lỗi SL6: cụm cong không vào chế độ chiếu</h1>
+<p class="muted">Slug: <code>kachi-295-sl6-cluster-theme</code> · Branch <code>feat/key-source-split</code> (từ 2.94 (197) <code>4297b68</code>) · Owner: dangkhoi · Owner 07/10: <i>"2.94 bị lỗi cast không qua cụm"</i> (SL6, cụm cong) · <i>"từ thời clusternav đã chiếu lên sl6 ngon lành, có cần bật lại lệnh chiếu đâu?"</i> · sau khi đọc log SL6: <i>"ok, thế sửa thôi, rõ rồi"</i>.</p>
+<p class="muted">Mức bằng chứng theo CLAUDE.md §2: <b>[ĐO]</b> đo thật · <b>[SUY]</b> suy luận khớp dữ liệu · <b>[ĐOÁN]</b> · <b>[CHƯA BIẾT]</b>.</p>
+
+<h2>1. Changelog</h2>
+<ul><li><b>Pass 0 — 2026-10-07</b>: Root-cause từ log SL6 do anh em kéo về; một sửa đổi một dòng ở <code>ClusterProfile.forCarType</code> + test hồi quy.</li></ul>
+
+<h2>2. Context</h2>
+<ul>
+<li>Triệu chứng trên SL6 (cụm cong) [ĐO lời owner + ảnh màn cấu hình]: bấm chiếu ⇒ GMaps nằm trên màn ảo cụm nhưng cụm vẫn hiện đồng hồ; bấm bóng nổi kéo GMaps về màn chính, bấm lại thì GMaps "biến mất". Cả Bo tròn lẫn Chữ nhật đều hỏng.</li>
+<li>Log SL6 06–07/10 (kéo từ <code>kachi-logs/</code>, không vào repo) [ĐO]: 37 lượt quyết theme <code>30</code> — <b>35 lượt</b> <code>theme 30 cụm=[2] → Skip(reason=VD_PRESENT …) ⇒ SKIP_KNOWN</code> (chỉ gửi <code>16 → 35</code>), <b>2 lượt</b> <code>cụm=[] → SEND</code> (màn ảo chưa có). Dòng công thức mọi phiên: <code>ProjectionRecipe(svcName=AutoContainer, … themeOnVacantVd=false)</code>.</li>
+<li>Dòng thời gian [ĐO log + git]: tới trước cổng theme (2.89, CLUSTER-THEME-SAFE) mọi phiên gửi <code>30</code> rồi <code>16/35</code> và SL6 chiếu được. 2.89 thêm mức A ("chỉ gửi theme khi CHƯA có màn ảo cụm"); 2.90 thêm mức B ("màn ảo có mà TRỐNG thì gửi") nhưng chỉ bật cho <code>car.type = 138</code> (Seal — xe duy nhất đã đo). SL6 có màn ảo cụm từ lúc nổ máy ⇒ mức A không bao giờ gửi, mức B tắt ⇒ cụm không bao giờ nhận <code>30</code> ⇒ không vào chế độ chiếu.</li>
+<li>Không phải do 2.94 (nền ngày/đêm, camera, YouTube) — 2.94 chỉ là bản đầu tiên anh em SL6 dùng sau nhiều lần tắt-nổ máy. Bất kỳ bản 2.89–2.94 nào trên SL6 đều hỏng như nhau khi màn ảo cụm có sẵn [SUY từ mã + log, khớp 35/35 lượt].</li>
+</ul>
+
+<h2>3. Requirements</h2>
+<ul>
+<li><b>R1</b> — Mọi xe DiLink3 service <code>AutoContainer</code> (Seal, SL6, mã xe lạ, mã không đọc được) gửi lại <code>30 → 16 → 35</code> như thời ClusterNav khi màn ảo cụm có sẵn mà TRỐNG.</li>
+<li><b>R2</b> — Giữ nguyên mọi rào an toàn của mức B (2.90, đã đo trên Seal 06/10): chỉ gửi khi màn ảo cụm 0 task + 0 cửa sổ của app khác; gỡ placeholder của Kachi trước; giãn 15 s giữa hai lần đổi theme; sổ <code>pending/ok</code>; bóng nổi/lớp được dọn trước. App khác đang ở trên cụm ⇒ vẫn bỏ theme.</li>
+<li><b>R3</b> — DiLink5 (<code>auto_container</code>) không đổi (không có opcode theme). Chuỗi share (không tin cậy) vẫn không tự bật được đường đổi theme.</li>
+<li><b>R4</b> — CLAUDE.md §6/§7: không thêm nhánh theo tên xe/mã xe; không đổi thứ tự lệnh của đường đang chạy (Seal 138 không đổi gì).</li>
+</ul>
+
+<h2>4. Design</h2>
+<div class="flow">
+  <div class="fnode"><b>detectSeed / override</b><span>hồ sơ đời xe</span></div><span class="arrow">→</span>
+  <div class="fnode new"><b>forCarType</b><span>2.95: mức B = service AutoContainer</span></div><span class="arrow">→</span>
+  <div class="fnode"><b>ProjectionRecipe</b><span>themeOnVacantVd</span></div><span class="arrow">→</span>
+  <div class="fnode"><b>ClusterThemeGuard</b><span>màn ảo trống? ⇒ SEND</span></div><span class="arrow">→</span>
+  <div class="fnode"><b>ProjectionManager.open</b><span>30 → 16 → 35</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:rgba(0,113,227,.12)"></span>chỗ đổi</span></div>
+<ul>
+<li>Một dòng ở <code>ClusterProfile.forCarType</code>: <code>vacant = svcName == SVC_DILINK3</code> (trước: thêm điều kiện <code>carType ∈ {138}</code>). Bỏ hằng <code>VACANT_VD_THEME_CAR_TYPES</code>. Seed vẫn mặc định <code>false</code> — chỉ <code>forCarType</code> (mọi đường resolve đều đi qua) bật cờ; <code>parse</code> của chuỗi share không mang cờ.</li>
+<li>Không đụng <code>ClusterThemeGuard</code>, <code>ClusterStylePlan</code>, <code>ProjectionManager</code>: luật mức B (đọc stack + cửa sổ, gỡ placeholder, đọc lại) đã có test và đã đo trên Seal 06/10 (gửi <code>31</code> khi màn ảo trống ⇒ không sập, màn ảo dựng lại id mới).</li>
+<li>Không có thư viện/framework mới ⇒ không cần xác minh phiên bản (rule global §1.1 không áp).</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Phụ thuộc</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>Sửa <code>forCarType</code> + đổi ghim <code>ClusterProfileTest</code> (có lý do) + test hồi quy <code>ClusterSl6VacantThemeTest</code> (hồ sơ → cổng → ProjectionManager)</td><td>—</td><td>✅</td></tr>
+<tr><td>T2</td><td>Bump 198 / 2.95 · bộ đủ + lint · senior review · QA máy ảo (nâng cấp) · quét bảo mật · đăng OTA</td><td>T1</td><td>✅ 07/10</td></tr>
+<tr><td>T3</td><td>🚗 anh em SL6: chiếu GMaps lên cụm sau tắt-nổ máy; log có <code>theme 30 … ⇒ SEND</code></td><td>T2</td><td>chờ xe</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>Test hồi quy [ĐO JUnit]: <code>ClusterSl6VacantThemeTest</code> — <code>car.type</code> 162/137/không đọc được + màn ảo cụm có sẵn, trống ⇒ lệnh gửi đúng <code>30, 16, 35</code>; ghim cơ chế lỗi cũ (cờ tắt ⇒ chỉ <code>16, 35</code>). <code>ClusterProfileTest</code> 33/0.</li>
+<li><b>Bộ đủ</b> [ĐO 2026-10-07, cây CUỐI, JUnit XML]: <b>9 441 / 0</b> (core 4 818 · app debug 2 205 · vehicleTest 2 217 · car-integration 80 · vehicle-contracts 22 · offcar-planner 99 chạy riêng) · lint 0 lỗi · APK vc198 / 2.95, sha <code>6631e339…60ef</code>, cùng khoá, không debuggable.</li>
+<li><b>QA máy ảo</b> [ĐO, clusternav10]: nâng cấp thật 2.94 → 2.95 giữ prefs, HOME lên, 0 crash/ANR; dòng công thức lúc khởi động (máy ảo không có <code>car.type</code>): 2.94 <code>themeOnVacantVd=false</code> ⇒ 2.95 <code>themeOnVacantVd=true</code>. Đường cổng thật không chạy được trên máy ảo (không có kênh shell/AutoContainer) ⇒ 🚗.</li>
+<li>🚗 SL6 sau OTA: log phiên chiếu có <code>theme 30 cụm=[2] → … ⇒ SEND</code> và cụm hiện bản đồ.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul><li>OQ1 [CHƯA BIẾT] SL6 có xe nào màn ảo cụm KHÔNG trống lúc mở (app OEM ở trên)? Khi đó mức B vẫn bỏ theme (đúng rào an toàn) — log sẽ ghi <code>FOREIGN</code>.</li></ul>
+
+<h2>8. References</h2>
+<ul><li><code>docs/specs/kachi-290-cluster-rect-fix.html</code> (mức B) · <code>docs/specs/kachi-294-plan.html</code> · <code>docs/PROJECT-BACKLOG.md</code>.</li></ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul><li>2026-10-07 — T1 xong off-car: <code>app/…/clustercast/ClusterProfile.kt</code> · <code>app/src/test/…/ClusterProfileTest.kt</code> · <code>app/src/test/…/ClusterSl6VacantThemeTest.kt</code> (mới). Cụm/cast: app 215/0, core 546/0.</li></ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only.</p>
+<h3>Pass 1 — 2026-10-07 (soát Opus)</h3>
+<p class="muted">Rule global §5 + CLAUDE.md §2 · §4 · §6 · §7 · §8 · §10. Phạm vi: <code>ClusterProfile.forCarType</code> · <code>ClusterProfileTest</code> · <code>ClusterSl6VacantThemeTest</code> (mới) · <code>app/build.gradle.kts</code> (198 / 2.95); đối chiếu mọi đường dựng công thức và rào mức B ở <code>:core</code>. Không xe / máy ảo / adb. Không thư viện mới ⇒ không cần Context7.</p>
+<ul>
+<li><b>Đường dựng công thức</b> [ĐO mã]: cả bốn lối đều qua <code>forCarType</code> — <code>resolve</code> (override :345, <code>detectSeed</code> :335–336) · <code>resolveCached</code> → <code>SimpleCastRuntime:56</code> · <code>refineByShell</code> → <code>resolve</code> (<code>recipeProbe</code>, <code>SimpleCastRuntime:93–97</code>) · <code>ClusterDiag:204</code> (<code>resolve</code> hoặc <code>resolved.forCarType(viaDadb)</code>). Cờ đi tới cổng qua <code>SimpleCastCoordinator:87</code> và <code>ThemeGatePreview:59</code> (<code>vacantVdAllowed = { recipe.themeOnVacantVd }</code>). Không còn <code>ProjectionManager</code>/<code>ClusterThemeGuard</code> nào dựng với công thức mặc định trong mã sản phẩm ⇒ không lối nào để cờ <code>false</code> trên xe <code>AutoContainer</code>.</li>
+<li><b>Rào an toàn mức B không phụ thuộc đời xe</b> [ĐO mã]: <code>ClusterThemePlan.decide</code> (luật 2–10: sổ 15 s · màn ảo 0 task + 0 cửa sổ lạ · <code>FOREIGN</code>/<code>BUBBLE</code> ⇒ bỏ · chỉ gỡ <code>ClusterBlack</code> của Kachi qua <code>admissible</code> · đọc lại sau gỡ ⇒ <code>STILL_OCCUPIED</code>), <code>ClusterThemeGuard</code> (đọc stack + cửa sổ khi có màn ảo và cờ bật, sổ <code>pending</code> trước lệnh, lớp dọn cụm <code>ClusterLayerPort</code>) — không chỗ nào đọc <code>car.type</code>. Nhận diện màn ảo cụm <code>WmParse.clusterDisplayIds</code> theo chuỗi <code>fission</code>/<code>xdja</code> chung cho DiLink3, không dữ liệu riêng Seal; log SL6 (<code>cụm=[2]</code>) cho thấy SL6 khớp bộ nhận diện này. Ca sập 05/10 (theme khi còn lớp) vẫn bị chặn ở <code>FOREIGN</code>/<code>BUBBLE</code> trên mọi đời xe.</li>
+<li><span class="tag p3">P3</span> <b>Chú thích cũ "mức B chỉ Seal 138"</b> ở 6 chỗ — <i>đã vá</i> (chỉ KDoc/comment, không đổi mã): <code>ClusterThemePlan.kt</code> luật 2 · <code>ClusterThemeGuard.kt</code> KDoc lớp · <code>ProjectionRecipe.kt</code> <code>themeOnVacantVd</code> · <code>SimpleCastCoordinatorOps.kt</code> · <code>ClusterRectLayout.kt</code> · <code>app/…/ClusterNavBridgeCastStyle.kt</code>. Các chỗ "138" còn lại nói về Chữ nhật gốc (<code>RECT_NATIVE_CAR_TYPES</code>) — vẫn đúng.</li>
+<li><span class="tag p3">P3</span> <code>ClusterProfileTest.kt</code>: KDoc của lớp test bị đẩy lên trên <code>SEAL_DL3_B</code> (hai khối <code>/** */</code> liền nhau) — <i>đã vá</i> đổi chỗ. <code>ClusterProfile.kt</code>: thừa một dòng trống sau khi bỏ hằng — <i>đã vá</i>.</li>
+<li><b>Ghi lại, không vá</b> [SUY]: nếu một đời DiLink3 đặt tên màn ảo cụm không chứa <code>fission</code>/<code>xdja</code> thì cổng thấy <code>cụm=[]</code> ⇒ gửi theo mức A mà không đọc lớp — hành vi có từ 2.89, không do bản này. 🚗 SL6 sau OTA: kiểm thêm màn ảo dựng lại id mới sau <code>30</code> (đã đo trên Seal với <code>31</code>, chưa đo trên SL6) — bên gọi đã dò lại id.</li>
+<li><b>Test có nghĩa</b> [ĐO đột biến]: trả lại <code>carType == "138" &amp;&amp;</code> trong <code>forCarType</code> ⇒ <code>ClusterSl6VacantThemeTest</code> + <code>ClusterProfileTest</code> 35 bài, <b>5 đỏ</b>; khôi phục ⇒ 35/0. Bài <code>co che loi cu</code> ghim đúng triệu chứng log SL6 (chỉ <code>16, 35</code>).</li>
+<li><b>Kiểm</b> [ĐO JUnit XML]: <code>:app:testDebugUnitTest --tests '*Cluster*' --tests '*Cast*'</code> 215/0 · <code>:core:test --tests '*clustercast*'</code> 546/0.</li>
+<li><b>Phạm vi</b>: R1 ✅ (mọi hồ sơ <code>AutoContainer</code>, mọi <code>car.type</code> kể cả không đọc được — có test) · R2 ✅ (rào không đổi, không theo đời xe) · R3 ✅ (DL5 tắt, <code>parse</code> không mang cờ — có test) · R4 ✅ (không nhánh mã xe; Seal 138 không đổi chuỗi lệnh). T3 🚗 chờ xe.</li>
+<li><b>Verdict: APPROVED</b> (sau vá 2 × P3; không P0–P2).</li>
+</ul>
+
+</div></body>
+</html>

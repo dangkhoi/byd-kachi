@@ -16,8 +16,8 @@ import com.byd.clusternav.modules.clustercast.StackEntry
  *
  * ## Luật (thứ tự xét — mọi nhánh "không chắc" đều rơi về KHÔNG GỬI, không bao giờ đoán)
  *  1. Không đọc được danh sách display ⇒ [Reason.UNREADABLE].
- *  2. **B1a — mức B tắt**: có màn ảo cụm (dù trống) mà hồ sơ không bật `themeOnVacantVd` ⇒ [Reason.VD_PRESENT]. 2.90: mức B
- *     BẬT cho đời xe đã đo (Seal `car.type=138` — `ClusterProfile.forCarType`): [ĐO xe 06/10] màn ảo cụm có TỪ LÚC đầu máy
+ *  2. **B1a — mức B tắt**: có màn ảo cụm (dù trống) mà hồ sơ không bật `themeOnVacantVd` ⇒ [Reason.VD_PRESENT]. Mức B BẬT
+ *     cho mọi hồ sơ `AutoContainer` (`ClusterProfile.forCarType`; 2.90 chỉ Seal 138, 2.95 mở rộng — [ĐO log SL6 07/10]): [ĐO xe Seal 06/10] màn ảo cụm có TỪ LÚC đầu máy
  *     khởi động (mức A không bao giờ gửi được), và gửi `31` khi màn ảo có 0 task + 0 cửa sổ ⇒ KHÔNG sập, màn ảo dựng lại với
  *     id MỚI (4 → 9) — bên gọi phải dò lại id sau khi gửi (`ClusterDisplayResolver.awaitAndPersist(exclude)`).
  *  3. Đã gửi CÙNG opcode trong tiến trình này VÀ id màn ảo cụm không đổi ([Marker]) ⇒ [Reason.SAME_THEME]. Cờ RAM chỉ được

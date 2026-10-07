@@ -113,8 +113,8 @@ data class CastSessionStyle(
 /**
  * ═══ B1b — nút "Áp ngay" của lựa chọn Bo tròn / Chữ nhật (R5): luật THUẦN ═════════════════════════════════════════════════
  *
- * "Áp ngay" = `restoreCluster` (dừng → đóng chiếu → mở lại sau 2 s) — lượt mở đi qua CỔNG theme như mọi lượt mở khác: 2.90 mức
- * B (Seal 138) ⇒ màn ảo cụm trống (đã gỡ ClusterBlack lúc đóng, không bóng nổi) thì gửi theme; còn cửa sổ lạ ⇒ bỏ, nói lý do.
+ * "Áp ngay" = `restoreCluster` (dừng → đóng chiếu → mở lại sau 2 s) — lượt mở đi qua CỔNG theme như mọi lượt mở khác: mức B
+ * (2.95: mọi đời `AutoContainer`) ⇒ màn ảo cụm trống (đã gỡ ClusterBlack lúc đóng, không bóng nổi) thì gửi theme; còn cửa sổ lạ ⇒ bỏ, nói lý do.
  * Theme KHÔNG BAO GIỜ gửi từ màn Cài đặt trực tiếp hay khi đang chiếu.
  */
 object CastStyleApply {

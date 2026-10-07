@@ -8,6 +8,9 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
+/** Seed Seal sau forCarType (2.95: đời AutoContainer luôn mang mức B). */
+private val SEAL_DL3_B = ClusterProfile.SEAL_DL3.copy(themeOnVacantVd = true)
+
 /** Unit test (off-device, JUnit5) cho ClusterProfile — export/parse + detect + seed integrity. T-F verify. */
 class ClusterProfileTest {
 
@@ -114,14 +117,16 @@ class ClusterProfileTest {
 
     @Test fun `detectSeed maps BYD AUTO to seal_dl3`() {
         // Head-unit BYD báo Build.MODEL = "BYD AUTO"
-        assertEquals(ClusterProfile.SEAL_DL3, ClusterProfile.detectSeed("BYD AUTO", "", "", ""))
-        assertEquals(ClusterProfile.SEAL_DL3, ClusterProfile.detectSeed("", "byd", "BYD", ""))
-        assertEquals(ClusterProfile.SEAL_DL3, ClusterProfile.detectSeed("", "", "", "ro.product.model=byd_seal"))
+        // 2.95 ĐỔI GHIM có lý do: detectSeed đi qua forCarType ⇒ đời AutoContainer luôn mang mức B (CLUSTER-VACANT-THEME-DL3).
+        assertEquals(SEAL_DL3_B, ClusterProfile.detectSeed("BYD AUTO", "", "", ""))
+        assertEquals(SEAL_DL3_B, ClusterProfile.detectSeed("", "byd", "BYD", ""))
+        assertEquals(SEAL_DL3_B, ClusterProfile.detectSeed("", "", "", "ro.product.model=byd_seal"))
     }
 
     @Test fun `detectSeed non-byd falls back to generic`() {
-        assertEquals(ClusterProfile.GENERIC_FALLBACK, ClusterProfile.detectSeed("Pixel 6", "Google", "Google", ""))
-        assertEquals(ClusterProfile.GENERIC_FALLBACK, ClusterProfile.detectSeed("", "", "", ""))
+        val generic = ClusterProfile.GENERIC_FALLBACK.copy(themeOnVacantVd = true)   // 2.95 ĐỔI GHIM — như trên
+        assertEquals(generic, ClusterProfile.detectSeed("Pixel 6", "Google", "Google", ""))
+        assertEquals(generic, ClusterProfile.detectSeed("", "", "", ""))
     }
 
     @Test fun `summary is human readable`() {
@@ -220,7 +225,7 @@ class ClusterProfileTest {
             assertFalse(p.projectionRecipe().offers(CastStyle.RECT), "car.type=$t")
             assertTrue(p.projectionRecipe().offers(CastStyle.CURVED))
         }
-        assertEquals(ClusterProfile.SEAL_DL3, ClusterProfile.detectSeed("BYD AUTO", "", "", ""), "mặc định = không biết car.type")
+        assertEquals(SEAL_DL3_B, ClusterProfile.detectSeed("BYD AUTO", "", "", ""), "mặc định = không biết car.type")
     }
 
     @Test fun `car type ap ca cho override - kieu goc la cua chiec xe, khong phai cua chuoi share`() {
@@ -269,16 +274,20 @@ class ClusterProfileTest {
     }
 
     /**
-     * 2.90 · R1 — mức B (gửi theme khi màn ảo cụm còn mà trống) BẬT đúng tổ hợp đã đo [ĐO xe 06/10]: `car.type=138` + `AutoContainer`;
-     * đời xe khác / DL5 (`auto_container`) / mã không đọc được ⇒ TẮT. Áp cả cho override (sự thật của chiếc xe). Thử ĐỎ: bỏ `vacant`
-     * trong `forCarType`.
+     * 2.95 · CLUSTER-VACANT-THEME-DL3 — ĐỔI GHIM có lý do (thay ghim 2.90 "chỉ Seal 138"): mức B BẬT cho MỌI hồ sơ service
+     * `AutoContainer` bất kể `car.type` (kể cả không đọc được). [ĐO log SL6 07/10]: màn ảo cụm có sẵn từ lúc nổ máy ⇒ ghim cũ làm
+     * SL6 bỏ `30` ở mọi lượt (`Skip(VD_PRESENT)`) ⇒ cụm cong không vào chế độ chiếu. DL5 (`auto_container`) vẫn TẮT (không có opcode
+     * theme). Thử ĐỎ: trả lại điều kiện mã xe trong `forCarType`.
      */
-    @Test fun `290 - muc B chi cho Seal 138 AutoContainer`() {
-        assertTrue(ClusterProfile.SEAL_DL3.forCarType("138").projectionRecipe().themeOnVacantVd)
-        assertTrue(ClusterProfile.GENERIC_FALLBACK.forCarType("138").projectionRecipe().themeOnVacantVd)
-        assertFalse(ClusterProfile.SEAL_DL3.forCarType("137").projectionRecipe().themeOnVacantVd)
-        assertFalse(ClusterProfile.SEAL_DL3.forCarType(null).projectionRecipe().themeOnVacantVd)
-        assertFalse(ClusterProfile.DL5.forCarType("138").projectionRecipe().themeOnVacantVd, "DL5 chưa đo")
-        assertFalse(ClusterProfile.SEAL_DL3.forCarType("138").forCarType("137").themeOnVacantVd, "đổi mã ⇒ tắt lại")
+    @Test fun `295 - muc B cho moi doi AutoContainer, DL5 tat`() {
+        for (t in listOf("138", "137", "162", "1", null)) {
+            assertTrue(ClusterProfile.SEAL_DL3.forCarType(t).projectionRecipe().themeOnVacantVd, "seal car.type=$t")
+            assertTrue(ClusterProfile.GENERIC_FALLBACK.forCarType(t).projectionRecipe().themeOnVacantVd, "generic car.type=$t")
+            assertFalse(ClusterProfile.DL5.forCarType(t).projectionRecipe().themeOnVacantVd, "DL5 car.type=$t")
+        }
+        val shared = ClusterProfile.parse("seal_dl3;3;1920;720;30-16-35;18-0;xdja;AutoContainer;30-31")!!
+        assertFalse(shared.themeOnVacantVd, "chuỗi share tự nó không bật")
+        assertTrue(shared.forCarType(null).themeOnVacantVd, "override AutoContainer qua forCarType ⇒ bật như seed")
+        assertTrue(ClusterProfile.SEAL_DL3.forCarType("138").forCarType("137").themeOnVacantVd, "đổi mã không tắt mức B")
     }
 }
