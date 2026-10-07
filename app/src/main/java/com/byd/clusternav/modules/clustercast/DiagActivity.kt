@@ -75,6 +75,13 @@ class DiagActivity : Activity() {
             minimumHeight = dp(48)
             setOnClickListener { runThemeGate() }
         })
+        // 2.96 · R14 (CLAUDE.md §11): báo cáo ANR gần nhất của CHÍNH Kachi (dropbox, chỉ đọc) lên đầu báo cáo — chụp màn gửi về.
+        root.addView(Button(this).apply {
+            text = Lang.t("ANR gần nhất của Kachi", "Kachi's latest ANR")
+            isAllCaps = false
+            minimumHeight = dp(48)
+            setOnClickListener { runLatestAnr() }
+        })
         // 2.92 · R8 (spec kachi-292-camera-full-view, CLAUDE.md §11): chụp khung camera THÔ không cần adb — PNG vào
         // kachi-logs/ + bản sao Pictures/Kachi/ (sống qua lượt dọn log). Mở/đóng đúng lượt xem thử của Cài đặt.
         root.addView(buttonRow(
@@ -276,6 +283,19 @@ class DiagActivity : Activity() {
                 setStatus(Lang.t("Cổng theme: đã đọc (không gửi lệnh nào)", "Theme gate: read (no command sent)"))
             }
         }, "KachiThemeGateDiag").start()
+    }
+
+    /** 2.96 · R14 — nền → `ClusterDiag.latestAnr` (1 lệnh đọc, chỉ mục của gói Kachi) → đầu báo cáo. */
+    private fun runLatestAnr() {
+        setStatus(Lang.t("Đang đọc ANR gần nhất…", "Reading latest ANR…"))
+        Thread({
+            val text = ClusterDiag.latestAnr(applicationContext)
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                report.text = text + "\n\n" + report.text
+                setStatus(Lang.t("ANR: đã đọc (không gửi lệnh ghi nào)", "ANR: read (no write command sent)"))
+            }
+        }, "KachiAnrDiag").start()
     }
 
     /** 2.92 · R8 — một lượt chụp khung thô bên [left]; kết quả (đường dẫn + bộ uniform của phiên) lên dòng trạng thái. */

@@ -72,8 +72,14 @@ class ShortcutGridFitWiringContractTest {
         assertTrue(SourceRoots.body(view, "private fun baseIconDp()")
             .contains("if (grid && !compact) Bars.SHORTCUT_GRID_ICON else Bars.SHORTCUT_ICON"))
         val cell = SourceRoots.body(view, "private fun cell(sc: AppShortcut)")
-        assertTrue(cell.contains("if (!grid) {") && cell.contains("val pad = (cellPx() - dpi(context, iconSizeDp())) / 2"),
-            "khối thanh nút giữ lề khe cố định (SHORTCUT_CELL − SHORTCUT_ICON)/2")
+        // 2.96 DOCK-ICON-HALF-GAP — ĐỔI GHIM có lý do (owner 07/10 "chỉ cần chừa 1/2 khoảng trống hiện tại" rồi "hơi sát quá, giảm lại chút"): icon thanh nút = 
+        // `dockIconPx()` (SHORTCUT_DOCK_ICON kẹp trong khe − XS mỗi bên, không dưới cỡ cũ); khe vẫn cố định, vẫn không qua lưới khớp.
+        assertTrue(cell.contains("if (!grid) {") && cell.contains("val pad = (cellPx() - dockIconPx()) / 2"),
+            "khối thanh nút: lề khe cố định quanh icon thanh nút")
+        val dockIcon = SourceRoots.body(view, "private fun dockIconPx()")
+        assertTrue(dockIcon.contains("Bars.SHORTCUT_DOCK_ICON") && dockIcon.contains("cellPx() - 2 * dpi(context, Sp.XS)") &&
+            dockIcon.contains("coerceAtLeast(dpi(context, iconSizeDp()))"), dockIcon)
+        assertEquals(60, KachiBars.SHORTCUT_DOCK_ICON, "44 + (93 − 44)/3 — owner: nửa thì sát, lùi về ~2/3 phần chừa cũ")
         listOf("ShortcutGridFit", "ShortcutGridLayout").forEach {
             assertFalse(SourceRoots.body(view, "internal fun shortcutStripLength(ctx: Context, n: Int)").contains(it))
             assertFalse(SourceRoots.body(code("ControlDockView.kt"), "private fun shortcutStrip()").contains(it),

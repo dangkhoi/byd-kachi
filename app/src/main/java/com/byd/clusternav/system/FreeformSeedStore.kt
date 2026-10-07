@@ -2,6 +2,7 @@ package com.byd.clusternav.system
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.provider.Settings
 
 /**
  * :app executor side of [FreeformSeedPolicy] — the durable [FreeformSeedPolicy.MarkerStore] backed by
@@ -46,7 +47,21 @@ class FreeformSeedStore(context: Context) : FreeformSeedPolicy.MarkerStore {
          */
         fun forLauncher(context: Context, log: (String) -> Unit = {}): FreeformSeedPolicy {
             val app = context.applicationContext
-            return FreeformSeedPolicy(FreeformSeedStore(app), WindowCommandDispatcher.get(app).launcherSeam(), log)
+            // 2.96 · R13 (soát Pass 1): cờ đọc TRONG tiến trình (0 shell) — [readGlobal]; ghi vẫn qua seam launcher.
+            return FreeformSeedPolicy(
+                FreeformSeedStore(app), WindowCommandDispatcher.get(app).launcherSeam(), readFlag = readGlobal(app), log = log,
+            )
+        }
+
+        /**
+         * 2.96 · R13 (soát Pass 1 [P2]) — MỘT bộ đọc `Settings.Global` theo khoá cho cả hai đường ghi cờ freeform
+         * ([forLauncher] và `SimpleCastRuntime` → `CastGeometryController`): `Settings.Global.getString` là một lượt
+         * ContentProvider trong tiến trình (đọc global không cần quyền), 0 lệnh shell. `null` = khoá chưa có / đọc hỏng ⇒
+         * bên gọi ghi như trước R13 (fail-safe). Đây là READ — không phải writer (PersistentWindowStateWriterGuardTest).
+         */
+        fun readGlobal(context: Context): (String) -> String? {
+            val app = context.applicationContext
+            return { key -> runCatching { Settings.Global.getString(app.contentResolver, key) }.getOrNull() }
         }
     }
 }

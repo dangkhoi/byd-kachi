@@ -46,12 +46,13 @@ class TripMusicView(
 
     private fun read(): List<StackEntry> = StackParse.parse(runCatching { sh(BehindHomePlan.LIST_CMD) }.getOrDefault(""))
 
-    fun inSlot(pkg: String, vd: Int, url: String): Outcome {
+    /** [fullscreenExtra] — 2.96 · R10, xem [TripMusicPlan.viewCmd]. */
+    fun inSlot(pkg: String, vd: Int, url: String, fullscreenExtra: String? = null): Outcome {
         val tag = "view-in-slot vd=$vd $pkg"
         val before = read()
         SlotReturn.slotTask(before, vd, pkg) ?: return Outcome(Result.NOT_IN_SLOT, "$tag → không thấy task của app trên ô, 0 lệnh")
         val homeWasTop = BehindHomePlan.homeOnTop(before, homeComps)
-        sh(TripMusicPlan.viewCmd(vd, url, pkg))
+        sh(TripMusicPlan.viewCmd(vd, url, pkg, fullscreenExtra))
         for (i in 0 until READS) {
             sleep(STEP_MS)
             val r = read()

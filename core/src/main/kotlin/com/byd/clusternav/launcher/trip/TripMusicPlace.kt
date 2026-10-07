@@ -115,6 +115,68 @@ object TripMusicPlace {
         }
     }
 
+    /**
+     * 2.96 · R9 — số lần giao link K4-VIEW tối đa cho app ở ô ([viewWhenReady]): lần đầu + tối đa 3 lần sau khi chờ ô sống lại.
+     * Chặn vòng lặp khi nhịp đo ô nói "sống" mà lượt giao link vẫn không thấy ô (hai lượt đọc khác thời điểm).
+     */
+    const val VIEW_TRIES = 4
+
+    /**
+     * Kết quả [viewWhenReady]. [outcome] = kết quả lần giao CUỐI (`null` = ô chưa có màn ảo, 0 lệnh); [code] = mã bước;
+     * [slot] = ô cuối cùng biết; [tries] = số lần giao; [waitedMs] = tổng thời gian; [why] = lý do bỏ cuộc (`null` = đã giao /
+     * không phải lỗi "ô chưa sẵn"): `tries` (hết [VIEW_TRIES]) · `deadline` (hết mốc trước khi chờ lại) · `slot-wait` (chờ ô
+     * quá trần) · `left` (app rời bố cục giữa lúc chờ).
+     */
+    data class ViewTry(
+        val outcome: BehindHomeSequence.Outcome?,
+        val code: TripStepCode,
+        val slot: Int?,
+        val tries: Int,
+        val waitedMs: Long,
+        val why: String?,
+    )
+
+    /**
+     * 2.96 · R9 — giao link K4-VIEW, KHÔNG bỏ cuộc khi ô của app chưa sẵn ([ĐO log xe 07/10 21:05:14]: chờ ô nói sống ở
+     * +4358 ms, ~15 s sau lúc giao link host ô KHÔNG còn chỗ dàn dựng của app ⇒ `view:SLOT_NOT_READY` ⇒ NOOP; người lái chạm
+     * ⇒ YouTube phát bài khác từ đầu). Lần giao ra [TripStepCode.SLOT_NOT_READY] (0 lệnh — [TripOutcome.ofView]) ⇒ chờ CHÍNH ô
+     * đó sống lại bằng CÙNG [await] (cùng nhịp, cùng trần [SLOT_WAIT_MS] qua [until] mà bên gọi lấy từ hạn chuyến) rồi giao
+     * lại; tối đa [VIEW_TRIES] lần. Hết trần ⇒ [TripStepCode.SLOT_WAIT] (câu Cài đặt "hết hạn chờ"), hết lần / rời bố cục ⇒
+     * [TripStepCode.SLOT_NOT_READY] — cả hai kèm [ViewTry.why] cho nhật ký (không còn NOOP câm).
+     * App ngoài ô ([slot0] `null`) ⇒ đúng MỘT lần giao như cũ. Không lệnh nào ở đây: [view] là cổng của bên thi hành.
+     */
+    fun viewWhenReady(
+        pkg: String,
+        slot0: Int?,
+        until: Long,
+        now: () -> Long,
+        sleep: (Long) -> Unit,
+        read: () -> Where?,
+        stacks: () -> List<StackEntry>?,
+        onSlot: (Int) -> Unit = {},
+        view: (inSlot: Boolean) -> BehindHomeSequence.Outcome?,
+    ): ViewTry {
+        val t0 = now()
+        var slot = slot0
+        var tries = 0
+        while (true) {
+            val o = view(slot != null)
+            tries++
+            val code = TripOutcome.ofView(slot != null, o?.result)
+            val s = slot
+            if (code != TripStepCode.SLOT_NOT_READY || s == null) return ViewTry(o, code, slot, tries, now() - t0, null)
+            if (tries >= VIEW_TRIES) return ViewTry(o, code, s, tries, now() - t0, "tries")
+            if (now() >= until) return ViewTry(o, TripStepCode.SLOT_WAIT, s, tries, now() - t0, "deadline")
+            onSlot(s)
+            sleep(SLOT_POLL_MS)
+            when (val w = await(pkg, s, until, now, sleep, read, stacks, onSlot)) {
+                is Waited.Alive -> slot = w.slot
+                is Waited.Timeout -> return ViewTry(o, TripStepCode.SLOT_WAIT, w.slot, tries, now() - t0, "slot-wait")
+                is Waited.Left -> return ViewTry(o, TripStepCode.SLOT_NOT_READY, s, tries, now() - t0, "left")
+            }
+        }
+    }
+
     /** Mốc dừng chờ ô: [SLOT_WAIT_MS] từ [now], không quá hạn chuyến [tripDeadlineAt]. */
     fun until(now: Long, tripDeadlineAt: Long): Long = minOf(now + SLOT_WAIT_MS, tripDeadlineAt)
 

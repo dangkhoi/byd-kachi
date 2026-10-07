@@ -270,12 +270,16 @@ object TripMusicPlan {
      *     stack hệ thống.
      *  4. **Hoàn tác** — app tự thoát lên display 0 (trung chuyển NEW_TASK, [ĐO] T-M3) ⇒ dấu + K12 (rào camera) đưa màn nhà lên;
      *     ở lại màn ảo dàn dựng ⇒ chuỗi BEHIND-HOME đẩy ra sau màn nhà; ở ô ⇒ ở ô.
+     * 2.96 · R10: [fullscreenExtra] (`VoiceAppTarget.watchFullscreenExtra`, chỉ đường phát tiếp) ⇒ thêm `--ez <tên> true` — một
+     * extra boolean trên CÙNG ý-định, không đổi display / gói / loại stack; tên qua [VoiceAppTarget.EXTRA_NAME].
      */
-    fun viewCmd(vd: Int, url: String, pkg: String): String {
+    fun viewCmd(vd: Int, url: String, pkg: String, fullscreenExtra: String? = null): String {
         require(vd >= 1) { "vd=$vd: K4-VIEW chỉ nhắm màn ảo của Kachi" }
         require(safeWatchUrl(url)) { "URL không phải link xem: $url" }
         require(pkg.matches(com.byd.clusternav.launcher.ShellAppLauncher.PKG)) { "tên gói lạ: $pkg" }
-        return "am start --display $vd -a android.intent.action.VIEW -d '$url' -p $pkg"
+        require(fullscreenExtra == null || fullscreenExtra.matches(VoiceAppTarget.EXTRA_NAME)) { "tên extra lạ: $fullscreenExtra" }
+        val fs = fullscreenExtra?.let { " --ez $it true" }.orEmpty()
+        return "am start --display $vd -a android.intent.action.VIEW -d '$url' -p $pkg$fs"
     }
 
     private val VIDEO_ID = Regex("[A-Za-z0-9_-]{11}")

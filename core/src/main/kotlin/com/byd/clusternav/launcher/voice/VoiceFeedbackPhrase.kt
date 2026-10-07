@@ -118,9 +118,15 @@ object VoiceFeedbackPhrase {
      * [merge] ghép *"Đã "* vào trước mọi dòng OK. Dòng của `doneActual` đã bắt đầu bằng *"Đã gửi"* ⇒ câu đọc ra
      * **"Đã đã gửi Nhiệt độ 24, xe báo 23"**. Kiểm bằng **nội dung** chứ không bằng một danh sách hàm được miễn:
      * bất kỳ dòng nào mở đầu bằng chính lời dẫn ấy cũng không được nhận thêm một lời dẫn thứ hai.
+     *
+     * Lời dẫn mà thân dòng đã tự mang: *"Đã "* (/ *"Done: "*) — và 2.96 R12 thêm *"Đang "* cho bộ phận mô-tơ chưa xác
+     * nhận ([VoiceReplyDone]: *"Đang đóng kính lái"*). `null` ⇒ dòng chưa có lời dẫn, [merge] gắn *"Đã "*.
      */
-    private fun hasDoneLead(body: String, lang: Lang): Boolean =
-        body.startsWith(Strings.t("Đã ", "Done: ", lang), ignoreCase = true)
+    private fun leadOf(body: String, lang: Lang): String? =
+        (listOf(Strings.t("Đã ", "Done: ", lang)) + if (lang == Lang.VI) listOf(DOING_LEAD) else emptyList())
+            .firstOrNull { body.startsWith(it, ignoreCase = true) }
+
+    private const val DOING_LEAD = "Đang "
 
     private fun words(s: String): Int = s.split(' ', '\n', '\t').count { it.isNotBlank() }
 
@@ -138,7 +144,7 @@ object VoiceFeedbackPhrase {
      *
      * @param lines các dòng theo đúng thứ tự `VoiceDispatcher` phát ra.
      * @param lang ngôn ngữ của CHÍNH các dòng ấy (spec `kachi-i18n-zh-th-ms.html` R6 — phiên nói truyền tiếng GIỌNG
-     *   NÓI). ⚠ Phải là **cùng** ngôn ngữ mà [VoiceReply] đã dùng để dựng [lines]: [hasDoneLead] so lời dẫn
+     *   NÓI). ⚠ Phải là **cùng** ngôn ngữ mà [VoiceReply] đã dùng để dựng [lines]: [leadOf] so lời dẫn
      *   *"Đã "* / *"Done: "* của chính bảng dịch — lệch tiếng là lỗi *"Đã đã gửi…"* quay lại. Cả năm lời gọi dịch của
      *   tệp này đọc đúng một [lang] (không lời gọi nào đọc [Strings.current] riêng).
      */
@@ -150,23 +156,7 @@ object VoiceFeedbackPhrase {
         val bad = kept.filter { it.second != Kind.OK }
 
         if (bad.isEmpty()) {
-            val lead = Strings.t("Đã ", "Done: ", lang)
-            val single = ok.singleOrNull()?.let { body(it.first) }
-            // Dòng đã tự mang lời dẫn ⇒ giữ NGUYÊN VĂN (kể cả chữ hoa đầu câu): `decap` ở đây sẽ cho ra
-            // *"đã gửi…"* — một câu mở đầu bằng chữ thường.
-            val sentence =
-                if (single != null && hasDoneLead(single, lang)) single
-                // ⚠ [SOÁT 1.69 · P2] Nhánh NHIỀU dòng cũng phải kiểm, không chỉ nhánh một dòng. KDoc
-                // [hasDoneLead] hứa *"bất kỳ dòng nào mở đầu bằng chính lời dẫn ấy"*, nhưng tới lượt soát này
-                // phép kiểm chỉ chạy trên `ok.singleOrNull()` ⇒ hai vế mà một vế là [VoiceReply.doneActual]
-                // vẫn đọc ra **"Đã đã gửi Nhiệt độ 24, …"**. Hôm nay ca ấy khó tới (dòng đọc-lại về SAU
-                // `flushed` nên đi đường một-dòng) — tức đây là một bẫy **chờ sẵn**, không phải một lỗi đang
-                // kêu, và đó chính là loại mà lượt soát phải bắt. Gỡ lời dẫn rồi mới ghép: một lời dẫn cho cả
-                // câu, đúng như nhánh một-dòng.
-                else lead + ok.joinToString(", ") { p ->
-                    val b = body(p.first)
-                    decap(if (hasDoneLead(b, lang)) b.substring(lead.length) else b)
-                }
+            val sentence = joinLed(ok.map { body(it.first) }, lang)
             // ⚠ [SOÁT chuỗi-lời-đáp 2026-09-17] MỘT dòng thì KHÔNG bao giờ lùi về câu đếm việc.
             // `tooMany` ("Đã xong 1 việc") sinh ra cho ca **nhiều việc** — ở đó nó nói ngắn mà vẫn đủ. Với MỘT
             // dòng nó nói **ít hơn hẳn** dòng gốc: [VoiceReply.doneActual] tồn tại để đọc ra HAI con số (đã gửi
@@ -185,6 +175,32 @@ object VoiceFeedbackPhrase {
         val sentence = headText + tail
         // Vế hỏng dài quá trần vẫn PHẢI đọc (nó là thứ người lái cần biết) — cắt ở ranh giới từ, không cắt giữa từ.
         return if (words(sentence) > MAX_WORDS) clampWords(sentence, MAX_WORDS) else sentence
+    }
+
+    /**
+     * Ghép các thân dòng OK thành MỘT câu, mỗi lời dẫn chỉ nói một lần cho một dãy liền nhau: *"Đã bật điều hoà, tắt
+     * sưởi ghế phụ, đang đóng kính lái"*.
+     *
+     * ⚠ [SOÁT chuỗi-lời-đáp 2026-09-17] lỗi *"Đã đã gửi…"*: dòng đã tự mang lời dẫn ([leadOf]) KHÔNG nhận thêm lời dẫn
+     * thứ hai — kể cả ở nhánh NHIỀU dòng ([SOÁT 1.69 · P2]). Dòng chưa có lời dẫn (tiếng Anh, câu xem-trước của các ca
+     * một-phần) nhận *"Đã "* / *"Done: "* như 2.95. Dòng ĐẦU giữ nguyên văn phần sau lời dẫn (không `decap` thừa).
+     */
+    private fun joinLed(bodies: List<String>, lang: Lang): String {
+        val default = Strings.t("Đã ", "Done: ", lang)
+        var prev: String? = null
+        return bodies.mapIndexed { idx, b ->
+            val own = leadOf(b, lang)
+            val lead = own ?: default
+            val rest = if (own != null) b.substring(own.length) else decap(b)
+            val canonical = if (own != null) b.substring(0, own.length) else lead
+            val piece = when {
+                prev.equals(lead, ignoreCase = true) -> decap(rest)
+                idx == 0 -> canonical + rest
+                else -> decap(lead) + decap(rest)
+            }
+            prev = lead
+            piece
+        }.joinToString(", ")
     }
 
     /** Cắt còn [n] từ, thêm dấu ba chấm **ký tự** (máy đọc bỏ qua) để câu không cụt giữa chừng trên màn log. */

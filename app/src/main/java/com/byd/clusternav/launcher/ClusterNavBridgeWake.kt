@@ -6,6 +6,7 @@ import com.byd.clusternav.Prefs
 import com.byd.clusternav.Lang
 import com.byd.clusternav.launcher.voice.VoiceModelStore
 import com.byd.clusternav.launcher.voice.VoiceWakeService
+import com.byd.clusternav.launcher.voice.WakeKeywordsSync
 import com.byd.clusternav.launcher.voice.WakeModelCatalog
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -86,10 +87,12 @@ private object WakeModelFetch {
         // ⚠ [ĐO xe 2026-09-21] `isReady` chỉ kiểm CÓ tệp + độ dài > 0, KHÔNG so sha. Nếu `keywords.txt` cũ (token
         // sai vocab ⇒ KWS encode fail, câu gọi không bao giờ nổ) còn nằm trên đĩa, `isReady=true` ⇒ bản mới không
         // bao giờ về. Nên: nếu ĐỦ tệp NHƯNG `keywords.txt` KHÔNG khớp ghim ⇒ xoá gói + tải lại.
+        // 2.96 R11 — so với bản ĐÓNG TRONG APK (nguồn chép thật), không phải bảng ghim: ghim ≠ APK từ 2.05 ⇒ trước đây MỌI lần
+        // nổ máy đều xoá + chép 5 MB + nạp lại bộ nghe (luật + số đo ở [WakeKeywordsSync]).
         val ready = runCatching { VoiceModelStore.isReady(app, WakeModelCatalog) }.getOrDefault(false)
-        if (ready && keywordsMatchPin(app)) return
+        if (ready && !keywordsNeedRecopy(app)) return
         if (ready) {
-            Log.i(TAG, "keywords.txt trên đĩa KHÁC bản ghim (token cũ sai vocab) — xoá gói + tải lại")
+            Log.i(TAG, "keywords.txt trên đĩa KHÁC bản đóng trong APK (token cũ sai vocab) — xoá gói + chép lại")
             runCatching { VoiceModelStore.remove(app, WakeModelCatalog) }
         }
         if (!fetching.compareAndSet(false, true)) {
@@ -142,6 +145,17 @@ private object WakeModelFetch {
             lastPercent = ((i + 1) * 100) / total
             Log.i(TAG, "chép $name (${out.length()} B) — $lastPercent%")
         }
+    }
+
+    /** Đĩa lệch bản trong APK ⇒ phải chép lại ([WakeKeywordsSync]); đọc APK hỏng ⇒ luật cũ (so ghim). */
+    private fun keywordsNeedRecopy(app: Context): Boolean {
+        val disk = runCatching {
+            java.io.File(VoiceModelStore.dir(app, WakeModelCatalog), WakeModelCatalog.KEYWORDS).takeIf { it.isFile }?.readBytes()
+        }.getOrNull()
+        val shipped = runCatching {
+            app.assets.open("${WakeModelCatalog.ASSET_DIR}/${WakeModelCatalog.KEYWORDS}").use { it.readBytes() }
+        }.getOrNull()
+        return WakeKeywordsSync.needsRecopy(disk, shipped) { keywordsMatchPin(app) }
     }
 
     /**

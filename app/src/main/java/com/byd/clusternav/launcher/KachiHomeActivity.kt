@@ -253,9 +253,10 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            // S1b (09-14) trên/dưới [Sp.L]; 2.93 HOME-EDGE-80 (owner 20/09 "trái phải bé lại còn 80%") trái/phải [Sp.EDGE_H] —
+            // 2.96 HOME-EDGE-V-GAP (owner 07/10 "sửa lại thành 13 hết"): trên/dưới = [Sp.SLOT_GAP] — đỉnh→thanh trên, thanh trên→ô,
+            // ô→thanh nút, thanh nút→đáy cùng MỘT khe (13 px ở 1,5×; trước [Sp.L] = 24 px). 2.93 HOME-EDGE-80 trái/phải [Sp.EDGE_H] —
             // MỘT lề ngang cho thanh trên + vùng ô + thanh nút (cùng khung này, không lệch cột). Vì sao: KDoc [Sp.EDGE_H].
-            setPadding(dp(Sp.EDGE_H), dp(Sp.L), dp(Sp.EDGE_H), dp(Sp.L))
+            setPadding(dp(Sp.EDGE_H), dp(Sp.SLOT_GAP), dp(Sp.EDGE_H), dp(Sp.SLOT_GAP))
         }
         // WP5 · R5.2 — bề cao thanh trên khai TƯỜNG MINH (75 % của 56dp); vì sao không `WRAP_CONTENT`: KDoc [KachiBars.HEADER_H].
         content.addView(topStrip.view, LinearLayout.LayoutParams(MATCH, dp(KachiBars.HEADER_H)))
@@ -392,7 +393,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     }
 
     override fun onResume() {
-        super.onResume(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        super.onResume(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME); HomeResumed.up()   // R18: BootHomeUp
         goImmersive(); topStrip.updateClock(); wallpaper.reload(); handler.post(tick); ensureCastBubble(bridge)
         runCatching { bridge.autoUpdateOnceIfEnabled() }   // V8 (owner 2026-09-25) tự cập nhật 1 lần/tiến trình (cổng trong cầu)
         topStrip.refreshVoicePill()   // V1 pha NGHE: mô hình có thể vừa được tải/gỡ ở một màn khác
@@ -417,7 +418,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         shellGate.onFocus(hasFocus)   // F4 — mất tiêu điểm = hộp thoại hệ thống đang ở trên ⇒ không dò chồng lên
     }
 
-    override fun onPause() { super.onPause(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE); handler.removeCallbacks(tick) }
+    override fun onPause() { super.onPause(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE); handler.removeCallbacks(tick); HomeResumed.down() }
 
     /**
      * [SOÁT Pass H2 · P2] Màn khuất ⇒ **ngưng nhịp đo ô**: mở một app toàn màn thì màn chính KHÔNG chết (view

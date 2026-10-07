@@ -109,6 +109,9 @@ object SimpleCastRuntime {
             },
             // 2.90 · R9 — "dọn cụm / trả cụm" quanh lượt đổi theme: badge của Kachi + `VM_BUBBLE_VIS` cho bản mod VietMap.
             clusterLayers = com.byd.clusternav.modules.clustercast.ClusterLayerExecutor(app),
+            // 2.96 · R13 (soát Pass 1 [P2]) — cờ freeform đọc TRONG tiến trình (0 shell) trước khi ghi; CÙNG bộ đọc với đường launcher
+            // (`FreeformSeedStore.forLauncher`). Ghi vẫn qua shell của coordinator (chuỗi byte-identical).
+            globalSettingReader = com.byd.clusternav.system.FreeformSeedStore.readGlobal(app),
         )
         // Chốt BẬT→TẮT ⇒ tiến trình trước có thể đã để projection mở trên cụm: không dọn là cụm HAI CHỦ (HUD thấy TẮT nên
         // ghi op 39 trong khi mặt chiếu cũ vẫn đứng). Xếp lên executor của coordinator (shell ở nền, không ở luồng gọi).

@@ -184,7 +184,7 @@ mà không có tác dụng).
    `local.properties` về `sdk.dir` Windows sau khi build — xem memory `clusternav-build-on-mac`).
 6. Grep xem hàm mới có call site chưa.
 7. Bump version nếu đã từng báo APK cho user.
-8. Senior review (Opus, rule global §5) + security scan trước commit (§6).
+8. Senior review (Fable 5.1 — `claude-fable-5-1`, rule global §5; owner đổi từ Opus 07/10) + security scan trước commit (§6, cũng Fable).
 9. Ghi phát hiện vào `docs/diagnostics/` và cập nhật spec.
 
 ---

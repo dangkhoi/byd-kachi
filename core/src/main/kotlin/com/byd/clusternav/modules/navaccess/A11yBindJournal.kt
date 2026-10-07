@@ -87,6 +87,17 @@ object A11yBindJournal {
         prevDeepSleepMs >= 0L && nowDeepSleepMs - prevDeepSleepMs >= thresholdMs
 
     /**
+     * 2.96 · R18 — có cần GHI lại mốc ngủ tích luỹ không. [ĐO mã] nhịp 30 s của `VoiceKeyKeepAliveService` từng ghi
+     * `SharedPreferences` MỖI nhịp (≈120 lần ghi tệp XML / giờ lái) dù giá trị chỉ đổi khi SoC vừa ngủ. Ghi khi chưa có mốc,
+     * hoặc lệch ≥ [PERSIST_STEP_MS] (lệch vài ms là nhiễu giữa hai lần đọc đồng hồ; ngưỡng ngủ dài là GIỜ ⇒ không đổi kết luận).
+     */
+    fun shouldPersistDeepSleep(prevDeepSleepMs: Long, nowDeepSleepMs: Long): Boolean =
+        prevDeepSleepMs < 0L || kotlin.math.abs(nowDeepSleepMs - prevDeepSleepMs) >= PERSIST_STEP_MS
+
+    /** Bước lệch tối thiểu để ghi lại mốc ngủ — xem [shouldPersistDeepSleep]. */
+    const val PERSIST_STEP_MS = 1_000L
+
+    /**
      * Có ghi thêm dòng mới không. Ghi khi **ĐỔI trạng thái** (đó mới là thông tin), hoặc khi đã quá
      * [heartbeatMs] kể từ dòng trước (nhịp tim, để biết máy vẫn đang theo dõi chứ không phải nhật ký chết).
      * [prevState] `null` = tệp rỗng ⇒ luôn ghi dòng đầu.

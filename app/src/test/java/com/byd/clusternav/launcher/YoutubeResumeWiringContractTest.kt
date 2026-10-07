@@ -61,8 +61,17 @@ class YoutubeResumeWiringContractTest {
         val fn = SourceRoots.body(music, "slotsAtStart: Map<String, Int> = emptyMap(),\n    ): Done {")
         order(fn, "TripMusicPlan.preexisting(pkg, before, inSlot = inSlot)", "resumer.prepare(target, music)",
             "resume.ready?.url ?: urlFor(target, pkg, music.query)", "start(pkg, id, slot0, deadlineAt, progress)",
-            "TripMusicPlan.play(url, session)", "bridge.playFromUri(pkg, p.url)", "resume.ready)", "ports.view(pkg, p.url, slot != null)",
-            "resume.ready)")
+            "TripMusicPlan.play(url, session)", "bridge.playFromUri(pkg, p.url)", "resume.ready)",
+            // 2.96 · R9 — ĐỔI GHIM có lý do: K4-VIEW đi qua `viewWhenReady` (chờ ô sống lại khi ô chưa sẵn — log xe 07/10 21:05:14).
+            "viewWhenReady(pkg, p.url, slot, deadlineAt, progress, resume.ready, target.watchFullscreenExtra)", "resume.ready)",
+            // 2.96 · R9 — cờ giữ bên lưu nhả trên MỌI lối ra (lối NOOP / dừng sớm không tới `finish`).
+            "} finally {", "resumer.close(resume)")
+        val vw = SourceRoots.body(music, "): TripMusicPlace.ViewTry {")
+        // 2.96 · R10 — toàn màn CHỈ khi phát tiếp (`ready` ≠ null); link của ô "Phát gì" đi như cũ.
+        order(vw, "val fs = if (ready != null) fullscreenExtra else null", "if (ready != null) resumer.keep()", "TripMusicPlace.viewWhenReady(", "TripMusicPlace.until(SystemClock.elapsedRealtime(), deadlineAt)",
+            "read = { ports.where(pkg) }", "stacks = ports::stacks", "ports.view(pkg, url, inSlot, fs)", "finally {", "progress(null)")
+        val close = SourceRoots.body(resume, "fun close(p: Prep) {")
+        assertTrue(close.contains("if (p.ready != null) YoutubeResumeSampler.release()"), "chỉ nhả khi prepare đã giữ")
         val v = SourceRoots.body(music, "private fun verified(")
         order(v, "if (resume != null) {", "resumer.finish(pkg, resume)", "TripStepCode.PLAYING else TripStepCode.SENT")
     }
@@ -115,6 +124,8 @@ class YoutubeResumeWiringContractTest {
             "TripMusicResume(" to "TripMusicRun.kt",
             "resumer.prepare(" to "TripMusicRun.kt",
             "resumer.finish(" to "TripMusicRun.kt",
+            "resumer.keep()" to "TripMusicRun.kt",          // 2.96 · R9
+            "resumer.close(resume)" to "TripMusicRun.kt",   // 2.96 · R9
             "bridge.seekPackage(" to "TripMusicResume.kt",
             "bridge.lives()" to "TripMusicResume.kt",
             "b.lives()" to "YoutubeResumeSampler.kt",

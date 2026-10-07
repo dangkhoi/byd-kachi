@@ -126,6 +126,7 @@
 
         <activity
             android:name=".modules.clustercast.ClusterBlackActivity"
+            android:configChanges="uiMode"
             android:exported="true"
             android:launchMode="singleInstance"
             android:taskAffinity="com.byd.clusternav.cluster"

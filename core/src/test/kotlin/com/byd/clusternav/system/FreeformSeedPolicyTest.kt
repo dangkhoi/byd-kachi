@@ -19,7 +19,11 @@ import org.junit.jupiter.api.Test
  */
 class FreeformSeedPolicyTest {
 
-    private class Recorder(initial: FreeformSeedPolicy.SeedState = FreeformSeedPolicy.SeedState.NONE) {
+    /** [reads] = stdout trả cho từng lệnh `settings get` (mặc định "" = đọc hỏng/rỗng ⇒ ghi như trước R13). */
+    private class Recorder(
+        initial: FreeformSeedPolicy.SeedState = FreeformSeedPolicy.SeedState.NONE,
+        private val reads: Map<String, String> = emptyMap(),
+    ) {
         val events = mutableListOf<String>()
         val log = mutableListOf<String>()
         private var state = initial
@@ -27,7 +31,8 @@ class FreeformSeedPolicyTest {
             override fun read() = state
             override fun commit(state: FreeformSeedPolicy.SeedState) { this@Recorder.state = state; events += "commit:${state.code}" }
         }
-        private val sh: (String) -> String = { events += "sh:$it"; "" }
+        private val sh: (String) -> String = { events += "sh:$it"; reads[it] ?: "" }
+        fun writes() = events.filter { it.startsWith("sh:settings put") }
         fun policy() = FreeformSeedPolicy(markers, sh) { log += it }
         fun state() = state
     }
@@ -72,10 +77,68 @@ class FreeformSeedPolicyTest {
         assertEquals(
             listOf(
                 "commit:1", // ★ marker SEEDED committed FIRST
+                "sh:settings get global enable_freeform_support", // R13: đọc trước — "" ⇒ ghi (fail-safe)
                 "sh:settings put global enable_freeform_support 1",
+                "sh:settings get global force_resizable_activities",
                 "sh:settings put global force_resizable_activities 1",
             ),
             r.events,
+        )
+    }
+
+    // ── 2.96 · R13 read-before-write ──────────────────────────────────────────────────────────────
+    // Khoá lỗi [ĐO log 07/10]: 4 lệnh `settings put global …freeform…/force_resizable…` MỖI lần khởi động dù cờ đã là 1.
+
+    @Test
+    fun `R13 both flags already 1 - no put is sent, marker still committed first`() {
+        val r = Recorder(
+            reads = mapOf(
+                "settings get global enable_freeform_support" to "1\n",
+                "settings get global force_resizable_activities" to "1",
+            ),
+        )
+        assertTrue(r.policy().ensureSeed())
+        assertEquals(
+            listOf("commit:1", "sh:settings get global enable_freeform_support", "sh:settings get global force_resizable_activities"),
+            r.events,
+        )
+        assertEquals(listOf(FreeformSeedPolicy.LOG_ALREADY_ON), r.log)
+    }
+
+    @Test
+    fun `R13 only the flag that is not 1 is written`() {
+        val r = Recorder(
+            reads = mapOf(
+                "settings get global enable_freeform_support" to "1",
+                "settings get global force_resizable_activities" to "null",
+            ),
+        )
+        assertTrue(r.policy().ensureSeed())
+        assertEquals(listOf("sh:settings put global force_resizable_activities 1"), r.writes())
+    }
+
+    @Test
+    fun `R13 decision - only an exact 1 counts as on, failed read writes (fail-safe)`() {
+        assertTrue(FreeformSeedPolicy.flagAlreadyOn("1"))
+        assertTrue(FreeformSeedPolicy.flagAlreadyOn(" 1\r\n"))
+        listOf(null, "", "0", "null", "10", "exit=-1", "Error: 1").forEach {
+            assertFalse(FreeformSeedPolicy.flagAlreadyOn(it), "phải ghi khi đọc được '$it'")
+        }
+    }
+
+    @Test
+    fun `R13 seedFlagsReadFirst - read failure (null) writes both byte-identical puts in order`() {
+        val sent = mutableListOf<String>()
+        val wrote = FreeformSeedPolicy.seedFlagsReadFirst(read = { sent += it; null }, write = { sent += it })
+        assertEquals(FreeformSeedPolicy.SEED_CMDS, wrote)
+        assertEquals(
+            listOf(
+                "settings get global enable_freeform_support",
+                "settings put global enable_freeform_support 1",
+                "settings get global force_resizable_activities",
+                "settings put global force_resizable_activities 1",
+            ),
+            sent,
         )
     }
 
@@ -148,6 +211,41 @@ class FreeformSeedPolicyTest {
         assertEquals(2, FreeformSeedPolicy.SeedState.USER_REMOVED.code)
         assertEquals(FreeformSeedPolicy.SeedState.SEEDED, FreeformSeedPolicy.SeedState.of(1))
         assertEquals(FreeformSeedPolicy.SeedState.NONE, FreeformSeedPolicy.SeedState.of(99)) // unknown -> NONE
+    }
+
+    // ── soát 2.96 Pass 1 [P2] — R13 với bộ đọc TRONG tiến trình: 0 lệnh shell khi cờ đã bật ─────────────
+
+    @Test
+    fun `R13 in-process reader - both 1 - marker committed, ZERO shell commands, log already-on`() {
+        val events = mutableListOf<String>()
+        val log = mutableListOf<String>()
+        val markers = object : FreeformSeedPolicy.MarkerStore {
+            override fun read() = FreeformSeedPolicy.SeedState.NONE
+            override fun commit(state: FreeformSeedPolicy.SeedState) { events += "commit:${state.code}" }
+        }
+        val values = mapOf("enable_freeform_support" to "1", "force_resizable_activities" to "1")
+        val p = FreeformSeedPolicy(markers, { events += "sh:$it"; "" }, readFlag = { values[it] }) { log += it }
+        assertTrue(p.ensureSeed())
+        assertEquals(listOf("commit:1"), events, "không một lệnh shell nào — đọc trong tiến trình")
+        assertEquals(listOf(FreeformSeedPolicy.LOG_ALREADY_ON), log)
+    }
+
+    @Test
+    fun `R13 in-process reader - absent flag written through shell, reader null never falls back to settings get`() {
+        val events = mutableListOf<String>()
+        val values = mapOf("enable_freeform_support" to null, "force_resizable_activities" to "1")
+        val p = FreeformSeedPolicy(store(FreeformSeedPolicy.SeedState.NONE), { events += it; "" }, readFlag = { values[it] })
+        assertTrue(p.ensureSeed())
+        assertEquals(listOf("settings put global enable_freeform_support 1"), events)
+    }
+
+    @Test
+    fun `R13 readerOf - keyOf inverts getCmd, shell path used only without a reader`() {
+        assertEquals("enable_freeform_support", FreeformSeedPolicy.keyOf(FreeformSeedPolicy.getCmd("enable_freeform_support")))
+        val viaShell = FreeformSeedPolicy.readerOf(null) { "shell:$it" }
+        assertEquals("shell:settings get global x", viaShell("settings get global x"))
+        val viaReader = FreeformSeedPolicy.readerOf({ key -> "mem:$key" }) { error("shell không được gọi") }
+        assertEquals("mem:x", viaReader("settings get global x"))
     }
 
     private fun store(s: FreeformSeedPolicy.SeedState) = object : FreeformSeedPolicy.MarkerStore {

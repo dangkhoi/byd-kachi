@@ -23,6 +23,25 @@ internal fun SimpleCastCoordinator.publishCastDisplay(id: Int) {
     }
 }
 
+/**
+ * Như `verifiedClusterDisplay` nhưng cho đường **HOÀN TÁC** (đóng projection / reset density): nếu chưa xác minh
+ * thì dò TƯƠI một lần thay vì bỏ luôn. (Tách THUẦN khỏi `SimpleCastCoordinator.kt` 2.96 — trần 500 dòng; thân giữ nguyên.)
+ *
+ * Vì sao ([SOÁT 2026-09-15 · P2], CLAUDE §5 "mỗi thứ đổi ra ngoài phải có đường trả lại"): `wm size/overscan/
+ * density` mà [DisplayConfigurator] đặt lên VD cụm được WM ghi vào `/data/system/display_settings.xml` theo
+ * `uniqueId` ⇒ **sống qua cả reboot**. Nếu lần dò gần nhất hụt (shell chớp) mà ta bỏ luôn bước reset thì cụm giữ
+ * override vĩnh viễn, chỉ còn `deepRescue` gỡ được. Dò tươi giữ nguyên bất biến R1/R2 (vẫn qua owner-guard, hụt
+ * thì vẫn KHÔNG đặt gì) mà tăng hẳn cơ hội hoàn tác đúng chỗ.
+ */
+internal fun SimpleCastCoordinator.undoTargetDisplay(tag: String): Int? {
+    val id = liveDisplayId
+    if (id >= 1) return id
+    val fresh = detectClusterDisplay()
+    if (fresh >= 1) return fresh
+    log("$tag: bỏ qua — dò lại vẫn không thấy VD cụm, không nhắm seed=$displayId")
+    return null
+}
+
 /** B1a — kiểu người lái chọn cho lượt mở (MỘT lần đọc; lỗi ⇒ Bo tròn, đường đang chạy). */
 internal fun SimpleCastCoordinator.desiredStyleOnce(): CastStyle = runCatching(desiredStyle).getOrDefault(CastStyle.CURVED)
 
@@ -113,22 +132,8 @@ internal fun SimpleCastCoordinator.openProjectionBody() {
         themeGuard.bindVd(vd)
         configurator.apply(vd, DisplayConfig.NORMAL_DEFAULT)
 
-        // Launch + resize black placeholder to keep projection alive.
-        // Component MUST be <installed applicationId>/<full class FQN>. The class FQN keeps the code
-        // namespace (com.byd.clusternav.*), which now DIFFERS from the applicationId (com.byd.clusternav2).
-        // A leading-dot class ('.modules...') would be resolved by am/ComponentName against the PACKAGE part
-        // (selfPackage) → 'com.byd.clusternav2.modules...ClusterBlackActivity', a class that does NOT exist
-        // (the registered component is 'com.byd.clusternav2/com.byd.clusternav.modules...ClusterBlackActivity').
-        // So spell the class in full — never relative — for correct launch under the isolated app.
-        shell.execute("am start --display $vd --windowingMode 5" +
-            " -n '$selfPackage/com.byd.clusternav.modules.clustercast.ClusterBlackActivity'")
-        Thread.sleep(1000)
-        val stackResult = shell.execute("am stack list")
-        if (stackResult.success) {
-            val taskId = CastStackParser.findTaskId(stackResult.stdout, selfPackage, vd)
-                ?: CastStackParser.findTaskId(stackResult.stdout, "ClusterBlackActivity", vd)
-            if (taskId != null) shell.execute("am task resize $taskId 0 0 1920 720")
-        }
+        // Launch + resize black placeholder to keep projection alive (chuỗi lệnh nguyên văn — `CastPlaceholder.kt`).
+        placeClusterPlaceholder(vd)
 
         // Adopt external app already on the cluster display (e.g. CP from previous session)
         val adoptResult = shell.execute("am stack list")
@@ -188,6 +193,7 @@ internal fun SimpleCastCoordinator.doRepinEscapedCastApps() {
     val probeVd = liveDisplayId.takeIf { it >= 1 } ?: detectClusterDisplay()
     if (probeVd < 1) { log("repin: display cụm chưa xác minh — bỏ lượt"); return }
     val stackOut = shell.execute("am stack list").let { if (it.success) it.stdout else null }
+    com.byd.clusternav.system.StackListSnapshot.record(stackOut)   // 2.96 R18 — nhịp đo ô dùng lại bản đọc này (KDoc ở đó)
     if (stackOut == null) { log("repin: không đọc được am stack list — bỏ lượt"); return }
     val now = System.currentTimeMillis()
     for (target in expected) {

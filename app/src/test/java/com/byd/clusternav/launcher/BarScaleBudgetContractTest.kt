@@ -88,13 +88,22 @@ class BarScaleBudgetContractTest {
         }
     }
 
+    /**
+     * 2.96 DOCK-ICON-EVEN-GAP — ĐỔI GHIM có lý do: owner 07/10 chọn khe giữa hai icon = khe icon→mép thanh (phương án 1), BỎ sàn
+     * 48 dp của khối lối tắt khi thanh ≠ 100 %. Bài giờ khoá: (1) ≠ 100 % khe = SHORTCUT_DOCK_SLOT co theo % và khe giữa icon =
+     * 1,5 × khoảng chừa ngang trục (owner 07/10 "rộng ra 1,5 lần"; ±2 px làm tròn); (2) 100 % vẫn đúng 52 dp như 2.88.
+     */
     @Test
-    fun `d - khe loi tat du 48dp that`() {
+    fun `d - khe loi tat - can doi khi co, 52dp o 100`() {
         bases.forEach { base ->
             val touch = px(KachiSpace.TOUCH, base * (1.0f / 160))
-            positions.forEach { p ->
-                val slot = maxOf(px(KachiBars.SHORTCUT_CELL, density(base, p)), touch)   // = shortcutSlotPx
-                assertTrue(slot >= touch, "@$base dpi $p %")
+            positions.filterNot(BarScale::isIdentity).forEach { p ->
+                val d = density(base, p)
+                val slot = px(KachiBars.SHORTCUT_DOCK_SLOT, d)                             // = shortcutSlotPx (≠ 100 %)
+                val icon = px(KachiBars.SHORTCUT_DOCK_ICON, d)
+                val between = slot - icon
+                val toEdge = (px(KachiBars.DOCK_THICK, d) - icon) / 2
+                assertTrue(kotlin.math.abs(2 * between - 3 * toEdge) <= 4, "@$base dpi $p %: giữa $between px, tới mép $toEdge px (phải ≈ 1,5×)")
             }
             assertEquals(px(KachiBars.SHORTCUT_CELL, base * (1.0f / 160)),
                 maxOf(px(KachiBars.SHORTCUT_CELL, density(base, 100)), touch), "100 % ⇒ khe đúng 52 dp như 2.88")
@@ -129,8 +138,8 @@ class BarScaleBudgetContractTest {
             val touch = px(KachiSpace.TOUCH, base * (1.0f / 160))
             positions.filterNot(BarScale::isIdentity).forEach { p ->
                 val d = density(base, p)
-                val slot = maxOf(px(KachiBars.SHORTCUT_CELL, d), touch)                     // = shortcutSlotPx
-                val icon = px(KachiBars.SHORTCUT_ICON, d)
+                val slot = px(KachiBars.SHORTCUT_DOCK_SLOT, d)                              // = shortcutSlotPx (≠ 100 %)
+                val icon = minOf(px(KachiBars.SHORTCUT_DOCK_ICON, d), slot - 2 * px(KachiSpace.XS, d))   // = dockIconPx
                 val pad = (slot - icon) / 2
                 val along = slot - 2 * pad                                                  // lề chỉ dọc trục
                 val horizontal = minOf(along, px(KachiBars.DOCK_THICK, d))                  // ngang trục = trọn bề dày

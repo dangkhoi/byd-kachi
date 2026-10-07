@@ -69,9 +69,21 @@ class ClusterBlackActivity : Activity() {
     }
 
     /**
+     * 2.96 · CLUSTER-BACKDROP-NIGHT-LIVE — ROM BYD KHÔNG dựng lại Activity khi đổi sáng/tối [ĐO dexdump `services.jar` xe 07/10:
+     * `ActivityRecord.shouldRelaunchLocked` OR thêm `0x200` (UI_MODE) vào cờ "app tự xử lý" cho mọi gói ngoài
+     * `isBydUiModeWhiteListApp`] ⇒ placeholder mở lúc ngày giữ màu ngày suốt đêm [ĐO xe 07/10 18:32: uimode 0x21, điểm ảnh #B5C6D4].
+     * Khai `configChanges="uiMode"` ⇒ A10 gọi hàm này cả trong lượt đổi cấu hình hệ thống (`ActivityThread.java:5462-5481`, cờ đã
+     * khai chứa thay đổi), sau khi `Resources.getSystem()` đã nhận cấu hình mới (`ActivityThread.java:5599` trước vòng gọi `:5622`).
+     * AOSP gốc cũng đi đường này (không dựng lại placeholder giữ chiếu nữa) — một đường cho cả hai.
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        backdrop?.let { paintBackdrop(it, "đổi cấu hình") }
+    }
+
+    /**
      * 2.94 · CLUSTER-BACKDROP-DAY: sáng/tối của HỆ THỐNG xe (không qua ThemeMode.wrap của Kachi — cụm theo xe, [ĐO 07/10]);
-     * đổi chế độ ⇒ Activity dựng lại (không khai configChanges; A10 `ActivityRecord.java:3291-3334`, Activity đang STOPPED dưới
-     * app chiếu dựng lại khi hiện ra — `:3202`) ⇒ màu mới. `Resources.getSystem()` nhận cấu hình toàn cục ở
+     * đổi chế độ ⇒ [onConfigurationChanged] tô lại (2.96 — ROM BYD không dựng lại Activity) ⇒ màu mới. `Resources.getSystem()` nhận cấu hình toàn cục ở
      * `ResourcesManager.java:1028` (`updateSystemConfiguration`). Luật màu thuần ở :core ClusterBackdrop.
      */
     private fun paintBackdrop(view: View, why: String) {

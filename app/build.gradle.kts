@@ -104,8 +104,8 @@ android {
         // 2.93.1 (196) — bản thử nền màn chiếu theo sáng/tối, CÀI TAY trên xe owner 07/10, không đăng kênh.
         // 2.94 (197) — Thẳng rộng hình trụ cho camera gương, sau/trước = Nắn thẳng · nền màn chiếu theo sáng/tối của xe ·
         // YouTube phát tiếp đúng bài + giây (spec kachi-294-plan).
-        versionCode = 198
-        versionName = "2.95"
+        versionCode = 199
+        versionName = "2.96"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

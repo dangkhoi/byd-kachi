@@ -1,6 +1,6 @@
 # RUNBOOK — Mod VietMap: bong bóng dẫn đường lên CỤM (làm lại cho mọi bản VietMap)
 
-> **Trạng thái**: Runbook (thủ tục lặp lại) · **Cập nhật**: 2026-10-06 (viết lại toàn bộ: bản mod hiện hành 3.4.3 v2 —
+> **Trạng thái**: Runbook (thủ tục lặp lại) · **Cập nhật**: 2026-10-07 (thêm 3.4.0 v2 — §12; owner 07/10: 3.4.3 vẽ bóng trên cụm hỏng ⇒ dùng tạm 3.4.0 theo cách v2) · trước đó 2026-10-06 (viết lại toàn bộ: bản mod hiện hành 3.4.3 v2 —
 > lệnh ẩn/hiện `VM_BUBBLE_VIS`; đường nhanh + đường đầy đủ; 3.4.0 dồn vào §10 Lịch sử) · trước đó 2026-10-05 (§11 cũ — port
 > 3.4.3), 2026-08-28 (3.4.0) · **Loại**: Runbook · **Owner**: dangkhoi
 >
@@ -31,6 +31,7 @@
 
 | Bản | Có gì | Trạng thái |
 |---|---|---|
+| **3.4.0 v2** (dựng 07/10) | = 3.4.3 v2 (P1–P7) port sang 3.4.0; versionCode 179094173 để `install -r` đè 3.4.3 v2 | Máy ảo: `install -r` đè 3.4.3 v2 OK, giữ prefs, service + 2 receiver chạy · **[ĐO xe 07/10] đã cài đè lên xe owner** (`firstInstallTime` giữ, appop vẽ đè `allow`) · bóng trên cụm 🚗 owner đang dùng — chưa có báo lỗi |
 | **3.4.3 v2 — HIỆN HÀNH** (dựng 06/10) | = v1 + receiver `VM_BUBBLE_VIS` (ẩn/hiện, §6.4) + wrapper `O()/x()`, `t()/l()`, `c()` | Máy ảo smoke ok (mở app, service chạy, không `VerifyError`) · **ẩn/hiện trên xe 🚗 CHƯA ĐO** |
 | 3.4.3 v1 (05–06/10) | chọn màn cụm theo TÊN (`ModClusterDisplay`) + DisplayListener dời bóng + `posrx` (`VM_BUBBLE_POS`) + MiMi theo màn cụm + dời `Lc/o;` sang `classes2` | **[ĐO xe 06/10] bóng lên cụm ✅** — 3 cửa sổ `TYPE_APPLICATION_OVERLAY` của `vn.vietmap.live` trên màn ảo cụm, thường trực kể cả khi tắt chiếu (`oncar-2026-10-06-cluster-rect.md` F5) |
 | 3.4.0 mod (08/2026) | redirect `getDisplay(1)/(2)` + `posrx` | Lịch sử §10 — cách chọn màn KHÔNG còn dùng được trên xe có ô Kachi |
@@ -424,3 +425,44 @@ Giữ lại sự thật còn dùng; cách làm cụ thể đã thay bằng §5�
 ## Giới hạn
 Thử nghiệm sở thích, KHÔNG cam kết an toàn lái xe. Mod phá chữ ký gốc VietMap (cài như app tự ký — không nhận cập nhật từ cửa hàng;
 mỗi bản VietMap mới phải mod lại theo §5). Không phát hành APK mod công khai; khoá `<KS>` và mật khẩu chỉ owner giữ.
+
+---
+
+## 12. 3.4.0 v2 (07/10) — port bộ vá v2 sang 3.4.0
+
+Đọc bởi người gộp; KHÔNG chứa đường dẫn máy/mật khẩu — thay bằng ký hiệu chỗ giữ của runbook trước khi dán.
+
+### §0 Trạng thái — thêm hàng
+| **3.4.0 v2** (dựng 07/10) | = 3.4.3 v2 (P1–P7) port sang 3.4.0; versionCode nâng 179094173 để `install -r` đè 3.4.3 v2 | Máy ảo (kachi_play, API 29): `install -r` đè 3.4.3 v2 OK, mở app sạch, giữ prefs (theme + đã qua onboarding), `VMBluetoothService` chạy, 2 receiver đăng ký + nhận broadcast, không `VerifyError`/crash · **bóng trên cụm 🚗 CHƯA ĐO** |
+- Lý do: owner 07/10 — 3.4.3 vẽ bóng trên cụm hỏng (cụt đáy, mất vòng tốc độ) ⇒ dùng tạm 3.4.0 theo cách v2.
+
+### §3 Nguồn — sự thật 3.4.0
+- [ĐO] Hai xapk APKPure 3.4.0 (bản thường và "(1)") **giống từng byte** (sha256 `36fc1e89…`), chỉ có `config.armeabi_v7a` ⇒ KHÔNG dùng (xe arm64-only).
+- [ĐO] xapk APKCombo 3.4.0 (sha256 `50a1c049…`) có đủ `config.arm64_v8a` + `config.vi` + `hdpi`… ; base giống từng byte base APKPure (sha256 `5cbfcffd…`); mọi split dùng ký cert Google `684cedb4…` ⇒ không phải mượn split nào.
+- Bộ split gộp (giống 3.4.3): `base` + `config.arm64_v8a` + `config.en` + `config.vi` + `config.mdpi` + `config.hdpi`.
+- APKEditor: tải bản phát hành chính thức V1.4.9 từ GitHub REAndroid (jar sha256 `a9cd40df…`).
+
+### §5.2 Bảng target — cột 3.4.0 [ĐO, đối chiếu smali 3.4.0 vs 3.4.3 gốc]
+- `VMBluetoothService` 3.4.0 vs 3.4.3 gốc: chỉ khác 2 dòng — `b.m()`→`b.i()` (khởi tạo) và `b.x()`→`b.t()` (ẩn, trong onDestroy). Field `s:b`, `t:Lta/c;` giống nhau.
+- `Lta/c;` (lốp): giống 3.4.3 trừ 2 hằng resource id (`0x7f0a02f9/02fa` → `0x7f0a02e0/02e1`). Hiện `t()`, gỡ `l()` — **cùng tên**.
+- `Lc/o;` (MiMi plugin): **giống từng byte** 3.4.3; ở 3.4.0 cũng nằm `smali/c.1/o.smali` (classes.dex). `Lb/b;` (view MiMi) chỉ khác 1 resource id.
+- `Lvn/vietmap/live/b;` 3.4.0: hiện `G()`, ẩn `t()` (gỡ vùng kéo-đóng `n` + bóng `d`), thêm vùng kéo-đóng = static `d(Lb;)V` (3.4.3: `g(Lb;)V`), getter LP `q()`, setter vị trí `E(II)V`, getter WM `s()`. 3.4.0 KHÔNG có cửa sổ chạm vô hình (`R()`/`b$a` của 3.4.3) — ẩn chỉ cần gỡ `n` + `d`.
+- Tên thân gốc sau wrapper GIỮ như 3.4.3 (`modO`/`modX`/`modT`/`modL`/`modC`/`modHide`) để `ModVis`, `modMove` dùng nguyên văn: ở 3.4.0 `modO` = thân gốc `G()`, `modX` = thân gốc `t()`.
+- Lớp mod chỉ đổi 3 tham chiếu: `posrx` `u()→q()`, `L(II)→E(II)`; `ModClusterDisplay` `w()→s()`. `ModVis`, `visrx` nguyên văn.
+
+### §5.4 Method id
+- [ĐO dexdump] 3.4.0 universal gốc: classes 65 531 / classes2 52 727. Sau mod (dời `Lc/o;` sang `smali_classes2/c/o.smali`): **65 523 / 52 778**. (`smali_classes2` 3.4.0 không có thư mục `C/` ⇒ không đụng va chạm hoa/thường trên macOS.)
+
+### Kiểm diff-of-diffs (cách làm khuyên dùng khi port giữa 2 bản)
+`apktool d -r` base 3.4.3 gốc ⇒ `diff(3.4.3 gốc → 3.4.3 v2)` so với `diff(3.4.0 gốc → 3.4.0 v2)` theo từng tệp: VMBluetoothService, `ta/c`, `c/o` **trùng khớp 100 %**; `b.smali` chỉ khác vị trí method (nội dung tương đương); lớp mod mới chỉ khác 3 tên ở trên.
+
+### §8.1 Đường nâng cấp đè 3.4.3 v2 — [ĐO máy ảo]
+- Cùng khoá mod (cert `a8f4a1e6…`), versionCode **179094173** (> 179094172 của 3.4.3 v2), versionName giữ `3.4.0` (không đặt hậu tố — tránh rủi ro Dart parse phiên bản).
+- `adb install -r` đè 3.4.3 v2: `Success`; `firstInstallTime` giữ nguyên (không gỡ), appop SYSTEM_ALERT_WINDOW còn `allow`.
+- Mở 3.4.0 trên dữ liệu 3.4.3: không `Can't downgrade database`/`SQLiteException`/crash trong 45 s đầu; không quay lại onboarding, theme hồng đã chọn ở 3.4.3 còn nguyên ⇒ shared prefs đọc được.
+- [CHƯA BIẾT] đăng nhập còn không (máy ảo không đăng nhập được) — token Flutter thường nằm trong prefs/Keystore theo uid, `install -r` giữ cả hai ⇒ [SUY] còn. CSDL mở lười (chỉ khi dùng tính năng) chưa chạm hết.
+- Sau này quay lại 3.4.3 (hoặc bản mới hơn): versionCode phải > 179094173 (vd đặt 179094174 trong apktool.yml) nếu muốn `install -r`.
+
+### Máy ảo — ghi chú
+- kachi_play chạy `-read-only -port 5558`, `pm grant` quyền vị trí/micro + `deviceidle whitelist` thì `VMBluetoothService` mới khởi động (lần mở đầu kẹt ở hộp xin quyền).
+- Bóng chỉ hiện khi đang dẫn đường (cần đăng nhập) ⇒ trên máy ảo chỉ kiểm được: receiver đăng ký (`dumpsys activity broadcasts`: ReceiverList pid VietMap có 2 filter VIS/POS) + `Deliver` vào đúng ReceiverList đó + tiến trình sống qua `show=false/true`, thiếu extra, `x=-1`.

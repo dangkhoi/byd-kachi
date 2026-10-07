@@ -3,9 +3,12 @@ package com.byd.clusternav
 import android.content.Context
 import android.util.Log
 import com.byd.clusternav.launcher.AutostartGate
+import com.byd.clusternav.launcher.BootHomeUp
 import com.byd.clusternav.launcher.DefaultHome
 import com.byd.clusternav.launcher.FreeformLaunch
 import com.byd.clusternav.launcher.HomeActivityCmd
+import com.byd.clusternav.launcher.HomeGuardPolicy
+import com.byd.clusternav.launcher.HomeResumed
 import com.byd.clusternav.launcher.LauncherBootPlan
 import com.byd.clusternav.launcher.WorkspacePrefs
 import com.byd.clusternav.system.FreeformSeedStore
@@ -93,7 +96,7 @@ object KachiAutostart {
 
                 // (1) Seed the freeform boot flags via the ONE sanctioned writer (respects FF_USER_REMOVED).
                 val seeded = FreeformSeedStore.forLauncher(app) { Log.i(TAG, it) }.ensureSeed()
-                Log.i(TAG, "freeform seed ensured (wrote=$seeded — false = user removed / already handled by marker)")
+                Log.i(TAG, "freeform seed ensured (handled=$seeded — false = user removed / already handled by marker; ghi hay không: dòng ngay trên)")   // 2.96 QA [P3]: trả về là ĐÃ XỬ LÝ, không phải ĐÃ GHI
 
                 // (2) S5 — Reassert Kachi as the HOME activity ONLY if the user opted into "keep home on boot"
                 //     (default OFF). Setting the WHOLE CAR's default HOME on every boot is a system-state change and
@@ -105,7 +108,9 @@ object KachiAutostart {
                 //     chính"; lối vào HOME là alias tắt sẵn nên sau nâng cấp/boot phải BẬT alias trước rồi mới
                 //     `set-home-activity` (khôi phục lựa chọn đã bày tỏ, idempotent — không phải đổi state mới).
                 val prefs = WorkspacePrefs(app)
-                if (prefs.keepHomeOnBoot() || prefs.homeChosen()) {
+                //     2.96 · R8: lượt này (~6 s) THUA lượt giành HOME ~17 s của launcher khác [ĐO xe 07/10] — `HomeGuard`
+                //     (nhịp tiến trình) giữ tiếp suốt chuyến, cùng điều kiện [HomeGuardPolicy.wantsKachiHome].
+                if (HomeGuardPolicy.wantsKachiHome(prefs.homeChosen(), prefs.keepHomeOnBoot())) {
                     val enabled = DefaultHome.enableHomeEntry(app)
                     Log.i(TAG, "home entry (alias) enabled=$enabled — reasserting HOME (keepOnBoot=${prefs.keepHomeOnBoot()} chosen=${prefs.homeChosen()})")
                     ensureHomeActivity(seam, comp)
@@ -118,8 +123,13 @@ object KachiAutostart {
 
                 // (4) Ensure the HOME Activity is up so it restores + mounts the saved slots (Activity does the VD mounting).
                 //     Covers MY_PACKAGE_REPLACED (installer kills us, does not relaunch). No --display ⇒ gate ALLOWs.
-                seam("am start -n $launchComp")
-                Log.i(TAG, "requested HOME up ($launchComp) — Activity restores + mounts saved slots")
+                //     2.96 · R18: màn chính đã RESUMED trong tiến trình này ⇒ bỏ lệnh thừa trên kênh shell ([BootHomeUp], KDoc ở đó).
+                if (BootHomeUp.needsStart(HomeResumed.count())) {
+                    seam("am start -n $launchComp")
+                    Log.i(TAG, "requested HOME up ($launchComp) — Activity restores + mounts saved slots")
+                } else {
+                    Log.i(TAG, "HOME already resumed in-process — skip am start (R18)")
+                }
 
                 // (5) W-WAKE — bật FGS "Hey Kachi" nếu công tắc ON (sync tự stopSelf khi OFF). Mặc định TẮT.
                 //     Kèm THỬ LẠI lượt tải model KWS: cú gạt công tắc có thể đã hỏng vì không mạng, và nếu không

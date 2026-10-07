@@ -192,6 +192,13 @@ internal class ShortcutIconsView @JvmOverloads constructor(
     /** Cỡ icon đang vẽ: lưới đã khớp ⇒ cỡ khớp; khối thanh nút không bao giờ khớp ⇒ luôn [baseIconDp]. */
     private fun iconSizeDp(): Int = if (fittedDp > 0) fittedDp else baseIconDp()
 
+    /**
+     * 2.96 DOCK-ICON-HALF-GAP — cỡ icon (px) của khối THANH NÚT: [Bars.SHORTCUT_DOCK_ICON] (nửa phần chừa ngang trục cũ), kẹp trong
+     * khe theo trục thanh trừ [Sp.XS] mỗi bên (hai icon không dính; khe [cellPx] không đổi), không nhỏ hơn cỡ cũ [iconSizeDp].
+     */
+    private fun dockIconPx(): Int =
+        minOf(dpi(context, Bars.SHORTCUT_DOCK_ICON), cellPx() - 2 * dpi(context, Sp.XS)).coerceAtLeast(dpi(context, iconSizeDp()))
+
     /** Khe vuông; B3 [fillAcross] ⇒ ngang trục lấp trọn bề dày thanh (icon vẫn đúng cỡ: lề dọc trục + FIT_CENTER). */
     private fun cellLp() = when {
         !fillAcross -> LayoutParams(cellPx(), cellPx())
@@ -202,7 +209,7 @@ internal class ShortcutIconsView @JvmOverloads constructor(
     private fun cell(sc: AppShortcut): ImageView = ImageView(context).apply {
         // Lưới: lề do ShortcutGridLayout đặt theo phép khớp (nửa khe) — khe cố định chỉ còn ở khối thanh nút.
         if (!grid) {
-            val pad = (cellPx() - dpi(context, iconSizeDp())) / 2
+            val pad = (cellPx() - dockIconPx()) / 2
             // Review 2.89 Pass 2 · vietmap-dock-r1-8: [fillAcross] ⇒ ngang trục là TRỌN bề dày thanh, không phải khe vuông —
             // lề vuông ở đó cắt hộp hình (50 % ngang @240 dpi: 69 − 2·19 = 31 px < icon 33 px). Lề chỉ dọc trục; FIT_CENTER canh
             // giữa ngang trục.
@@ -335,5 +342,9 @@ internal fun shortcutStripLength(ctx: Context, n: Int): Int =
  * KHE một app của khối thanh nút (px) = `max(SHORTCUT_CELL, 48 dp THẬT)`. 2.89 · B3: [ctx] là `Context` co/giãn của thanh
  * ⇒ khe co theo % nhưng không dưới đích chạm thật (`DockScaleContext.touchFloorPx`); ở 100 % đúng `SHORTCUT_CELL` (52 ≥ 48)
  * như 2.88. MỘT phép cho [ShortcutIconsView.cellPx] và [shortcutStripLength] (luật "MỘT phép bề dài" ở trên).
+ * 2.96 DOCK-ICON-EVEN-GAP: thanh ≠ 100 % ⇒ khe = [KachiBars.SHORTCUT_DOCK_SLOT] (icon + khoảng chừa ngang trục, KHÔNG sàn 48 dp —
+ * owner 07/10 chọn cân đối hơn đích chạm); 100 % không đổi.
  */
-internal fun shortcutSlotPx(ctx: Context): Int = maxOf(dpi(ctx, Bars.SHORTCUT_CELL), DockScaleContext.touchFloorPx(ctx))
+internal fun shortcutSlotPx(ctx: Context): Int =
+    if (DockScaleContext.isScaled(ctx)) dpi(ctx, Bars.SHORTCUT_DOCK_SLOT)   // 2.96 DOCK-ICON-EVEN-GAP — owner 07/10 chọn bỏ sàn 48 dp
+    else maxOf(dpi(ctx, Bars.SHORTCUT_CELL), DockScaleContext.touchFloorPx(ctx))

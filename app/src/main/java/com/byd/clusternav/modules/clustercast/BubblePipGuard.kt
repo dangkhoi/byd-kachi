@@ -26,7 +26,15 @@ import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
  *     duyệt bản đồ dùng chung trong lúc luồng kia còn ghi · mỗi gói trả lại đúng MỘT lần · một lệnh hỏng ở gói này
  *     không nuốt luôn gói sau (trước đây một ngoại lệ ở gói đầu bỏ mặc gói còn lại ở `deny`).
  */
-internal class BubblePipGuard {
+internal class BubblePipGuard(
+    /**
+     * 2.96 R11 — gói có cài trên máy không (PackageManager, 0 lệnh shell). [ĐO log xe 07/10] mỗi lần tiến trình bật, 5 lệnh
+     * `appops get` đi CHUNG kênh shell nối tiếp đúng lúc lượt tự chiếu mở (21:04:42.571→~43.9, 0,18–0,37 s/lệnh), trong đó
+     * gói chưa cài trả `exit=-1` (`app.revanced.android.apps.maps`) — hỏi chế độ của gói không có là việc vô ích. Mặc định
+     * `true` = hành vi cũ (hỏi đủ 5 gói).
+     */
+    private val installed: (String) -> Boolean = { true },
+) {
 
     private val previousModes = java.util.concurrent.ConcurrentHashMap<String, String>()
 
@@ -36,7 +44,7 @@ internal class BubblePipGuard {
      */
     fun block(coordinator: SimpleCastCoordinator) {
         Thread({
-            PIP_BLOCK_PACKAGES.forEach { pkg ->
+            targets(installed).forEach { pkg ->
                 val prev = queryMode(coordinator, pkg)
                 if (prev != null && prev != "deny") {
                     previousModes[pkg] = prev
@@ -69,8 +77,17 @@ internal class BubblePipGuard {
         return match?.groupValues?.get(1) ?: "allow" // không đặt bao giờ ⇒ mặc định của nền tảng là allow
     }
 
-    private companion object {
-        const val TAG = "ClusterCastBubble"
+    internal companion object {
+        private const val TAG = "ClusterCastBubble"
+
+        /**
+         * Gói cần chặn PiP lượt này: chỉ gói ĐÃ CÀI, giữ nguyên thứ tự bảng. Hỏi hỏng (ném) ⇒ coi như có cài — fail-open về
+         * hành vi cũ (thà một lệnh `appops get` thừa còn hơn bỏ sót chặn PiP của GMaps/YouTube). [restore] không đi qua đây:
+         * nó trả lại đúng các gói đã ghi ở [previousModes].
+         */
+        fun targets(installed: (String) -> Boolean): List<String> =
+            PIP_BLOCK_PACKAGES.filter { pkg -> runCatching { installed(pkg) }.getOrDefault(true) }
+
         val PIP_BLOCK_PACKAGES = listOf(
             "com.google.android.apps.maps",
             "app.revanced.android.apps.maps",

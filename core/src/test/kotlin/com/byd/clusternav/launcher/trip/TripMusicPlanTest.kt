@@ -150,6 +150,25 @@ class TripMusicPlanTest {
         assertThrows(IllegalArgumentException::class.java) { TripMusicPlan.viewCmd(283, url, "a;reboot") }
     }
 
+    /**
+     * 2.96 · R10 [ĐO máy ảo 07/10, YouTube 21.35.442]: VIEW watch + `--ez force_fullscreen true` ⇒ toàn màn (cả trong màn ảo ô
+     * của Kachi, task ở lại ô). Extra là DỮ LIỆU của bảng (`VoiceAppTarget.watchFullscreenExtra`), không theo tên gói; chỉ
+     * YouTube đã đo. Lệnh vẫn đúng display / gói, extra chỉ thêm đuôi; tên lạ ⇒ từ chối trước khi tới shell.
+     */
+    @Test
+    fun `K4-VIEW toan man - mot extra boolean cua bang, khong doi pham vi lenh`() {
+        val url = "https://www.youtube.com/watch?v=9bZkp7q19f0"
+        assertEquals(
+            "am start --display 283 -a android.intent.action.VIEW -d '$url' -p $pkg --ez force_fullscreen true",
+            TripMusicPlan.viewCmd(283, url, pkg, "force_fullscreen"),
+        )
+        assertEquals(TripMusicPlan.viewCmd(283, url, pkg), TripMusicPlan.viewCmd(283, url, pkg, null), "không extra = byte cũ")
+        assertThrows(IllegalArgumentException::class.java) { TripMusicPlan.viewCmd(283, url, pkg, "x true; reboot") }
+        assertThrows(IllegalArgumentException::class.java) { TripMusicPlan.viewCmd(283, url, pkg, "") }
+        assertEquals("force_fullscreen", VoiceAppTargets.byKey(VoiceAppTargets.YOUTUBE)?.watchFullscreenExtra)
+        assertNull(VoiceAppTargets.byKey(VoiceAppTargets.YT_MUSIC)?.watchFullscreenExtra, "YT Music chưa đo ⇒ không gửi")
+    }
+
     /** L4 · D3(iii) — câu gợi ý "cần link" là DỮ LIỆU của kiểu, không phải nhánh lúc chạy (lúc chạy quyết bằng phiên đo). */
     @Test
     fun `kieu khong phat tiep - YouTube can link, YT Music tiep tuc duoc`() {

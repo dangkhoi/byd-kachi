@@ -19,6 +19,9 @@ import com.byd.clusternav.modules.clustercast.simplified.BubbleGesturePlanner
 import com.byd.clusternav.modules.clustercast.simplified.BubblePresence
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
+import com.byd.clusternav.system.PackageQueries
+import com.byd.clusternav.system.ScreenInteractive
+import com.byd.clusternav.system.StandbyCadence
 
 /**
  * Presentation-only overlay host for the canonical Cast model. ONE app-icon glyph, three gestures.
@@ -58,7 +61,7 @@ class FloatingBubbleService : Service() {
      * Chặn PiP của GMaps/YouTube trong lúc dịch vụ sống, trả lại lúc chết — thân ở [BubblePipGuard] (tách ở WP6 vì
      * trần 500 dòng; khối đó không đọc trường nào của dịch vụ nên là chỗ cắt an toàn nhất).
      */
-    private val pipGuard = BubblePipGuard()
+    private val pipGuard by lazy { BubblePipGuard { pkg -> PackageQueries.packageInfo(packageManager, pkg) != null } }
 
     /**
      * Bộ **tự chiếu khi nổ máy** — driver DUY NHẤT (R1); thân ở [BubbleAutostart] (tách ở WP6 vì trần 500 dòng).
@@ -94,15 +97,18 @@ class FloatingBubbleService : Service() {
             // [refreshBubbleState] để cửa sổ vừa dựng lại có nhãn trạng thái đúng ngay trong cùng nhịp.
             syncBubbleWindow()
             refreshBubbleState()
+            // 2.96 · R18 — màn đọc được là TẮT (standby) ⇒ nhịp 2 s → 10 s và lượt dò repin ≥ 30 s ([StandbyCadence]);
+            // [ĐO log xe 07/10] standby 8 h vẫn `am stack list` mỗi 4 s mỗi khi SoC thức. Màn bật/không đọc được = y như cũ.
+            val interactive = ScreenInteractive.read(applicationContext)
             // TRIAL (2026-08-14): re-pin a cast app that an external trigger (e.g. Kiki starting GMaps
             // navigation) pulled off the cluster. Cheap-gated + serial-executed inside the coordinator.
-            runCatching { SimpleCastRuntime.coordinator(applicationContext).repinEscapedCastApps() }
+            runCatching { SimpleCastRuntime.coordinator(applicationContext).repinEscapedCastApps(interactive) }
             // Item 4: re-áp vị trí bong bóng VietMap ĐÃ LƯU mỗi nhịp (nếu VietMap-mod dựng lại bong bóng lúc
             // đang lái / ClusterNav chạy nền) → luôn TỰ về đúng vị trí owner đã chỉnh. send() tự gate Cast ON.
             runCatching { com.byd.clusternav.VmOverlayPosition.applyOnOpen(applicationContext) }
             // 2.90 · R8 — giữ bóng VietMap ĐÚNG công tắc (mod dựng lại bóng giữa chuyến ⇒ lượt gửi lặp ẩn lại); cổng 15 s trong hàm.
             runCatching { com.byd.clusternav.VmBubbleVisibility.keepHidden(applicationContext) }
-            if (!destroyed) handler.postDelayed(this, REFRESH_INTERVAL_MS)
+            if (!destroyed) handler.postDelayed(this, StandbyCadence.bubbleRefreshMs(interactive))
         }
     }
 
@@ -272,11 +278,23 @@ class FloatingBubbleService : Service() {
         }
     }
 
+    /** Trạng thái đã vẽ lần gần nhất — chỉ để biết nhịp này có ĐỔI gì không (không phải nguồn sự thật; CLAUDE.md §5). */
+    private var paintedState: SimpleCastState? = null
+
+    /**
+     * Vẽ lại nhãn theo trạng thái chiếu; sáng bong bóng CHỈ khi trạng thái ĐỔI (hoặc lần vẽ đầu). Soát 2.96 Pass 1 [P2]
+     * (phát hiện phụ R18): nhịp [refresh] 2 s gọi đây mỗi lượt và lượt nào cũng `wakeBubble()` ⇒ bộ hẹn mờ 2,5 s bị gỡ trước khi
+     * nổ ⇒ bong bóng đứng sáng 100 % suốt chuyến, không bao giờ về [IDLE_ALPHA] (và mỗi nhịp một `updateViewLayout`).
+     * Chạm tay / mở menu vẫn sáng qua `onWake`/[onBubbleLongPress] như cũ.
+     */
     private fun refreshBubbleState() {
         if (destroyed || bubble == null) return
         val state = SimpleCastRuntime.coordinator(applicationContext).state
         renderer.refreshFromState(state)
-        wakeBubble()
+        if (state != paintedState) {
+            paintedState = state
+            wakeBubble()
+        }
     }
 
     private fun toast(message: String) {
@@ -390,7 +408,7 @@ class FloatingBubbleService : Service() {
 
     companion object {
         private const val TAG = "ClusterCastBubble"
-        private const val REFRESH_INTERVAL_MS = 2_000L
+
         private const val EDGE_MARGIN_DP = 28
         private const val IDLE_ALPHA = 0.35f
         private const val ACTIVE_ALPHA = 1.0f

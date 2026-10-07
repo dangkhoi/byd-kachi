@@ -23,7 +23,7 @@ package com.byd.clusternav.launcher.voice
  * xem KDoc `VoiceModelStore.staging` (đặt trong `kws/` thì bước đổi tên cuối tự xoá mất chính nó).
  *
  * ## Số ghim — [ĐO] 2026-09-19 trên chính 5 tệp trong `voice/kws/` của repo
- * `shasum -a 256` + `stat -f%z`. Tổng **5 253 782 byte ≈ 5,0 MB** ⇒ tải được qua 4G trong cabin, khác hẳn 74 MB
+ * `shasum -a 256` + `stat -f%z`. Tổng **5 254 149 byte ≈ 5,0 MB** (2.96 R16) ⇒ tải được qua 4G trong cabin, khác hẳn 74 MB
  * của mô hình NGHE. Đây là gói **int8** của `sherpa-onnx-kws-zipformer-gigaspeech-3.3M`.
  *
  * `keywords.txt` là câu gọi **ĐÃ TOKENIZE** theo `tokens.txt` của chính model này (nợ dữ liệu ghi ở KDoc
@@ -71,8 +71,8 @@ object WakeModelCatalog : VoicePack {
             "eae9da0c7e1e6c6a3f4cc42d167899c388f6c6701b94cb96320e4f55df79624c"),
         pinned("tokens.txt", 5_006L,
             "fd2ded4050a55d2b1578870ba8697d02371980217806b7558bd0a5cc60f3ba53"),
-        pinned("keywords.txt", 650L,
-            "d40dff2e54f54cdb08b4b20594d1f8b90b141849ce5c0d1efbac05c3d7a5f348"),
+        pinned("keywords.txt", 619L,
+            "92739249a9c1051b0fa0df5749e5f57697633b29ce390fcf338ad52502819260"),
     )
 
     /**
@@ -82,7 +82,7 @@ object WakeModelCatalog : VoicePack {
      * `sha256`, hay dán lẫn hai tệp) làm **đỏ một bài canh** thay vì lặng lẽ tải về một gói khác. Bài canh so
      * hai vế; lệch là đỏ.
      */
-    override val totalBytes: Long = 5254180L
+    override val totalBytes: Long = 5254149L
 
     /**
      * Được phép tải qua mạng: cả 5 tệp ghim đủ sha256 + bytes.

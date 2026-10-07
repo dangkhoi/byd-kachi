@@ -216,6 +216,24 @@ object KachiBars {
     /** Icon trong khe lối tắt = [KachiSpace.ICON_XL] (44): chừa 4 dp mỗi bên để hai icon cạnh nhau không dính. */
     const val SHORTCUT_ICON = KachiSpace.ICON_XL
 
+    /**
+     * 2.96 DOCK-ICON-HALF-GAP (owner 07/10 đo máy ảo: thanh 69 px, icon ~35 px, chừa 17 px trên/dưới — *"chỉ cần chừa 1/2 khoảng
+     * trống hiện tại"*, rồi *"hơi sát quá, giảm lại chút"*) — icon lối tắt TRÊN THANH NÚT = icon cũ + một phần ba phần chừa cũ:
+     * `44 + (93 − 44)/3` = **60** dp ở 100 % (co theo cỡ thanh như mọi số của thanh) ⇒ khoảng chừa ngang trục còn ~2/3 (17 → 12 px
+     * ở thanh 69 px; nửa = 8 px owner thấy sát). Theo trục thanh vẫn kẹp trong khe
+     * [SHORTCUT_CELL] trừ [KachiSpace.XS] mỗi bên (`ShortcutIconsView.dockIconPx`) để hai icon không dính — khe không đổi.
+     */
+    const val SHORTCUT_DOCK_ICON = SHORTCUT_ICON + (DOCK_THICK - SHORTCUT_ICON) / 3
+
+    /**
+     * 2.96 DOCK-ICON-EVEN-GAP (owner 07/10: *"khoảng cách giữa 2 icon cũng phải bằng khoảng cách từ icon lên top"*, chọn phương
+     * án 1 — bỏ sàn đích chạm 48 dp của khối lối tắt khi thanh CO/GIÃN; rồi *"các icon đứng hơi sát nhau, cho nó rộng ra 1,5
+     * lần"*) — khe một app = icon + 1,5 × khoảng chừa ngang trục: `60 + (93 − 60) × 3/4` = **84** dp ở 100 % (co theo cỡ thanh) ⇒
+     * khe giữa hai icon = 1,5 × khe icon→mép thanh (≈ 18 px so với 12 px ở thanh 69 px). Chỉ dùng khi thanh ≠ 100 %
+     * (`shortcutSlotPx`); 100 % giữ khe vuông [SHORTCUT_CELL] như cũ (khối nằm trong ô 73 dp — khe 84 sẽ bị cắt).
+     */
+    const val SHORTCUT_DOCK_SLOT = SHORTCUT_DOCK_ICON + (DOCK_THICK - SHORTCUT_DOCK_ICON) * 3 / 4
+
     /** Lề hai đầu khối lối tắt — cùng bậc lề trong của thanh ([DOCK_PAD]). */
     const val SHORTCUT_PAD = KachiSpace.XS
 

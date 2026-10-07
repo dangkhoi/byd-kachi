@@ -48,6 +48,9 @@ internal object DockScaleContext {
      */
     fun touchFloorPx(ctx: Context): Int = dpi(unscaled(ctx), Sp.TOUCH)
 
+    /** `true` ⇔ [ctx] là Context co/giãn của thanh (cỡ ≠ 100 %, [wrap] đã bọc). 2.96 DOCK-ICON-EVEN-GAP. */
+    fun isScaled(ctx: Context): Boolean = scaledOf(ctx) != null
+
     private fun scaledOf(ctx: Context): Scaled? {
         var c: Context? = ctx
         while (c is ContextWrapper) {

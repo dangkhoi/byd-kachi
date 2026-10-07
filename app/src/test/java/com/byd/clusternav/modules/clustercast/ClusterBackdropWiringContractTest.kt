@@ -33,6 +33,19 @@ class ClusterBackdropWiringContractTest {
         assertTrue(SourceRoots.body(black, "override fun onNewIntent(").contains("paintBackdrop(it,"), "onNewIntent phải tô lại")
     }
 
+    /**
+     * 2.96 · CLUSTER-BACKDROP-NIGHT-LIVE — ROM BYD không dựng lại Activity khi đổi uiMode [ĐO dexdump `services.jar` xe 07/10] ⇒ nền
+     * phải tô lại trong `onConfigurationChanged`, và manifest phải khai `uiMode` (không khai thì A10 không gọi hàm này trong lượt
+     * đổi cấu hình hệ thống). Thử ĐỎ: bỏ `configChanges` hoặc bỏ lời gọi tô lại.
+     */
+    @Test
+    fun `doi sang toi khi dang chieu - to lai ngay, khong cho dung lai Activity`() {
+        assertTrue(SourceRoots.body(black, "override fun onConfigurationChanged(").contains("paintBackdrop(it,"), "phải tô lại khi đổi cấu hình")
+        val manifest = SourceRoots.codeOf("src/main/AndroidManifest.xml")
+        val decl = manifest.substringAfter("android:name=\".modules.clustercast.ClusterBlackActivity\"").substringBefore("/>")
+        assertTrue(decl.contains("android:configChanges=\"uiMode\""), decl)
+    }
+
     @Test
     fun `kieu khung doc tu phien, khong dung coordinator`() {
         val rt = SourceRoots.codeOf("src/main/java/com/byd/clusternav/modules/clustercast/simplified/SimpleCastRuntime.kt")

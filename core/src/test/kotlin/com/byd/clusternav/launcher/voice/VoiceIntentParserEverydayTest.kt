@@ -182,10 +182,10 @@ class VoiceIntentParserEverydayTest {
 
     @Test fun `cau phan hoi goi ten nut bang nhan cua bo dang ky`() {
         Strings.current = Lang.VI
-        assertEquals("Bật Đèn đọc", VoiceReply.preview(VoiceIntent.Control("readl", 1)))
-        assertEquals("Đặt Nhiệt độ = 22", VoiceReply.preview(VoiceIntent.Control("temp", 22)))
+        assertEquals("Bật đèn đọc", VoiceReply.preview(VoiceIntent.Control("readl", 1)))
+        assertEquals("Đặt nhiệt độ 22", VoiceReply.preview(VoiceIntent.Control("temp", 22)))
         Strings.current = Lang.EN
-        assertEquals("Turn on Reading light", VoiceReply.preview(VoiceIntent.Control("readl", 1)))
+        assertEquals("Turn on reading light", VoiceReply.preview(VoiceIntent.Control("readl", 1)))
         assertTrue(VoiceReply.unknown(VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, "abc")).contains("abc"))
     }
 

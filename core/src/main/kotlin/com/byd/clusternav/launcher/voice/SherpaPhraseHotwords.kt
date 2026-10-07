@@ -126,6 +126,9 @@ object SherpaPhraseHotwords {
         out.addAll(VoiceSlotPhrases.SPOKEN)
         // VOICE-PROFILE-NAME-PHONETIC (2026-09-26) — tên hồ sơ, xem KDoc [VoiceProfileNames.phrases].
         out.addAll(VoiceProfileNames.phrases(profiles))
+        // 2.96 R12 — câu KẾT THÚC phiên (*"TẠM BIỆT"* · *"CẢM ƠN"* · *"GÚT BAI"*): owner 07/10 *"đang không nghe được rõ"*.
+        // Chỉ THÊM dòng (cụm ≥ 2 từ, có dấu, viết tay) — xem KDoc [VoiceEndWords.HOTWORDS].
+        out.addAll(VoiceEndWords.HOTWORDS)
         return out
     }
 

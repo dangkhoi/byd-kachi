@@ -206,7 +206,8 @@ class I18nTemplateIdentityTest {
         at(l) {
             val def = ControlRegistry.byId("readl")!!
             assertEquals(
-                old(l, "Tăng ", "Increase ") + def.displayLabel + " " + old(l, "2 nấc", "by 2"),
+                // 2.96 R12 — nhãn đứng sau động từ hạ chữ đầu ("Tăng đèn đọc"), phần còn lại y từng byte.
+                old(l, "Tăng ", "Increase ") + VoiceFeedbackPhrase.decap(def.displayLabel) + " " + old(l, "2 nấc", "by 2"),
                 VoiceReply.preview(VoiceIntent.Control("readl", relative = 2)),
             )
             assertTrue(VoiceReply.preview(VoiceIntent.OpenApp(label, slot = 3)).contains(old(l, " vào ô 3", " in slot 3")))

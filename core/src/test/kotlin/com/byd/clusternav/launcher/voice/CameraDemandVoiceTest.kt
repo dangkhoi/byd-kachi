@@ -143,11 +143,11 @@ class CameraDemandVoiceTest {
     @Test fun `cau tra loi noi dung viec khong hua sai`() {
         assertEquals("Camera sau", VoiceReply.preview(VoiceIntent.Launcher(LauncherActions.CAM_REAR), Lang.VI))
         assertEquals("Rear camera", VoiceReply.preview(VoiceIntent.Launcher(LauncherActions.CAM_REAR), Lang.EN))
-        assertEquals("Tắt Camera sau", VoiceReply.preview(VoiceIntent.Launcher(LauncherActions.CAM_REAR, off = true), Lang.VI))
-        assertEquals("Turn off Rear camera", VoiceReply.preview(VoiceIntent.Launcher(LauncherActions.CAM_REAR, off = true), Lang.EN))
+        assertEquals("Tắt camera sau", VoiceReply.preview(VoiceIntent.Launcher(LauncherActions.CAM_REAR, off = true), Lang.VI))
+        assertEquals("Turn off rear camera", VoiceReply.preview(VoiceIntent.Launcher(LauncherActions.CAM_REAR, off = true), Lang.EN))
         assertEquals("Tắt camera", VoiceReply.preview(VoiceIntent.Launcher(LauncherActions.CAM_OFF), Lang.VI))
         assertEquals("Camera off", VoiceReply.preview(VoiceIntent.Launcher(LauncherActions.CAM_OFF), Lang.EN))
-        assertEquals("Mở Cài đặt", VoiceReply.preview(VoiceIntent.Launcher(LauncherActions.SETTINGS), Lang.VI), "việc khác giữ *Mở*")
+        assertEquals("Mở cài đặt", VoiceReply.preview(VoiceIntent.Launcher(LauncherActions.SETTINGS), Lang.VI), "việc khác giữ *Mở*")
         assertEquals("Launcher(launcher_cam_left tắt)", VoiceDecision.describe(listOf(VoiceIntent.Launcher(LauncherActions.CAM_LEFT, off = true))))
     }
 

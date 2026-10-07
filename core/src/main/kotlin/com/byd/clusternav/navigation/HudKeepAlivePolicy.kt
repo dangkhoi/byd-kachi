@@ -83,6 +83,13 @@ class HudKeepAlivePolicy(
         hasFrame && nowMs - lastRealPushAtMs > maxAgeMs
     }
 
+    /**
+     * 2.96 · R18 — nhịp còn việc gì không: chưa có / đã nhả frame ⇒ `false` ⇒ owner HUỶ nhịp (re-arm ở lần đẩy THẬT kế tiếp).
+     * [ĐO mã] trước đây nhịp 250 ms chạy MÃI sau khi bật làn cụm, kể cả khi không có frame nào (standby, không dẫn đường) —
+     * 4 lần thức luồng mỗi giây cho một phép so khoá.
+     */
+    fun hasFrame(): Boolean = synchronized(lock) { hasFrame }
+
     /** Chu kỳ tick khuyến nghị cho scheduler của owner (ms). */
     fun intervalMs(): Long = intervalMs
 

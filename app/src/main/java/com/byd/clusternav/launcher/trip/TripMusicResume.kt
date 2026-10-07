@@ -77,6 +77,15 @@ internal class TripMusicResume(
 
     private fun released(p: Prep): Prep = p.also { YoutubeResumeSampler.release() }
 
+    /** 2.96 · R9 — gia hạn cờ giữ trước một lượt chờ dài (chờ ô sống lại trước khi giao link). */
+    fun keep() = YoutubeResumeSampler.hold()
+
+    /**
+     * 2.96 · R9 — lối ra của bước nhạc: [prepare] đã giữ ([Prep.ready] ≠ `null`) ⇒ nhả, kể cả lối NOOP / dừng sớm không tới
+     * [finish] (cũ: cờ treo tới trần [YoutubeResumeSampler.HOLD_MAX_MS]). Gọi lại sau [finish] = vô hại.
+     */
+    fun close(p: Prep) { if (p.ready != null) YoutubeResumeSampler.release() }
+
     private companion object {
         /** [ĐOÁN] ≈ 45 s: tải trang + video từ mạng xe (đường VIEW đã chờ 20 s) + một quảng cáo đầu video không bỏ qua được. */
         const val RESUME_WAIT_TRIES = 45

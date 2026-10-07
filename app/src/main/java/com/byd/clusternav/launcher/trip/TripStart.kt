@@ -328,7 +328,7 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
             return StackParse.parse(runCatching { sh(BehindHomePlan.LIST_CMD) }.getOrDefault("")).takeIf { it.isNotEmpty() }
         }
 
-        override fun view(pkg: String, url: String, inSlot: Boolean): BehindHomeSequence.Outcome? {
+        override fun view(pkg: String, url: String, inSlot: Boolean, fullscreenExtra: String?): BehindHomeSequence.Outcome? {
             // Ảnh chụp ô MỚI lúc giao link (review 287 [P2]): ảnh đầu chuyến có thể chụp TRƯỚC khi ô của app nhạc mở xong ⇒
             // app ở ô KHÔNG BAO GIỜ dàn qua chỗ khác (kéo task khỏi ô của nó); ô chưa có màn ảo ⇒ 0 lệnh.
             val h = live()
@@ -336,13 +336,13 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
             // A2: app ngoài ô mà đang ở ô 7 ⇒ CHÍNH màn ảo đỗ (`ViewRoute.Parked`) — K4-VIEW lên màn ảo khác là dời task = mất nhạc.
             val route = TripMusicPlan.viewRoute(inSlot, stages.firstOrNull { it.pkg == pkg }?.vd, ParkedApps.vdOf(pkg))
             if (route == TripMusicPlan.ViewRoute.SlotNotReady) return null
-            val k4: (Int) -> String = { vd -> TripMusicPlan.viewCmd(vd, url, pkg) }
+            val k4: (Int) -> String = { vd -> TripMusicPlan.viewCmd(vd, url, pkg, fullscreenExtra) }
             // behaviour-5: K4-VIEW vào ô / ô 7 (`TripMusicView`) không dựng giữ chỗ ⇒ không chịu công tắc tắt BEHIND-HOME.
             val anchor = route !is TripMusicPlan.ViewRoute.Slot && route !is TripMusicPlan.ViewRoute.Parked
             return await(pkg) { done ->
                 h.behindChain("view X=$pkg", { kit ->
-                    if (route is TripMusicPlan.ViewRoute.Slot) viewInSlot(kit, pkg, route.vd, url)
-                    else if (route is TripMusicPlan.ViewRoute.Parked) viewInSlot(kit, pkg, route.vd, url)
+                    if (route is TripMusicPlan.ViewRoute.Slot) viewInSlot(kit, pkg, route.vd, url, fullscreenExtra)
+                    else if (route is TripMusicPlan.ViewRoute.Parked) viewInSlot(kit, pkg, route.vd, url, fullscreenExtra)
                     else BehindHomePlan.stageFor(stages, pkg).let { st ->
                         if (st.hidden) kit.seq.startBehindHidden(pkg, kit.hidden, view = k4) else kit.seq.startBehind(pkg, st, view = k4)
                     }
@@ -362,9 +362,9 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
     }
 
     /** K4-VIEW vào ô của app ([TripMusicView]) — kết quả đổi sang dạng chung của bên thi hành (chỉ để log + bộ đếm). */
-    private fun viewInSlot(kit: BehindHomeRunner.Kit, pkg: String, vd: Int, url: String): BehindHomeSequence.Outcome {
+    private fun viewInSlot(kit: BehindHomeRunner.Kit, pkg: String, vd: Int, url: String, fullscreenExtra: String?): BehindHomeSequence.Outcome {
         val marks = BehindMarksStore(kit.app)
-        val o = TripMusicView(kit.sh, AccessibilityRebind.GO_HOME_UNLESS_CAMERA, homeComps, { id, p -> marks.add(id, p) }, sleep).inSlot(pkg, vd, url)
+        val o = TripMusicView(kit.sh, AccessibilityRebind.GO_HOME_UNLESS_CAMERA, homeComps, { id, p -> marks.add(id, p) }, sleep).inSlot(pkg, vd, url, fullscreenExtra)
         val r = when (o.result) {
             TripMusicView.Result.STAYED, TripMusicView.Result.RETURNED -> BehindHomeSequence.Result.MOVED   // app ở ô: không phải lùi
             TripMusicView.Result.BEHIND -> BehindHomeSequence.Result.X_FRONT_HOME_RESTORED

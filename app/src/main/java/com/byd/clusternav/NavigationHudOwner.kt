@@ -169,6 +169,12 @@ class NavigationHudOwner(private val appContext: Context) : AutoCloseable {
 
     /** Nhịp keep-alive: quá TRẦN TUỔI → nhả frame cũ (clear); còn hạn mà stale ≥ interval → re-assert (bypass dedup). */
     private fun keepAliveTick() {
+        // 2.96 · R18 — hết frame (chưa có / đã nhả) ⇒ huỷ nhịp; lần đẩy THẬT kế tiếp `armKeepAlive()` (DELIVERY, Lỗ 3) dựng lại.
+        // Kiểm + huỷ TRONG `keepAliveLock`: `onFrameWritten` chạy TRƯỚC `armKeepAlive` (cùng khoá) ⇒ frame mới hoặc đã thấy
+        // ở đây (không huỷ), hoặc tới sau và tự dựng lại nhịp — không có ca frame mới mất nhịp.
+        synchronized(keepAliveLock) {
+            if (!keepAlive.hasFrame()) { keepAliveTask?.cancel(false); keepAliveTask = null; return }
+        }
         runCatching {
             val now = SystemClock.elapsedRealtime()
             when {

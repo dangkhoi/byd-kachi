@@ -38,6 +38,11 @@ class VoiceOpenTurnCasesTest {
             "cụm động từ NAV trọn vẹn của VoiceGrammar.VERBS mà **chưa có điểm đến**, nên nó đúng là vế dở và " +
             "chờ thêm ở đây là ĐÚNG ý OQ9 (người nói *\"dẫn đường … ⟨ngừng để nghĩ⟩ … tới Bitexco\"*). Ca này " +
             "không có ý định nào bị đổi: hết cửa sổ mà không ai nói tiếp thì nó vẫn ra `Unknown` như hôm nay.",
+        // 2.96 R12 — hai ca `end-neg` (t125/t126): động từ trơn KHÔNG đối tượng, cố ý KHÔNG là câu kết thúc
+        // (KDoc VoiceEndWords "Cố ý KHÔNG có"). Chúng đúng là vế dở (*"tắt … ⟨ngừng⟩ … đèn đọc"*) — chờ thêm là ĐÚNG;
+        // không ai nói tiếp thì vẫn ra `Unknown` như kỳ vọng của bộ ca.
+        "tắt đi" to "ca t125 — động từ trơn chưa có đối tượng; kỳ vọng bộ ca = Unknown, không phải EndSession.",
+        "đóng đi" to "ca t126 — động từ trơn chưa có đối tượng; kỳ vọng bộ ca = Unknown, không phải EndSession.",
     )
 
     private fun repoText(rel: String): String {

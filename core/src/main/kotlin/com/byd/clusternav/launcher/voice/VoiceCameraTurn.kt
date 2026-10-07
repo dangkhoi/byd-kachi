@@ -53,10 +53,11 @@ object VoiceCameraTurn {
         val name = VoiceReply.labelOf(i.id, lang)
         val opening = op is CameraDemand.Op.Toggle || op is CameraDemand.Op.Open
         fun act(open: Boolean): String = if (op == CameraDemand.Op.CloseAll) name
-        else (if (open) Strings.t("Mở ", "Open ", lang) else Strings.t("Tắt ", "Turn off ", lang)) + name
+        else (if (open) Strings.t("Mở ", "Open ", lang) else Strings.t("Tắt ", "Turn off ", lang)) + VoiceReplyPreview.mid(name)
+        // 2.96 R12 — câu QUÁ KHỨ (*"Đã mở camera sau"*): controller đã báo điều ĐÃ xảy ra ([Outcome]), không chỉ đã gửi.
         return when (outcome) {
-            Outcome.OPENED -> Answer.Say("✓ " + act(open = true))
-            Outcome.CLOSED -> Answer.Say("✓ " + act(open = false))
+            Outcome.OPENED -> Answer.Say("✓ " + VoiceReplyDone.past(act(open = true), lang))
+            Outcome.CLOSED -> Answer.Say("✓ " + VoiceReplyDone.past(act(open = false), lang))
             Outcome.NOTHING_TO_CLOSE -> LauncherActions.offFallback(i.id)?.let { Answer.Rerun(VoiceIntent.Control(it, 0)) }
                 ?: Answer.Say(
                     if (op == CameraDemand.Op.CloseAll) Strings.t("Không có camera nào đang mở", "No camera is open", lang)

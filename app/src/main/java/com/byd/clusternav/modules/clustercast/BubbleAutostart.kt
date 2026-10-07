@@ -3,6 +3,8 @@ package com.byd.clusternav.modules.clustercast
 import android.content.Context
 import android.os.Handler
 import android.util.Log
+import com.byd.clusternav.KachiReadyLog
+import com.byd.clusternav.TatMayCastHold
 import com.byd.clusternav.modules.clustercast.simplified.AppMover
 import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
@@ -11,6 +13,7 @@ import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
 import com.byd.clusternav.modules.clustercast.simplified.ThemeGapReopen
 import com.byd.clusternav.modules.clustercast.simplified.themeGapRetryMs
+import com.byd.clusternav.modules.navaccess.TatMayCastHoldPlan
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -62,6 +65,7 @@ internal class BubbleAutostart(
     private val open = object : Runnable {
         override fun run() {
             if (isDestroyed() || dispatched.get()) return
+            if (holdForTatMayHeal()) return
             val coordinator = SimpleCastRuntime.coordinator(app)
             val st = coordinator.state
             // Review 2.89 Pass 2 · whole-r1-5: lượt trước bị cổng theme DỪNG mà khoảng 15 s giữa hai lần đổi theme còn chạy ⇒ thử
@@ -79,6 +83,29 @@ internal class BubbleAutostart(
             }
             if (++openAttempts < OPEN_MAX_ATTEMPTS && !dispatched.get()) handler.postDelayed(this, OPEN_RETRY_MS)
         }
+    }
+
+    /** Đã ghi dòng `cast-hold … -> WAIT` của tiến trình này chưa (một dòng mở + một dòng thả cho buổi xe đo). */
+    private val holdLogged = AtomicBoolean(false)
+
+    /**
+     * 2.96 R11 · TAT-MAY-CAST-HOLD — tiến trình bật lúc màn TẮT: lượt chữa phím lớp 1 chưa kết luận (hoặc đã bắn force-stop)
+     * ⇒ CHƯA mở chiếu, hỏi lại sau [TatMayCastHold.holdMs] (trần cứng — luật + số đo ở [TatMayCastHoldPlan]). Không tính vào
+     * [openAttempts]. `true` = đã hẹn lượt sau, bên gọi dừng.
+     */
+    private fun holdForTatMayHeal(): Boolean {
+        val hold = TatMayCastHold.holdMs(app)
+        if (hold > 0L) {
+            if (holdLogged.compareAndSet(false, true)) {
+                KachiReadyLog.line("cast-hold ${TatMayCastHold.verdict(app)} cap=${TatMayCastHoldPlan.CAP_MS} -> WAIT")
+            }
+            handler.postDelayed(open, hold)
+            return true
+        }
+        if (holdLogged.compareAndSet(true, false)) {
+            KachiReadyLog.line("cast-hold held=${TatMayCastHold.heldMs()} -> ${TatMayCastHold.verdict(app)}")
+        }
+        return false
     }
 
     /**

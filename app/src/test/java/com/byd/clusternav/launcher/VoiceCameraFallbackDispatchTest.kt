@@ -70,14 +70,14 @@ class VoiceCameraFallbackDispatchTest {
         assertEquals(listOf<CameraDemand.Op>(CameraDemand.Op.CloseAll), r.ops, "hỏi camera theo yêu cầu TRƯỚC")
         assertEquals(listOf("toggle:cam:false"), r.port.fired, "rồi mới rơi về nút Camera 360 — đúng một lệnh TẮT")
         assertEquals(1, r.said.size, "${r.said}")
-        assertTrue(r.said.single().startsWith("✓ Tắt Camera 360"), "câu trả lời của nút ấy (≤ 2.92), không ✓ giả: ${r.said}")
+        assertTrue(r.said.single().startsWith("✓ Đã tắt camera 360"), "câu trả lời của nút ấy (≤ 2.92), không ✓ giả: ${r.said}")
     }
 
     @Test fun `tat camera tran, co camera dang mo - tat no, khong cham Camera 360`() {
         val r = Rig { _, done -> done(Outcome.CLOSED) }
         r.dispatcher.submit("tắt cam")
         assertEquals(emptyList<String>(), r.port.fired, "Camera 360 của xe KHÔNG bị đụng")
-        assertEquals(listOf("✓ Tắt camera"), r.said)
+        assertEquals(listOf("✓ Đã tắt camera"), r.said)
     }
 
     @Test fun `khong toi duoc controller - noi chua lam duoc, khong cham Camera 360`() {
@@ -98,10 +98,10 @@ class VoiceCameraFallbackDispatchTest {
     @Test fun `cau mo noi dung chieu da xay ra`() {
         val opened = Rig { _, done -> done(Outcome.OPENED) }
         opened.dispatcher.submit("mở cam sau")
-        assertEquals(listOf("✓ Mở Camera sau"), opened.said)
+        assertEquals(listOf("✓ Đã mở camera sau"), opened.said)
         val closed = Rig { _, done -> done(Outcome.CLOSED) }
         closed.dispatcher.submit("mở cam sau")
-        assertEquals(listOf("✓ Tắt Camera sau"), closed.said, "nói câu mở lần hai ⇒ đã TẮT — nói đúng thế")
+        assertEquals(listOf("✓ Đã tắt camera sau"), closed.said, "nói câu mở lần hai ⇒ đã TẮT — nói đúng thế")
     }
 
     /** `:wake`: kết quả về SAU (broadcast có thứ tự) — vế sau của câu ghép CHỜ, không ghi xen vào; về hai lần ⇒ một lần. */

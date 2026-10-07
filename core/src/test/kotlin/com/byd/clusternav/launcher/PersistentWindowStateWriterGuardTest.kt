@@ -67,10 +67,8 @@ class PersistentWindowStateWriterGuardTest {
             setOf(
                 // ✅ SANCTIONED single writer — :core system. SEED_CMDS / UNSEED_CMDS.
                 "FreeformSeedPolicy.kt",
-                // ⏳ DEFERRED — :core cast, LIVE SimpleCastCoordinator seed. Marker-LESS by design; routing it
-                //    through the policy would ADD marker discipline = behaviour change, unverifiable this session.
-                //    TODO(on-car): consolidate into FreeformSeedPolicy after cluster E2E verify.
-                "CastGeometryController.kt",
+                // 2.96 · R13: CastGeometryController.ensureFreeformFlags now routes through the pure
+                //    FreeformSeedPolicy.seedFlagsReadFirst (still marker-LESS) ⇒ no longer a direct writer (pin removed).
                 // ⏳ DEFERRED — :core carexec, T10 probe/operator catalog TEMPLATE (not a runtime writer).
                 //    TODO(on-car): fold restore.globals template onto FreeformSeedPolicy after cluster E2E verify.
                 "CarExecClusterProjectionCatalog.kt",

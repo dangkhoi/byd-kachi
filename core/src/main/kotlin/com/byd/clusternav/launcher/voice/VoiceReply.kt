@@ -69,11 +69,21 @@ object VoiceReply {
         is VoiceIntent.Unknown -> unknown(i, lang)
     }
 
-    /** Việc đã làm xong. */
-    fun done(i: VoiceIntent, lang: Lang = Strings.current): String = "✓ " + preview(i, lang) + unverified(i, lang)
+    /**
+     * Việc đã làm xong — câu QUÁ KHỨ thuận miệng (*"✓ Đã tắt sưởi ghế phụ"*; bộ phận mô-tơ chưa xác nhận: *"✓ Đang đóng
+     * kính lái"*) — 2.96 R12, xem [VoiceReplyDone].
+     */
+    fun done(i: VoiceIntent, lang: Lang = Strings.current): String =
+        "✓ " + VoiceReplyDone.body(i, lang, confirmed = false) + unverified(i, lang)
 
-    /** Req2 (owner 2026-09-24) — câu tạm biệt ngắn khi kết thúc phiên voice. */
-    fun bye(lang: Lang = Strings.current): String = Strings.t("Tạm biệt", "Bye", lang)
+    /**
+     * Đầu câu cho các ca chỉ làm được MỘT PHẦN (mở được app nhưng chưa chuyển điểm đến / chưa có phiên nhạc): giữ
+     * câu xem-trước như 2.95, KHÔNG dùng câu quá khứ của [done] — *"Đã phát nhạc — chưa có phiên nhạc nào"* là tự mâu thuẫn.
+     */
+    private fun partial(i: VoiceIntent, lang: Lang): String = "✓ " + preview(i, lang) + unverified(i, lang)
+
+    /** Req2 (owner 2026-09-24) — câu tạm biệt ngắn khi kết thúc phiên voice; 2.96 R12: thêm *"hẹn gặp lại"* cho tự nhiên. */
+    fun bye(lang: Lang = Strings.current): String = Strings.t("Tạm biệt, hẹn gặp lại", "Bye, see you", lang)
 
     /** Câu ĐỌC khi lượt nghe không ra chữ nào — tấm chữ giữ `R.string` của màn; xem [VoiceReplyUnknown.nothingHeard]. */
     fun nothingHeard(lang: Lang = Strings.current): String = VoiceReplyUnknown.nothingHeard(lang)
@@ -90,7 +100,7 @@ object VoiceReply {
      * ⇒ Chỉ dùng khi lượt đọc lại **khớp**. Đọc không được (`null`) ⇒ chỗ gọi giữ [done] (còn nguyên đuôi hedge —
      * đó là sự thành thật); đọc được mà **lệch** ⇒ [failed] (xe không nhận lệnh). Ba nhánh, ba câu khác nhau.
      */
-    fun doneConfirmed(i: VoiceIntent, lang: Lang = Strings.current): String = "✓ " + preview(i, lang)
+    fun doneConfirmed(i: VoiceIntent, lang: Lang = Strings.current): String = "✓ " + VoiceReplyDone.body(i, lang, confirmed = true)
 
     /**
      * ═══ C (owner test xe 2026-09-19) · TỪ CHỐI MỞ CỐP/CA-PÔ KHI XE ĐANG CHẠY ═════════════════════════════════
@@ -142,7 +152,9 @@ object VoiceReply {
      * định *"đã đặt mức 0"*: [ĐO xe 2026-09-20] lệnh mức 0 bị xe **bỏ qua**, nên câu ấy sẽ là một lời nói dối.
      * Không chữ tự nhiên nào để dịch (nhãn đã theo ngôn ngữ qua [labelOf]; `AUTO` là bốn chữ của màn AC gốc).
      */
-    fun autoLevel(id: String, lang: Lang = Strings.current): String = "✓ " + labelOf(id, lang) + ": " + ClimateAuto.AUTO
+    fun autoLevel(id: String, lang: Lang = Strings.current): String =
+        // 2.96 R12 — *"Đã để gió ở AUTO"* (đúng cho cả hai ca: vừa bật và vốn đã ở AUTO); 2.95 đọc ra *"Đã gió: AUTO"*.
+        "✓ " + Strings.fIn(lang, "Đã để {0} ở {1}", "{0}: {1}", VoiceReplyPreview.mid(labelOf(id, lang)), ClimateAuto.AUTO)
 
     /**
      * Đuôi *"chưa kiểm trên xe"* cho việc mà mức bằng chứng chưa phải [com.byd.clusternav.launcher.EvidenceTier.PROVEN].
@@ -221,7 +233,7 @@ object VoiceReply {
      * [ĐO] RE Kiki §8.2: điểm đến thuộc từ vựng mở; đường đẩy chữ sang Kiki (`text_command`) mới ở mức **[SUY]**,
      * phải chốt bằng phép đo K2 trên xe (CLAUDE.md §14). Hứa hơn thế là hứa một thứ chưa ai đo.
      */
-    fun navOpenedWithoutDestination(i: VoiceIntent, lang: Lang = Strings.current): String = done(i, lang) + " — " + Strings.t(
+    fun navOpenedWithoutDestination(i: VoiceIntent, lang: Lang = Strings.current): String = partial(i, lang) + " — " + Strings.t(
         "đã mở app dẫn đường; nhập lại điểm đến trong app (đường chuyển giao chưa đo trên xe)",
         "navigation app opened; enter the destination there (hand-over not measured on-car yet)",
         lang,
@@ -268,7 +280,7 @@ object VoiceReply {
      * trả lời *"chưa có phiên nhạc nào"* và **không app nào lên màn**. Mở app là phần chắc chắn làm được; còn
      * *"tự phát"* thì [ĐO] máy ảo 2026-09-14 cho thấy app dừng ở nút Play, nên câu này nói đúng thế.
      */
-    fun musicAppOpened(i: VoiceIntent, target: VoiceAppTarget, lang: Lang = Strings.current): String = done(i, lang) + " — " + Strings.fIn(
+    fun musicAppOpened(i: VoiceIntent, target: VoiceAppTarget, lang: Lang = Strings.current): String = partial(i, lang) + " — " + Strings.fIn(
         lang,
         "đã mở {0}; chưa có phiên nhạc nào để điều khiển — bấm Play trong app",
         "opened {0}; no music session to control yet — press Play in the app", target.label,
@@ -350,7 +362,7 @@ object VoiceReply {
      * [ĐO] VietMap Live 3.4.0 (máy ảo 2026-09-14): không đăng ký `geo:`, `vietmaplive://` không mang tham số.
      * Đây là một kết luận đã đo, nên câu trả lời nói thẳng *"gõ tay trong app"* thay vì hứa lần sau sẽ được.
      */
-    fun navOpenedNoHandover(i: VoiceIntent, target: VoiceAppTarget, lang: Lang = Strings.current): String = done(i, lang) + " — " + Strings.fIn(
+    fun navOpenedNoHandover(i: VoiceIntent, target: VoiceAppTarget, lang: Lang = Strings.current): String = partial(i, lang) + " — " + Strings.fIn(
         lang,
         "{0} chưa nhận điểm đến bằng giọng; gõ tay trong app",
         "{0} takes no destination from outside; type it in the app", target.label,
@@ -364,7 +376,7 @@ object VoiceReply {
      * lại có thể được). Dùng chung một câu là đổ lỗi cho app về một lần mất sóng — và người lái sẽ thôi không
      * bao giờ thử lại nữa.
      */
-    fun navNoPlace(i: VoiceIntent, target: VoiceAppTarget, lang: Lang = Strings.current): String = done(i, lang) + " — " + Strings.fIn(
+    fun navNoPlace(i: VoiceIntent, target: VoiceAppTarget, lang: Lang = Strings.current): String = partial(i, lang) + " — " + Strings.fIn(
         lang,
         "chưa tra được điểm đến (mạng?), mới chỉ mở {0}",
         "could not look the place up (network?) — only opened {0}", target.label,
@@ -409,7 +421,7 @@ object VoiceReply {
      * ở đây lỗi **sửa được bằng một việc cụ thể**: thêm toạ độ cho mục đó (dán từ app bản đồ). Câu chung chung
      * *"app này không nhận điểm đến"* thì đúng về cơ chế nhưng bỏ mất đúng phần người dùng làm được.
      */
-    fun placeNeedsCoords(i: VoiceIntent, target: VoiceAppTarget, lang: Lang = Strings.current): String = done(i, lang) + " — " + Strings.fIn(
+    fun placeNeedsCoords(i: VoiceIntent, target: VoiceAppTarget, lang: Lang = Strings.current): String = partial(i, lang) + " — " + Strings.fIn(
         lang,
         "{0} chỉ nhận toạ độ; thêm lat/lng cho mục này trong Sổ địa chỉ",
         "{0} only takes coordinates — add lat/lng to this entry in the address book", target.label,

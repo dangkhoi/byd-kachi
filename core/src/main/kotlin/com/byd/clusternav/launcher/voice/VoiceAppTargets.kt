@@ -138,6 +138,8 @@ data class VoiceAppTarget(
      * id rồi mở `watch?v=`). `null` = app không có đường watch-theo-id ⇒ chỉ dùng [launch] (`MEDIA_PLAY_FROM_SEARCH`).
      */
     val watch: VoiceLaunch.Uri? = null,
+    /** 2.96 · R10 — extra BOOLEAN trên VIEW [watch] để mở TOÀN MÀN (`--ez <tên> true`); `null` = chưa đo. Chỉ phát tiếp dùng. */
+    val watchFullscreenExtra: String? = null,
     /**
      * Lệnh BẮT ĐẦU DẪN tới app này phải **dọn task cũ** (`FLAG_ACTIVITY_CLEAR_TASK` kèm `NEW_TASK`) — dữ liệu, không
      * phải nhánh `if (pkg == …)` (CLAUDE.md §7). `:app` dịch cờ này ở đúng một chỗ (`VoiceAppIntents.launchFlags`).
@@ -150,6 +152,7 @@ data class VoiceAppTarget(
 ) {
     init {
         require(!clearTaskOnNav || kind == VoiceAppKind.NAV) { "clearTaskOnNav chỉ dành cho app DẪN ĐƯỜNG: $key" }
+        require(watchFullscreenExtra == null || (watch != null && watchFullscreenExtra.matches(EXTRA_NAME))) { "extra lạ: $key" }
     }
 
     /** Cách NÓI ra tên app này — khai một chỗ ở [VoiceSynonyms.APP_TARGETS] (xem KDoc ở đó). */
@@ -179,6 +182,9 @@ data class VoiceAppTarget(
 
     /** Gói đầu tiên có mặt trong [installed], hoặc `null` khi app chưa cài. */
     fun packageIn(installed: Set<String>): String? = packages.firstOrNull { it in installed }
+
+    /** Tên extra đi vào một dòng shell ⇒ chỉ chữ thường + `_`, không ký tự shell nào. */
+    companion object { val EXTRA_NAME = Regex("[a-z][a-z_]{0,39}") }
 }
 
 /**
@@ -261,6 +267,9 @@ object VoiceAppTargets {
             evidence = VoiceAppEvidence.AWAITING_CAR,
             // Tự phát: mở URL watch (YouTube tự phát video theo id). Đây là cách Kiki đạt "phát luôn".
             watch = VoiceLaunch.Uri("https://www.youtube.com/watch?v=${VoiceLaunch.SLOT}"),
+            // 2.96 · R10 [ĐO máy ảo 07/10, YouTube 21.35.442] có extra ⇒ toàn màn 4/4 (gồm màn ảo ô của Kachi, task ở lại ô);
+            // không extra ⇒ trang xem 3/3. Xe chưa đo ([SUY] cùng hành vi).
+            watchFullscreenExtra = "force_fullscreen",
         ),
         VoiceAppTarget(
             key = SPOTIFY,

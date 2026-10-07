@@ -1,0 +1,1 @@
+{"label":"after-screen-on","window_s":120,"nproc":4,"procs":[{"name":"com.byd.launcher","pid":2328,"cpu_pct":0.11,"pss_kb":65364,"rss_kb":138756,"threads":40}],"gfx":"32 4 (12.50%)","wakelock_lines":0,"alarms":5,"jobs":0,"log_total":159,"log_app":17}

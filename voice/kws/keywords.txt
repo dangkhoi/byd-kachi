@@ -12,7 +12,6 @@
 ▁CA ▁CHI :1.6 #0.30 @Kachi
 ▁GA CH I :1.6 #0.30 @Kachi
 ▁CO CH I :1.6 #0.30 @Kachi
-▁CA ▁CHI :1.6 #0.30 @Kachi
 ▁GA ▁CHI :1.6 #0.30 @Kachi
 ▁CO ▁CHI :1.6 #0.30 @Kachi
 ▁K CH I :1.6 #0.30 @Kachi

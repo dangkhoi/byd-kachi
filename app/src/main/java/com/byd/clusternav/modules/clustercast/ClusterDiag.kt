@@ -97,6 +97,10 @@ object ClusterDiag {
                     }
                     sb.append("---------- $label ----------\n$ $cmd\n").append(outp).append("\n\n")
                 }
+                // 2.96 · R14: báo cáo ANR gần nhất của CHÍNH Kachi (gói lúc chạy, không chuỗi cứng) — chỉ mục của gói này.
+                val anr = anrSection(app.packageName) { sh(it) }
+                sb.append(anr.second)
+                summary.append("ANR gần nhất của Kachi: ").append(anr.first).append("\n")
                 // ── TÓM TẮT: trả lời thẳng 2 câu hỏi đang treo, khỏi bắt người đọc lội hết file ──
                 // ★ tái dùng dump đã chụp ở vòng commands() thay vì gọi lại — `dumpsys window windows` chạy dưới
                 //   synchronized(mGlobalLock) của WindowManager, gọi 4 lần lúc đang lái là tự làm nghẽn WM.
@@ -174,6 +178,28 @@ object ClusterDiag {
         //   bằng 1200 dòng dump thô — người nhận phải lội hết mới biết bệnh, mà mục đích của file là để GỬI.
         val path = write(app, stamp, "=== TÓM TẮT ===\n" + summary.toString().trim() + "\n\n" + sb.toString())
         return path to summary.toString().trim()
+    }
+
+    /**
+     * 2.96 · R14 — mục "ANR gần nhất của Kachi" (màn Chẩn đoán, CLAUDE.md §11): một phiên dadb, MỘT lệnh chỉ đọc
+     * ([AnrDropbox.CMD]), lọc thuần [AnrDropbox.latestFor] theo gói LÚC CHẠY (`packageName`) — mục của app khác không bao giờ
+     * lọt vào; ≤ [AnrDropbox.MAX_BYTES]. Chạy trên luồng gọi (nền) — KHÔNG gọi trên main thread.
+     */
+    fun latestAnr(ctx: Context): String {
+        val app = ctx.applicationContext
+        return runCatching {
+            LocalDeviceShell.session(AdbKeys.ensure(app), LocalShellRetry.BACKGROUND_READ_CAP) { shell ->
+                anrSection(app.packageName) { shell(it).output }.second
+            } ?: "❌ không nối được dadb — không đọc được gì"
+        }.getOrElse { "❌ ${it.javaClass.simpleName}: ${it.message}" }
+    }
+
+    /** (dòng tóm tắt, khối báo cáo) cho ANR gần nhất của [selfPkg]; [run] = kênh shell sẵn có của lượt gọi. */
+    private fun anrSection(selfPkg: String, run: (String) -> String): Pair<String, String> {
+        val entry = AnrDropbox.latestFor(run(AnrDropbox.CMD), selfPkg)
+        val body = "---------- ANR GẦN NHẤT CỦA $selfPkg (dropbox) ----------\n$ ${AnrDropbox.CMD}\n" +
+            (entry ?: "(không có mục data_app_anr nào của $selfPkg)") + "\n\n"
+        return (entry?.lineSequence()?.firstOrNull() ?: "không có") to body
     }
 
     /**

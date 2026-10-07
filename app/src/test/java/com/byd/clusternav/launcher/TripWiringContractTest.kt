@@ -141,8 +141,10 @@ class TripWiringContractTest {
         val fn = SourceRoots.body(music, "slotsAtStart: Map<String, Int> = emptyMap(),\n    ): Done {")
         order(fn, "bridge.sessions()", "TripMusicPlace.entrySlot(ports.where(it), slotsAtStart[it])", "TripMusicPlan.gate(", "TripOutcome.ofGate(gate)",
             "start(pkg, id, slot0, deadlineAt, progress)", "awaitSession(pkg)", "TripMusicPlan.recheck(pkg, bridge.sessions())",
-            "TripMusicPlan.play(url, session)", "bridge.playFromUri(pkg, p.url)", "ports.view(pkg, p.url, slot != null)",
-            "TripOutcome.ofView(slot != null, o?.result)")
+            "TripMusicPlan.play(url, session)", "bridge.playFromUri(pkg, p.url)",
+            // 2.96 · R9 — ĐỔI GHIM có lý do (log xe 07/10 21:05:14 `view:SLOT_NOT_READY` ⇒ NOOP): giao link + mã qua
+            // `TripMusicPlace.viewWhenReady` (`:core`, test `TripMusicViewWaitTest`) — ô chưa sẵn ⇒ chờ ô sống lại rồi giao lại.
+            "viewWhenReady(pkg, p.url, slot, deadlineAt, progress, resume.ready, target.watchFullscreenExtra)", "v.code.result == TripStepCode.Result.NOOP")
         // Lỗi E2E (6) [ĐO `c6b-music-slot`]: phiên của app TRONG Ô là phiên Kachi vừa tạo ⇒ không được đi nhánh resume-existing.
         order(fn, "TripMusicPlan.gate(", "TripMusicPlan.preexisting(pkg, before, inSlot = inSlot)", "resume-existing", "start(pkg, id, slot0")
         assertFalse(fn.contains("before.orEmpty().any"), "quyết 'phiên có trước' chỉ ở hàm thuần `TripMusicPlan.preexisting`")
@@ -162,16 +164,18 @@ class TripWiringContractTest {
         // `null` ⇒ dàn qua `stageFor` ⇒ K4-VIEW kéo task của app khỏi ô của nó. Nay cổng nhận `inSlot`, đọc ô MỚI, quyết bằng
         // `TripMusicPlan.viewRoute` (`:core`, có test) và ô chưa sẵn ⇒ trả `null` TRƯỚC mọi lệnh / chuỗi. A2: app ở ô 7 ⇒ CHÍNH
         // màn ảo đỗ (`ParkedApps.vdOf`), không bao giờ màn ảo dàn dựng khác.
-        val view = SourceRoots.body(start, "override fun view(pkg: String, url: String, inSlot: Boolean): BehindHomeSequence.Outcome? {")
+        // 2.96 · R10 — ĐỔI GHIM có lý do: cổng mang `fullscreenExtra` (chỉ phát tiếp) tới CÙNG lệnh K4-VIEW, mọi tuyến.
+        val view = SourceRoots.body(start, "override fun view(pkg: String, url: String, inSlot: Boolean, fullscreenExtra: String?): BehindHomeSequence.Outcome? {")
         // Review 2.89 Pass 1 · behaviour-2/5 — ĐỔI GHIM có lý do: màn chính đọc LẠI mỗi lượt (`live()`), cờ `needsAnchor` theo tuyến.
         order(view, "val h = live()", "h.view()", "TripMusicPlan.viewRoute(inSlot, stages.firstOrNull { it.pkg == pkg }?.vd, ParkedApps.vdOf(pkg))",
-            "if (route == TripMusicPlan.ViewRoute.SlotNotReady) return null", "TripMusicPlan.viewCmd(vd, url, pkg)",
+            "if (route == TripMusicPlan.ViewRoute.SlotNotReady) return null", "TripMusicPlan.viewCmd(vd, url, pkg, fullscreenExtra)",
             "val anchor = route !is TripMusicPlan.ViewRoute.Slot && route !is TripMusicPlan.ViewRoute.Parked", "h.behindChain(",
-            "if (route is TripMusicPlan.ViewRoute.Slot) viewInSlot(kit, pkg, route.vd, url)",
-            "else if (route is TripMusicPlan.ViewRoute.Parked) viewInSlot(kit, pkg, route.vd, url)", "BehindHomePlan.stageFor(stages, pkg)",
+            "if (route is TripMusicPlan.ViewRoute.Slot) viewInSlot(kit, pkg, route.vd, url, fullscreenExtra)",
+            "else if (route is TripMusicPlan.ViewRoute.Parked) viewInSlot(kit, pkg, route.vd, url, fullscreenExtra)", "BehindHomePlan.stageFor(stages, pkg)",
             "kit.seq.startBehindHidden(pkg, kit.hidden, view = k4)", "kit.seq.startBehind(pkg, st, view = k4)")
         // NOT_IN_SLOT = 0 lệnh ⇒ mã 0-lệnh (`X_NOT_STAGED` ⇒ `SLOT_NOT_READY`), không còn KEPT_UNDER (OK ⇒ "đã gửi").
         assertTrue(start.contains("TripMusicView.Result.NOT_IN_SLOT -> BehindHomeSequence.Result.X_NOT_STAGED"))
+        assertTrue(start.contains(".inSlot(pkg, vd, url, fullscreenExtra)"), "R10: extra tới cả lệnh K4-VIEW vào ô")
     }
 
     /**
@@ -246,7 +250,7 @@ class TripWiringContractTest {
             "TripMusicPlan.viewCmd(" to "TripStart.kt",
             "BehindHomePlan.stageFor(" to "TripStart.kt",
             "TripMusicPlan.viewRoute(" to "TripStart.kt",
-            "TripOutcome.ofView(" to "TripMusicRun.kt",
+            "TripMusicPlace.viewWhenReady(" to "TripMusicRun.kt",   // 2.96 · R9 — ĐỔI GHIM: `TripOutcome.ofView` nay gọi trong `:core`
             "HiddenStageReclaim.run(" to "BehindHomeRunner.kt",
             "InstalledApps.isSystem(" to "SettingsSectionsTrip.kt",
             "bridge.sessions()" to "TripMusicRun.kt",

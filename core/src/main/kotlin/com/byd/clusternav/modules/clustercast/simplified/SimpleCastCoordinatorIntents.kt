@@ -61,6 +61,9 @@ internal fun SimpleCastCoordinator.handleCastFull(intent: SimpleCastIntent.CastF
         return
     }
 
+    // 2.96 · R7 — app ĐẦU của phiên (từ Idle): nền chiếu phải có trên id vừa dò, nếu lượt mở trước bị ngắt trước khi đặt nó.
+    if (afterWait == SimpleCastState.Idle) ensureClusterPlaceholder(vd, "CastFull")
+
     val config = pin.config
     if (!configurator.apply(vd, config)) {
         setError("Display config failed")
@@ -143,6 +146,7 @@ internal fun SimpleCastCoordinator.handleCastSlot(intent: SimpleCastIntent.CastS
     if (afterWait is SimpleCastState.CastingSplit) {
         // Don't re-apply display config — would affect the existing app
     } else {
+        ensureClusterPlaceholder(vd, "CastSlot")   // 2.96 · R7 — nửa ĐẦU của phiên: nền chiếu phải có (xem handleCastFull)
         if (!configurator.apply(vd, config)) {
             setError("Display config failed for slot")
             return

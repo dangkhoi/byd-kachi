@@ -31,10 +31,16 @@ class HomeEdgeInsetContractTest {
         assertTrue(KachiSpace.EDGE_H in (KachiSpace.M + 1) until KachiSpace.L, "không trùng bậc M (lề-trong-thẻ), nhỏ hơn L")
     }
 
+    /**
+     * 2.96 HOME-EDGE-V-GAP — ĐỔI GHIM có lý do: owner 07/10 đo trên máy ảo 1920×1080/240 dpi (đỉnh→thanh trên 24 px, thanh trên→ô
+     * 13 px, thanh nút→đáy 24 px) và chốt *"sửa lại thành 13 hết"* ⇒ trên/dưới = [KachiSpace.SLOT_GAP] (cùng khe thanh trên→ô ở
+     * `mainArea.topMargin` và ô→thanh nút), trái/phải giữ [KachiSpace.EDGE_H].
+     */
     @Test
-    fun `khung goc man chinh - trai phai EDGE_H, tren duoi L`() {
+    fun `khung goc man chinh - trai phai EDGE_H, tren duoi SLOT_GAP`() {
         val content = SourceRoots.body(home, "val content = LinearLayout(this).apply {")
-        assertTrue(content.contains("setPadding(dp(Sp.EDGE_H), dp(Sp.L), dp(Sp.EDGE_H), dp(Sp.L))"), content)
+        assertTrue(content.contains("setPadding(dp(Sp.EDGE_H), dp(Sp.SLOT_GAP), dp(Sp.EDGE_H), dp(Sp.SLOT_GAP))"), content)
+        assertTrue(home.contains("it.topMargin = dp(Sp.SLOT_GAP)"), "khe thanh trên→ô cũng là SLOT_GAP")
         assertTrue(home.contains("content.addView(topStrip.view"), "thanh trên là con của CÙNG khung")
         assertTrue(home.contains("content.addView(mainArea"), "vùng ô + thanh nút là con của CÙNG khung")
     }

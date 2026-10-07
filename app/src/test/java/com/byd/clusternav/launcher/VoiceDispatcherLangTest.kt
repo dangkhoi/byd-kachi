@@ -85,8 +85,8 @@ class VoiceDispatcherLangTest {
     fun `cau tra loi cua cau la cau that, khong rong`() {
         val vi = replies(Lang.VI)
         assertTrue(vi.none { it.isBlank() }, "$vi")
-        assertTrue(vi.any { it.startsWith("✓ Mở ứng dụng YouTube") }, "giàn phải thật sự chạy nhánh mở app: $vi")
-        assertTrue(replies(Lang.ZH).any { it.startsWith("✓ Mở ứng dụng YouTube") }, "màn ZH vẫn nói tiếng Việt")
+        assertTrue(vi.any { it.startsWith("✓ Đã mở YouTube") }, "giàn phải thật sự chạy nhánh mở app: $vi")
+        assertTrue(replies(Lang.ZH).any { it.startsWith("✓ Đã mở YouTube") }, "màn ZH vẫn nói tiếng Việt")
     }
 
     private companion object {

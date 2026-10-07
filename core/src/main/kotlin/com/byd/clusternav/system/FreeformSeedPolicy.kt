@@ -34,6 +34,14 @@ package com.byd.clusternav.system
 class FreeformSeedPolicy(
     private val markers: MarkerStore,
     private val sh: (String) -> String,
+    /**
+     * 2.96 · R13 (soát Pass 1 [P2]) — IN-PROCESS reader of one `Settings.Global` key (`:app`: `Settings.Global.getString`,
+     * 0 shell; `null` = absent / failed ⇒ written as before). `null` reader ⇒ read through [sh] (`settings get`, JVM/test).
+     * Vì sao: đọc qua shell vẫn là 4 lượt kênh dadb lúc nổ máy — đúng thứ R11/R13 muốn bỏ (số đo
+     * `docs/diagnostics/startup-timeline-2026-10-07.md` §6); đọc trong tiến trình mới là "0 lệnh". Đứng TRƯỚC [log] để
+     * lambda cuối của các chỗ gọi cũ vẫn là [log].
+     */
+    private val readFlag: ((String) -> String?)? = null,
     private val log: (String) -> Unit = {},
 ) {
 
@@ -72,7 +80,10 @@ class FreeformSeedPolicy(
      * Idempotency here is w.r.t the DURABLE marker only — session-level RAM idempotency (seed at most once per
      * process) is the CALLER's concern (cast keeps its own `freeformSeeded` latch; the launcher factory adds one).
      *
-     * @return true iff the flags were written this call; false iff skipped because the user removed them.
+     * 2.96 · R13: the marker is still committed first, but each flag is READ (`settings get global <key>`) and only
+     * written when it is not already `1` — see [seedFlagsReadFirst].
+     *
+     * @return true iff the flags are ensured (written or already on); false iff skipped because the user removed them.
      */
     fun ensureSeed(): Boolean {
         if (markers.read() == SeedState.USER_REMOVED) {
@@ -80,8 +91,10 @@ class FreeformSeedPolicy(
             return false
         }
         markers.commit(SeedState.SEEDED) // ★ marker BEFORE mutate — survives a mid-write process death.
-        SEED_CMDS.forEach { sh(it) }
-        log(LOG_SEEDED)
+        // 2.96 · R13: đọc trước, chỉ ghi cờ chưa = 1 ([seedFlagsReadFirst]); đọc hỏng ("" từ seam bị từ chối/lỗi) ⇒ ghi như cũ.
+        // Có [readFlag] (trong tiến trình, 0 shell) ⇒ đọc bằng nó theo KHOÁ; không ⇒ `settings get` qua [sh].
+        val wrote = seedFlagsReadFirst(read = readerOf(readFlag) { sh(it) }, write = { sh(it) })
+        log(if (wrote.isEmpty()) LOG_ALREADY_ON else LOG_SEEDED)
         return true
     }
 
@@ -132,6 +145,52 @@ class FreeformSeedPolicy(
             "settings put global force_resizable_activities 1",
         )
 
+        /** 2.96 · R13 — the two flag keys, same order as [SEED_CMDS] (index-paired). */
+        val SEED_FLAGS: List<String> = listOf("enable_freeform_support", "force_resizable_activities")
+
+        /** 2.96 · R13 — read form for one flag (a READ: not a persistent-state write). */
+        fun getCmd(key: String): String = "settings get global $key"
+
+        private const val GET_PREFIX = "settings get global "
+
+        /** Inverse of [getCmd]: the flag key of a `settings get global <key>` command (anything else ⇒ returned as-is). */
+        fun keyOf(getCmd: String): String = getCmd.removePrefix(GET_PREFIX).trim()
+
+        /**
+         * 2.96 · R13 (soát Pass 1 [P2]) — the `read` seam for [seedFlagsReadFirst]: with an in-process [readFlag] (keyed by
+         * flag name) the read never touches the shell — its `null` means absent/failed ⇒ write (fail-safe), NOT "fall back to
+         * shell" (that would re-add the 2 round-trips the reader exists to remove). Without one, read via [shell]
+         * (`settings get`; `null` = failed).
+         */
+        fun readerOf(readFlag: ((String) -> String?)?, shell: (String) -> String?): (String) -> String? =
+            if (readFlag != null) { cmd -> readFlag(keyOf(cmd)) } else shell
+
+        /**
+         * 2.96 · R13 — pure decision: a flag is already on ONLY if its `settings get` output is exactly `1` (trimmed).
+         * `null` (read failed), `""`, `null`/`0`/garbage ⇒ false ⇒ write (fail-safe = behaviour before R13).
+         */
+        fun flagAlreadyOn(readOut: String?): Boolean = readOut?.trim() == "1"
+
+        /**
+         * 2.96 · R13 — READ-BEFORE-WRITE for the two freeform boot flags (shared by the launcher [ensureSeed] path and the
+         * cast `CastGeometryController.ensureFreeformFlags`). For each flag in order: run [getCmd]; write the byte-identical
+         * [SEED_CMDS] entry only when [flagAlreadyOn] is false. [read] returns `null` on a failed read ⇒ written as before.
+         * Scope (CLAUDE.md §4): no display, no app, no stack — two Settings.Global keys; undo = [unseed] / [UNSEED_CMDS].
+         *
+         * @return the put commands actually written (empty ⇒ both were already `1`).
+         */
+        fun seedFlagsReadFirst(read: (String) -> String?, write: (String) -> Unit): List<String> {
+            val written = mutableListOf<String>()
+            SEED_FLAGS.forEachIndexed { i, key ->
+                if (!flagAlreadyOn(read(getCmd(key)))) {
+                    val put = SEED_CMDS[i]
+                    write(put)
+                    written += put
+                }
+            }
+            return written
+        }
+
         /** Order-significant delete of the two flags (matches cast's `unseedFreeform`). */
         val UNSEED_CMDS: List<String> = listOf(
             "settings delete global enable_freeform_support",
@@ -155,6 +214,8 @@ class FreeformSeedPolicy(
             "  ⚙ bỏ qua cờ freeform — người dùng đã chủ động gỡ. Chỉnh kích thước sẽ dùng wm size/overscan."
         const val LOG_SEEDED =
             "  ⚙ đã ghi cờ freeform (có hiệu lực sau khi TẮT MÁY XE hẳn 1 lần rồi mở lại)"
+        const val LOG_ALREADY_ON =
+            "  ⚙ cờ freeform đã bật sẵn — không ghi lại"
         const val LOG_UNSEEDED =
             "  ⚙ đã GỠ cờ freeform — cần TẮT MÁY XE hẳn 1 lần rồi mở lại mới có hiệu lực"
     }

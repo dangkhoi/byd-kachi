@@ -41,18 +41,18 @@ class VoiceCameraTurnTest {
     }
 
     @Test fun `tat camera tran co camera dang mo - noi DA TAT, khong cham Camera 360`() {
-        assertEquals("✓ Tắt camera", say(VoiceCameraTurn.answer(off, CameraDemand.Op.CloseAll, Outcome.CLOSED, Lang.VI)))
+        assertEquals("✓ Đã tắt camera", say(VoiceCameraTurn.answer(off, CameraDemand.Op.CloseAll, Outcome.CLOSED, Lang.VI)))
         assertEquals("✓ Camera off", say(VoiceCameraTurn.answer(off, CameraDemand.Op.CloseAll, Outcome.CLOSED, Lang.EN)))
     }
 
     @Test fun `cau MO noi dung chieu da xay ra - khong chi ten`() {
         val toggle = CameraDemand.Op.Toggle(com.byd.clusternav.launcher.camera.CameraWhich.REAR)
-        assertEquals("✓ Mở Camera sau", say(VoiceCameraTurn.answer(rear, toggle, Outcome.OPENED, Lang.VI)))
-        assertEquals("✓ Tắt Camera sau", say(VoiceCameraTurn.answer(rear, toggle, Outcome.CLOSED, Lang.VI)), "nói lại lần hai ⇒ tắt")
-        assertEquals("✓ Open Rear camera", say(VoiceCameraTurn.answer(rear, toggle, Outcome.OPENED, Lang.EN)))
+        assertEquals("✓ Đã mở camera sau", say(VoiceCameraTurn.answer(rear, toggle, Outcome.OPENED, Lang.VI)))
+        assertEquals("✓ Đã tắt camera sau", say(VoiceCameraTurn.answer(rear, toggle, Outcome.CLOSED, Lang.VI)), "nói lại lần hai ⇒ tắt")
+        assertEquals("✓ Open rear camera", say(VoiceCameraTurn.answer(rear, toggle, Outcome.OPENED, Lang.EN)))
         // Đọc lên thành câu tiếng Việt thật (Pass 1 đọc *"Đã camera sau"*).
-        assertEquals("Đã mở Camera sau", VoiceFeedbackPhrase.merge(listOf("✓ Mở Camera sau"), Lang.VI))
-        assertEquals("Đã tắt Camera sau", VoiceFeedbackPhrase.merge(listOf("✓ Tắt Camera sau"), Lang.VI))
+        assertEquals("Đã mở camera sau", VoiceFeedbackPhrase.merge(listOf("✓ Đã mở camera sau"), Lang.VI))
+        assertEquals("Đã tắt camera sau", VoiceFeedbackPhrase.merge(listOf("✓ Đã tắt camera sau"), Lang.VI))
     }
 
     @Test fun `tat dung camera khong mo - noi that, khong dau tich, khong Camera 360`() {
@@ -60,15 +60,15 @@ class VoiceCameraTurnTest {
         val a = VoiceCameraTurn.answer(rearOff, close, Outcome.NOTHING_TO_CLOSE, Lang.VI)
         assertEquals("Camera sau đang không mở", say(a))
         assertEquals("Rear camera is not open", say(VoiceCameraTurn.answer(rearOff, close, Outcome.NOTHING_TO_CLOSE, Lang.EN)))
-        assertEquals("✓ Tắt Camera sau", say(VoiceCameraTurn.answer(rearOff, close, Outcome.CLOSED, Lang.VI)))
+        assertEquals("✓ Đã tắt camera sau", say(VoiceCameraTurn.answer(rearOff, close, Outcome.CLOSED, Lang.VI)))
     }
 
     @Test fun `khong toi duoc controller - noi chua lam duoc, KHONG roi ve Camera 360`() {
         val a = VoiceCameraTurn.answer(off, CameraDemand.Op.CloseAll, Outcome.UNREACHABLE, Lang.VI)
         assertEquals("✗ Tắt camera — chưa liên lạc được màn hình chính", say(a), "không biết có camera nào mở ⇒ không đoán")
         val toggle = CameraDemand.Op.Toggle(com.byd.clusternav.launcher.camera.CameraWhich.REAR)
-        assertEquals("✗ Mở Camera sau — chưa liên lạc được màn hình chính", say(VoiceCameraTurn.answer(rear, toggle, Outcome.UNREACHABLE, Lang.VI)))
-        assertEquals("✗ Open Rear camera — couldn't reach the home screen", say(VoiceCameraTurn.answer(rear, toggle, Outcome.UNREACHABLE, Lang.EN)))
+        assertEquals("✗ Mở camera sau — chưa liên lạc được màn hình chính", say(VoiceCameraTurn.answer(rear, toggle, Outcome.UNREACHABLE, Lang.VI)))
+        assertEquals("✗ Open rear camera — couldn't reach the home screen", say(VoiceCameraTurn.answer(rear, toggle, Outcome.UNREACHABLE, Lang.EN)))
         assertTrue(VoiceFeedbackPhrase.merge(listOf(say(a)), Lang.VI)!!.startsWith("Chưa tắt camera"), "đọc lên là câu HỎNG")
     }
 
@@ -83,7 +83,7 @@ class VoiceCameraTurnTest {
         assertEquals(0, nexts, "chưa có kết quả ⇒ làn ghi CHỜ (vế sau chưa chạy)")
         pending!!(Outcome.OPENED)
         pending!!(Outcome.CLOSED)   // về muộn sau hạn chờ ⇒ bỏ
-        assertEquals(listOf("✓ Mở Camera sau"), said)
+        assertEquals(listOf("✓ Đã mở camera sau"), said)
         assertEquals(1, nexts)
 
         said.clear(); nexts = 0

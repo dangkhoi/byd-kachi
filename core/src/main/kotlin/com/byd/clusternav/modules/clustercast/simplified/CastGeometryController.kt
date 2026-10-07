@@ -1,5 +1,7 @@
 package com.byd.clusternav.modules.clustercast.simplified
 
+import com.byd.clusternav.system.FreeformSeedPolicy
+
 /**
  * Owns per-app freeform geometry: task lookup, resize (full + per-slot), profile
  * persistence and restore (R4/R5/R6), plus the read-only cluster-display stack queries
@@ -23,6 +25,11 @@ internal class CastGeometryController(
      * các chỗ gọi cũ vẫn là [log].
      */
     private val redetect: () -> Int = { -1 },
+    /**
+     * 2.96 · R13 (soát Pass 1 [P2]) — bộ đọc `Settings.Global` TRONG tiến trình theo khoá (`:app`: `FreeformSeedStore.readGlobal`,
+     * 0 shell); `null` = đọc qua shell `settings get` (JVM/test). Đứng TRƯỚC [log] để lambda cuối của các chỗ gọi cũ vẫn là [log].
+     */
+    private val readGlobalSetting: ((String) -> String?)? = null,
     private val log: (String) -> Unit = { println("[CastGeometry] $it") },
 ) {
     private val displayId: Int get() = displayIdProvider()
@@ -181,10 +188,21 @@ internal class CastGeometryController(
     /**
      * Set freeform boot flags. Read only at boot by ATMS.retrieveSettings (no ContentObserver),
      * so they activate after a physical power-cycle. Idempotent — safe to run on every open.
+     *
+     * 2.96 · R13: đọc trước, chỉ ghi khoá chưa = 1 — dùng chung [FreeformSeedPolicy.seedFlagsReadFirst] (chuỗi lệnh ghi
+     * byte-identical, vẫn marker-less như trước). Đọc: có [readGlobalSetting] ⇒ trong tiến trình, 0 shell (soát Pass 1 [P2] —
+     * đọc qua shell vẫn tốn 2 lượt kênh dadb lúc mở chiếu); không ⇒ `settings get global <khoá>` qua shell. Đọc hỏng
+     * (`null` / `success=false`) ⇒ ghi như cũ (fail-safe).
+     *
+     * @return các lệnh `settings put` đã thực sự gửi (rỗng = hai cờ đã bật sẵn).
      */
-    fun ensureFreeformFlags() {
-        shell.execute("settings put global enable_freeform_support 1")
-        shell.execute("settings put global force_resizable_activities 1")
+    fun ensureFreeformFlags(): List<String> {
+        val wrote = FreeformSeedPolicy.seedFlagsReadFirst(
+            read = FreeformSeedPolicy.readerOf(readGlobalSetting) { cmd -> shell.execute(cmd).let { if (it.success) it.stdout else null } },
+            write = { cmd -> shell.execute(cmd) },
+        )
+        log(if (wrote.isEmpty()) "cờ freeform đã bật sẵn — không ghi" else "cờ freeform: ghi ${wrote.size} khoá")
+        return wrote
     }
 
     /**

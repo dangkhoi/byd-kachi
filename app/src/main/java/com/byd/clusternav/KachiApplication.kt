@@ -64,6 +64,9 @@ class KachiApplication : Application() {
         // 2.94 · R3 — bên lưu bài YouTube đang phát (để lên xe phát tiếp): chỉ hẹn một lượt nền mỗi 60 s, không I/O ở đây; tự
         // dừng ở cổng sớm nhất khi không gì đang phát / hồ sơ không dùng phát tiếp. Đứng TRƯỚC dòng chốt cuối.
         com.byd.clusternav.launcher.trip.YoutubeResumeSampler.install(this)
+        // 2.96 · R8 — giữ Kachi làm HOME khi người dùng đã chọn ([ĐO xe 07/10] launcher khác giành HOME ~17 s sau khi lên).
+        // Chỉ hẹn một nhịp nền (đọc `resolveActivity`, không shell); tự im khi người dùng không chọn Kachi. TRƯỚC dòng chốt cuối.
+        com.byd.clusternav.launcher.HomeGuard.install(this)
         // READY-AT-HOME R2.1 — nối kênh shell NGAY khi tiến trình bật (cả lượt BYD dựng lại Kachi lúc màn tắt), CHỈ khi
         // xe đã duyệt khoá này (dấu bền còn tươi); không thì để F4 hỏi đúng lúc. Đường MỚI ⇒ dòng CUỐI (CLAUDE.md §6).
         EarlyShellChannel.start(this)

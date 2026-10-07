@@ -138,7 +138,8 @@ object A11yLifecycleHeal {
             // tắt máy). Mất lớp 2 thì lớp 1 + nút vẫn còn; ghi lỗi to, không nuốt câm.
             Log.e(TAG, "không đăng ký được bộ thu màn bật — lớp 2 tắt trong tiến trình này", e)
         }
-        submit("khởi động (tương tác=$interactive)") { onProcessStart(app, interactive, startedAt) }
+        TatMayCastHold.arm(interactive, startedAt)   // 2.96 R11 — tự chiếu chờ lớp 1 kết luận (KDoc TatMayCastHoldPlan)
+        submit("khởi động (tương tác=$interactive)") { try { onProcessStart(app, interactive, startedAt) } finally { TatMayCastHold.release() } }
         // Đường MỚI xuống CUỐI (CLAUDE.md §6): xếp SAU lớp 1 trên cùng luồng nối tiếp — [onProcessStart] giữ nguyên.
         submit("ân hạn khởi động") { try { onBootGrace(app, interactive, startedAt) } finally { bootGraceBusy.set(false) } }
         if (interactive != true) submit("test-mode") { com.byd.clusternav.launcher.testbridge.TestBridgeStore.closeAfterScreenOffStart(app) }
@@ -361,7 +362,6 @@ object A11yLifecycleHeal {
         }
         return true
     }
-
     private const val VERDICT_POLL_MS = 100L
 
     // ─── Chung ───────────────────────────────────────────────────────────────────────────────────────────

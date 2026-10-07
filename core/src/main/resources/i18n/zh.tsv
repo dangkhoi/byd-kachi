@@ -283,7 +283,7 @@ Xem 	Show 	查看
 Dẫn đường tới 	Navigate to 	导航到
 Mở ứng dụng 	Open app 	打开应用
 Bố cục 	Layout 	切换布局：
-Tạm biệt	Bye	再见
+Tạm biệt, hẹn gặp lại	Bye, see you	再见，回头见
 chỉ mở được khi xe đang dừng	only while the car is stopped	仅可在停车时操作
 Đã gửi {0} {1} — xe báo {2}	Sent {0} {1} — the car reports {2}	已发送{0} {1}——车辆反馈{2}
 chưa kiểm trên xe	not yet checked on this car	尚未在本车验证
@@ -318,7 +318,9 @@ xe này không có bộ phận này (xe tự báo)	this car reports it doesn't h
 Tăng 	Increase 	调高
 Giảm 	Decrease 	调低
 {0} nấc	by {0}	{0}级
-Đặt 	Set 	设置
+Đặt {0} mức {1}	Set {0} to level {1}	将{0}设为{1}档
+Đặt {0} {1}	Set {0} to {1}	将{0}设为{1}
+Đã để {0} ở {1}	{0}: {1}	{0}已设为{1}
 Phát nhạc	Play	播放音乐
 Dừng nhạc	Pause	暂停音乐
 Chuyển bài tiếp theo	Skip to the next track	切换到下一首
@@ -812,6 +814,9 @@ còn {0} MB, cần {1} MB (mô hình {2} MB + thở {3} MB)	{0} MB free, {1} MB 
 Cổng theme (chỉ đọc)	Theme gate (read-only)	仪表主题闸门（只读）
 Đang đọc cổng theme…	Reading theme gate…	正在读取仪表主题闸门…
 Cổng theme: đã đọc (không gửi lệnh nào)	Theme gate: read (no command sent)	仪表主题闸门：已读取（未发送任何命令）
+ANR gần nhất của Kachi	Kachi's latest ANR	Kachi 最近一次 ANR
+Đang đọc ANR gần nhất…	Reading latest ANR…	正在读取最近一次 ANR…
+ANR: đã đọc (không gửi lệnh ghi nào)	ANR: read (no write command sent)	ANR：已读取（未发送任何写入命令）
 # B3 DOCK-SCALE (2.89) — mục Cài đặt › Hiển thị "Cỡ thanh nút xe" (khoá dock_scale).
 Cỡ thanh nút xe	Car bar size	车控栏大小
 # 2.91 · F1 — mục Cài đặt › Dẫn đường "Tự mở VietMap cho bong bóng" (khoá vm_bubble_enabled, nghĩa cũ: tự mở VietMap).

@@ -85,8 +85,9 @@ object ClusterDisplayResolver {
      * Dò LẶP sau khi mở projection — VD cụm do AutoContainer tạo bất đồng bộ sau profile 35, nên lần dò đầu có
      * thể hụt (đường cũ `ClusterCast.cast()` cũng lặp 16×500 ms rồi mới đặt app). Trả id ≥ 1 ngay khi dò được,
      * `-1` sau [attempts] lần hụt. [sleepMs] tách ra để test không ngủ thật. 2.90 · R5: [exclude] ≥ 1 = id màn ảo TRƯỚC một lượt
-     * đổi theme ([ĐO xe 06/10] theme đổi ⇒ màn ảo dựng lại với id mới 4 → 9) — bỏ qua id đó tới khi thấy id khác; hết lượt mà
-     * vẫn chỉ thấy nó ⇒ trả nó (màn ảo không dựng lại).
+     * đổi theme ([ĐO xe 06/10] theme đổi ⇒ màn ảo dựng lại với id mới 4 → 9) — bỏ qua id đó tới khi thấy id khác.
+     * 2.96 · R6: chỉ thấy id cũ ở [excludeGrace] lượt dò ⇒ nhận nó NGAY (không chờ hết [attempts]) — xem [EXCLUDE_GRACE_POLLS].
+     * Lượt dò hụt (`-1`, màn cũ đã gỡ mà màn mới chưa có) KHÔNG tính vào khoảng ân hạn.
      */
     fun awaitAndPersist(
         shell: SimpleCastShell,
@@ -94,18 +95,38 @@ object ClusterDisplayResolver {
         attempts: Int = AWAIT_ATTEMPTS,
         sleepMs: (Long) -> Unit = { Thread.sleep(it) },
         exclude: Int = -1,
+        excludeGrace: Int = EXCLUDE_GRACE_POLLS,
+        log: (String) -> Unit = {},
         persist: (Int) -> Unit,
     ): Int {
-        var seenExcluded = false
+        var seenExcluded = 0
+        val grace = excludeGrace.coerceAtLeast(1)
         repeat(attempts.coerceAtLeast(1)) { i ->
             // 2.90 · R5: không persist id bị loại (màn ảo TRƯỚC lượt đổi theme) — chỉ id mới được ghi.
             val id = detectAndPersist(shell, selfPackage) { if (it != exclude) persist(it) }
             if (id >= 1 && id != exclude) return id
-            if (id >= 1) seenExcluded = true
+            if (id >= 1 && ++seenExcluded >= grace) {
+                log("dò sau theme: chỉ thấy id cũ $exclude ở $seenExcluded lượt ⇒ nhận (màn ảo không dựng lại — R6)")
+                runCatching { persist(exclude) }
+                return exclude
+            }
             if (i < attempts - 1) sleepMs(AWAIT_SLEEP_MS)
         }
-        // Hết lượt mà chỉ thấy id cũ ⇒ màn ảo KHÔNG dựng lại [CHƯA BIẾT có xảy ra không — OQ1 spec 290] ⇒ id cũ vẫn là cụm.
-        if (seenExcluded) { runCatching { persist(exclude) }; return exclude }
+        // Hết lượt mà chỉ thấy id cũ (ít hơn [grace] lượt, phần còn lại hụt) ⇒ màn ảo KHÔNG dựng lại ⇒ id cũ vẫn là cụm.
+        if (seenExcluded > 0) { runCatching { persist(exclude) }; return exclude }
         return -1
     }
+
+    /**
+     * 2.96 · R6 — số lượt dò SAU khi mở mà chỉ thấy id màn ảo CŨ thì nhận nó.
+     *
+     * Bằng chứng: [ĐO log xe 07/10 (fw 2606), 4/4 lượt mở có gửi theme 31 — 20:48:36, 21:03:24, 21:03:55, 21:04:53] màn ảo GIỮ
+     * id 4; lượt chờ id mới đốt cả 12 lượt dò (~7,5 s ở 21:04:59.7 → 21:05:07.2) và ở 20:48 làm lượt mở chạm hạn 25 s TRƯỚC khi
+     * kịp đặt ClusterBlack. [ĐO xe 06/10, fw 2602] màn ảo dựng lại với id mới (4 → 9) — chưa đo khi nào id mới xuất hiện.
+     * [SUY] lượt dò đầu chạy ≥ 5 s sau opcode theme (31 → ngủ 2 s → 16 → 2 s → 35 → ngủ → điều kiện nền: 20:48:36.1 → ≥ :41.8),
+     * cộng 3 lượt (2 × 0,5 s ngủ + 3 lệnh ≈ 0,3–0,6 s) ⇒ màn ảo có ≥ ~7 s để dựng lại trước khi ta nhận id cũ. Nhận nhầm (2602 dựng
+     * lại chậm hơn thế) vẫn có lưới: mỗi lượt ĐẶT dò tươi trước khi đặt (R1, `newestSameName` lấy id mới), và lượt chiếu đầu từ
+     * Idle đặt bù ClusterBlack trên id dò tươi (R7 · `ensureClusterPlaceholder`).
+     */
+    const val EXCLUDE_GRACE_POLLS: Int = 3
 }

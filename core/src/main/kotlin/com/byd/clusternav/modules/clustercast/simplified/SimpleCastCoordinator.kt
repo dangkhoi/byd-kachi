@@ -47,6 +47,9 @@ class SimpleCastCoordinator(
      */
     internal val onCastDisplay: (Int?) -> Unit = {},
     clusterLayers: ClusterLayerPort = ClusterLayerPort.NONE, // 2.90 · R9 — dọn/trả cụm quanh lượt đổi theme (`:app` cấp)
+    private val placeholderRecoverDelayMs: Long = PlaceholderRecover.FIRST_DELAY_MS, // 2.96 · R15 — test rút ngắn
+    /** 2.96 · R13 (soát Pass 1) — đọc `Settings.Global` TRONG tiến trình (`:app` `FreeformSeedStore.readGlobal`); `null` ⇒ shell. */
+    private val globalSettingReader: ((String) -> String?)? = null,
 ) {
     // ── Cluster display id — id SỐNG, dò động (X2) ────────────────────────────
     // Seed = giá trị dựng (prefs.lastDisplayId ?: fallback), nhưng KHÔNG tin nó: openProjection() dò lại thật
@@ -66,6 +69,7 @@ class SimpleCastCoordinator(
         castTimeoutMs = castTimeoutMs,
         stopTimeoutMs = stopTimeoutMs,
         onTimeout = { tag -> log("TIMEOUT: $tag") },
+        onDiscard = { tag, why -> log("DISCARDED: $tag — $why") },   // 2.96 · R5: không bỏ thao tác nào im lặng
     )
 
     internal val verifier = CastPostconditionVerifier(
@@ -109,6 +113,7 @@ class SimpleCastCoordinator(
     internal val geometry = CastGeometryController(
         shell, prefs, { this.displayId },
         redetect = { detectClusterDisplay() },   // 2.90 · R5: `wm size -d` thấy display đã mất ⇒ dò lại id cụm
+        readGlobalSetting = globalSettingReader,  // 2.96 · R13 (soát Pass 1): cờ freeform đọc trong tiến trình, 0 shell
     ) { msg -> log(msg) }
 
     /**
@@ -125,7 +130,9 @@ class SimpleCastCoordinator(
     internal fun detectClusterDisplay(awaitAfterOpen: Boolean = false, exclude: Int = -1): Int {
         val persist: (Int) -> Unit = { prefs.saveLastDisplayId(it) }
         val resolved = if (awaitAfterOpen) {
-            ClusterDisplayResolver.awaitAndPersist(shell, selfPackage, sleepMs = detectSleepMs, exclude = exclude, persist = persist)
+            ClusterDisplayResolver.awaitAndPersist(
+                shell, selfPackage, sleepMs = detectSleepMs, exclude = exclude, log = { log(it) }, persist = persist,
+            )
         } else {
             ClusterDisplayResolver.detectAndPersist(shell, selfPackage, persist)
         }
@@ -151,32 +158,15 @@ class SimpleCastCoordinator(
         return null
     }
 
-    /**
-     * Như [verifiedClusterDisplay] nhưng cho đường **HOÀN TÁC** (đóng projection / reset density): nếu chưa xác minh
-     * thì dò TƯƠI một lần thay vì bỏ luôn.
-     *
-     * Vì sao ([SOÁT 2026-09-15 · P2], CLAUDE §5 "mỗi thứ đổi ra ngoài phải có đường trả lại"): `wm size/overscan/
-     * density` mà [DisplayConfigurator] đặt lên VD cụm được WM ghi vào `/data/system/display_settings.xml` theo
-     * `uniqueId` ⇒ **sống qua cả reboot**. Nếu lần dò gần nhất hụt (shell chớp) mà ta bỏ luôn bước reset thì cụm giữ
-     * override vĩnh viễn, chỉ còn `deepRescue` gỡ được. Dò tươi giữ nguyên bất biến R1/R2 (vẫn qua owner-guard, hụt
-     * thì vẫn KHÔNG đặt gì) mà tăng hẳn cơ hội hoàn tác đúng chỗ.
-     */
-    internal fun undoTargetDisplay(tag: String): Int? {
-        val id = liveDisplayId
-        if (id >= 1) return id
-        val fresh = detectClusterDisplay()
-        if (fresh >= 1) return fresh
-        log("$tag: bỏ qua — dò lại vẫn không thấy VD cụm, không nhắm seed=$displayId")
-        return null
-    }
+    // `undoTargetDisplay` (đường HOÀN TÁC: id đã xác minh hoặc dò tươi một lần) → `SimpleCastCoordinatorOps.kt` (tách THUẦN, trần 500).
 
     // TRIAL watchdog state (owner 2026-08-14): re-pin a cast app that an external trigger (e.g. Kiki
     // starting GMaps navigation) pulled off the cluster. Debounce + cooldown so driving is never
     // yanked on a transient am-stack parse gap.
     internal val repinMissStreak = java.util.concurrent.ConcurrentHashMap<String, Int>()
     internal val repinCooldownUntil = java.util.concurrent.ConcurrentHashMap<String, Long>()
-    private val repinInFlight = java.util.concurrent.atomic.AtomicBoolean(false)
     @Volatile private var lastRepinProbeAt = 0L
+    @Volatile private var lastRepinSkipLogAt = 0L
 
     private val _state = AtomicReference<SimpleCastState>(SimpleCastState.Off)
     val state: SimpleCastState get() = _state.get()
@@ -252,6 +242,7 @@ class SimpleCastCoordinator(
                 if (t is InterruptedException) Thread.currentThread().interrupt()
                 log("openProjection ngắt/lỗi giữa chừng (${t.javaClass.simpleName}) — nhả state khỏi Opening")
                 setError("Projection open interrupted / Mở chiếu bị ngắt")
+                schedulePlaceholderRecover(placeholderRecoverDelayMs)   // 2.96 · R15 — cụm chiếu mà chưa có nền (`CastPlaceholder.kt`)
             }
         }
     }
@@ -472,21 +463,29 @@ class SimpleCastCoordinator(
      * cannot move a correctly-placed app. Debounce (missing on two consecutive probes) + per-package
      * cooldown keep the driving display from being yanked on a transient `am stack list` parse gap.
      */
-    fun repinEscapedCastApps() {
+    fun repinEscapedCastApps(interactive: Boolean? = null) {
         val now = System.currentTimeMillis()
-        if (now - lastRepinProbeAt < REPIN_PROBE_MIN_INTERVAL_MS) return
+        // 2.96 · R18 — màn đọc được là TẮT (standby) ⇒ thưa 4 s → 30 s; `null`/bật = nhịp cũ ([StandbyCadence], KDoc ở đó).
+        if (now - lastRepinProbeAt < com.byd.clusternav.system.StandbyCadence.repinMinIntervalMs(interactive)) return
         val cur = state
         if (cur !is SimpleCastState.CastingSplit && cur !is SimpleCastState.CastingFull) return
-        if (!repinInFlight.compareAndSet(false, true)) return
-        lastRepinProbeAt = now
-        executor.submit("repin-watchdog") {
-            try { doRepinEscapedCastApps() } finally { repinInFlight.set(false) }
+        // 2.96 · R5 — lượt dò NỀN chỉ vào hàng khi executor rảnh hẳn ([BoundedCastExecutor.submitIfIdle]). [ĐO log xe 07/10 20:48:55]
+        // `submit` thường ở đây đẩy lệnh chiếu nửa PHẢI (đang chờ sau nửa TRÁI) ra khỏi hàng 1 chỗ ⇒ VietMap không bao giờ lên cụm.
+        // Bận ⇒ bỏ nhịp này, KHÔNG ghi `lastRepinProbeAt` ⇒ nhịp ~2 s sau thử lại. Cờ `repinInFlight` cũ bỏ đi: "rảnh hẳn" đã gồm
+        // "không có repin nào đang chạy/chờ", và cờ đó kẹt `true` VĨNH VIỄN nếu thao tác repin bị bỏ khỏi hàng (finally không chạy).
+        if (!executor.submitIfIdle("repin-watchdog") { doRepinEscapedCastApps() }) {
+            if (now - lastRepinSkipLogAt >= REPIN_SKIP_LOG_INTERVAL_MS) {
+                lastRepinSkipLogAt = now
+                log("repin: bỏ nhịp — executor đang bận (lệnh chiếu/dừng có quyền trước, R5)")
+            }
+            return
         }
+        lastRepinProbeAt = now
     }
 
     internal companion object {
-        /** Min gap between watchdog probes (caller ticks ~2s; probe runs ~ every other tick). */
-        private const val REPIN_PROBE_MIN_INTERVAL_MS = 4_000L
+        /** 2.96 · R5 — dòng "bỏ nhịp vì bận" tối đa một lần mỗi khoảng này (nhịp gọi ~2 s — không làm ngập log). */
+        private const val REPIN_SKIP_LOG_INTERVAL_MS = 60_000L
         /** After a re-pin, ignore the same package this long (avoid fighting a persistent external launch). */
         internal const val REPIN_COOLDOWN_MS = 10_000L
 

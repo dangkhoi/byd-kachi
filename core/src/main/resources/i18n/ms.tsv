@@ -283,7 +283,7 @@ Xem 	Show 	Tunjukkan
 Dẫn đường tới 	Navigate to 	Navigasi ke 
 Mở ứng dụng 	Open app 	Buka apl 
 Bố cục 	Layout 	Susun atur 
-Tạm biệt	Bye	Selamat tinggal
+Tạm biệt, hẹn gặp lại	Bye, see you	Selamat tinggal, jumpa lagi
 chỉ mở được khi xe đang dừng	only while the car is stopped	hanya semasa kereta berhenti
 Đã gửi {0} {1} — xe báo {2}	Sent {0} {1} — the car reports {2}	Dihantar {0} {1} — kereta melaporkan {2}
 chưa kiểm trên xe	not yet checked on this car	belum disemak pada kereta ini
@@ -318,7 +318,9 @@ xe này không có bộ phận này (xe tự báo)	this car reports it doesn't h
 Tăng 	Increase 	Naikkan 
 Giảm 	Decrease 	Turunkan 
 {0} nấc	by {0}	sebanyak {0}
-Đặt 	Set 	Tetapkan 
+Đặt {0} mức {1}	Set {0} to level {1}	Tetapkan {0} ke tahap {1}
+Đặt {0} {1}	Set {0} to {1}	Tetapkan {0} ke {1}
+Đã để {0} ở {1}	{0}: {1}	{0} ditetapkan pada {1}
 Phát nhạc	Play	Mainkan
 Dừng nhạc	Pause	Jeda
 Chuyển bài tiếp theo	Skip to the next track	Langkau ke lagu seterusnya
@@ -812,6 +814,9 @@ còn {0} MB, cần {1} MB (mô hình {2} MB + thở {3} MB)	{0} MB free, {1} MB 
 Cổng theme (chỉ đọc)	Theme gate (read-only)	Get tema kluster (baca sahaja)
 Đang đọc cổng theme…	Reading theme gate…	Membaca get tema kluster…
 Cổng theme: đã đọc (không gửi lệnh nào)	Theme gate: read (no command sent)	Get tema kluster: dibaca (tiada arahan dihantar)
+ANR gần nhất của Kachi	Kachi's latest ANR	ANR terkini Kachi
+Đang đọc ANR gần nhất…	Reading latest ANR…	Membaca ANR terkini…
+ANR: đã đọc (không gửi lệnh ghi nào)	ANR: read (no write command sent)	ANR: dibaca (tiada arahan tulis dihantar)
 # B3 DOCK-SCALE (2.89) — mục Cài đặt › Hiển thị "Cỡ thanh nút xe" (khoá dock_scale).
 Cỡ thanh nút xe	Car bar size	Saiz bar kereta
 # 2.91 · F1 — mục Cài đặt › Dẫn đường "Tự mở VietMap cho bong bóng" (khoá vm_bubble_enabled, nghĩa cũ: tự mở VietMap).

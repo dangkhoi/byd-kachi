@@ -53,19 +53,19 @@ t01	toggle	bật đèn đọc	Control	Bật Đèn đọc	0	0	-	-
 t02	toggle	tắt đèn đọc	Control	Tắt Đèn đọc	0	0	-	-
 t03	toggle	bật lọc bụi	Control	Bật Lọc bụi	0	0	-	-
 t04	toggle	tắt điều hoà	Control	Tắt Gió tự động	0	0	-	-
-t05	toggle	bật sưởi ghế	Control	Sưởi ghế lái: Mức 1	0	0	-	-
+t05	toggle	bật sưởi ghế	Control	Bật sưởi ghế lái mức 1	0	0	-	-
 t06	toggle	mở cửa sổ trời	Control	Cửa sổ trời	1	0	-	voice_confirm_ids=
 t07	gone	khoá xe	Unknown	đã bỏ khỏi Kachi	0	0	-	-
 t09	gone	dừng chiếu cụm	Unknown	-	0	0	-	-
 # ── COVER (kính) ────────────────────────────────────────────────────────────────────────────────
-t10	cover	mở kính trước trái	Control	Bật Kính lái	0	0	-	-
-t11	cover	đóng kính trước trái	Control	Tắt Kính lái	0	0	-	-
+t10	cover	mở kính trước trái	Control	Mở kính lái	0	0	-	-
+t11	cover	đóng kính trước trái	Control	Đóng kính lái	0	0	-	-
 t12	cover	mở kính bên lái	Control	Kính	0	0	-	-
 t13	cover-confirm	mở hết kính	Macro	Mở hết kính	1	0	-	voice_confirm_ids=macro:mac_win_open_all
 t14	macro	đóng hết kính	Macro	Đóng hết kính	0	0	-	-
 # ── STEP ────────────────────────────────────────────────────────────────────────────────────────
-t15	step	nhiệt độ hai mươi bốn độ	Control	Nhiệt độ = 24	0	0	-	-
-t16	step	đặt nhiệt độ 24 độ	Control	Nhiệt độ = 24	0	0	-	-
+t15	step	nhiệt độ hai mươi bốn độ	Control	Nhiệt độ 24	0	0	-	-
+t16	step	đặt nhiệt độ 24 độ	Control	Nhiệt độ 24	0	0	-	-
 t17	step	tăng gió	Control	Tăng Gió	0	0	-	-
 t18	gone	giảm âm lượng	Unknown	đã bỏ khỏi Kachi	0	0	-	-
 t20	gone	đặt độ sáng màn 8	Unknown	đã bỏ khỏi Kachi	0	0	-	-
@@ -195,7 +195,7 @@ t100	misspell	xem tin	Read	-	0	0	-	-
 t101	misspell	bằng ghế sưởi	Control	Sưởi ghế lái	0	0	-	-
 t102	misspell	bật ghế sửi	Control	Sưởi ghế lái	0	0	-	-
 t103	misspell	dần nhạc	Media	Dừng nhạc	0	0	-	-
-t104	misspell	mật độ hai mươi hai độ	Control	Nhiệt độ = 22	0	0	-	-
+t104	misspell	mật độ hai mươi hai độ	Control	Nhiệt độ 22	0	0	-	-
 t105	misspell	mở kim trước trái	Control	Kính lái	0	0	-	-
 t106	misspell	mở kín trước trái	Control	Kính lái	0	0	-	-
 t108	misspell	bật lọt bụi	Control	Lọc bụi	0	0	-	-
@@ -208,9 +208,25 @@ t108	misspell	bật lọt bụi	Control	Lọc bụi	0	0	-	-
 #   t114 "đóng cửa sổ trời" khi ĐÃ tích nóc (luật xét VẾ — `Rule.matches`) và t115 "mở cửa sổ trời" khi người dùng
 #   chỉ tích cốp (lựa chọn thật thay mặc định). Hàng có cột `voice_confirm_ids=` mà `confirm=0` CHỈ được ở lớp này.
 t109	confirm	mở cốp	Control	Mở Cốp sau	1	0	-	voice_confirm_ids=control:trunk
-t110	confirm	mở cửa sổ trời	Control	Bật Cửa sổ trời	1	0	-	voice_confirm_ids=control:sunroof
+t110	confirm	mở cửa sổ trời	Control	Mở cửa sổ trời	1	0	-	voice_confirm_ids=control:sunroof
 t111	compound-confirm	mở cốp rồi bật đèn đọc	Control,Control	Mở Cốp sau	1	0	-	voice_confirm_ids=control:trunk
-t112	confirm	mở 4 kính	Control	Bật 4 kính	1	0	-	voice_confirm_ids=control:windows_all
-t113	toggle	hạ bốn kính	Control	Bật 4 kính	0	0	-	-
+t112	confirm	mở 4 kính	Control	Mở 4 kính	1	0	-	voice_confirm_ids=control:windows_all
+t113	toggle	hạ bốn kính	Control	Mở 4 kính	0	0	-	-
 t114	confirm-neg	đóng cửa sổ trời	Control	Cửa sổ trời	0	0	-	voice_confirm_ids=control:sunroof
 t115	confirm-neg	mở cửa sổ trời	Control	Cửa sổ trời	0	0	-	voice_confirm_ids=control:trunk
+# ── 2.96 R12 · CÂU KẾT THÚC PHIÊN (owner 07/10 "bai bai, gút bai, tạm biệt, cảm ơn, thoát đi…") ──────────────────
+# Lớp `end`: CẢ CÂU là câu kết thúc ⇒ ý định EndSession, preview = câu tạm biệt. Lớp `end-neg`: câu VA CHẠM đã cân
+# nhắc (KDoc VoiceEndWords "Cố ý KHÔNG có") ⇒ KHÔNG được thành EndSession.
+t116	end	bai bai	EndSession	Tạm biệt	0	0	-	-
+t117	end	gút bai	EndSession	Tạm biệt	0	0	-	-
+t118	end	tạm biệt Kachi	EndSession	Tạm biệt	0	0	-	-
+t119	end	cảm ơn nhé	EndSession	Tạm biệt	0	0	-	-
+t120	end	thoát đi	EndSession	Tạm biệt	0	0	-	-
+t121	end	thôi được rồi	EndSession	Tạm biệt	0	0	-	-
+t122	end	xong rồi cảm ơn	EndSession	Tạm biệt	0	0	-	-
+t123	end	không cần nữa	EndSession	Tạm biệt	0	0	-	-
+t124	end	good bye	EndSession	Tạm biệt	0	0	-	-
+t125	end-neg	tắt đi	Unknown	-	0	0	-	-
+t126	end-neg	đóng đi	Unknown	-	0	0	-	-
+t127	end-neg	thôi lấy gió ngoài	Control	-	0	0	-	-
+t128	end-neg	đúng rồi	Unknown	-	0	0	-	-

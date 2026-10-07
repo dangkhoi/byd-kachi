@@ -51,6 +51,10 @@ class WallpaperController(
     private var wallLoading: String? = null
     private var wallBitmap: Bitmap? = null
 
+    /** 2.96 WALL-RESCAN — số nhịp từ lượt quét gần nhất + chốt một lượt quét nền một lúc ([WallpaperRescan]). */
+    private var ticksSinceScan = 0
+    private var rescanning = false
+
     /**
      * Nạp lại lựa chọn + danh sách ảnh rồi vẽ ngay. Gọi lúc mở màn và mỗi khi người dùng đổi lựa chọn.
      *
@@ -106,6 +110,7 @@ class WallpaperController(
      */
     fun step(force: Boolean = false) {
         if (!prefs().enabled) return
+        if (!force) rescanIfDue()
         if (wallImages.isEmpty()) {
             // Bật mà chưa có ảnh: KHÔNG im lặng — nói chỗ bỏ ảnh vào, vì người dùng không có cách nào tự đoán.
             if (force) {
@@ -150,6 +155,7 @@ class WallpaperController(
                 val old = wallBitmap
                 wallBitmap = next
                 wall.setPhoto(next, prefs().fit, prefs().dim)
+                Log.i("Wallpaper", "đã nạp ảnh $shown/$total (${next.width}×${next.height})")
                 // Nhả ảnh CŨ sau khi đã đưa ảnh mới vào View — nhả trước thì lần vẽ kế tiếp dùng ảnh đã thu hồi và sập.
                 old?.recycle()
                 // Cùng luật cho ảnh mờ: đổi kho → dựng lại nền kính → rồi mới nhả ảnh mờ cũ.
@@ -157,6 +163,43 @@ class WallpaperController(
                     val oldArt = WallArtStore.swap(art, first)
                     onArtChanged()
                     oldArt?.blurred?.recycle()
+                }
+            }
+        }
+    }
+
+    /**
+     * 2.96 WALL-RESCAN — quét lại thư mục ảnh trên nhịp 10 s ([step]): trống ⇒ mỗi nhịp, có ảnh ⇒ mỗi 60 s ([WallpaperRescan]).
+     * I/O ở thread nền như [reload]; lượt [reload] chen giữa (thẻ [wallScanGen] đổi) hoặc vừa TẮT ⇒ kết quả bị bỏ.
+     */
+    private fun rescanIfDue() {
+        ticksSinceScan++
+        if (rescanning || !WallpaperRescan.due(ticksSinceScan, wallImages.isNotEmpty())) return
+        ticksSinceScan = 0
+        rescanning = true
+        val gen = wallScanGen
+        submitIo {
+            val paths = WallpaperStore.images(ctx)
+            onUi {
+                rescanning = false
+                if (gen != wallScanGen || gone() || !prefs().enabled) return@onUi
+                when (WallpaperRescan.outcome(wallImages, paths)) {
+                    WallpaperRescan.Outcome.SAME -> Unit
+                    WallpaperRescan.Outcome.FIRST -> {
+                        Log.i("Wallpaper", "quét lại: có ${paths.size} ảnh mới ⇒ chiếu")
+                        wallImages = paths
+                        slide = SlideshowState()
+                        step(force = true)
+                    }
+                    WallpaperRescan.Outcome.CHANGED -> {
+                        Log.i("Wallpaper", "quét lại: ${wallImages.size} → ${paths.size} ảnh")
+                        wallImages = paths
+                    }
+                    WallpaperRescan.Outcome.EMPTIED -> {
+                        Log.i("Wallpaper", "quét lại: thư mục trống ⇒ về nền mặc định")
+                        wallImages = emptyList()
+                        step(force = true)   // cùng đường "bật mà chưa có ảnh" của [step] (báo chỗ bỏ ảnh + nền mặc định)
+                    }
                 }
             }
         }

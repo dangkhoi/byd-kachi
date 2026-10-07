@@ -49,7 +49,7 @@ class VoiceKeyKeepAliveService : Service() {
     private fun wokeFromLongSleep(app: Context): Boolean {
         val now = A11yBindJournal.deepSleepMs(SystemClock.elapsedRealtime(), SystemClock.uptimeMillis())
         val prev = Prefs.lastDeepSleepMs(app)
-        Prefs.setLastDeepSleepMs(app, now)
+        if (A11yBindJournal.shouldPersistDeepSleep(prev, now)) Prefs.setLastDeepSleepMs(app, now)   // 2.96 R18: không ghi tệp mỗi 30 s
         return A11yBindJournal.wokeFromLongSleep(prev, now, WAKE_THRESHOLD_MS)
     }
 

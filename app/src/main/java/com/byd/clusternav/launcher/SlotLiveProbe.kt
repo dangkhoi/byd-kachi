@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.byd.clusternav.system.StackListSnapshot
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
@@ -55,6 +56,8 @@ object SlotLiveProbe {
     private val io = Executors.newSingleThreadExecutor { r -> Thread(r, "kachi-slot-probe").apply { isDaemon = true } }
 
     @Volatile private var ticking = false
+    /** Mốc (đồng hồ [StackListSnapshot.nowMs]) lượt đo trước — bản đọc dùng lại phải chụp SAU mốc này. Chỉ chạm trên luồng `io`. */
+    private var lastSweepAt = Long.MIN_VALUE
     @Volatile private var running = false
 
     /** Màn chính đang khuất ⇒ không nhịp nào chạy. Xem khối ⚠ ở KDoc lớp. */
@@ -163,9 +166,13 @@ object SlotLiveProbe {
         val shell = snapshot.firstOrNull()?.shell ?: return
         running = true
         io.execute {
-            val out = runCatching { shell("am stack list") }
+            // 2.96 · R18 — lượt dò repin (đang chiếu, 4 s) vừa đọc CÙNG lệnh ⇒ dùng lại bản đọc chụp SAU nhịp đo trước (0 lệnh); không có
+            // ⇒ tự chạy như cũ và ghi lại cho bên kia ([StackListSnapshot]; [ĐO log xe 07/10] 15 + ~4 `am stack list`/phút trùng nhau).
+            val since = lastSweepAt
+            lastSweepAt = StackListSnapshot.nowMs()
+            val out = StackListSnapshot.fresh(notBeforeMs = since) ?: runCatching { shell("am stack list") }
                 .onFailure { Log.w(TAG, "đo ô hỏng (am stack list): ${it.javaClass.simpleName}") }
-                .getOrNull()
+                .getOrNull()?.also { StackListSnapshot.record(it) }
             running = false
             if (out.isNullOrBlank()) return@execute            // không đọc được ⇒ KHÔNG kết luận (nhịp này bỏ qua)
             val picture = snapshot.map { it.key to (FreeformLaunch.parseTaskIdOnDisplay(out, it.pkg, it.displayId) != null) }

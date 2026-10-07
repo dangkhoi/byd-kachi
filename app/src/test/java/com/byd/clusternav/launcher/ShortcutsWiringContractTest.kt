@@ -185,8 +185,12 @@ class ShortcutsWiringContractTest {
         // đích chạm. Vẫn MỘT phép cho cả `cellPx()` lẫn bề dài (bài `ShortcutGridFitWiringContractTest` canh `cellPx`).
         assertTrue(SourceRoots.body(view, "internal fun shortcutStripLength(ctx: Context, n: Int)")
             .contains("ShortcutStrip.cells(n) * shortcutSlotPx(ctx) + 2 * dpi(ctx, Bars.SHORTCUT_PAD)"))
-        assertTrue(SourceRoots.body(view, "internal fun shortcutSlotPx(ctx: Context)")
-            .contains("maxOf(dpi(ctx, Bars.SHORTCUT_CELL), DockScaleContext.touchFloorPx(ctx))"))
+        // 2.96 DOCK-ICON-EVEN-GAP — ĐỔI GHIM có lý do: thanh ≠ 100 % ⇒ khe = SHORTCUT_DOCK_SLOT (owner 07/10 chọn khe giữa icon =
+        // khe icon→mép, bỏ sàn 48 dp của khối lối tắt); 100 % giữ nguyên max(SHORTCUT_CELL, 48 dp).
+        val slotFn = SourceRoots.body(view, "internal fun shortcutSlotPx(ctx: Context)")
+        assertTrue(slotFn.contains("if (DockScaleContext.isScaled(ctx)) dpi(ctx, Bars.SHORTCUT_DOCK_SLOT)"), slotFn)
+        assertTrue(slotFn.contains("else maxOf(dpi(ctx, Bars.SHORTCUT_CELL), DockScaleContext.touchFloorPx(ctx))"), slotFn)
+        assertEquals(84, KachiBars.SHORTCUT_DOCK_SLOT, "60 + (93 − 60) × 3/4 — khe giữa icon = 1,5 × khe tới mép (owner 07/10)")
         assertEquals(52, KachiBars.SHORTCUT_CELL, "owner 01/10: icon 52 dp")
         assertEquals(KachiSpace.XS, KachiBars.SHORTCUT_PAD)
         // 2.87 R-SI1 đổi chân (không nới): lưới widget KHÔNG còn khe cố định `SHORTCUT_GRID_CELL` (64 dp) để so — cỡ icon +
