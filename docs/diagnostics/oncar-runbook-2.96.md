@@ -55,9 +55,9 @@ ADAS báo lỗi) ⇒ **dừng ngay**, không thử lại (memory "thấy sập l
 
 | # | Lệnh | Khi nào | Quan sát | Kết quả |
 |---|---|---|---|---|
-| B1 | `VEH=<ip-xe>:5555 ./scripts/vehicle/isa-speedlimit-2606.sh` | Bất kỳ (chỉ đọc) | Tên hằng nào đọc được / `bad_feature`; `0x237` online? | |
+| B1 | `VEH=<ip-xe>:5555 ./scripts/vehicle/isa-speedlimit-2606.sh` | Bất kỳ (chỉ đọc) | Tên hằng nào đọc được / `bad_feature`; `0x237` online? | **08/10** [ĐO]: `0x237` online=1 · `0x2370002E` sentinel · `SPEED_LIMIT_CHANGE_SWITCH/CONFIG` = 1/2 · ô ISA đọc −10011 · thiết bị ADAS không đọc được, `ADAS_SLA_OUTPUT_SPEED_LIMIT` = `bad_feature` |
 | B2 | `VEH=<ip-xe>:5555 PHASE=watch SECS=180 ./scripts/vehicle/isa-speedlimit-2606.sh` | Người ngồi ghế phụ chạy, **xe đi qua 2 biển tốc độ khác nhau** | `SLA=` đổi theo biển? `0x237`/`dựbáo` có lúc nào online? Chụp ảnh cụm lúc đèn dự báo (nếu có) | |
-| B3 | `VEH=<ip-xe>:5555 PHASE=write ./scripts/vehicle/isa-speedlimit-2606.sh` (gõ `ISA` để tiếp) | Đỗ, P, phanh tay, owner đồng ý | W1 ô ISA = 60 · W2 + bản đồ hợp lệ · W3 `setIsaMap*` 60/200 m — mỗi bước script hỏi "cụm/HUD có hiện 60?" | |
+| B3 | `VEH=<ip-xe>:5555 PHASE=write ./scripts/vehicle/isa-speedlimit-2606.sh` (gõ `ISA` để tiếp) | Đỗ, P, phanh tay, owner đồng ý | W1 ô ISA = 60 · W2 + bản đồ hợp lệ · W3 `setIsaMap*` 60/200 m — mỗi bước script hỏi "cụm/HUD có hiện 60?" | **08/10** [ĐO, P, 0 km/h, owner duyệt]: 3 lượt với 50 km/h (W1–W3 một lần · W1–W3 giữ 30 s · gửi LIÊN TỤC đủ 8 `setIsaMap*` 0,5 s × 90 s loại 1/2/3, khoảng cách đếm lùi) — HAL `ok`/`rc=0` mọi lệnh, **cụm + HUD không hiện gì** (owner nhìn); trả về 0 ⇒ **đóng như 2602** khi xe đỗ |
 
 **Đọc kết quả → quyết định**
 
