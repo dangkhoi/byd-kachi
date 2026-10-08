@@ -31,6 +31,8 @@ Mức bằng chứng theo `CLAUDE.md` §2: **[ĐO]** · **[SUY]** · **[ĐOÁN]*
 | A8 | Đo khởi động (×3 nổ máy) | Cụm xong sớm hơn 2.95 (2.95: +38 s / +71 s sau sáng màn) | `docs/diagnostics/startup-timeline-2026-10-07.md` cách đọc · `KachiReady summary` | |
 | A9 | Tắt máy chờ standby 10 phút → nổ lại | Không chiếu cụm hai lần; log standby thưa (repin ≥ 30 s) | `perf-inventory-2026-10-07.md` | |
 | A10 | Chẩn đoán › "ANR gần nhất của Kachi" | Có/không ANR, không lỗi | DiagActivity | |
+| A11 | Nút giọng nói vô-lăng: màn BẬT rồi màn TẮT (V2.0.4 tối ưu #4 đổi đường này) | Ra đúng thứ đã gán trong Kachi (Kachi nghe / Trợ lý BYD) ở cả hai trạng thái | log `NavAccess onKeyEvent` + màn | |
+| A12 | Mở/tắt camera theo yêu cầu của Kachi ×3 (V2.0.4 tối ưu #5 đổi logic thoát 360) | Camera 360 của xe không tự bật/tắt sai | màn + log camera | |
 
 **Còn mở cần số đo xe (không chặn)**: OQ3 trần 25 s `HealCastDeferral` (đọc `KachiReady cast-hold` + `keys-defer` ở A1/A8) · alarm 60 s `RebindReceiver` khi standby (A9) · `VietMapAutostart.awaitBubble` 2 `dumpsys`/500 ms (A8).
 
