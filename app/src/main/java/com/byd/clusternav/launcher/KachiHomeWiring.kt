@@ -429,10 +429,13 @@ internal fun collectHome(
     owner.lifecycleScope.launch {
         owner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             container.carStatusRepository.start()
+            // 2.98 · R6-C — vòng đọc HAL ngủ khi màn tắt; sáng lại ⇒ đọc NGAY. Không cờ RECEIVER_*: SCREEN_ON là protected-broadcast (AOSP core/res/AndroidManifest.xml:50) ⇒ miễn luật targetSdk ≥ 34. Đăng ký hỏng ⇒ không chết, còn lưới `idleMs`.
+            val unwatch = (owner as? android.content.Context)?.let { com.byd.clusternav.system.ScreenLit.watch(it) { container.carStatusRepository.wake() } }
             try {
                 // 2.88 kênh 2: dòng `TYRE raw …` chỉ khi ĐỔI (`TyreRawLog`) — bằng chứng lốp từ đời xe khác không cần adb.
                 container.carStatusRepository.status.collect { TyreRawLog.note(it.tyres); viewModel.setCarStatus(it) }
             } finally {
+                unwatch?.invoke()
                 container.carStatusRepository.stop()
             }
         }

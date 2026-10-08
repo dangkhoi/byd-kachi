@@ -4,10 +4,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Nguồn ĐỌC 2 nhịp cho [CarStatusRepository]. [CarDataAdapter] hiện thực; test dùng reader giả.
@@ -50,11 +53,40 @@ class CarStatusRepository(
     private val scope: CoroutineScope,
     private val fastMs: Long = 1_000L,
     private val slowMs: Long = 10_000L,
+    /**
+     * 2.98 · R6-C (owner 09/10: *"chỉ đọc khi màn sáng, đọc suốt đêm tốn pin xe"*) — `false` = màn xe TẮT ⇒ hai vòng KHÔNG đọc
+     * HAL, chỉ ngủ tới [wake] (màn sáng lại) hoặc [idleMs]. [ĐO log xe 08/10] màn chính RESUMED qua đêm ⇒ `HAL đọc=385/phút`
+     * suốt ~9,6 h. Mặc định `true` = hành vi cũ (test, reader giả). Không hỏi được trạng thái màn ⇒ bên tiêm trả `true` (fail-open).
+     */
+    private val awake: () -> Boolean = { true },
+    private val idleMs: Long = 60_000L,
 ) {
     private val _status = MutableStateFlow(CarStatus())
 
     /** Trạng thái xe hiện tại (bất biến, mọi field nullable). null-field ⇒ "—". */
     val status: StateFlow<CarStatus> = _status.asStateFlow()
+
+    /**
+     * R6-C — thế hệ đánh thức. `StateFlow` (không phải `SharedFlow` đệm 1): mỗi vòng ĐỌC thế hệ TRƯỚC khi hỏi [awake], rồi chỉ
+     * ngủ khi thế hệ chưa đổi ⇒ một [wake] rơi vào khe giữa `awake()` (binder, vài ms, trên `Dispatchers.IO`) và lúc vòng
+     * bắt đầu chờ KHÔNG mất (soát Pass 4 [P2]: `SharedFlow(replay=0)` bỏ phần tử khi chưa có người thu ⇒ vòng ngủ oan tới
+     * [idleMs]). Cả hai vòng cùng thấy một lần tăng; phát thừa vô hại.
+     */
+    private val wakeGen = MutableStateFlow(0L)
+
+    /** R6-C — màn xe vừa sáng: hai vòng đang ngủ vì màn tắt đọc lại NGAY, không đợi tới [idleMs]. Gọi từ luồng nào cũng được. */
+    fun wake() { wakeGen.update { it + 1 } }   // lambda thuần ⇒ dùng `update` được (khác [publish])
+
+    /**
+     * R6-C — một lượt cổng màn: `true` = màn sáng, đọc tiếp; `false` = vừa ngủ một hạn (tới [wake] hay hết [idleMs] — lưới khi lỡ
+     * tín hiệu màn sáng), 0 lượt đọc HAL, chỗ gọi `continue` để hỏi lại [awake].
+     */
+    private suspend fun awakeOrSleep(): Boolean {
+        val gen = wakeGen.value                 // ĐỌC trước khi hỏi màn — xem KDoc [wakeGen]
+        if (awake()) return true
+        withTimeoutOrNull(idleMs) { wakeGen.first { it != gen } }
+        return false
+    }
 
     private var fastJob: Job? = null
     private var slowJob: Job? = null
@@ -89,7 +121,18 @@ class CarStatusRepository(
     fun start() {
         stop()
         fastJob = scope.launch {
+            // R6-C (soát Pass 5 [P3]): hỏi màn ở MỌI nhịp nhanh = +2 binder/giây lúc xe chạy ⇒ vòng nhanh chỉ hỏi lại mỗi
+            // [slowMs] (đếm nhịp, không đồng hồ) hoặc ngay khi có [wake]. Màn vừa tắt ⇒ tối đa một nhịp chậm mới ngừng đọc.
+            val recheckEvery = (slowMs / fastMs).coerceAtLeast(1L).toInt()
+            var ticks = 0
+            var seenGen = wakeGen.value
             while (isActive) {
+                val g = wakeGen.value
+                if (ticks == 0 || g != seenGen) {
+                    seenGen = g
+                    if (!awakeOrSleep()) { ticks = 0; continue }   // màn tắt ⇒ không đọc, ngủ tới wake() hoặc idleMs
+                }
+                ticks = (ticks + 1) % recheckEvery
                 // H1: màn không bày datum nhanh nào ⇒ KHÔNG đọc, và lùi về nhịp chậm thay vì thức dậy mỗi giây
                 // để không làm gì. Vẫn có một lượt hỏi lại mỗi [slowMs] nên khi người dùng kéo ô Tốc độ lên màn,
                 // nhịp nhanh sống lại trong vòng một nhịp chậm — không cần ai đánh thức nó.
@@ -100,6 +143,7 @@ class CarStatusRepository(
         }
         slowJob = scope.launch {
             while (isActive) {
+                if (!awakeOrSleep()) continue   // R6-C: màn tắt ⇒ không đọc, ngủ tới wake() hoặc idleMs
                 publish { reader.readSlow(it) }
                 delay(slowMs)
             }

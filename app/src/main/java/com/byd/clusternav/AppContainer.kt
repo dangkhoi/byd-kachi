@@ -65,6 +65,8 @@ class AppContainer internal constructor(
     // thuần (gateway giả) không dựng luồng nào và không chạm `filesDir`; [build] tiêm bản thật.
     private val releaseSchedulerInit: () -> WriteReleaseScheduler = { WriteReleaseScheduler.NONE },
     private val ctlJournalInit: () -> CtlJournal = { CtlJournal.NONE },
+    // 2.98 · R6-C — màn xe có đang SÁNG không (cổng đọc HAL của [carStatusRepository]). Mặc định `true` cho container test thuần.
+    private val screenAwake: () -> Boolean = { true },
 ) {
     /** Chủ DUY NHẤT của kết nối dadb window/cast — [ShellTransport.get] uỷ quyền về đây. */
     val shellTransport: ShellTransport by lazy { shellTransportInit() }
@@ -124,7 +126,10 @@ class AppContainer internal constructor(
     }
 
     /** Repo trạng thái xe LIVE: poll 2 nhịp → `StateFlow<CarStatus>` (nguồn cho UDF HOME; Activity collect qua repeatOnLifecycle). */
-    val carStatusRepository: CarStatusRepository by lazy { CarStatusRepository(carDataAdapter, carScope) }
+    val carStatusRepository: CarStatusRepository by lazy {
+        // 2.98 · R6-C: chỉ đọc HAL khi màn xe SÁNG; không hỏi được ⇒ đọc như cũ (fail-open). Màn sáng lại ⇒ `wake()` (KachiHomeWiring).
+        CarStatusRepository(carDataAdapter, carScope, awake = { screenAwake() })
+    }
 
     /**
      * H1 — màn chính rời tiền cảnh: quên **nhu cầu** và quên **kết luận "xe không có datum ấy"**.
@@ -219,6 +224,7 @@ class AppContainer internal constructor(
             },
             // FIX286 · SR6 — nhật ký bền mỗi lệnh ghi xe (`ctl-writes.log` + logcat ⇒ `usage-*.log`).
             ctlJournalInit = { CtlJournalStore.journal(app) },
+            screenAwake = { com.byd.clusternav.system.ScreenLit.read(app) },
         )
 
         /**
