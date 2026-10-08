@@ -179,12 +179,18 @@ object SlotLiveProbe {
             unchangedSweeps = if (picture == lastPicture) unchangedSweeps + 1 else 0
             lastPicture = picture
             val readable = "Stack id=" in out                  // ô 7: màn ảo nhận lại chỉ kết luận "trống" trên bản đọc có tiêu đề stack
+            // 2.98 · R3 (SLOT-ELSEWHERE-TWO-HOMES, `SlotProbeScope`): sổ chủ màn ảo — đọc RAM, chỉ khi có ô vắng app, một lần mỗi nhịp.
+            val held by lazy(LazyThreadSafetyMode.NONE) { SlotVdOwner.held() }
             snapshot.forEach { sub ->
                 if (sub.onMissing != null && !readable) return@forEach
                 val alive = picture.first { it.first == sub.key }.second
                 // 2.93 · R3 (SLOT-APP-ESCAPE): vắng màn ảo ô mà gói còn task ở display khác ⇒ "ở chỗ khác" — CÙNG bản đọc, cùng phép
                 // FIX286 (`SlotPresence`), 0 lệnh thêm. Đọc rỗng/lạ ⇒ UNKNOWN ⇒ không phải "ở chỗ khác".
-                val away = !alive && SlotPresence.of(out, sub.pkg, sub.displayId) == SlotPresence.ELSEWHERE
+                // 2.98 · R3 — màn ảo ô của một màn Kachi KHÁC còn sống không phải "chỗ khác": hai màn chính cùng sống, màn mới nhận ô
+                // (`SlotVdOwner.adopt` nhả màn ảo của màn cũ) rồi mở app vào màn ảo của nó ⇒ bản đo của màn cũ thấy "rời ô" (đã-thấy-sống
+                // ⇒ hoàn ô im lặng như 2.92), không nói "đã rời ô, vẫn mở ngoài ô". Một màn Kachi ⇒ tập rỗng ⇒ như 2.93.
+                val away = !alive && SlotPresence.of(out, sub.pkg, sub.displayId,
+                    SlotProbeScope.otherHomes(held, sub.key, sub.displayId)) == SlotPresence.ELSEWHERE
                 // Senior review Pass 2 [P3] — màn ảo ô còn app KHÁC ⇒ ô chưa trống (luật hoàn ô nhả màn ảo ⇒ cờ 256 kết thúc app đó)
                 // ⇒ không tính cho kết luận chưa-từng-thấy-sống (KDoc `SlotLiveness`). Cùng bản đọc, 0 lệnh.
                 val othersInSlot = away && SlotLiveness.othersInSlot(out, sub.pkg, sub.displayId)

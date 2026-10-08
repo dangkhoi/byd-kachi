@@ -185,8 +185,11 @@ object SimpleCastRuntime {
 private class DadbSimpleCastShell(private val app: Context) : SimpleCastShell {
 
     override fun execute(command: String): ShellResult {
+        // 2.98 · R6-D: lệnh CHỈ-ĐỌC (danh sách cho phép [ShellLogGate.READ_ONLY_PREFIXES]) chỉ log khi kết quả ĐỔI / HỎNG /
+        // quá nhịp sống — `am stack list` là 99,7 % dòng `shell:` của log xe. Lệnh đổi trạng thái giữ log đầy đủ (pháp y).
+        val readOnly = ShellLogGate.isReadOnly(command)
         return try {
-            android.util.Log.i("SimpleCast", "shell: $command")
+            if (!readOnly) android.util.Log.i("SimpleCast", "shell: $command")
             val result = ShellTransport.get(app).exec(command)
             val shellResult = ShellResult(
                 exitCode = result.exitCode,
@@ -195,6 +198,8 @@ private class DadbSimpleCastShell(private val app: Context) : SimpleCastShell {
             )
             if (isPlacementEvidenceCommand(command)) {
                 logPlacementEvidence(command, shellResult)
+            } else if (readOnly) {
+                logReadOnly(command, shellResult)
             } else {
                 android.util.Log.i("SimpleCast", "shell OK: exit=${result.exitCode}")
             }
@@ -211,6 +216,15 @@ private class DadbSimpleCastShell(private val app: Context) : SimpleCastShell {
             android.util.Log.e("SimpleCast", "shell FAIL: command=$command error=${e.message}", e)
             shellResult
         }
+    }
+
+    /** R6-D: một lượt lệnh chỉ-đọc — hai dòng cũ (`shell:` + `shell OK`) chỉ khi [ShellLogGate] cho ghi; hỏng ⇒ mức W. */
+    private fun logReadOnly(command: String, result: ShellResult) {
+        val d = READ_LOG_GATE.decide(command, result.exitCode, result.stdout, result.stderr, android.os.SystemClock.elapsedRealtime())
+        if (!d.log) return
+        android.util.Log.i("SimpleCast", "shell: $command")
+        val line = "shell OK: exit=${result.exitCode}${ShellLogGate.suffix(d)}"
+        if (result.exitCode == 0) android.util.Log.i("SimpleCast", line) else android.util.Log.w("SimpleCast", line)
     }
 
     private fun logPlacementEvidence(command: String, result: ShellResult) {
@@ -262,6 +276,8 @@ private class DadbSimpleCastShell(private val app: Context) : SimpleCastShell {
         // 768 ASCII code units plus the record prefix remain below Android's log-entry limit.
         const val EVIDENCE_CHUNK_CHARS = 768
         val EVIDENCE_SEQUENCE = java.util.concurrent.atomic.AtomicLong()
+        /** R6-D — một cổng cho cả tiến trình (mọi instance shell cùng một lượt dò); LRU có trần, xem [ShellLogGate]. */
+        val READ_LOG_GATE = ShellLogGate()
     }
 }
 

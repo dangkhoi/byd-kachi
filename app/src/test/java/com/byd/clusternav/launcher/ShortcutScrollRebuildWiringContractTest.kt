@@ -35,9 +35,10 @@ class ShortcutScrollRebuildWiringContractTest {
         assertTrue(SourceRoots.body(view, "private fun buildGrid(items: List<AppShortcut>, keep: ShortcutScrollKeep.Wanted)")
             .contains("ShortcutScrollMemory.remember(it, w)"))
         val layout = code("ShortcutGridLayout.kt")
-        val scroll = SourceRoots.body(layout, "private fun scrollAlongTo(p: Int)")
-        assertTrue(scroll.indexOf("wanted = ShortcutScrollKeep.userScrolled(axis, c)") < scroll.indexOf("onUserScroll(wanted)"),
-            "báo SAU khi ghi lựa chọn mới")
+        // 2.98 · R5 — ĐỔI GHIM có lý do: bước trôi ghi theo khung lúc phóng (`flung`); vẫn MỘT chỗ ghi, báo SAU khi ghi.
+        val scroll = SourceRoots.body(layout, "private fun scrollAlongTo(p: Int, fling: ShortcutScrollKeep.Fling? = null)")
+        val write = scroll.indexOf("wanted = if (fling == null) ShortcutScrollKeep.userScrolled(axis, c) else ShortcutScrollKeep.flung(fling, p)")
+        assertTrue(write >= 0 && write < scroll.indexOf("onUserScroll(wanted)"), "báo SAU khi ghi lựa chọn mới")
         assertEquals(1, Regex("""onUserScroll\(""").findAll(layout).count(), "chỉ cú cuộn của người lái báo (không lượt đo nào)")
         assertEquals(1, Regex("""ShortcutScrollMemory\.remember\(""").findAll(view).count())
     }

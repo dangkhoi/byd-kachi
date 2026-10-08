@@ -101,6 +101,22 @@ object PackageQueries {
         null
     }
 
+    /**
+     * 2.98 · R6-H — đọc gói + versionCode từ một tệp APK trên đĩa (dọn APK OTA đã cài). Cùng cửa với [packageInfo]:
+     * `getPackageArchiveInfo` có overload `PackageInfoFlags` từ API 33. Trả `null` khi tệp không phải APK đọc được
+     * (đúng hợp đồng nền tảng — tải dở thiếu central directory của zip).
+     */
+    fun archiveInfo(pm: PackageManager, path: String, flags: Int = 0): PackageInfo? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.getPackageArchiveInfo(path, PackageManager.PackageInfoFlags.of(flags.toLong()))
+        } else {
+            legacyArchiveInfo(pm, path, flags)
+        }
+
+    @Suppress("DEPRECATION")
+    private fun legacyArchiveInfo(pm: PackageManager, path: String, flags: Int): PackageInfo? =
+        pm.getPackageArchiveInfo(path, flags)
+
     @Suppress("DEPRECATION")
     private fun legacyResolve(pm: PackageManager, intent: Intent, flags: Int): ResolveInfo? =
         pm.resolveActivity(intent, flags)

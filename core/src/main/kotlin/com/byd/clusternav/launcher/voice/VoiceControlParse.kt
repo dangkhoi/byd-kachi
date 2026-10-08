@@ -217,6 +217,16 @@ internal object VoiceControlParse {
             VoiceLexicon.tokenize("$mode ghế phụ$levelSuffix")
     }
 
+    /**
+     * 2.98 R1 VOICE-HA-HOMOGRAPH — từ đầu [t] là động từ *"hạ"* THẬT: bỏ dấu ra `ha` VÀ qua luật dấu [VoiceHomograph] của
+     * [VoiceGrammar.ACTION_HEAD_WORDS] — chữ mang dấu chỉ nhận đúng *"hạ"* (thanh nặng); *"hả"* (hả? — hỏi lại) · *"Hà"* · *"há"*
+     * không còn là lệnh hạ kính / hạ cốp. Chữ KHÔNG dấu (`ha` gõ tay, nhật ký cũ) ⇒ không dữ liệu để phân biệt ⇒ giữ hành vi cũ.
+     */
+    fun lowersAt0(t: List<Token>): Boolean {
+        val h = t.firstOrNull() ?: return false
+        return h.norm == "ha" && VoiceGrammar.ACTION_HEAD_WORDS.matches(h)
+    }
+
     /** Từ chỉ KÍNH cửa (đã bỏ dấu) — để [rewriteWindowDirection] biết câu có nói về kính không. */
     private val WINDOW_WORDS = setOf("kinh", "kieng", "kim", "kieng")
 
@@ -239,7 +249,7 @@ internal object VoiceControlParse {
         if (!mentionsWindow || norms.contains("cop")) return null
         val head = norms[0]
         val verb: String = when {
-            head == "ha" -> "mở"
+            lowersAt0(t) -> "mở"
             (head == "keo" || head == "nang") && norms.contains("len") -> "đóng"
             else -> return null
         }

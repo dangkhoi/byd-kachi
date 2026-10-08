@@ -39,7 +39,7 @@ import com.byd.clusternav.launcher.voice.VoiceSpeakerRouter
 internal object TestBridgeState {
 
     /**
-     * Tiền tố tên màn ảo của ô — **gương** của `VdAppHost` (`"kachi-slot-$slot-$stamp"`).
+     * Tiền tố tên màn ảo của ô — **gương** của `SlotVdName.PREFIX` (`:core`, 2.98 · R4: `"kachi-slot-<ô>"` hoặc `"kachi-slot-<ô>-g<n>"`).
      *
      * Nó là một bản sao có chủ ý và có lưới an toàn: `TestBridgeSafetyContractTest` đỏ nếu `VdAppHost` không còn
      * đặt tên theo tiền tố này. Không gộp về một hằng dùng chung ngay bây giờ vì `VdAppHost` đang có người khác

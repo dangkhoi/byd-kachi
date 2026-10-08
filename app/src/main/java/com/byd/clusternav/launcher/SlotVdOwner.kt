@@ -62,6 +62,9 @@ object SlotVdOwner {
         stale.forEach { free(it, WHY_SLOT_TAKEN) }
     }
 
+    /** 2.98 · R4: tên các màn ảo ô Kachi đang sống (kể cả app đỗ ô 7) — [SlotVdName.pick] né chúng để sổ không nhầm hai màn là một. */
+    fun liveNames(): Set<String> = ledger.live().mapTo(HashSet()) { it.name }
+
     /** Nhả màn ảo của [owner] ở [slot] (ô bị thay nội dung / dựng lại / đóng). Gọi lại lần hai ⇒ không làm gì. */
     fun release(owner: String, slot: Int) {
         ledger.release(owner, slot)?.let { free(it, WHY_SLOT_RELEASED) }
@@ -71,6 +74,12 @@ object SlotVdOwner {
     fun releaseOwner(owner: String) {
         ledger.releaseOwner(owner).forEach { free(it, WHY_OWNER_GONE) }
     }
+
+    /**
+     * 2.98 · R3 (`SlotProbeScope`) — ảnh chụp (chủ, display) của mọi màn ảo đang sống. Chỉ ĐỌC sổ trong RAM (dưới khoá của sổ),
+     * 0 lệnh; `SlotLiveProbe` gọi tối đa MỘT lần mỗi nhịp đo và chỉ khi có ô vắng app.
+     */
+    fun held(): List<SlotProbeScope.Held> = ledger.live().map { SlotProbeScope.Held(it.owner, it.handle.displayId) }
 
     /**
      * Lý do giải phóng — **mã ASCII ngắn**, không phải câu tiếng Việt. Cùng lý do mà dự án không dịch nhật ký

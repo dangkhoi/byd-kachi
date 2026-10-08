@@ -36,15 +36,19 @@ enum class SlotPresence {
          *
          * ⚠ Bản đọc không ra MỤC NÀO ⇒ [UNKNOWN], không phải [GONE]: display 0 luôn có stack màn nhà, nên "0 mục" chỉ có
          * thể là đọc hỏng / định dạng lạ — coi đó là "app đã đóng" thì một lần kênh trả rỗng là một lần giết app đang sống.
+         *
+         * 2.98 · R3 (`SLOT-ELSEWHERE-TWO-HOMES`, spec `kachi-298-plan.html`): [ignoring] = display KHÔNG tính là "chỗ khác" — màn
+         * ảo ô của một màn Kachi KHÁC còn sống (`SlotProbeScope.otherHomes`; chỉ bộ đo ô truyền). App chỉ còn task ở đó ⇒ [GONE] với
+         * ô này (đã rời ô, nhưng không "ra ngoài ô"). Mặc định rỗng = như trước (chạm lối tắt FIX286 không đổi).
          */
-        fun of(stackList: String, pkg: String, vd: Int): SlotPresence {
+        fun of(stackList: String, pkg: String, vd: Int, ignoring: Set<Int> = emptySet()): SlotPresence {
             if (vd < 1 || pkg.isBlank()) return UNKNOWN
             val entries = StackParse.parse(stackList)
             if (entries.isEmpty()) return UNKNOWN
             val mine = StackParse.of(entries, pkg)
             return when {
                 mine.any { it.displayId == vd } -> IN_SLOT
-                mine.isEmpty() -> GONE
+                mine.all { it.displayId in ignoring } -> GONE   // rỗng ⇒ GONE như trước
                 else -> ELSEWHERE
             }
         }

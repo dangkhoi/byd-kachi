@@ -107,7 +107,10 @@ class SlotParkWiringContractTest {
             // 2.93 · R3 — ĐỔI GHIM có lý do: nhịp vắng màn ảo ô mà gói còn task ở display khác nạp thêm `away` (cùng bản đọc,
             // `SlotPresence`); màn ảo nhận lại vẫn ưu tiên `onMissing` (mở lại — PARK-2b), không đổi.
             "if (sub.onMissing != null && !readable) return@forEach",
-            "val away = !alive && SlotPresence.of(out, sub.pkg, sub.displayId) == SlotPresence.ELSEWHERE",
+            // 2.98 · R3 — ĐỔI GHIM có lý do: "chỗ khác" bỏ màn ảo ô của một màn Kachi KHÁC (`SlotProbeScope.otherHomes`, sổ RAM, 0
+            // lệnh) — hai màn chính cùng sống không còn nói "đã rời ô" sai; một màn ⇒ tập rỗng ⇒ như cũ (`SlotProbeScopeTest`).
+            "val away = !alive && SlotPresence.of(out, sub.pkg, sub.displayId,",
+            "SlotProbeScope.otherHomes(held, sub.key, sub.displayId)) == SlotPresence.ELSEWHERE",
             // Senior review 2.93 Pass 2 [P3] — ĐỔI GHIM có lý do: (1) màn ảo ô còn app KHÁC ⇒ không tính cho kết luận chưa-từng-thấy-
             // sống (đặt tạm `B_NOT_IN_SLOT`: A còn ở đỉnh — luật ở `SlotLivenessElsewhereTest`); (2) thôi đo ĐÚNG bản vừa kết luận,
             // trên luồng chính, chỉ khi nó còn đăng ký — bản bị thay giữa nhịp không được gỡ nhầm bản mới cùng khoá / báo cho app mới.

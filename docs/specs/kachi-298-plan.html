@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.98 kế hoạch</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--diag:#0071e3;--user:#1a7f37;--deny:#bf5f00}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--diag:#2997ff;--user:#30d158;--deny:#ff9f0a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+svg .root{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+svg .dg{fill:none;stroke:var(--diag);stroke-width:2}
+svg .us{fill:none;stroke:var(--user);stroke-width:2}
+svg .tx{fill:var(--fg);font-size:12px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .sm{fill:var(--muted);font-size:10.5px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .wire{stroke:var(--line);stroke-width:1.5}
+svg .x{stroke:var(--deny);stroke-width:2}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.98 — Kế hoạch (đang gom, CHƯA đóng · CHƯA OTA)</h1>
+<p class="muted">Slug: <code>kachi-298-plan</code> · Branch <code>feat/key-source-split</code> (từ 2.97 (200) <code>fd05edb</code>) · Owner: dangkhoi · Owner 08/10: <i>"ok làm đi, chưa OTA, để gôm thêm bug nếu có nữa nhé, lưu ý rà soát performance bao gồm startup, trong quá trình chạy, xe standby, và chạy lâu dài qua ngày tháng"</i>.</p>
+<p class="muted">Mức bằng chứng theo CLAUDE.md §2: <b>[ĐO]</b> · <b>[SUY]</b> · <b>[ĐOÁN]</b> · <b>[CHƯA BIẾT]</b>. Mỗi R có dòng <i>Chi phí hiệu năng</i> (memory <code>kachi-feedback-perf-every-fix</code>).</p>
+
+<h2>1. Changelog</h2>
+<ul><li><b>Pass 0 — 2026-10-08</b>: mở lô 2.98 từ backlog P3 người lái thấy được + rà soát hiệu năng 4 trạng thái (khởi động · chạy · standby · chạy lâu ngày).</li>
+<li><b>Pass 1 — 2026-10-08</b>: R1–R5 + R4/R6 có mã + test off-car; R6 đo máy ảo (<code>docs/diagnostics/perf-inventory-2026-10-08.md</code>); thêm R6-A (log làn), R6-D…H; B/C chờ owner; I đóng (không thật).</li></ul>
+
+<h2>2. Context</h2>
+<ul><li>2.97 đã đăng, owner xác nhận trên xe. Lô này gom lỗi nhỏ người lái thấy được + rà hiệu năng; KHÔNG đăng OTA tới khi owner nói (để gom thêm bug).</li></ul>
+
+<h2>3. Requirements</h2>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Bằng chứng</th><th>Trạng thái</th></tr>
+<tr><td>R1</td><td><b>"hả …" không thành "hạ …"</b> (<code>VOICE-HA-HOMOGRAPH</code>): câu nói thẳng "hả kính lái" / "hả cốp" (hỏi lại) không được ra lệnh hạ kính / mở cốp. Chỉ "hạ" (có dấu nặng) mới là lệnh.</td><td>backlog · [ĐO] model in "HẠ" có dấu nặng (voice-ft-2026-09-16) · trước: "hả kính lái" ⇒ mở kính, "hả cốp" ⇒ đóng cốp</td><td>mã + test ✅ (<code>VoiceHaXong298Test</code>) · <i>Chi phí:</i> ~0</td></tr>
+<tr><td>R2</td><td><b>Liên từ "xong"</b> (<code>VOICE-XONG-CONNECTOR</code>): "đóng kính lái xong đèn đọc" ⇒ hai lệnh, hoặc ít nhất báo "đã bỏ qua" — không mất vế sau im lặng.</td><td>backlog · "xong" vào <code>CONNECTOR_WORDS</code> + tách theo động từ từng vế; câu kết thúc phiên không đổi; corpus mix 57 % → 100 %</td><td>mã + test ✅ · <i>Chi phí:</i> ~0</td></tr>
+<tr><td>R3</td><td><b>Câu "đã rời ô" sai khi hai màn chính cùng sống</b> (<code>SLOT-ELSEWHERE-TWO-HOMES</code>).</td><td>[SUY từ mã, chuỗi <code>SlotVdLedger.adopt</code> → probe cũ thấy ELSEWHERE] · [ĐO máy ảo] 2–3 màn chính cùng sống · xe [CHƯA BIẾT] · sửa: bỏ qua màn ảo của màn chính KHÁC (<code>SlotProbeScope</code>)</td><td>mã + test ✅ · <i>Chi phí:</i> 0 khi ô có app</td></tr>
+<tr><td>R4</td><td><b><code>display_settings.xml</code> không phình theo số màn ảo</b> (<code>VD-DISPLAY-SETTINGS-GROWTH</code>): mỗi màn ảo ô (tên có dấu thời gian) để lại một mục bền do <code>wm set-user-rotation</code> / <code>set-fix-to-user-rotation</code>.</td><td>[ĐO nguồn AOSP 10 <code>VirtualDisplayAdapter.java:91-96,160-178</code>, <code>DisplayWindowSettings.java:566-574,667-684</code>; A12 <code>DisplayWindowSettingsProvider.java:196-203</code>] khoá theo tên màn, không xoá khi màn bị huỷ · [ĐO log xe] ≥ 347 tên · sửa: tên cố định <code>kachi-slot-&lt;n&gt;</code> (<code>SlotVdName.pick</code>, -g&lt;k&gt; khi trùng màn còn sống) · [ĐO máy ảo] 6 lần dựng: 7 920 B đứng yên (cũ +124 B/lần)</td><td>mã + test ✅ · <i>Chi phí:</i> bớt ghi tệp hệ thống</td></tr>
+<tr><td>R5</td><td><b>Thanh lối tắt nhớ đúng vị trí cuộn</b> (<code>SHORTCUT-FLING-CLAMP</code>).</td><td>vị trí CHỌN của cú trôi kẹp theo khung lúc bắt đầu trôi</td><td>mã + test ✅ · <i>Chi phí:</i> chỉ khi đang trôi</td></tr>
+<tr><td>R6</td><td><b>Rà soát hiệu năng 4 trạng thái</b>: khởi động (nổ máy → HOME + cụm sẵn) · đang chạy (luồng, nhịp, lệnh shell/phút, RAM) · standby (màn tắt: không thức dậy thừa) · chạy lâu ngày (thứ phình theo thời gian: prefs, tệp log/chẩn đoán, <code>display_settings.xml</code>, sổ/ledger, cache, listener rò). So với 2.96/2.97, sửa những gì đo được là thừa.</td><td>[ĐO máy ảo 2.97] chạy: PSS 56 MB (2.96: 65) · thức 2,93/s (3,62) · 4 lệnh shell/phút; standby: thức 0,50–0,62/s (0,68); 80 lần dựng lại: PSS/heap/luồng ổn định — không rò; khởi động HOME 0,3–0,4 s, ô có màn ảo ~3 s. Chi tiết: <code>perf-inventory-2026-10-08.md</code></td><td>đo ✅ · sửa A, D–H ✅ · B, C chờ owner</td></tr>
+<tr><td>R6-A</td><td>Log <code>emit lane</code> chỉ khi đổi đường (khoá theo tên đường đủ, không theo cửa sổ chữ chạy). Khung gửi cụm không đổi.</td><td>[ĐO log SL6 08/10] 2 797 dòng / ~37 phút</td><td>mã + test ✅</td></tr>
+<tr><td>R6-B</td><td>Báo thức dự phòng <code>REBIND_WATCHDOG</code> 60 s (đánh thức) chỉ đặt khi giữ-sống không chạy.</td><td>[ĐO máy ảo] 23 lần thức / ~23 phút, mọi lần no-op</td><td>⏸ chờ owner (lưới an toàn đã chứng minh trên xe)</td></tr>
+<tr><td>R6-C</td><td>Ngừng đọc HAL 10 s của màn nhà khi màn tắt.</td><td>[ĐO log xe] 385 lần đọc/phút suốt ~9,6 h đêm; log OEM 7,1 MB/đêm</td><td>⏸ chờ owner (đụng yêu cầu realtime 1 Hz 21/09)</td></tr>
+<tr><td>R6-D</td><td>Lệnh shell CHỈ ĐỌC (allow-list: <code>am stack list</code> · <code>dumpsys &lt;dịch vụ dump thuần&gt;</code> (soát Pass 1: theo danh sách dịch vụ, không cả họ) · <code>appops get</code> · <code>settings get</code> · <code>getprop</code>) chỉ ghi log khi kết quả đổi / lỗi / nhịp 10 phút; lệnh đổi trạng thái giữ log đủ.</td><td>[ĐO log xe] 8 719 / 8 746 dòng shell là <code>am stack list</code></td><td>mã + test ✅</td></tr>
+<tr><td>R6-E</td><td>Dọn khoá khung chiếu (<code>config_*_&lt;pkg&gt;</code>, <code>scale-*:&lt;pkg&gt;</code>, <code>dpi:&lt;pkg&gt;</code>) của app ĐÃ GỠ, sau 30 ngày ân hạn (cài lại mod đổi chữ ký giữ khung); lỗi PackageManager ⇒ không dọn; không đụng ảnh chụp hồ sơ.</td><td>[ĐO mã] không nơi nào xoá</td><td>mã + test ✅</td></tr>
+<tr><td>R6-F</td><td>Trần 8 MiB/tệp cho <code>nav_notif_*.csv</code> (chế độ verbose).</td><td>[ĐO mã]</td><td>mã + test ✅</td></tr>
+<tr><td>R6-G</td><td><code>DiagStorageCap</code> chạy cả lúc khởi động tiến trình (một lần, nền, sau 30 s).</td><td>[ĐO mã] chỉ chạy khi mở HOME / NLS nối</td><td>mã + test ✅</td></tr>
+<tr><td>R6-H</td><td>Xoá APK OTA (~45 MB) trong <code>files/update</code> khi đã cài (versionCode ≤ bản cài) · tệp tải dở hỏng; giữ bản mới hơn chưa cài.</td><td>[ĐO mã]</td><td>mã + test ✅</td></tr>
+<tr><td>R6-I</td><td>Luồng cấp quyền <code>NavConnect</code> có chồng không.</td><td>[ĐO bytecode dadb 2.0.0/okio] socket 30 s + interrupt ⇒ không chồng</td><td>đóng — không sửa (P3: <code>finally</code> worker cũ nhả cờ của lượt mới, có chặn bằng kiểm thế hệ)</td></tr>
+</table>
+
+<h2>4. Design</h2>
+<div class="flow">
+  <div class="fnode"><b>VdAppHost</b><span>tạo màn ảo ô</span></div><span class="arrow">→</span>
+  <div class="fnode new"><b>SlotVdName.pick</b><span>kachi-slot-&lt;n&gt; · -g&lt;k&gt; khi trùng màn sống</span></div><span class="arrow">→</span>
+  <div class="fnode"><b>wm khoá xoay</b><span>cùng 2 lệnh, cùng thứ tự</span></div><span class="arrow">→</span>
+  <div class="fnode new"><b>display_settings.xml</b><span>mục lặp lại, không phình</span></div>
+</div>
+<div class="flow">
+  <div class="fnode"><b>DadbSimpleCastShell.execute</b><span>mọi lệnh shell</span></div><span class="arrow">→</span>
+  <div class="fnode new"><b>ShellLogGate</b><span>allow-list chỉ đọc · neo đầu lệnh · cấm ký tự shell</span></div><span class="arrow">→</span>
+  <div class="fnode"><b>log</b><span>chỉ đọc: khi đổi/lỗi/10 phút · đổi trạng thái: đủ</span></div>
+</div>
+<div class="flow">
+  <div class="fnode"><b>KachiApplication.onCreate</b><span>sau cổng :tts/:wake</span></div><span class="arrow">→</span>
+  <div class="fnode new"><b>StartupHousekeeping</b><span>1 luồng nền, +30 s, một lần</span></div><span class="arrow">→</span>
+  <div class="fnode"><b>DiagStorageCap → UpdateApkSweep → CastPrefsPrune</b><span>mỗi bước bắt lỗi riêng</span></div>
+</div>
+<ul><li>R1/R2 (core, <code>VoiceControlParse.lowersAt0</code> · <code>CONNECTOR_WORDS</code> + <code>multiVerbSplit</code> từng vế); R3 (<code>SlotProbeScope.otherHomes</code> → <code>SlotPresence.of(ignoring)</code>); R5 (<code>ShortcutScrollKeep.Fling</code>); R6-A (khoá log theo <code>lastCleanRoad</code>); R6-F (<code>FileByteBudget</code> 8 MiB).</li></ul>
+<h2>5. Tasks (DAG)</h2>
+<table><tr><th>#</th><th>Việc</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>R1 + R2 (core voice) mã + test</td><td>✅ off-car · QA: harness voice-e2e máy ảo</td></tr>
+<tr><td>T2</td><td>R3 + R5 (app slot/lối tắt) mã + test</td><td>✅ off-car · QA máy ảo chờ</td></tr>
+<tr><td>T3</td><td>R4 + R6 đo máy ảo + kiểm kê nguồn ⇒ danh sách sửa · R6 A, D–H</td><td>✅ off-car</td></tr>
+<tr><td>T4</td><td>Đóng lô: bump · bộ đủ · soát Fable · QA máy ảo · quét bảo mật (CHƯA OTA)</td><td>chờ</td></tr></table>
+<h2>6. Verification</h2><ul>
+<li>Test (XML, 08/10 sau soát Pass 1): core 4 985 · app 2 245 · car-integration 80 · vehicle-contracts 22 · offcar-planner 99 — 0 đỏ. Test mới: <code>VoiceHaXong298Test</code> · <code>SlotProbeScopeTest</code> · <code>SlotElsewhereTwoHomesWiringContractTest</code> · <code>ShortcutScrollKeepTest</code> (+2) · <code>SlotVdNameTest</code> · <code>PerfR6WiringContractTest</code> · <code>ShellLogGateTest</code> · <code>CastPrefsPruneTest</code> · <code>FileByteBudgetTest</code> · <code>UpdateApkSweepTest</code> · <code>PerfR6FollowupWiringContractTest</code>.</li>
+<li>R4 [ĐO máy ảo]: 6 lần khởi động lại — tệp 7 920 B đứng yên (2.96: +124 B/lần), khoá xoay còn (<code>mFixedToUserRotation=true</code>).</li>
+<li>R6 [ĐO máy ảo 2.97]: số đo 4 trạng thái ở <code>docs/diagnostics/perf-inventory-2026-10-08.md</code>.</li>
+<li><b>QA máy ảo 2.98 (201) vehicleTest, kachi_play, 08/10</b> [ĐO]:
+R4 ✅ — 10× ONE↔TWO_COL + 2×10 đổi hồ sơ không giết Kachi: uniqueId chỉ 2 giá trị lặp lại (<code>…kachi-slot-0,0</code>/<code>-1,0</code>), không màn ảo sót, khoá xoay đúng, YouTube cùng pid, 41/41 lần âm thanh chạy, 0 force-stop; <code>-g1</code> chỉ thoáng khi màn cũ đang đỗ ô 7.
+R3: một màn chính ✅ (app ra display 0 ⇒ "RA KHỎI ô" + Toast, ~20 s sau HOME); hai màn chính sạch [CHƯA ĐO] — không dựng ổn định được (1 lần dựng được thì app trong ô là Waze tự thoát ⇒ báo đúng).
+R5 ✅ — ô <code>w_apps</code> 22 app: trôi tới cuối → mở app → về HOME giữ cuối; đổi bố cục giữa trôi ⇒ <code>pos=417/417</code>.
+R1/R2 ✅ — harness T1 119/121 (2 đỏ do môi trường: bố cục 1 ô, chưa cài VietMap) · T2 23/27 (= mốc) · "hả kính lái"/"hả cốp" ⇒ Unknown, 0 lệnh ghi · "hạ kính lái" ⇒ mở kính · "đóng kính lái xong đèn đọc" ⇒ 2 lệnh · "phát bài chưa xong" ⇒ 1 Media · "xong rồi" ⇒ kết thúc.
+R6-D: 10 phút đứng yên 0 dòng <code>SimpleCast</code>, 45 dòng Kachi (2.97: 58) — cổng log [CHƯA ĐO] trên máy ảo (không chiếu cụm ⇒ <code>DadbSimpleCastShell</code> không chạy) ⇒ 🚗.
+R6-G/H/E ✅ — 30 s sau khởi động: xoá APK OTA đã cài + tệp hỏng (49 681 KiB), gỡ khoá khung của gói giả đã gỡ, giữ khoá Waze; tệp mới &lt; 10 phút giữ lại.
+Crash 0. PSS bản debuggable 113 MB (không so ngang với release 2.97 56 MB — dex chưa AOT) ⇒ đo lại bằng bản release khi đóng lô.</li>
+<li>🚗 khi xe cài 2.98: <code>dumpsys display</code> uniqueId <code>…kachi-slot-&lt;n&gt;,0</code> lặp lại sau 3 lần nổ máy · đếm <code>emit lane</code> một chuyến · "hả kính lái" không động kính.</li></ul>
+<h2>7. Open Questions</h2><ul><li>OQ4 [P3] — màn chính cũ vẫn dò ô sau khi màn ảo bị lấy (<code>slot-taken</code>): <code>SlotVdOwner.adopt/free</code> không báo host cũ <code>unwatch</code>. Backlog <code>SLOT-ADOPT-NOTIFY-OLD-HOST</code>.</li><li>OQ5 [P3] — báo "rời ô" ~20 s sau HOME (nhịp dò giãn) so với "≤ ~10 s" của spec 2.93.</li><li>OQ1 — R6-B, R6-C: owner quyết.</li><li>OQ2 — R6-E ân hạn 30 ngày [ĐOÁN]; không dọn bản sao trong ảnh chụp hồ sơ.</li><li>OQ3 — mục cũ trong <code>display_settings.xml</code> trước 2.98 để nguyên (tệp hệ thống 0600; dọn qua API tốn hơn lợi).</li></ul>
+<h2>8. References</h2><ul><li><code>kachi-297-plan.html</code> · <code>docs/diagnostics/perf-inventory-2026-10-07.md</code> · backlog P3.</li></ul>
+<h2>9. Nhật ký triển khai</h2><ul><li>—</li></ul>
+<h2>10. Reviewer Log</h2><p class="muted">Append-only.</p>
+<h3>Pass 1 — 2026-10-08 · Fable 5.1 (<code>claude-fable-5-1</code>) · soát + vá + kiểm phạm vi</h3>
+<p class="muted">Phạm vi: mọi thay đổi chưa commit kể từ <code>fd05edb</code> (R1–R6, R6-A/D–H). Không bump, không commit, không chạm xe/máy ảo. Context7 không nối được (ENOTFOUND) ⇒ bỏ bước kiểm độ mới công nghệ; lô này không thêm thư viện nào — chỉ API nền tảng (<code>getPackageArchiveInfo(PackageInfoFlags)</code> API 33 + đường cũ có <code>@Suppress</code>) ⇒ không có gì để lệch.</p>
+<table><tr><th>Mức</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td>[P2]</td><td>R6-D: <code>ShellLogGate.READ_ONLY_PREFIXES</code> coi cả họ <code>dumpsys </code> là chỉ-đọc — nhưng nhiều dịch vụ nhận lệnh con GHI qua chính <code>dump()</code> (<code>window tracing start</code> · <code>deviceidle whitelist +gói</code> · <code>battery unplug</code> · <code>gfxinfo &lt;gói&gt; reset</code> · <code>batterystats --reset</code> · <code>car_service …</code>). Kachi hôm nay không gọi lệnh nào như vậy [ĐO grep], nhưng cổng KHÔNG được có khả năng nuốt một lệnh đổi trạng thái (CLAUDE.md §4 — "mọi thứ trừ…" là anti-pattern).</td><td><b>Đã vá</b>: <code>DUMPSYS_SERVICES</code> (display · window · activity · accessibility · package · notification · appwidget · meminfo · dropbox · input · power · alarm · role) + <code>window</code> loại <code>tracing</code> + <code>activity</code> chỉ trang đọc (<code>DUMPSYS_ACTIVITY_PAGES</code>; <code>activity service &lt;tên&gt; …</code> ⇒ log đủ). <code>ShellLogGateTest</code> +1 bài (18 dương / 18 âm). <code>SurfaceFlinger</code>, <code>car_service</code>, <code>magicwindow</code> cố ý KHÔNG vào danh sách ⇒ log đầy đủ như trước 2.98.</td></tr>
+<tr><td>[P3]</td><td>R6-D: lệnh chỉ-đọc không còn dòng <code>shell:</code> TRƯỚC khi chạy ⇒ một lượt <code>am stack list</code> treo im (không ném) không để lại dấu cho riêng lệnh đó.</td><td>Chấp nhận, không vá: ném ⇒ vẫn <code>shell FAIL: command=…</code>; treo ⇒ <code>SlotLiveProbe</code>/<code>AppMover</code> tự log hụt nhịp; vá lại là quay về 2 dòng / 4 s.</td></tr>
+<tr><td>[P3]</td><td>R6-H: APK MỚI HƠN hợp lệ mà <code>getPackageArchiveInfo</code> không đọc được (trình phân tích ROM từ chối định dạng mới) bị coi là tải dở ⇒ xoá sau 10 phút.</td><td>Chấp nhận: giá = tải lại một lần ở lượt kiểm cập nhật sau; không bao giờ xoá bản đang cài / đang tải (tươi &lt; 10 phút) / không biết bản đang cài.</td></tr>
+<tr><td>[P3]</td><td>R6-G: <code>DiagStorageCap.enforce</code> từ <code>StartupHousekeeping</code> dựng lười executor <code>diagstoragecap</code> (1 luồng daemon sống suốt tiến trình) cả ở tiến trình chưa từng mở HOME.</td><td>Chấp nhận: luồng nghỉ, 0 lần thức; cùng luồng mà đường HOME/NLS đã dựng từ trước.</td></tr>
+<tr><td>[P3]</td><td>Spec: §4 Design và §6 Verification còn "—" dù mã đã xong (rule global §2: Design song song với mã).</td><td>Không tự viết (ngoài phạm vi soát) — T4 phải điền trước khi đóng lô.</td></tr>
+</table>
+<h4>Kiểm từng điểm đã soát (không phát hiện)</h4>
+<ul>
+<li><b>R1</b> <code>lowersAt0</code>: chữ mang dấu chỉ nhận đúng <i>hạ</i> qua <code>ACTION_HEAD_WORDS.matches</code> (NFC + toneKey); chữ không dấu giữ từng byte; cả hai call site (<code>rewriteWindowDirection</code>, cốp) cùng một cổng; <code>actionVerbAt</code>/MIX không đổi.</li>
+<li><b>R2</b> <i>xong</i> vào <code>CONNECTOR_WORDS</code> — không có biến thể dấu nào thành <i>xong</i> ngoài chính nó (<i>xông</i>/<i>xống</i> mang dấu ⇒ không khớp). Tách tiếp theo động từ chỉ khi ≥ 2 vế VÀ mọi mảnh hiểu được — cùng cổng nhánh MIX; <code>VoiceEndWords</code> đứng trước; tên bài có <i>xong</i> không bị cắt (test). Golden mix 57 % → 100 %, sàn 99 %.</li>
+<li><b>R3</b> <code>SlotPresence.of(ignoring)</code>: <code>mine.all { in ignoring }</code> với <code>mine</code> rỗng ⇒ GONE như cũ; mặc định rỗng ⇒ 0 khác biệt. <code>otherHomes</code> loại chính mình, ô khác cùng cây, <code>park</code>/<code>stage</code>. Chủ = <code>ws@&lt;cây&gt;</code> theo WorkspaceView (không theo Activity) ⇒ cũng chữa đúng ca dựng lại cây trong CÙNG màn chính. <code>held()</code> đọc dưới khoá sổ, lười, 0 lệnh.</li>
+<li><b>R4</b> <code>SlotVdName.pick</code> tất định; né tên sống vì <code>SlotVdLedger.adopt</code> coi cùng tên = cùng màn (test 200 lần: ≤ 6 tên, mọi màn cũ được trả ra). Chỉ VD ô chạy <code>wm set-user-rotation/set-fix-to-user-rotation</code> (grep: <code>kachi-stage-*</code> không chạy lệnh <code>wm</code> nào; VD cụm là của hệ thống) ⇒ không còn nguồn phình nào khác. <code>uniqueIndex</code> &gt; 0 chỉ khi có VD rò ngoài sổ — tập hữu hạn.</li>
+<li><b>R5</b> <code>OverScroller</code> chỉ dùng cho trôi (không <code>startScroll</code>) ⇒ cổng <code>axis != flingFrame.axis</code> không chặn đường nào khác; kéo/trợ năng vẫn <code>userScrolled</code>; <code>wanted</code> một chỗ ghi.</li>
+<li><b>R6-A</b> khoá theo <code>lastCleanRoad</code> (đặt lại ở SESSION_RESET/STOP) — khung gửi không đổi, chỉ dòng log.</li>
+<li><b>R6-E</b> <code>PackageQueries.packageInfo</code> chỉ nuốt <code>NameNotFoundException</code>; <code>RuntimeException</code> khác ⇒ <code>null</code> ⇒ <code>Plan.aborted</code> (test). Chỉ hai tệp sống, khoá nhận theo regex neo đầu ⇒ không chạm <code>__cn__</code>/ảnh chụp hồ sơ. App tắt (disabled) / gỡ-giữ-dữ-liệu ⇒ CÒN.</li>
+<li><b>R6-F</b> xoay chỉ khi tệp đã có thân; dòng quá cỡ vẫn ghi; writer cũ đóng; cùng luồng <code>io</code> đơn.</li>
+<li><b>R6-G</b> cổng tiến trình: <code>install</code> đứng SAU <code>isBackgroundVoiceProcess()</code> return (test khoá thứ tự); <code>AtomicBoolean</code> một lần; luồng daemon ưu tiên BACKGROUND, ngủ 30 s, 0 I/O trên luồng chính; mỗi bước bọc <code>RuntimeException</code>/<code>IOException</code> riêng.</li>
+<li><b>R6-H</b> tươi &lt; 10 phút ⇒ giữ (tải đang chạy luôn tươi vì sweep chỉ chạy ở t+30 s của tiến trình); không biết bản cài ⇒ giữ hết; gói khác ⇒ giữ; <code>UPDATE_DIR</code> một nguồn.</li>
+<li>§8 call site: <code>SlotVdName.pick</code> · <code>liveNames</code> · <code>held</code> · <code>otherHomes</code> · <code>flung</code> · <code>lowersAt0</code> · <code>ShellLogGate</code> · <code>CastPrefsPrune</code> · <code>FileByteBudget</code> · <code>UpdateApkSweep</code> · <code>archiveInfo</code> — đều có ≥ 1 chỗ gọi ngoài định nghĩa (grep). Tệp lớn nhất chạm: <code>VoiceIntentParser.kt</code> 492 dòng (≤ 500).</li>
+</ul>
+<h4>Bộ kiểm (đếm từ XML, sau vá)</h4>
+<p><code>:core</code> 4 985 · <code>:app</code> 2 245 · <code>:car-integration</code> 80 · <code>:vehicle-contracts</code> 22 · <code>:offcar-planner</code> 99 — 0 fail / 0 error / 0 skip.</p>
+<h4>Phạm vi</h4>
+<p>R1 ✅ · R2 ✅ · R3 ✅ (xe [CHƯA BIẾT] — đo máy ảo) · R4 ✅ (đo máy ảo; xe: §6 perf-inventory) · R5 ✅ · R6 đo ✅ · R6-A ✅ · R6-B/C ⏸ owner · R6-D ✅ (siết) · R6-E ✅ · R6-F ✅ · R6-G ✅ · R6-H ✅ · R6-I đóng. Verdict mã: <b>APPROVED</b> cho T4 (còn: §4/§6 spec, QA máy ảo, bump, quét bảo mật).</p>
+<h4>QA máy ảo đề nghị trước khi đóng</h4>
+<ul>
+<li>R4 trong-tiến-trình: đổi hồ sơ / bố cục ONE↔TWO_COL ×10 không giết app ⇒ <code>dumpsys display | grep -c kachi-slot</code> = số ô; không có <code>kachi-slot-*</code> ở <code>state OFF</code>; YouTube trong ô vẫn <code>mFixedToUserRotation=true</code>; <code>stat -c %s display_settings.xml</code> đứng yên (máy ảo root).</li>
+<li>R3: dựng hai <code>KachiHomeActivity</code> (fixture esc-b-on-top), mở app vào ô ở màn mới ⇒ không Toast "đã rời ô, vẫn mở ngoài ô"; một màn: kéo app ra display 0 ⇒ Toast vẫn hiện.</li>
+<li>R5: thanh lối tắt 22 app, phóng trôi rồi xoay/đổi khung giữa cú trôi ⇒ về khung thật đúng vị trí trôi tới (264, không 43).</li>
+<li>R1/R2: <code>scripts/emulator/voice-e2e.sh</code> + 5 câu: "hả kính lái" (không ghi) · "hạ kính lái" · "đóng kính lái xong đèn đọc" (2 lệnh) · "phát bài chưa xong" · "xong rồi" (kết phiên).</li>
+<li>R6-D: logcat 10 phút đứng yên: <code>SimpleCast shell: am stack list</code> ≤ 1 lần/10 phút; <code>am start</code>/<code>wm</code> vẫn 2 dòng; <code>appops set</code> vẫn log đủ.</li>
+<li>R6-G/H/E: cài 2.97 rồi OTA lên bản thử, chờ 30 s sau nổ máy ⇒ <code>run-as … ls files/update</code> rỗng; đặt <code>kachi_housekeeping</code> có gói giả vắng 31 ngày ⇒ khoá <code>config_*</code> gói đó biến mất, gói thật còn nguyên.</li>
+</ul>
+<h3>Pass 2 — 2026-10-08 · Fable 5.1 (<code>claude-fable-5-1</code>) · vòng lặp soát: chỉ bản vá Pass 1 của R6-D + bump 2.98 (201)</h3>
+<p class="muted">Phạm vi: <code>ShellLogGate.kt</code> (<code>DUMPSYS_SERVICES</code> · <code>DUMPSYS_ACTIVITY_PAGES</code> · <code>dumpsysReadOnly</code> · <code>isReadOnly</code>), <code>ShellLogGateTest</code>, <code>app/build.gradle.kts</code>. Không commit, không xe/máy ảo, không clean/assemble. Context7 vẫn ENOTFOUND ⇒ hành vi AOSP dưới đây ở mức <b>[SUY]</b> (trí nhớ nguồn A10/A12), không phải [ĐO]; bản vá được thiết kế để ĐÚNG dù suy luận đó sai (chỉ siết thêm, không nới).</p>
+<table><tr><th>Mức</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td>[P2]</td><td>Tuỳ chọn đứng TRƯỚC lệnh con lách cổng: <code>dumpsys activity -a write</code> / <code>--proto track-associations</code> được coi là chỉ-đọc vì <code>dumpsysReadOnly</code> chỉ nhìn token thứ hai và trả <code>true</code> ngay khi nó bắt đầu bằng <code>-</code>. AMS <code>doDump</code> có <code>write</code> (ép ghi recents), <code>track-associations</code>/<code>untrack-associations</code> [SUY].</td><td><b>Đã vá</b>: trang đọc lấy từ token KHÔNG-tuỳ-chọn ĐẦU TIÊN sau dịch vụ (bỏ qua mọi <code>-x</code>/<code>--xx</code>); không có ⇒ dump tổng (chỉ-đọc). Thêm <code>DUMPSYS_WRITE_TOKENS</code> = {write, track-associations, untrack-associations, tracing} chặn ở MỌI dịch vụ, mọi vị trí (hàng rào thứ hai; <code>window tracing</code> dời vào đây).</td></tr>
+<tr><td>[P2]</td><td><code>dumpsys package write</code> (PMS <code>dump</code> ⇒ <code>mSettings.writeLPr()</code> ghi <code>packages.xml</code> [SUY]) được coi là chỉ-đọc vì <code>package</code> trong danh sách dịch vụ và không có lọc lệnh con. Kachi không gọi [ĐO grep] — nhưng cổng không được có khả năng nuốt.</td><td><b>Đã vá</b> cùng <code>DUMPSYS_WRITE_TOKENS</code> ở trên.</td></tr>
+<tr><td>[P2]</td><td>So token nguyên văn bị nháy/escape/glob qua mặt: shell bóc <code>'write'</code>, <code>wri\te</code>, <code>wr*</code>, <code>{write,x}</code> TRƯỚC khi dịch vụ nhận ⇒ mọi danh sách chặn theo token đều lọt.</td><td><b>Đã vá</b>: <code>SHELL_META</code> thêm <code>' " \ * ? [ {</code> ⇒ có mặt là log đầy đủ. An toàn với hiện trạng [ĐO grep <code>dumpsys</code> toàn <code>app/</code>+<code>core/</code>+<code>car-integration/</code>]: mọi lệnh chỉ-đọc Kachi gọi hôm nay không mang ký tự nào trong số này; lệnh có nháy đều kèm <code>| grep</code> ⇒ đã log đầy đủ từ trước.</td></tr>
+<tr><td>[P3]</td><td>Lệnh chỉ-đọc dò định kỳ có <code>| grep</code> (<code>ClusterDisplayResolver.DETECT_CMD</code>, <code>ClusterThemeGuard.WINDOWS_CMD</code>, <code>VietMapBubbleWait.PER_DISPLAY_GREP</code>, <code>AnrDropbox.CMD</code>, các dòng <code>ClusterDiag</code>) KHÔNG được tiết chế (meta <code>|</code> ⇒ log đầy đủ) dù về bản chất chỉ đọc.</td><td>Chấp nhận, không vá: 99,7 % dòng log xe là <code>am stack list</code> (đã tiết chế); nới cho đường ống cần phân tích từng vế lệnh — ngoài phạm vi R6-D, ghi nhận cho lô sau nếu log xe sau 2.98 còn phình.</td></tr>
+</table>
+<h4>Kiểm từng điểm (không phát hiện)</h4>
+<ul>
+<li>Neo đầu chuỗi: <code>c == head || c.startsWith("$head ")</code> sau <code>trim()</code> ⇒ <code>echo dumpsys display</code>, <code>cmd dumpsys display</code>, <code>x am stack list</code>, <code>am stack listx</code>, <code>dumpsysx</code> đều log đầy đủ (test). <code>dumpsys\tdisplay</code> không khớp tiền tố ⇒ log đầy đủ (bảo thủ). Khoảng trắng thừa giữa token xử lý đúng.</li>
+<li>Mọi <code>dumpsys</code> Kachi gọi hôm nay [ĐO grep]: <code>display</code> · <code>accessibility</code> · <code>window displays</code>/<code>windows</code> · <code>activity activities</code>/<code>services &lt;gói&gt;</code> · <code>notification p &lt;gói&gt;</code> · <code>package &lt;gói&gt;</code> ⇒ chỉ-đọc, được tiết chế (đúng); các dạng có <code>| grep</code>/<code>| tail</code>/<code>2&gt;&amp;1</code> ⇒ log đầy đủ (đúng, bảo thủ). Danh mục CarExec (<code>SurfaceFlinger</code>, <code>car_service</code>, <code>magicwindow</code>, <code>activity service &lt;gói&gt;</code>) ⇒ log đầy đủ như trước 2.98.</li>
+<li>Tuỳ chọn hợp lệ không bị chặn nhầm: <code>--proto</code>, <code>-a</code>, <code>-d 2</code>, <code>--noredact</code>, <code>-f &lt;gói&gt;</code> (test). <code>-t</code>/<code>--priority</code> của chính <code>dumpsys</code> đứng trước tên dịch vụ ⇒ token đầu không phải dịch vụ ⇒ log đầy đủ (bảo thủ).</li>
+<li>Chỗ gọi duy nhất: <code>DadbSimpleCastShell.execute</code>; cổng chỉ quyết định LOG, không quyết định CHẠY ⇒ sai số theo hướng bảo thủ chỉ tốn một dòng log, không đổi hành vi lệnh.</li>
+<li>Bump: <code>versionCode 200→201</code>, <code>versionName "2.97"→"2.98"</code>, ghi chú dòng theo mẫu các lô trước — đúng.</li>
+</ul>
+<h4>Bộ kiểm (đếm từ XML)</h4>
+<p><code>:core</code> <code>ShellLogGateTest</code> 9 (8 + 1 bài Pass 2) · <code>:app</code> <code>PerfR6*</code> 5 + 2 — 0 fail / 0 error / 0 skip.</p>
+<h4>Phán quyết</h4>
+<p>R6-D: <b>APPROVED</b> sau vá (vòng 2 có sửa mã ⇒ cần vòng 3 chỉ soát lại bản vá Pass 2 theo rule global §5; bản vá chỉ SIẾT danh sách cho phép, không nới). Tệp main đã đổi: <code>ShellLogGate.kt</code>. Việc còn mở từ Pass 1 giữ nguyên (§4/§6 spec, QA máy ảo, quét bảo mật).</p>
+<h3>Pass 3 — 2026-10-08 · Fable 5.1 (<code>claude-fable-5-1</code>) · vòng lặp soát: chỉ bản vá Pass 2 của R6-D</h3>
+<p class="muted">Phạm vi: <code>ShellLogGate.kt</code> (token không-tuỳ-chọn đầu tiên làm trang · <code>DUMPSYS_WRITE_TOKENS</code> chặn mọi vị trí · <code>SHELL_META</code> thêm nháy/escape/glob) + <code>ShellLogGateTest</code>. Hai tệp đang <i>untracked</i> ⇒ <code>git diff</code> rỗng, đọc nguyên tệp. Không commit, không xe/máy ảo, không clean/assemble. Context7 vẫn ENOTFOUND.</p>
+<h4>Kiểm từng điểm (0 phát hiện actionable — KHÔNG đổi mã)</h4>
+<ul>
+<li><b>Không hồi quy lệnh chỉ-đọc thật</b> [ĐO grep <code>app/</code>+<code>core/</code>+<code>car-integration/</code>, 2026-10-08]: <code>am stack list</code> (AppMover ×5, CastGeometryController ×5, CastPostconditionVerifier ×3, SimpleCastCoordinator(+Ops) ×3, CastDisplayCleaner ×2, CastPlaceholder ×2, ClusterThemeGuard, SlotLiveProbe, NavConnect, ClusterDiag…) khớp <code>c == head</code> ⇒ vẫn được tiết chế. <code>dumpsys display</code> · <code>window displays</code>/<code>windows</code> · <code>accessibility</code> · <code>activity activities</code> · <code>activity services &lt;gói&gt;</code> · <code>package &lt;gói&gt;</code> · <code>notification --noredact</code> · <code>notification p &lt;gói&gt;</code> (<code>p</code> ∉ <code>DUMPSYS_WRITE_TOKENS</code>) · <code>appops get &lt;gói&gt; PICTURE_IN_PICTURE</code> · <code>settings get …</code> · <code>getprop …</code> — không lệnh nào mang ký tự <code>SHELL_META</code> mới ⇒ vẫn chỉ-đọc. Mẫu <code>{pkg}</code>/<code>{svc}</code> trong danh mục CarExec là placeholder thay trước khi chạy; nếu lọt nguyên văn thì <code>{</code> ⇒ log đầy đủ (bảo thủ, không sai).</li>
+<li><b>Bỏ-qua-tuỳ-chọn không thể lệch chỉ số</b>: <code>toks.drop(1).firstOrNull { !it.startsWith("-") }</code> — không index; <code>null</code> (chỉ toàn tuỳ chọn, vd <code>dumpsys activity --proto</code>) ⇒ dump tổng ⇒ <code>true</code> — đúng. <code>toks.firstOrNull() ?: return false</code> chặn <code>dumpsys</code>/<code>dumpsys </code> rỗng.</li>
+<li><b>Phân loại tuỳ chọn có giá trị</b>: <code>dumpsys activity -p com.foo activities</code> ⇒ token không-tuỳ-chọn đầu là <code>com.foo</code> ∉ trang ⇒ <code>false</code> (log đầy đủ — bảo thủ); ngược lại <code>-p activities write</code> ⇒ <code>write</code> bị chặn ở mọi vị trí. Không có đường nào để một token GHI đi qua bằng cách nấp sau tuỳ chọn.</li>
+<li><b>Không có false "chỉ-đọc" mới</b>: bản vá chỉ SIẾT (thêm token chặn, thêm ký tự meta); không mở rộng <code>DUMPSYS_SERVICES</code>/<code>DUMPSYS_ACTIVITY_PAGES</code>/<code>READ_ONLY_PREFIXES</code>.</li>
+<li><b>Thứ tự kiểm đúng</b>: <code>SHELL_META</code> soát trong <code>isReadOnly</code> TRƯỚC <code>dumpsysReadOnly</code> ⇒ nhận xét "so token nguyên văn là đủ" trong KDoc đứng vững.</li>
+</ul>
+<table><tr><th>Mức</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td>[P3]</td><td>[SUY, trí nhớ A11+/A12 — Context7 không nối được, chưa đọc source] <code>dumpsys window logging enable-text …</code> (ProtoLog qua WMS <code>doDump</code>) đổi trạng thái ghi log của WM nhưng <code>logging</code> ∉ <code>DUMPSYS_WRITE_TOKENS</code> ⇒ nếu có ai gọi sẽ chỉ bị tiết chế log. Kachi KHÔNG gọi [ĐO grep]; cổng chỉ quyết định LOG không quyết định CHẠY; không ảnh hưởng hệ thống xe.</td><td>Không vá (CLAUDE.md §3: chưa fetch source thì chưa ship; §5 vòng lặp: 0 actionable ⇒ không đổi mã). Ghi nhận: khi Context7 lên, xác nhận rồi thêm <code>logging</code> vào danh sách chặn trong lô sau nếu đúng.</td></tr>
+</table>
+<h4>Bộ kiểm (đếm từ XML)</h4>
+<p><code>:core</code> <code>ShellLogGateTest</code>: tests=9 · skipped=0 · failures=0 · errors=0 (chạy dưới khoá <code>gradle.lock</code>).</p>
+<h4>Phán quyết</h4>
+<p>R6-D: <b>APPROVED</b> — vòng 3 không sửa mã ⇒ vòng lặp soát R6-D <b>đóng</b> (rule global §5). Tệp main KHÔNG đổi ở Pass 3. Việc còn mở từ Pass 1 giữ nguyên (§4/§6 spec, QA máy ảo, quét bảo mật trước commit).</p>
+</div></body></html>

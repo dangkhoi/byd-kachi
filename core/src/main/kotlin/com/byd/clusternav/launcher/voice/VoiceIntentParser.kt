@@ -27,8 +27,10 @@ object VoiceIntentParser {
      *
      * 2.93 VOICE-ROI-CONNECTOR: khai bằng cách viết CÓ DẤU ([CONNECTOR_WORDS]) — tách câu chỉ nhận *"rồi"*, không nhận
      * *"rơi"* hay *"rời"* (cùng bỏ dấu ra `roi`) khi chữ mang dấu; luật ở [VoiceHomograph].
+     * 2.98 R2 VOICE-XONG-CONNECTOR: thêm *"xong"* (*"đóng kính lái xong đèn đọc"* từng mất vế sau im lặng). An toàn nhờ cùng cổng
+     * *"mọi vế phải hiểu được"* + dòng *"đã bỏ qua"*; câu CHỈ có từ kết thúc (*"xong rồi"*) đã được [VoiceEndWords] nhận trước.
      */
-    internal val CONNECTOR_WORDS = VoiceHomograph.Words("và", "rồi", "and", "then")
+    internal val CONNECTOR_WORDS = VoiceHomograph.Words("và", "rồi", "xong", "and", "then")
     internal val CONNECTORS: Set<String> = CONNECTOR_WORDS.norms
 
     /**
@@ -74,7 +76,12 @@ object VoiceIntentParser {
         // Mỗi vế cũng qua [fuzzy] (chữa phương ngữ) — không thì "tắt máy nạnh" (l=n) trong câu ghép rớt DROPPED_CLAUSE.
         fun seg(p: List<Token>) = fuzzy(parseTokens(p, terms, places, text), p, terms, places, text)
 
-        val parts = splitOnConnectors(all)
+        // 2.98 R2 — mỗi vế của câu ghép vẫn có thể là câu MIX không liên từ (*"đóng hết kính mở cửa sổ trời xong mở cốp"*) ⇒ tách tiếp
+        // theo động từ, CÙNG cổng của nhánh MIX dưới đây (mọi mảnh phải hiểu được — không thì giữ nguyên vế).
+        val parts = splitOnConnectors(all).let { ps ->
+            if (ps.size < 2) ps
+            else ps.flatMap { p -> VoiceControlParse.multiVerbSplit(p)?.takeIf { s -> s.none { seg(it) is VoiceIntent.Unknown } } ?: listOf(p) }
+        }
         if (parts.size > 1) {
             // 2.93 — vế chỉ là TÊN một nút (*"tắt điều hòa và đèn đọc"* · *"… và cốp"*) mượn động từ của vế trước — [VoiceClauseEllipsis].
             val each = VoiceClauseEllipsis.inherit(parts, terms) { seg(it) }
@@ -247,7 +254,7 @@ object VoiceIntentParser {
         if (verbHit == null) {
             VoiceMediaNavParse.mediaSearch(t, terms)?.let { return it }
             // "hạ [cái] cốp [sau]" → ĐÓNG cốp — scoped: "hạ" mơ hồ theo vật (hạ kính=MỞ) nên KHÔNG vào bảng verb chung.
-            if (VoiceLexicon.phraseAt(t, 0, listOf("ha")) && t.any { it.norm == "cop" }) return VoiceIntent.Control("trunk", 0)
+            if (VoiceControlParse.lowersAt0(t) && t.any { it.norm == "cop" }) return VoiceIntent.Control("trunk", 0)
             // Hướng KÍNH "hạ/kéo/nâng … [lên/xuống]" (owner phương ngữ) — chi tiết ở [VoiceControlParse.rewriteWindowDirection].
             VoiceControlParse.rewriteWindowDirection(t)?.let { return parseTokens(it, terms, places, original) }
             // "điều hòa/máy lạnh <số> độ" KHÔNG có động từ (owner 2026-09-21) ⇒ đẩy qua control(ac_auto, SET),

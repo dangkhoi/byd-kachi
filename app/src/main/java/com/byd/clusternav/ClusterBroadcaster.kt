@@ -170,7 +170,10 @@ object ClusterBroadcaster {
         val emitIcon = frame.getIntExtra("NEW_ICON", -1)
         val emitSeg = frame.getIntExtra("SEG_REMAIN_DIS", -1)
         val emitRoad = frame.getStringExtra("NEXT_ROAD_NAME")
-        val emitKey = "$emitIcon|$emitSeg|$emitRoad"
+        // 2.98 · R6: khoá theo TÊN ĐƯỜNG ĐẦY ĐỦ (`lastCleanRoad`), không theo cửa sổ chạy chữ — marquee BẬT dịch cửa sổ
+        // mỗi MARQUEE_STEP_MS (700 ms) nên khoá cũ đổi gần như mọi nhịp ⇒ [ĐO log xe SL6 08/10] 2 799 dòng / 37 phút
+        // (~75/phút, tag nhiều nhất của Kachi). Khung gửi đi KHÔNG đổi — chỉ dòng nhật ký.
+        val emitKey = "$emitIcon|$emitSeg|$lastCleanRoad"
         if (emitKey != lastEmitLaneKey) {
             lastEmitLaneKey = emitKey
             Log.i(TAG, "emit lane icon=$emitIcon seg=$emitSeg raw='${s.distance}' road='$emitRoad' byd=$byd")

@@ -41,6 +41,46 @@ class ShortcutScrollKeepTest {
         assertEquals(264, ShortcutScrollKeep.applied(wanted, real))
     }
 
+    /**
+     * 2.98 · R5 · `SHORTCUT-FLING-CLAMP` (review SLOT Pass 2 mục 5): cú TRÔI phóng ở khung thật (quãng 264) đi qua một lượt khớp ở
+     * khung lạ của QA (quãng 43) và bước CUỐI của nó rơi vào khung lạ. Bản 2.93 ghi lựa chọn = vị trí kẹp theo khung đang hiện ⇒ 43
+     * vĩnh viễn (đúng bệnh mà R2 đã chữa cho lượt đo, nay lọt qua đường trôi). Nay bước trôi ghi theo khung LÚC PHÓNG.
+     */
+    @Test
+    fun `cu troi qua khung la khong ghi vi tri da kep - so QA 264 va 43`() {
+        val real = fit(22, 1362, 148)
+        val transient = fit(22, 1558, 123)
+        val fling = ShortcutScrollKeep.Fling(Scroll.HORIZONTAL, real.maxScrollPx)
+        // Bộ trôi (biên [0, 264]) đi 120 → 200 → 264; hai bước sau rơi vào khung lạ.
+        val steps = listOf(120 to real, 200 to transient, 264 to transient)
+
+        // Mô hình 2.93: mỗi bước kẹp theo khung ĐANG HIỆN rồi ghi ⇒ 43; khung thật trở lại vẫn 43 (lỗi).
+        var old = Wanted.ORIGIN
+        steps.forEach { (p, f) -> old = ShortcutScrollKeep.userScrolled(f.scroll, p.coerceIn(0, f.maxScrollPx)) }
+        assertEquals(43, ShortcutScrollKeep.applied(old, real), "mô hình cũ tái lập đúng lỗi")
+
+        // 2.98: áp vẫn kẹp theo khung đang hiện (người lái thấy 43 trong khung lạ), nhưng lựa chọn = vị trí trôi tới.
+        var wanted = Wanted.ORIGIN
+        steps.forEach { (p, f) ->
+            wanted = ShortcutScrollKeep.flung(fling, p)
+            assertEquals(p.coerceIn(0, f.maxScrollPx), ShortcutScrollKeep.applied(wanted, f), "vị trí ÁP ở bước $p không đổi so với 2.93")
+        }
+        assertEquals(Wanted(Scroll.HORIZONTAL, 264), wanted)
+        assertEquals(264, ShortcutScrollKeep.applied(wanted, real), "khung thật trở lại ⇒ đúng chỗ trôi tới")
+    }
+
+    @Test
+    fun `buoc troi khung khong doi - y het 2_93, va kep theo bien luc phong`() {
+        val real = fit(22, 1362, 148)
+        val fling = ShortcutScrollKeep.Fling(Scroll.HORIZONTAL, real.maxScrollPx)
+        listOf(0, 1, 77, 263, 264).forEach { p ->
+            assertEquals(ShortcutScrollKeep.userScrolled(real.scroll, p.coerceIn(0, real.maxScrollPx)), ShortcutScrollKeep.flung(fling, p))
+        }
+        assertEquals(Wanted(Scroll.HORIZONTAL, 264), ShortcutScrollKeep.flung(fling, 999), "không vượt biên lúc phóng")
+        assertEquals(Wanted(Scroll.HORIZONTAL, 0), ShortcutScrollKeep.flung(fling, -3))
+        assertEquals(Wanted.ORIGIN, ShortcutScrollKeep.flung(ShortcutScrollKeep.Fling.NONE, 50), "chưa trôi ⇒ gốc")
+    }
+
     @Test
     fun `khung khong cuon hoac cuon truc khac ap 0 nhung giu lua chon cua truc cu`() {
         val wanted = Wanted(Scroll.VERTICAL, 300)

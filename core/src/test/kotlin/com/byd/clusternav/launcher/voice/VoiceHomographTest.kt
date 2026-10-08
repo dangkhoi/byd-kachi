@@ -92,9 +92,9 @@ class VoiceHomographTest {
         assertEquals(setOf("va", "roi", "and"), w.norms)
     }
 
-    /** Bộ nghe vẫn được khai đủ bốn liên từ ở dạng bỏ dấu (hợp đồng `VoicePhrases`) — tập không đổi. */
+    /** Bộ nghe được khai đủ liên từ ở dạng bỏ dấu (hợp đồng `VoicePhrases`) — 2.98 R2 thêm "xong". */
     @Test
     fun `tap lien tu bo dau khong doi`() {
-        assertEquals(setOf("va", "roi", "and", "then"), VoiceIntentParser.CONNECTORS)
+        assertEquals(setOf("va", "roi", "xong", "and", "then"), VoiceIntentParser.CONNECTORS)   // 2.98 R2 thêm "xong"
     }
 }

@@ -107,8 +107,11 @@ android {
         // 2.95 (198) SL6 cụm cong · 2.96 (199) HOME/cụm/YouTube/perf (spec kachi-296-plan).
         // 2.97 (200) — YouTube phát tiếp lưu đúng bài + thử lại khi mạng chưa sẵn (không chặn app sau) · đổi hồ sơ không giết
         // app (đỗ + nhận lại màn ảo) · nhắc khi đổi hồ sơ tắt dẫn đường lên cụm (spec kachi-297-plan R1/R2/R2c/R3/R5).
-        versionCode = 200
-        versionName = "2.97"
+        // 2.98 (201) — "hả" ≠ "hạ" · liên từ "xong" · câu "đã rời ô" khi hai màn chính · lối tắt nhớ vị trí trôi · tên màn ảo ô cố định
+        // (display_settings.xml không phình) · rà hiệu năng 4 trạng thái: log shell chỉ đọc theo thay đổi, dọn khung app đã gỡ, trần log nav,
+        // dọn chẩn đoán lúc khởi động, xoá APK OTA đã cài (spec kachi-298-plan).
+        versionCode = 201
+        versionName = "2.98"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

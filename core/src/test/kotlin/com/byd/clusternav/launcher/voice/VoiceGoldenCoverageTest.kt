@@ -123,6 +123,8 @@ class VoiceGoldenCoverageTest {
         val sample = fails.take(40).joinToString("\n") { (w, t) -> "  [${w.joinToString(",")}] \"$t\"" }
         println("GOLDEN mix: $pct% ($pass/${cases.size}) — ${fails.size} FAIL")
         if (fails.isNotEmpty()) println("GOLDEN mix FAIL (≤40):\n$sample")
-        assertTrue(pct >= 52, "mix coverage $pct% ($pass/${cases.size}) < sàn 90%. FAIL mẫu:\n$sample")
+        // 2.98 R2 [ĐO off-car 2026-10-08]: 57% (1717/3000) → 100% (3000/3000) khi "xong" thành liên từ + vế câu ghép tách tiếp theo
+        // động từ ⇒ sàn nâng 52 → 99 (khoá lại: gỡ bản vá là đỏ).
+        assertTrue(pct >= 99, "mix coverage $pct% ($pass/${cases.size}) < sàn 99%. FAIL mẫu:\n$sample")
     }
 }

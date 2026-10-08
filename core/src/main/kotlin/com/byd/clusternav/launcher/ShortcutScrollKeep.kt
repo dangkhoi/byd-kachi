@@ -49,6 +49,25 @@ object ShortcutScrollKeep {
         if (axis == Scroll.NONE) Wanted.ORIGIN else Wanted(axis, px.coerceAtLeast(0))
 
     /**
+     * 2.98 · R5 (`SHORTCUT-FLING-CLAMP`, spec `kachi-298-plan.html`; review SLOT Pass 2 mục 5) — khung mà cú TRÔI được phóng ra:
+     * trục [axis] và quãng [maxPx] (`maxScrollPx` lúc phóng = biên của `OverScroller.fling`). [NONE] = chưa trôi lần nào.
+     */
+    data class Fling(val axis: Scroll, val maxPx: Int) {
+        companion object {
+            val NONE = Fling(Scroll.NONE, 0)
+        }
+    }
+
+    /**
+     * Một bước của cú trôi [fling] tới [px] (vị trí của bộ trôi, đo trong KHUNG LÚC PHÓNG) ⇒ lựa chọn của người lái. Kẹp theo quãng
+     * của khung lúc phóng, KHÔNG theo khung đang hiện: cú trôi đi qua một lượt khớp ở khung lạ (QA 2.92: 1558×123, quãng 43) chỉ ÁP
+     * vị trí kẹp ([applied]) chứ không GHI nó ⇒ khung thật trở lại thì vị trí trôi tới được trả lại. Bản 2.93 kẹp theo khung đang
+     * hiện rồi ghi ⇒ bước cuối rơi vào khung lạ thì lựa chọn = 43 vĩnh viễn. Khung không đổi suốt cú trôi ⇒ y hệt 2.93 (bộ trôi đã
+     * nằm trong `[0, maxPx]`).
+     */
+    fun flung(fling: Fling, px: Int): Wanted = userScrolled(fling.axis, px.coerceIn(0, fling.maxPx.coerceAtLeast(0)))
+
+    /**
      * Phát tin cài/gỡ/đổi gói [pkg] có chạm danh sách lối tắt [listed] không. Không mang tên gói (`null`/rỗng) ⇒ `true`:
      * không biết thì làm mới (rẻ: chỉ nạp lại icon — [needsRebuild] mới quyết dựng lại cấu trúc).
      */

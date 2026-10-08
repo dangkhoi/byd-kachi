@@ -38,7 +38,9 @@ class VoiceClauseEllipsisTest {
             "tắt đèn đọc và đèn ban ngày và lọc bụi" to listOf(c("readl", 0), c("drl", 0), c("pm25", 0)),
             "đóng cốp và đèn đọc" to listOf(c("trunk", 0), c("readl", 0)),
             // Động từ hành động GẦN NHẤT là động từ CUỐI của vế trước (vế mang hai lệnh không liên từ).
-            "bật đèn pha tắt đèn đọc và sưởi ghế" to listOf(c("headl", 1), c("seath", 0)),
+            // 2.98 R2: vế trước nay được tách tiếp theo động từ ⇒ *"tắt đèn đọc"* KHÔNG còn mất im lặng (bản cũ khoá
+            // `[headl 1, seath 0]` — thiếu `readl 0`, đúng họ lỗi `VOICE-XONG-CONNECTOR`).
+            "bật đèn pha tắt đèn đọc và sưởi ghế" to listOf(c("headl", 1), c("readl", 0), c("seath", 0)),
             // Họ bật/mở: giống hệt động từ ngầm hôm nay.
             "bật điều hòa và đèn đọc" to listOf(c("ac_auto", 1), c("readl", 1)),
             "bật đèn pha và đèn đọc" to listOf(c("headl", 1), c("readl", 1)),

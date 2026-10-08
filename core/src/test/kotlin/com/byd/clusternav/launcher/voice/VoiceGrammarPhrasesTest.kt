@@ -489,7 +489,9 @@ class VoiceGrammarPhrasesTest {
         // 2028 → 2065 (+37: 13 cụm + 24 từ đơn `màu` · `trạng` · `thái` · `rò` · `hệ` · `thống` · `giám` · `sát`…).
         // [ĐO off-car 2026-10-06 · 2.93 CAMERA-ON-DEMAND] **2028 → 2034 (+6)** = đúng sáu cụm mới của [EXPECTED_PHRASES_KEPT],
         // 0 từ đơn (`camera` · `sau` · `trái` · `phải` · `trước` · `rear` · `right` đã nở từ nhãn sẵn có). Đọc từ **actual**.
-        const val EXPECTED_ENTRIES = 2034
+        // [ĐO off-car 2026-10-08 · 2.98 R2 VOICE-XONG-CONNECTOR] **2034 → 2040 (+6)** = liên từ mới `xong` nở họ thanh điệu từ
+        // đơn của từ điển Vosk: `xong` · `xòng` · `xông` · `xống` · `xồng` · `xổng` (0 cụm mới). Đọc từ **actual**.
+        const val EXPECTED_ENTRIES = 2040
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **2099 → 2109 (+10)** = 2 cụm nhiều từ của nhiên liệu
         // ([EXPECTED_PHRASES_KEPT] 359 → 361) **cộng** các từ ĐƠN lần đầu xuất hiện, nở theo họ thanh điệu:
         // `xăng` đứng một mình (cách nói mới của `fuel_pct`) và `nhiên` · `liệu`. Số đọc từ **actual** của chính

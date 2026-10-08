@@ -1,0 +1,1 @@
+{"label":"297-screen-on","window_s":600,"nproc":4,"procs":[{"name":"com.byd.launcher","pid":17901,"cpu_pct":0.20,"pss_kb":56487,"rss_kb":106276,"threads":41}],"gfx":"85 24 (28.24%)","wakelock_lines":0,"alarms":5,"jobs":0,"log_total":3577,"log_app":58}

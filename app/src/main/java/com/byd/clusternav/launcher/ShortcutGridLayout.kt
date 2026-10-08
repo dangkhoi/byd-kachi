@@ -71,6 +71,9 @@ internal class ShortcutGridLayout(
     private val minFling: Int
     private val maxFling: Int
     private val scroller = OverScroller(context)
+
+    /** 2.98 · R5 — khung (trục + quãng) lúc phóng cú trôi đang chạy; chỉ [fling] ghi, [computeScroll] đọc. */
+    private var flingFrame: ShortcutScrollKeep.Fling = ShortcutScrollKeep.Fling.NONE
     private var velocity: VelocityTracker? = null
     private var dragging = false
     private var lastAlong = 0f
@@ -186,11 +189,15 @@ internal class ShortcutGridLayout(
 
     private fun position(): Int = if (axis == Scroll.HORIZONTAL) scrollX else scrollY
 
-    /** Cuộn do NGƯỜI LÁI (kéo · trôi · trợ năng) — chỗ DUY NHẤT ghi [wanted] (2.93 · R2). */
-    private fun scrollAlongTo(p: Int) {
+    /**
+     * Cuộn do NGƯỜI LÁI (kéo · trôi · trợ năng) — chỗ DUY NHẤT ghi [wanted] (2.93 · R2). [fling] khác `null` = một bước của cú trôi
+     * (2.98 · R5 `SHORTCUT-FLING-CLAMP`): ÁP vị trí kẹp theo khung đang hiện như cũ, nhưng GHI vị trí kẹp theo khung LÚC PHÓNG
+     * (`ShortcutScrollKeep.flung`) — lượt khớp ở khung lạ giữa cú trôi không còn ghi đè lựa chọn bằng vị trí đã kẹp.
+     */
+    private fun scrollAlongTo(p: Int, fling: ShortcutScrollKeep.Fling? = null) {
         val c = p.coerceIn(0, fit?.maxScrollPx ?: 0)
         if (axis == Scroll.HORIZONTAL) scrollTo(c, 0) else scrollTo(0, c)
-        wanted = ShortcutScrollKeep.userScrolled(axis, c)
+        wanted = if (fling == null) ShortcutScrollKeep.userScrolled(axis, c) else ShortcutScrollKeep.flung(fling, p)
         onUserScroll(wanted)
     }
 
@@ -292,6 +299,7 @@ internal class ShortcutGridLayout(
         if (abs(v) < minFling || max <= 0) return
         if (axis == Scroll.HORIZONTAL) scroller.fling(scrollX, 0, v, 0, 0, max, 0, 0)
         else scroller.fling(0, scrollY, 0, v, 0, 0, 0, max)
+        flingFrame = ShortcutScrollKeep.Fling(axis, max)   // 2.98 · R5 — khung của cú trôi này (biên của bộ trôi)
         postInvalidateOnAnimation()
     }
 
@@ -310,7 +318,9 @@ internal class ShortcutGridLayout(
 
     override fun computeScroll() {
         if (axis == Scroll.NONE || !scroller.computeScrollOffset()) return
-        scrollAlongTo(if (axis == Scroll.HORIZONTAL) scroller.currX else scroller.currY)
+        // 2.98 · R5 — trục cuộn đổi giữa cú trôi ⇒ vị trí bộ trôi vô nghĩa ở trục mới: dừng trôi, lựa chọn của trục cũ còn nguyên.
+        if (axis != flingFrame.axis) { scroller.abortAnimation(); return }
+        scrollAlongTo(if (axis == Scroll.HORIZONTAL) scroller.currX else scroller.currY, flingFrame)
         postInvalidateOnAnimation()
     }
 

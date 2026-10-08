@@ -137,7 +137,9 @@ class VdAppHost(
                     // ĐÍCH KHÔNG HỢP LỆ ⇒ nhảy về display 0, để lại ô **ĐEN THUI** — tệ hơn lỗi dọc ban đầu. Chống
                     // xoay nay làm bằng `wm set-fix-to-user-rotation` qua shell SAU khi tạo VD (xem [maybeLaunch]) —
                     // khoá hướng mà KHÔNG đổi cờ hiển thị nên không đổi đường composite (app vẫn vẽ vào ô như cũ).
-                    val name = "kachi-slot-$slot-${System.currentTimeMillis()}"
+                    // 2.98 · R4: tên ỔN ĐỊNH theo ô (không dấu thời gian) ⇒ khoá xoay bên dưới dùng lại ĐÚNG một mục bền trong
+                    // `/data/system/display_settings.xml` thay vì để lại một mục mới mỗi lần dựng ô — KDoc [SlotVdName].
+                    val name = SlotVdName.pick(slot, SlotVdOwner.liveNames())
                     val dpi = slotDensity(w, ht)   // đường golden (mở mới): mật độ theo ô như trước 2.91 — F2b chỉ GHI LẠI nó
                     // lint WrongConstant: 256 = VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL là hằng @hide của
                     // DisplayManager (8 = OWN_CONTENT_ONLY là public). Cờ ẩn dùng CỐ Ý — đường cast đang chạy ngoài

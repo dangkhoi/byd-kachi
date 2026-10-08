@@ -2,6 +2,7 @@ package com.byd.clusternav
 
 import android.content.Context
 import com.byd.clusternav.core.CsvEscape
+import com.byd.clusternav.core.FileByteBudget
 import java.io.BufferedWriter
 import java.io.File
 import java.util.concurrent.ExecutorService
@@ -31,11 +32,21 @@ object NavNotifLog {
     const val HEADER =
         "t_ms,pkg,title,text,subText,bigText,hasLargeIcon,parsedManeuverIcon,parsedDistance,parsedRoad,parsedEta"
 
-    private fun ensureLocked(ctx: Context) {
-        if (w != null) return
+    /** 2.98 · R6-F — trần TỪNG tệp 8 MiB (cùng `usage-*.log`), quá thì xoay sang tệp mới; trần tổng vẫn là `DiagStorageCap`. */
+    private val budget = FileByteBudget()
+
+    /**
+     * Mở tệp nếu chưa có, hoặc XOAY sang tệp mới khi dòng sắp ghi ([rowBytes]) làm tệp hiện tại vượt trần ([FileByteBudget]).
+     * Chỉ chạy trên [io] (luồng đơn) ⇒ không cần khoá.
+     */
+    private fun ensureLocked(ctx: Context, rowBytes: Long) {
+        if (w != null && !budget.mustRotateBefore(rowBytes)) return
+        w?.let { old -> runCatching { old.close() } }
+        w = null
         runCatching {
             val f = File(ctx.applicationContext.getExternalFilesDir(null), "nav_notif_log_${System.currentTimeMillis()}.csv")
             w = f.bufferedWriter().also { it.appendLine(HEADER) }
+            budget.startFile(HEADER.toByteArray(Charsets.UTF_8).size + 1L)
             path = f.absolutePath
         }
     }
@@ -81,18 +92,19 @@ object NavNotifLog {
         parsedRoad: String,
         parsedEta: String,
     ) {
-        ensureLocked(ctx)
+        val row = CsvEscape.row(
+            listOf(
+                t.toString(), pkg, title, text, subText, bigText, hasLargeIcon.toString(),
+                parsedManeuverIcon.toString(), parsedDistance, parsedRoad, parsedEta,
+            ),
+        )
+        val n = row.toByteArray(Charsets.UTF_8).size + 1L
+        ensureLocked(ctx, n)
         val ww = w ?: return
         runCatching {
-            ww.appendLine(
-                CsvEscape.row(
-                    listOf(
-                        t.toString(), pkg, title, text, subText, bigText, hasLargeIcon.toString(),
-                        parsedManeuverIcon.toString(), parsedDistance, parsedRoad, parsedEta,
-                    ),
-                ),
-            )
+            ww.appendLine(row)
             ww.flush()
+            budget.record(n)
         }
     }
 }

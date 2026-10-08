@@ -139,7 +139,7 @@ class ShortcutGridFitWiringContractTest {
             "vị trí cuộn = lựa chọn của người lái kẹp vào quãng mới")
         assertFalse(settle.contains("scrollX.coerceIn") || settle.contains("scrollY.coerceIn"),
             "kẹp chính vị trí đang áp ⇒ một lượt đo ở khung lạ xoá vĩnh viễn lựa chọn của người lái")
-        assertTrue(SourceRoots.body(layout, "private fun scrollAlongTo(p: Int)").contains("p.coerceIn(0, fit?.maxScrollPx ?: 0)"))
+        assertTrue(SourceRoots.body(layout, "private fun scrollAlongTo(p: Int, fling: ShortcutScrollKeep.Fling? = null)").contains("p.coerceIn(0, fit?.maxScrollPx ?: 0)"))
         assertTrue(SourceRoots.body(layout, "private fun fling()").contains("scroller.fling("))
         assertTrue(SourceRoots.body(layout, "override fun computeScroll()").contains("scroller.computeScrollOffset()"))
         assertTrue(SourceRoots.body(layout, "override fun computeVerticalScrollRange()").contains("fit?.contentHeightPx"))
@@ -191,10 +191,44 @@ class ShortcutGridFitWiringContractTest {
         assertFalse(refresh.contains("removeAllViews") || refresh.contains("rebuild"), "làm mới không đổi cây view")
         // Một chỗ GHI vị trí người lái chọn (khai báo là `wanted: Wanted = start`, không khớp mẫu): cuộn do người lái.
         assertEquals(1, Regex("""\bwanted = """).findAll(layout).count(), "chỉ cuộn do người lái được ghi 'wanted'")
-        assertTrue(SourceRoots.body(layout, "private fun scrollAlongTo(p: Int)")
-            .contains("wanted = ShortcutScrollKeep.userScrolled(axis, c)"))
+        // 2.98 · R5 — ĐỔI GHIM có lý do: bước của cú trôi ghi theo khung LÚC PHÓNG (`flung`), kéo/trợ năng giữ `userScrolled`.
+        assertTrue(SourceRoots.body(layout, "private fun scrollAlongTo(p: Int, fling: ShortcutScrollKeep.Fling? = null)")
+            .contains("wanted = if (fling == null) ShortcutScrollKeep.userScrolled(axis, c) else ShortcutScrollKeep.flung(fling, p)"))
         val report = SourceRoots.body(layout, "private fun report(f: ShortcutGridFit.Fit)")
         assertTrue(report.contains("pos=%d/%d view=%x") && report.contains("System.identityHashCode(this)"))
         assertTrue(report.contains("frame=%dx%d"), "dạng `frame=W×H` của OC-292-1 giữ nguyên")
+    }
+
+    /**
+     * 2.98 · R5 · `SHORTCUT-FLING-CLAMP` (spec `kachi-298-plan.html`; review SLOT Pass 2 mục 5) — cú trôi đi qua một lượt khớp ở
+     * khung lạ không được GHI vị trí đã kẹp theo khung lạ (luật thuần + số QA 264/43 ở `ShortcutScrollKeepTest`). Chỗ NỐI:
+     *  - [fling] ghi khung lúc phóng (trục + biên của bộ trôi) ngay sau `scroller.fling(`;
+     *  - mỗi bước [computeScroll] đi qua `scrollAlongTo(…, flingFrame)` ⇒ `ShortcutScrollKeep.flung`; trục đổi giữa cú trôi ⇒ dừng;
+     *  - kéo / trợ năng KHÔNG mang khung trôi (vẫn `userScrolled` — chỉ bước trôi đổi hành vi);
+     *  - `wanted` vẫn MỘT chỗ ghi.
+     */
+    @Test
+    fun `cu troi qua luot khop o khung la khong ghi vi tri da kep (R5)`() {
+        order(SourceRoots.body(layout, "private fun fling()"), "scroller.fling(", "flingFrame = ShortcutScrollKeep.Fling(axis, max)",
+            "postInvalidateOnAnimation()")
+        order(SourceRoots.body(layout, "override fun computeScroll()"), "scroller.computeScrollOffset()",
+            "if (axis != flingFrame.axis) { scroller.abortAnimation(); return }",
+            "scrollAlongTo(if (axis == Scroll.HORIZONTAL) scroller.currX else scroller.currY, flingFrame)")
+        assertEquals(1, Regex("""\bflingFrame = """).findAll(layout).count(), "chỉ cú trôi được ghi khung trôi")
+        assertTrue(layout.contains("private var flingFrame: ShortcutScrollKeep.Fling = ShortcutScrollKeep.Fling.NONE"))
+        val touch = SourceRoots.body(layout, "override fun onTouchEvent(ev: MotionEvent)")
+        assertTrue(touch.contains("scrollAlongTo(position() + d)") && !touch.contains("flingFrame"), "kéo không mang khung trôi")
+        val a11y = SourceRoots.body(layout, "override fun performAccessibilityAction(action: Int, arguments: Bundle?)")
+        assertFalse(a11y.contains("flingFrame"), "trợ năng không mang khung trôi")
+        assertEquals(1, Regex("""\bwanted = """).findAll(layout).count())
+    }
+
+    private fun order(src: String, vararg parts: String) {
+        var at = -1
+        parts.forEach { p ->
+            val i = src.indexOf(p, at + 1)
+            assertTrue(i > at, "thứ tự sai / thiếu '$p' trong: ${src.take(600)}")
+            at = i
+        }
     }
 }

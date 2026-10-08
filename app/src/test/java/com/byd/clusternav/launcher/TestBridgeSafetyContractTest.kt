@@ -261,11 +261,13 @@ class TestBridgeSafetyContractTest {
      */
     @Test
     fun `tien to ten man ao con khop VdAppHost`() {
+        // 2.98 · R4: tên màn ảo ô nay do `SlotVdName` (:core) đặt — VdAppHost phải gọi nó, và tiền tố sống ở đó.
         val host = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/VdAppHost.kt")
         assertTrue(
-            host.contains("\"kachi-slot-"),
-            "VdAppHost không còn đặt tên màn ảo theo tiền tố `kachi-slot-` ⇒ sửa `TestBridgeState.VD_NAME_PREFIX`",
+            host.contains("SlotVdName.pick(slot,"),
+            "VdAppHost không còn đặt tên màn ảo qua `SlotVdName.pick` ⇒ sửa `TestBridgeState.VD_NAME_PREFIX`",
         )
+        assertEquals("kachi-slot-", com.byd.clusternav.launcher.SlotVdName.PREFIX, "tiền tố `SlotVdName` đổi ⇒ sửa gương")
         assertTrue(
             code("TestBridgeState.kt").contains("VD_NAME_PREFIX = \"kachi-slot-\""),
             "tiền tố ở `TestBridgeState` phải khớp `VdAppHost`",

@@ -30,6 +30,9 @@ object UpdateChecker {
 
     private const val TAG = "UpdateChecker"
 
+    /** Thư mục tải APK OTA trong `filesDir` — một nguồn cho [download] và bộ dọn `housekeeping/UpdateApkHousekeeping` (R6-H). */
+    internal const val UPDATE_DIR = "update"
+
     /**
      * L2 (2026-09-13) — kênh cập nhật RIÊNG của Kachi: repo `dangkhoi/byd-kachi` (đúng remote của mã này), thư mục
      * `apk/` trên nhánh [BRANCH]. Trước đây trỏ `dangkhoi/byd-launcher` (tên repo ClusterNav 2.0 kế thừa) ⇒ Kachi
@@ -94,7 +97,7 @@ object UpdateChecker {
      */
     fun download(ctx: Context, url: String, onProgress: (Int) -> Unit): File? {
         val out = runCatching {
-            val dir = File(ctx.applicationContext.filesDir, "update").apply { mkdirs() }
+            val dir = File(ctx.applicationContext.filesDir, UPDATE_DIR).apply { mkdirs() }
             dir.listFiles()?.forEach { runCatching { it.delete() } }   // chỉ giữ 1 bản đang tải
             File(dir, url.substringAfterLast('/').ifBlank { "update.apk" })
         }.getOrElse { Log.w(TAG, "download: không chuẩn bị được thư mục (${it.javaClass.simpleName}: ${it.message})"); return null }
