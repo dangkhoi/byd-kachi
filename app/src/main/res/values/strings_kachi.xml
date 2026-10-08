@@ -1068,4 +1068,6 @@
     <string name="kachi_keys_pick_camera">Bước 3 — camera nào</string>
     <string name="kachi_key_cam_toggle">%1$s — bật/tắt</string>
     <string name="kachi_key_cam_off">Tắt camera</string>
+    <!-- 2.97 · R3 — đổi hồ sơ tắt dẫn đường lên cụm -->
+    <string name="kachi_profile_nav_off">Hồ sơ «%1$s» đang TẮT dẫn đường lên cụm đồng hồ/HUD. Bật lại ở Cài đặt › Dẫn đường + HUD.</string>
 </resources>

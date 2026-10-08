@@ -41,6 +41,8 @@ internal fun KachiHomeActivity.render(state: HomeUiState) {
     // #10 (2026-09-23) GIỮ STATE: theme đổi ⇒ restyle tại chỗ (không recreate=không giết ô app); chỉ LANG mới recreate.
     val themeChanged = ThemeHost.sync(state)
     if (LangHost.changed(prev, state) && prev != null) { recreate(); return }
+    // 2.97 · R3 — đổi hồ sơ vừa TẮT dẫn đường lên cụm ⇒ nhắc MỘT lần (sau `recreate` vẫn còn: cờ lấy ra ở lượt render kế).
+    ProfileNavNotice.take()?.let { android.widget.Toast.makeText(this, getString(com.byd.clusternav.R.string.kachi_profile_nav_off, it), android.widget.Toast.LENGTH_LONG).show() }
     if (themeChanged && prev != null) applyThemeInPlace()
     // T4: thu hồi id ở ĐÚNG chỗ diff này ⇒ mọi đường đổi đều qua đây. CẢ state, vì "còn dùng" tính cả sổ cảnh.
     prev?.let { appWidgets.reclaim(it, state) }
@@ -48,7 +50,7 @@ internal fun KachiHomeActivity.render(state: HomeUiState) {
     // `workspace.render` để ô dựng trong lượt này đăng ký với đúng cờ của hồ sơ.
     if (prev?.slotHeadAutoHide != state.slotHeadAutoHide) workspace.setSlotHeadAutoHide(state.slotHeadAutoHide)
     // Màn vẽ bố cục ĐANG HIỆN (lớp lưu + lớp tạm — đính chính owner 01/10); ô có mốc đặt-tạm mới ⇒ đổi app tại chỗ.
-    // Pass 3 · whole-r2-2: lượt dựng lại do ĐỔI HỒ SƠ nhả app rời ô như 2.88 (không đỗ ô 7) — `SlotParkPlan.leave`.
+    // 2.97 · R5: lượt dựng lại do ĐỔI HỒ SƠ — app hồ sơ mới vẫn hiện ⇒ ĐỖ để ô mới nhận lại, không thì nhả (`SlotParkPlan.leave`).
     workspace.render(state.effectiveWorkspace, state.carStatus, WorkspaceRenderPlanner.swapCandidates(prev?.swapNonce, state.swapNonce),
         profileSwitch = prev != null && prev.activeProfile != state.activeProfile)
     // R1/R2 (quality-review 2026-09-15): registry vị-trí-app là PROJECTION của state — reconcile MỖI render ở

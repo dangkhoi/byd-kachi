@@ -216,11 +216,13 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
      * `attachBaseContext` của màn ClusterNav — thiếu bước này thì hồ sơ dùng English mà màn kia vẫn tiếng Việt.
      */
     override fun switchProfile(name: String): HomeUiState {
+        val navBefore = com.byd.clusternav.Prefs.enabled(app)   // 2.97 · R3: công tắc "Dẫn đường lên cụm" TRƯỚC lượt áp
         prefs.snapshotClusterNav(prefs.activeProfile())
         prefs.setActiveProfile(name)
         prefs.applyClusterNav(name)
         prefs.broadcastLang()
         bridge.reapplyAll()
+        ProfileNavNotice.record(name, navBefore, com.byd.clusternav.Prefs.enabled(app))
         return load()
     }
 

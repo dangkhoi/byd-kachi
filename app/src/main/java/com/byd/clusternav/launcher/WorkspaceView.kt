@@ -174,11 +174,10 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         displayed = s; displayedStatus = status; carStatus = status
         // Luật "ô nào cần dựng lại" nằm ở :core (WorkspaceRenderPlanner) → test được off-car, kể cả ca P-bug2.
         var structural = false
-        when (val plan = WorkspaceRenderPlanner.decide(old, s, slotViews.size, status != oldStatus, embedChanged,
-            // P9: số ô THỰC TẾ (bố cục tự vẽ có thể khác bố cục sẵn). Đọc từ bố cục sẵn ở đây sẽ
-            // làm bộ quyết định thấy 'số view lệch số ô' mọi lần render ⇒ dựng lại TẤT CẢ liên tục.
-            slotCount = EffectiveLayout.slotCount(displayed.preset, customLayout), swap = swap,
-        )) {
+        // P9: số ô THỰC TẾ (bố cục tự vẽ có thể khác bố cục sẵn). Đọc từ bố cục sẵn ở đây sẽ làm bộ quyết định thấy 'số view lệch
+        // số ô' mọi lần render ⇒ dựng lại TẤT CẢ liên tục. 2.97 · R5: luật đỗ chỉ nhìn ô ĐANG HIỆN (`shown`) — ô ngoài bố cục không nhận lại ai.
+        val shown = s.slots.take(EffectiveLayout.slotCount(displayed.preset, customLayout))
+        when (val plan = WorkspaceRenderPlanner.decide(old, s, slotViews.size, status != oldStatus, embedChanged, slotCount = shown.size, swap = swap)) {
             WorkspaceRenderPlan.RebuildAll -> { rebuild(); EmptySlotLog.note(displayed.slots, slotViews.size); return }
             is WorkspaceRenderPlan.PerSlot -> (plan.rebuild + plan.swap).sorted().forEach { i ->   // 2.89-thử1: đặt tạm cũng dựng lại ô (ô 7 đỗ app cũ)
                 val nc = s.slots.getOrElse(i) { SlotContent.Empty }
@@ -190,7 +189,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 if (onlyValues && nc is SlotContent.Widget &&
                     WidgetViews.refreshRead(slotViews[i], widgetData()) > 0
                 ) return@forEach          // refresh SỐ tại chỗ — widget tự invalidate, KHÔNG relayout workspace
-                parkLeaving(i, oc, nc, s.slots, profileSwitch)   // ô 7 (§4.6d): app rời ô còn dùng ⇒ ĐỖ; đổi hồ sơ ⇒ nhả (whole-r2-2)
+                parkLeaving(i, oc, nc, shown, profileSwitch)   // ô 7 (§4.6d): app rời ô còn dùng ⇒ ĐỖ; đổi hồ sơ ⇒ đỗ nếu còn hiện (2.97 R5)
                 releaseSlotHost(i)          // ô đổi nội dung ⇒ nhả màn ảo của ô TRƯỚC khi tháo view
                 removeView(slotViews[i])
                 val v = makeSlot(i, nc)
@@ -254,9 +253,11 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
 
     private fun rebuild() {
         mediaCache = null      // lượt dựng lại cũng là một lượt mới ⇒ đọc nhạc lại đúng một lần
-        releaseAppHosts()      // dựng lại TẤT CẢ ⇒ nhả màn ảo cũ trước, không để hai đời ô cùng giữ VD
-        removeAllViews(); slotViews.clear()
-        for (i in 0 until EffectiveLayout.slotCount(displayed.preset, customLayout)) {
+        val n = EffectiveLayout.slotCount(displayed.preset, customLayout)
+        // 2.97 · R5: app bố cục MỚI vẫn hiện ⇒ ĐỖ, ô mới nhận lại. CHỈ ô sẽ ĐƯỢC DỰNG (`take(n)`): ô ngoài bố cục (≥ n, state còn giữ) không ai nhận lại ⇒ nhả.
+        parkStillShown(displayed.slots.take(n))
+        releaseAppHosts(); removeAllViews(); slotViews.clear()   // dựng lại TẤT CẢ ⇒ nhả màn ảo cũ trước, không để hai đời ô cùng giữ VD
+        for (i in 0 until n) {
             val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
             val v = makeSlot(i, content)
             addView(v); slotViews.add(v)

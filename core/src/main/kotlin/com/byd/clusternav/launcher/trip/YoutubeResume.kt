@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher.trip
 
 import com.byd.clusternav.launcher.voice.VoiceAppTarget
 import com.byd.clusternav.launcher.voice.VoiceAppTargets
+import com.byd.clusternav.launcher.voice.YoutubeSearchParse
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.text.Normalizer
@@ -61,6 +62,16 @@ object YoutubeResume {
     /** Nhịp lưu (spec R3: *"≈ mỗi phút"*). */
     const val SAMPLE_EVERY_MS = 60_000L
 
+    /**
+     * 2.97 · YT-SAVE-ON-CHANGE — phiên báo ĐỔI BÀI ⇒ lưu sau chừng này (đợi tiêu đề/thời lượng/vị trí của bài mới ổn định; nhiều
+     * lần đổi liền nhau gộp làm MỘT lượt). Anh em báo 08/10 (2.96): lên xe phát tiếp "không đúng bài" — [SUY] nghe Mix, bài vừa
+     * chuyển mà chưa tới nhịp [SAMPLE_EVERY_MS] đã tắt máy ⇒ mẫu cuối còn là bài TRƯỚC.
+     */
+    const val CHANGE_SETTLE_MS = 2_000L
+
+    /** Gói của mọi app đích phát tiếp — bên lưu chỉ nghe sự kiện đổi bài của đúng các phiên này. */
+    fun watchedPackages(): Set<String> = watchedTargets().flatMap { it.packages }.toSet()
+
     /** Nhật ký lưu: một dòng mỗi lần đổi bài, không thì tối đa một dòng mỗi chừng này. */
     const val LOG_EVERY_MS = 5L * 60 * 1000
 
@@ -86,8 +97,8 @@ object YoutubeResume {
         val savedAtMs: Long,
     )
 
-    /** Kế hoạch phát tiếp: tìm [query], bài đầu phải khớp [title], rồi tua tới [seekMs] (0 = không tua). */
-    data class Plan(val query: String, val title: String, val seekMs: Long)
+    /** Kế hoạch phát tiếp: tìm [query], một kết quả phải khớp [title] ([choose], ưu tiên cùng [channel]), rồi tua tới [seekMs] (0 = không tua). */
+    data class Plan(val query: String, val title: String, val seekMs: Long, val channel: String = "")
 
     /**
      * App cần Kachi phát tiếp hộ = kiểu nhạc PHÁT được mà app KHÔNG tự phát tiếp ([TripMusicMode.resumable], dữ liệu của
@@ -138,7 +149,7 @@ object YoutubeResume {
         if (saved.durationMs > 0 && saved.positionMs > saved.durationMs - END_GUARD_MS) return null
         val seek = if (saved.durationMs <= 0 || saved.positionMs < MIN_SEEK_MS) 0L else saved.positionMs
         val query = TripMusicCodec.clean("${saved.title} ${saved.channel}")
-        return Plan(query, saved.title, seek)
+        return Plan(query, saved.title, seek, saved.channel)
     }
 
     /** Tiêu đề tìm được / phiên đang phát có đúng là bài đã lưu không: so sau NFC + chữ thường + gộp khoảng trắng. Rỗng ⇒ sai. */
@@ -146,6 +157,33 @@ object YoutubeResume {
         val a = norm(found)
         return a.isNotEmpty() && a == norm(savedTitle)
     }
+
+    /**
+     * 2.97 · R2 — chọn bài để phát trong [hits] (kết quả đầu của lượt tìm, theo thứ hạng): CHỈ bài có tiêu đề khớp ([matches]);
+     * nhiều bài cùng tiêu đề ⇒ ưu tiên bài cùng kênh đã lưu, không có thì bài khớp hạng cao nhất (đúng luật 2.94 cho hạng 1).
+     * Không bài nào khớp ⇒ `null` ⇒ không phát gì (luật "không bao giờ phát nhầm" giữ nguyên).
+     */
+    fun choose(hits: List<YoutubeSearchParse.Hit>, plan: Plan): YoutubeSearchParse.Hit? {
+        val same = hits.filter { matches(it.title, plan.title) }
+        return same.firstOrNull { plan.channel.isNotBlank() && matches(it.channel, plan.channel) } ?: same.firstOrNull()
+    }
+
+    /**
+     * 2.97 · R2 — tổng thời gian còn thử tìm lại khi lượt đầu KHÔNG TỚI ĐƯỢC YouTube ([YoutubeSearchParse.Search.Offline]).
+     * [ĐO máy ảo 08/10] không mạng ⇒ lượt tìm hỏng sau 19 ms và 2.96 bỏ luôn. [CHƯA BIẾT] mạng xe lên sau nổ máy bao lâu ⇒ [ĐOÁN]
+     * 60 s (cùng cỡ chờ phiên + quảng cáo của bước nhạc); luôn bị kẹp thêm bởi hạn chuyến.
+     */
+    const val SEARCH_RETRY_BUDGET_MS = 60_000L
+
+    /** Nhịp chờ lượt thử lại thứ [attempt] (0 = lần thử lại đầu): luỹ thừa 2 từ 2 s, trần 10 s, nhân jitter [jitter01] ∈ [0,1) vào nửa trên. */
+    fun searchRetryDelayMs(attempt: Int, jitter01: Double): Long {
+        val base = minOf(SEARCH_RETRY_MAX_DELAY_MS, SEARCH_RETRY_FIRST_DELAY_MS shl attempt.coerceIn(0, 10))
+        val j = if (jitter01.isFinite()) jitter01.coerceIn(0.0, 1.0) else 0.0
+        return (base * (0.5 + 0.5 * j)).toLong().coerceAtLeast(1L)
+    }
+
+    private const val SEARCH_RETRY_FIRST_DELAY_MS = 2_000L
+    private const val SEARCH_RETRY_MAX_DELAY_MS = 10_000L
 
     /** Có nên ghi một dòng nhật ký cho lần lưu [next]: đổi bài ⇒ có; cùng bài ⇒ tối đa một dòng mỗi [LOG_EVERY_MS]. */
     fun shouldLog(prev: Saved?, next: Saved, lastLogWallMs: Long): Boolean =

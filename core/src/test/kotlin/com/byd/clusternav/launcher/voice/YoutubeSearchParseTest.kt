@@ -89,46 +89,82 @@ class YoutubeSearchParseTest {
         )
     }
 
-    // ══ 2.94 · R3 — bài đầu KÈM TIÊU ĐỀ (phát tiếp YouTube) ═══════════════════════════════════════════════════
+    // ══ 2.97 · R2 — N KẾT QUẢ ĐẦU (id + tiêu đề + kênh) cho phát tiếp YouTube ═════════════════════════════════════════
 
-    private fun renderer(id: String, title: String) =
+    private fun renderer(id: String, title: String, channel: String? = null) =
         """{"videoRenderer":{"videoId":"$id","thumbnail":{"thumbnails":[{"url":"https://i.ytimg.com/vi/$id/hq.jpg"}]},""" +
-            """"title":{"runs":[{"text":"$title"}],"accessibility":{}}}}"""
+            """"title":{"runs":[{"text":"$title"}],"accessibility":{}},"lengthText":{"simpleText":"5:24"}""" +
+            (channel?.let { ""","ownerText":{"runs":[{"text":"$it"}]}""" } ?: "") + "}}"
 
-    @Test fun `firstVideo - id va tieu de cua CHINH bai dau, giai thoat JSON`() {
-        val html = "x".repeat(1_000) + renderer("dQw4w9WgXcQ", "Lạc Trôi | Official \\u0026 \\\"MV\\\"") + renderer("9bZkp7q19f0", "Khác")
+    /**
+     * Trang THẬT (cắt gọn: 6 khối kết quả + neo khối 7, mã theo dõi / link xem trước đã xoá) của truy vấn phát tiếp
+     * *"<tiêu đề> <kênh>"* cho đúng ca owner báo 08/10 — `curl` từ máy chủ, UA máy tính như `VoiceYoutubeResolver`.
+     */
+    private val real by lazy {
+        requireNotNull(javaClass.getResourceAsStream("/voice/yt-search-mua-chieu-tan-thoi-2026-10-08.txt")) { "thiếu fixture" }
+            .bufferedReader(Charsets.UTF_8).readText()
+    }
+
+    @Test fun `topVideos - trang that ca owner 08-10, dung thu tu, tieu de + kenh`() {
+        val hits = YoutubeSearchParse.topVideos(real.reader(), maxChars = 1_800_000)
+        assertEquals(5, hits.size)
         assertEquals(
-            YoutubeSearchParse.Hit("dQw4w9WgXcQ", "Lạc Trôi | Official & \"MV\""),
-            YoutubeSearchParse.firstVideo(html.reader(), maxChars = 100_000),
+            YoutubeSearchParse.Hit("_RPAFLQWaME", "MƯA CHIỀU - Bản Phối Mới AI Ngọt Ngào Đến NỔI DA GÀ", "NHẠC TRỊNH TÂN THỜI"),
+            hits[0],
+        )
+        assertEquals(listOf("_RPAFLQWaME", "DnC4QFdqkmQ", "j-Lcs0ipyp0", "Day4r4euNAc", "qyiQ-pqI5GU"), hits.map { it.id })
+        assertEquals(listOf("NHẠC TRỊNH TÂN THỜI", "MP Melody", "QUÁN NỬA ĐÊM", "Bolero Tân Thời", "NHẠC TRỊNH TÂN THỜI"), hits.map { it.channel })
+    }
+
+    /** Khối đầu ở ≈ 770 K ký tự trên trang thật — phải tới được trong trần của resolver, và cửa sổ trước neo không phình. */
+    @Test fun `topVideos - neo nam sau 770 nghin ky tu nhu trang that`() {
+        val html = "x".repeat(770_000) + real
+        assertEquals("_RPAFLQWaME", YoutubeSearchParse.topVideos(html.reader(), maxChars = 1_800_000).firstOrNull()?.id)
+        assertTrue(YoutubeSearchParse.topVideos(html.reader(), maxChars = 600_000).isEmpty(), "trần nhỏ hơn vị trí neo ⇒ rỗng")
+    }
+
+    /** `videoId` ngoài khối kết quả (quảng cáo / kệ / điều hướng) đứng trước không bao giờ thành "kết quả 1". */
+    @Test fun `topVideos - videoId ngoai khoi ket qua khong duoc tinh`() {
+        val html = """{"searchPyvRenderer":{"ads":[{"videoId":"ADADADADADA","title":{"runs":[{"text":"Quảng cáo"}]}}]}},""" +
+            renderer("dQw4w9WgXcQ", "Bài A", "Kênh A") + renderer("9bZkp7q19f0", "Bài B")
+        assertEquals(
+            listOf(YoutubeSearchParse.Hit("dQw4w9WgXcQ", "Bài A", "Kênh A"), YoutubeSearchParse.Hit("9bZkp7q19f0", "Bài B", null)),
+            YoutubeSearchParse.topVideos(html.reader(), maxChars = 100_000),
         )
     }
 
-    @Test fun `firstVideo - simpleText cung bat duoc`() {
-        val html = """{"videoId":"dQw4w9WgXcQ","x":1,"title":{"simpleText":"Đêm \u0111ông"}}"""
-        assertEquals("Đêm đông", YoutubeSearchParse.firstVideo(html.reader(), maxChars = 10_000)?.title)
+    @Test fun `topVideos - giai thoat JSON, simpleText, gioi han so ket qua`() {
+        val html = renderer("dQw4w9WgXcQ", "Lạc Trôi | Official \\u0026 \\\"MV\\\"", "S\\u01a1n T\\u00f9ng") +
+            """{"videoRenderer":{"videoId":"9bZkp7q19f0","title":{"simpleText":"Đêm đông"}}}""" +
+            renderer("CCCCCCCCCCC", "C")
+        val hits = YoutubeSearchParse.topVideos(html.reader(), maxChars = 100_000, limit = 2)
+        assertEquals(listOf(YoutubeSearchParse.Hit("dQw4w9WgXcQ", "Lạc Trôi | Official & \"MV\"", "Sơn Tùng"),
+            YoutubeSearchParse.Hit("9bZkp7q19f0", "Đêm đông", null)), hits)
     }
 
-    @Test fun `firstVideo - videoId thu hai dung truoc tieu de thi tieu de null, khong muon cua bai khac`() {
-        val html = """{"videoId":"AAAAAAAAAAA"},""" + renderer("BBBBBBBBBBB", "Của bài B")
-        assertEquals(YoutubeSearchParse.Hit("AAAAAAAAAAA", null), YoutubeSearchParse.firstVideo(html.reader(), maxChars = 10_000))
+    @Test fun `topVideos - khong neo, tran vo nghia thi rong, khong nem`() {
+        assertTrue(YoutubeSearchParse.topVideos("""{"videoId":"dQw4w9WgXcQ"}""".reader(), maxChars = 1_000).isEmpty(), "markup đổi ⇒ rỗng")
+        assertTrue(YoutubeSearchParse.topVideos("".reader(), maxChars = 1_000).isEmpty())
+        assertTrue(YoutubeSearchParse.topVideos(real.reader(), maxChars = 0).isEmpty())
+        assertTrue(YoutubeSearchParse.topVideos(real.reader(), maxChars = 1_000_000, limit = 0).isEmpty())
     }
 
-    @Test fun `firstVideo - tieu de qua xa hoac khong co thi null, id van giu`() {
-        val far = """{"videoId":"dQw4w9WgXcQ",""" + "z".repeat(20_000) + """"title":{"runs":[{"text":"Xa"}]}"""
-        assertEquals(YoutubeSearchParse.Hit("dQw4w9WgXcQ", null), YoutubeSearchParse.firstVideo(far.reader(), maxChars = 100_000, titleWithin = 8_192))
-        assertEquals(YoutubeSearchParse.Hit("dQw4w9WgXcQ", null), YoutubeSearchParse.firstVideo("""{"videoId":"dQw4w9WgXcQ"}""".reader(), maxChars = 1_000))
-        assertNull(YoutubeSearchParse.firstVideo("không có gì".reader(), maxChars = 1_000))
-        assertNull(YoutubeSearchParse.firstVideo(renderer("dQw4w9WgXcQ", "A").reader(), maxChars = 0))
+    /** Trần giữ từ neo: khối vượt trần bị cắt ⇒ ít kết quả hơn, không phình RAM. */
+    @Test fun `topVideos - tran giu tu neo`() {
+        val html = renderer("dQw4w9WgXcQ", "A") + "z".repeat(50_000) + renderer("9bZkp7q19f0", "B")
+        assertEquals(listOf("dQw4w9WgXcQ"), YoutubeSearchParse.topVideos(html.reader(), maxChars = 1_000_000, spanChars = 10_000).map { it.id })
+        assertEquals(2, YoutubeSearchParse.topVideos(html.reader(), maxChars = 1_000_000, spanChars = 100_000).size)
     }
 
-    /** Cùng bẫy ranh giới khối của [firstVideoId]: id và tiêu đề vắt qua mọi ranh giới vẫn ra đúng. */
-    @Test fun `firstVideo - id va tieu de vat qua ranh gioi khoi doc`() {
+    /** Bẫy ranh giới khối: neo + tiêu đề vắt qua mọi ranh giới vẫn ra đúng. */
+    @Test fun `topVideos - neo vat qua ranh gioi khoi doc`() {
         val chunk = 64
+        assertTrue(YoutubeSearchParse.OVERLAP_CHARS > "\"videoRenderer\":{\"videoId\":\"dQw4w9WgXcQ\"".length)
         for (off in 0..(chunk * 3)) {
-            val html = "x".repeat(off) + renderer("dQw4w9WgXcQ", "Bài | một")
+            val html = "x".repeat(off) + renderer("dQw4w9WgXcQ", "Bài | một", "Kênh")
             assertEquals(
-                YoutubeSearchParse.Hit("dQw4w9WgXcQ", "Bài | một"),
-                YoutubeSearchParse.firstVideo(html.reader(), maxChars = 100_000, chunkChars = chunk),
+                listOf(YoutubeSearchParse.Hit("dQw4w9WgXcQ", "Bài | một", "Kênh")),
+                YoutubeSearchParse.topVideos(html.reader(), maxChars = 100_000, chunkChars = chunk),
                 "lệch $off",
             )
         }

@@ -141,7 +141,9 @@ class TripWiringContractTest {
         val fn = SourceRoots.body(music, "slotsAtStart: Map<String, Int> = emptyMap(),\n    ): Done {")
         order(fn, "bridge.sessions()", "TripMusicPlace.entrySlot(ports.where(it), slotsAtStart[it])", "TripMusicPlan.gate(", "TripOutcome.ofGate(gate)",
             "start(pkg, id, slot0, deadlineAt, progress)", "awaitSession(pkg)", "TripMusicPlan.recheck(pkg, bridge.sessions())",
-            "TripMusicPlan.play(url, session)", "bridge.playFromUri(pkg, p.url)",
+            "return play(id, pkg, target, resume, url0, session, base, slot, deadlineAt, progress)")
+        // 2.97 · R2c — ĐỔI GHIM có lý do: thân giao link tách ra `play(…)` (dùng chung đường thường + đường hoãn tới cuối chuyến).
+        order(SourceRoots.body(music, "private fun play("), "TripMusicPlan.play(url, session)", "bridge.playFromUri(pkg, p.url)",
             // 2.96 · R9 — ĐỔI GHIM có lý do (log xe 07/10 21:05:14 `view:SLOT_NOT_READY` ⇒ NOOP): giao link + mã qua
             // `TripMusicPlace.viewWhenReady` (`:core`, test `TripMusicViewWaitTest`) — ô chưa sẵn ⇒ chờ ô sống lại rồi giao lại.
             "viewWhenReady(pkg, p.url, slot, deadlineAt, progress, resume.ready, target.watchFullscreenExtra)", "v.code.result == TripStepCode.Result.NOOP")

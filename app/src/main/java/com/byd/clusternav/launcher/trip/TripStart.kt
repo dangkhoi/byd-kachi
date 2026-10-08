@@ -183,7 +183,9 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
             cameraKnown = ClusterProfile.resolveCached(app).cameraSignature != null,
         )
         val plan = TripPlan.steps(cfg, facts)
-        for ((i, step) in plan.withIndex()) {
+        var later: Pair<Int, TripMusicRun.Later>? = null   // 2.97 · R2c: phát tiếp YouTube hoãn tới cuối chuyến (chỉ số bước + phần hoãn)
+        // Soát R2c Pass 1 [P2]: bước sau bước nhạc ném lỗi ⇒ phần hoãn không bao giờ chạy ⇒ nhả cờ giữ bên lưu ngay (cũ: treo tới trần 180 s).
+        try { for ((i, step) in plan.withIndex()) {
             if (!TripGate.withinDeadline(firstWake, now)) {
                 notes += "deadline before $step"
                 plan.drop(i).forEach { steps += deadlineStep(it, cfg) }
@@ -198,11 +200,25 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
                     .run(step.music, installed, firstWake + TripGate.TRIP_DEADLINE_MS, TripStart::setProgress, view.slots).let { r ->
                     steps += r.step
                     notes += r.note
+                    r.later?.let { later = steps.lastIndex to it }
                 }
                 is TripPlan.Step.Normal -> normal(host, step.pkg).let { (code, note) -> record(step.pkg, TripStepKind.NORMAL, code, "normal-$note") }
             }
-        }
+        } } catch (e: RuntimeException) { later?.second?.drop(); throw e }
+        later?.let { (at, l) -> runLater(at, l, firstWake) }
         return TripOutcome.tripCode(steps)
+    }
+
+    /**
+     * 2.97 · R2c — phần phát tiếp hoãn ([TripMusicRun.Later]) chạy SAU mọi bước của chuyến, trên chính luồng nền này: app mở thường
+     * không còn phải chờ lượt thử lại tìm bài (tới 60 s khi mạng chưa sẵn). Kết quả thay bước nhạc tại chỗ ([at]). Hết hạn chuyến ⇒
+     * bỏ (nhả cờ giữ), bước nhạc giữ mã "chỉ mở". Lỗi bất ngờ ⇒ nhả cờ giữ rồi ném tiếp (khung chuyến ghi lỗi như mọi bước).
+     */
+    private fun runLater(at: Int, l: TripMusicRun.Later, firstWake: Long) {
+        if (!TripGate.withinDeadline(firstWake, now)) { l.drop(); notes += "music:later:deadline"; return }
+        val r = try { l.run() } catch (e: RuntimeException) { l.drop(); throw e }
+        steps[at] = r.step
+        notes += "later:${r.note}"
     }
 
     private fun record(pkg: String, kind: TripStepKind, code: TripStepCode, note: String) {

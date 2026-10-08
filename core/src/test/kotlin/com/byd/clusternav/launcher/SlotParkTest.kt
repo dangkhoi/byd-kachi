@@ -61,15 +61,44 @@ class SlotParkTest {
         assertNull(l.take("x"))
     }
 
+    /**
+     * Soát 2.97 R5 Pass 1 [P1] — ĐỔI GHIM có lý do: bản được che chắn là bản TẠM (nhận lại ngay sau lượt) ⇒ KHÔNG tính vào trần.
+     * Trước: `entries.size > cap` tính cả bản che chắn ⇒ ở đây `maps` bị nhả dù sau khi youtube nhận lại sổ chỉ còn 3 = trần.
+     */
     @Test
-    fun `che chan - app sap nhan lai cung luot khong bi tran nha, ke tiep cu nhat bi nha thay`() {
+    fun `che chan - app sap nhan lai cung luot khong bi tran nha, va khong tinh vao tran`() {
         // Đỗ [youtube, maps, spotify] (youtube CŨ NHẤT); đặt youtube vào ô đang có zalo ⇒ zalo đỗ TRƯỚC, youtube nhận lại SAU.
         val l = ParkLedger<String>()
         l.park("youtube", "1"); l.park("maps", "2"); l.park("spotify", "3")
         val out = l.park("zalo", "4", protect = SlotParkPlan.shown(listOf(app("youtube"), widget, SlotContent.Empty)))
-        assertEquals(listOf(ParkLedger.Evicted("maps", "2", ParkLedger.Why.CAP)), out, "nhả cũ nhất KHÔNG được che chắn")
+        assertTrue(out.isEmpty(), "ngoài bản che chắn sổ chỉ có 3 = trần ⇒ không nhả ai: $out")
         assertEquals("1", l.take("youtube"), "app người dùng vừa gọi vẫn nhận lại được — không relaunch, nhạc không mất")
-        assertEquals(listOf("spotify", "zalo"), l.pkgs())
+        assertEquals(listOf("maps", "spotify", "zalo"), l.pkgs())
+        // Che chắn một bản mà sổ ngoài nó VẪN vượt trần ⇒ nhả cũ nhất KHÔNG được che chắn (che chắn không phải miễn trần cho người khác).
+        val m = ParkLedger<String>()
+        m.park("youtube", "1"); m.park("maps", "2"); m.park("spotify", "3")
+        m.park("zalo", "4", protect = setOf("youtube"))
+        assertEquals(listOf(ParkLedger.Evicted("maps", "2", ParkLedger.Why.CAP)), m.park("tiktok", "5", protect = setOf("youtube")))
+        assertEquals(listOf("youtube", "spotify", "zalo", "tiktok"), m.pkgs(), "youtube tạm, 3 bản thật = trần")
+    }
+
+    /**
+     * 2.97 · R5 (c) — dựng lại TẤT CẢ ô: mọi app còn hiện đỗ CÙNG LÚC (đều che chắn) rồi ô mới nhận lại từng app. Ô 7 đang đầy
+     * (3 app thật) KHÔNG được mất ai chỉ vì sổ tạm vượt trần. Thử ĐỎ: trả `while (entries.size > cap …)` ⇒ a, b bị nhả.
+     */
+    @Test
+    fun `R5 - dung lai ca voi o 7 day - app that o o 7 khong bi nha vi so tam`() {
+        val l = ParkLedger<String>()
+        l.park("a", "1"); l.park("b", "2"); l.park("c", "3")
+        val next = listOf(app("yt"), app("maps"), widget, SlotContent.Empty)
+        val protect = SlotParkPlan.shown(next)
+        assertTrue(l.park("yt", "4", protect).isEmpty())
+        assertTrue(l.park("maps", "5", protect).isEmpty())
+        assertEquals(listOf("a", "b", "c", "yt", "maps"), l.pkgs(), "vượt trần TẠM")
+        assertEquals("4", l.take("yt")); assertEquals("5", l.take("maps"))
+        assertEquals(listOf("a", "b", "c"), l.pkgs(), "ô 7 y nguyên sau lượt dựng lại")
+        // Lượt đỗ thật kế tiếp (không che chắn) đưa về trần như cũ.
+        assertEquals(listOf("a"), l.park("d", "6").map { it.pkg })
     }
 
     @Test
@@ -220,23 +249,37 @@ class SlotParkTest {
         assertFalse(FreeformLaunch.appRunning("a.b") { throw java.io.IOException("dadb") })
     }
 
-    // ── Review 2.89 Pass 3 · whole-r2-2 — đổi hồ sơ nhả như 2.88 ─────────────────────────────────────────────────────────────
+    // ── 2.97 · R5 (thay whole-r2-2 của 2.89) — đổi hồ sơ: app hồ sơ mới vẫn hiện ⇒ ĐỖ, không thì nhả ───────────────────────────
 
     /**
-     * Hồ sơ A (YT Music ô 0) → hồ sơ B cùng bố cục (VietMap ô 0): lượt PerSlot gặp đúng ca "app khác vào ô" ⇒ trước đây ĐỖ YT Music (phát
-     * ẩn dưới hồ sơ của người lái sau). Đổi hồ sơ ⇒ NHẢ — cùng kết cục với đổi hồ sơ khác bố cục (RebuildAll). Đặt tạm / lối tắt /
-     * giọng nói / ⇄ (không cờ) giữ nguyên ĐỖ. Thử ĐỎ: bỏ dòng `if (profileSwitch) return Leave.RELEASE`.
+     * Khoá lỗi [ĐO log SL6 08/10 15:16:37]: hai hồ sơ cùng có YouTube ở ô 0, đổi hồ sơ ⇒ nhả + force-stop + mở lại ⇒ YouTube đang hát về
+     * trang chủ. Nay: app hồ sơ mới vẫn hiện (cùng ô hoặc ô khác) ⇒ ĐỖ để ô mới nhận lại; không hiện ⇒ nhả (không còn ai nằm ẩn ở ô 7
+     * mà không có ô quay về). Đặt tạm / lối tắt / ⇄ (không cờ) giữ nguyên luật cũ. Thử ĐỎ: trả lại `if (profileSwitch) return RELEASE`.
      */
     @Test
-    fun `Pass 3 - doi ho so cung bo cuc - nha app cu, khong do o 7`() {
-        val next = listOf(app("vn.vietmap.live"), app("b.c"))
-        assertEquals(SlotParkPlan.Leave.RELEASE,
-            SlotParkPlan.leave(app("com.google.android.apps.youtube.music"), app("vn.vietmap.live"), next, 0, profileSwitch = true))
+    fun `R5 - doi ho so - app con hien thi do, khong hien thi nha`() {
+        val yt = "com.google.android.youtube"
         assertEquals(SlotParkPlan.Leave.PARK,
-            SlotParkPlan.leave(app("com.google.android.apps.youtube.music"), app("vn.vietmap.live"), next, 0), "đặt tạm / ⇄: như cũ")
+            SlotParkPlan.leave(app(yt), app(yt), listOf(app(yt), app("b.c")), 0, profileSwitch = true), "cùng ô, cùng app")
+        assertEquals(SlotParkPlan.Leave.PARK,
+            SlotParkPlan.leave(app(yt), app("vn.vietmap.live"), listOf(app("vn.vietmap.live"), app(yt)), 0, profileSwitch = true), "sang ô khác")
         assertEquals(SlotParkPlan.Leave.RELEASE,
-            SlotParkPlan.leave(app("b.c"), SlotContent.Empty, listOf(SlotContent.Empty, app("b.c")), 0, profileSwitch = true),
-            "kéo-thả trùng lượt đổi hồ sơ: vẫn nhả")
+            SlotParkPlan.leave(app("com.google.android.apps.youtube.music"), app("vn.vietmap.live"), listOf(app("vn.vietmap.live"), app("b.c")), 0,
+                profileSwitch = true), "hồ sơ mới không có ⇒ nhả")
+        assertEquals(SlotParkPlan.Leave.RELEASE,
+            SlotParkPlan.leave(SlotContent.Empty, app(yt), listOf(app(yt)), 0, profileSwitch = true), "ô cũ không có app")
+        assertEquals(SlotParkPlan.Leave.PARK,
+            SlotParkPlan.leave(app("com.google.android.apps.youtube.music"), app("vn.vietmap.live"), listOf(app("vn.vietmap.live"), app("b.c")), 0),
+            "đặt tạm / ⇄: như cũ")
+    }
+
+    /** R5 (c) — dựng lại TẤT CẢ ô (hồ sơ khác bố cục): app còn trong bố cục mới ⇒ đỗ; không còn / không gói ⇒ nhả. */
+    @Test
+    fun `R5 - dung lai ca - giu app con trong bo cuc moi`() {
+        val next = listOf(SlotContent.Empty, app("com.google.android.youtube"))
+        assertEquals(SlotParkPlan.Leave.PARK, SlotParkPlan.keepOnRebuild("com.google.android.youtube", next))
+        assertEquals(SlotParkPlan.Leave.RELEASE, SlotParkPlan.keepOnRebuild("vn.vietmap.live", next))
+        assertEquals(SlotParkPlan.Leave.RELEASE, SlotParkPlan.keepOnRebuild(null, next))
     }
 
     // ── 2.91 · F2 — bảng quyết lượt NHẬN LẠI (thay PARK-1 ghim cỡ + khung viền) ─────────────────────────────────────────────

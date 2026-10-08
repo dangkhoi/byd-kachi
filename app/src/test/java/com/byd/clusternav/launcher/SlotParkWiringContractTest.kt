@@ -58,7 +58,9 @@ class SlotParkWiringContractTest {
         assertTrue("is WorkspaceRenderPlan.PerSlot -> (plan.rebuild + plan.swap).sorted().forEach { i ->" in workspace,
             "ô đặt tạm (`plan.swap`) dựng lại như mọi ô khác — không còn lọc qua `swapInPlace`")
         val perSlot = SourceRoots.body(workspace, "(plan.rebuild + plan.swap).sorted().forEach {")
-        order(perSlot, "parkLeaving(i, oc, nc, s.slots, profileSwitch)", "releaseSlotHost(i)", "removeView(slotViews[i])", "makeSlot(i, nc)")
+        // Soát 2.97 R5 Pass 1 [P1]: `shown` = CHỈ ô đang hiện (`s.slots.take(<số ô>)`) — ô ngoài bố cục (state còn giữ) không nhận lại ai.
+        order(workspace, "val shown = s.slots.take(EffectiveLayout.slotCount(displayed.preset, customLayout))", "slotCount = shown.size")
+        order(perSlot, "parkLeaving(i, oc, nc, shown, profileSwitch)", "releaseSlotHost(i)", "removeView(slotViews[i])", "makeSlot(i, nc)")
         assertFalse("swapInPlace(" in workspace, "đặt tạm không còn đổi app TẠI CHỖ (app cũ ở lại DƯỚI app mới khi BEHIND-HOME hỏng)")
         val leave = SourceRoots.body(swap, "internal fun WorkspaceView.parkLeaving(")
         order(leave, "SlotParkPlan.leave(old, new, next, i, profileSwitch) != SlotParkPlan.Leave.PARK", "return",
@@ -281,13 +283,19 @@ class SlotParkWiringContractTest {
     }
 
     /**
-     * Review 2.89 Pass 3 · whole-r2-2 — lượt dựng lại do ĐỔI HỒ SƠ (cùng bố cục ⇒ PerSlot) nhả app rời ô như 2.88, cùng kết cục với
-     * đổi hồ sơ khác bố cục (RebuildAll). Luật thuần ở `SlotParkTest`. Thử ĐỎ: bỏ `profileSwitch = …` ở `KachiHomeRender`.
+     * 2.97 · R5 — đổi hồ sơ: cờ [profileSwitch] vẫn chảy tới luật thuần (`SlotParkTest` R5: app hồ sơ mới còn hiện ⇒ ĐỖ), và lượt
+     * dựng lại TẤT CẢ (hồ sơ khác bố cục) đỗ app còn hiện TRƯỚC khi nhả — 0 lệnh shell. Thử ĐỎ: bỏ `parkStillShown` khỏi `rebuild()`.
      */
     @Test
-    fun `doi ho so nha app roi o nhu 2_88, khong do o 7`() {
+    fun `R5 - doi ho so giu man ao app con hien, ca hai nhanh dung lai`() {
         val render = SourceRoots.body(code("KachiHomeRender.kt"), "internal fun KachiHomeActivity.render(state: HomeUiState) {")
         assertTrue("profileSwitch = prev != null && prev.activeProfile != state.activeProfile)" in render, render)
         assertTrue("renderInternal(s, status, embedChanged = false, swap = swap, profileSwitch = profileSwitch)" in workspace)
+        // Soát R5 Pass 1 [P1]: chỉ đỗ app của ô SẼ ĐƯỢC DỰNG (`take(n)`, n = số ô bố cục mới) — đỗ app ô ngoài bố cục là nằm ẩn vô chủ.
+        order(SourceRoots.body(workspace, "private fun rebuild()"), "val n = EffectiveLayout.slotCount(displayed.preset, customLayout)",
+            "parkStillShown(displayed.slots.take(n))", "releaseAppHosts()", "for (i in 0 until n)", "makeSlot(i, content)")
+        val keep = SourceRoots.body(code("WorkspaceViewSwap.kt"), "internal fun WorkspaceView.parkStillShown(")
+        order(keep, "SlotParkPlan.keepOnRebuild(pkg, next)", "host.park(protect)")
+        forbidden.forEach { assertFalse(it in keep, "'$it' — đỗ = 0 lệnh") }
     }
 }

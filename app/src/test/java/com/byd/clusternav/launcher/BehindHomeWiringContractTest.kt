@@ -203,8 +203,9 @@ class BehindHomeWiringContractTest {
         // K8 không kéo app cũ đè lên, nhả ô vẫn dừng app mới).
         order(SourceRoots.body(host, "fun swapApp("), "SlotLiveProbe.unwatch(probeKey)", "full.reset()", "launchInto(displayId, newPkg, sh)")
         order(SourceRoots.body(run, "fun reset() {"), "task = null", "host.removeView(")
-        // Nhả ô khi app của nó đang toàn màn (người dùng đang thấy trên display 0) ⇒ KHÔNG force-stop app đó.
-        assertTrue(SourceRoots.body(host, "fun release()").contains("if (wasLaunched && p != null && sh != null && !full.isDetached)"))
+        // Nhả ô khi app của nó đang toàn màn (người dùng đang thấy trên display 0) ⇒ KHÔNG force-stop app đó (2.97 · R5: không
+        // force-stop app nào khi nhả ô).
+        assertFalse(SourceRoots.body(host, "fun release()").contains("force-stop"))
         order(SourceRoots.body(run, "fun bringBack(vd: Int, pkg: String, sh: (String) -> String) {"),
             "SlotReturnRun.bringBack(", "SlotReturn.Back.KEEP) return@bringBack", "SlotReturn.Back.IN_SLOT -> SlotLiveProbe.watch(",
             "SlotReturn.Back.GONE -> onClosed(false)", "else -> reopen()")

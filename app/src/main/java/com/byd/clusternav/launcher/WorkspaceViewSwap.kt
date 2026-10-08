@@ -49,13 +49,29 @@ internal fun WorkspaceView.swapInPlace(i: Int, slots: List<SlotContent>): Boolea
  * ⇒ host ĐỖ nó ([VdAppHost.park]: 0 lệnh shell, không `force-stop`, màn ảo giữ nguyên). Host đã nhả rồi `releaseSlotHost` là
  * no-op; app mới mở vào màn ảo MỚI của ô (đường thường) hoặc nhận lại màn ảo đỗ của chính nó (`VdAppHost.unpark`). Không đỗ
  * được (lượt mở dở · app đã chết · đang toàn màn) ⇒ nhả như hôm nay. Ô bị xoá / thành widget ⇒ nhả như hôm nay. Lượt dựng lại do
- * ĐỔI HỒ SƠ ([profileSwitch], review 2.89 Pass 3 · whole-r2-2) ⇒ nhả như 2.88 — không phải lối đỗ của §4.6d dòng B.
+ * ĐỔI HỒ SƠ ([profileSwitch]) ⇒ 2.97 · R5: app hồ sơ mới vẫn hiện ⇒ ĐỖ (ô mới nhận lại), không hiện ⇒ nhả (thay whole-r2-2 của 2.89).
  */
 internal fun WorkspaceView.parkLeaving(i: Int, old: SlotContent, new: SlotContent, next: List<SlotContent>, profileSwitch: Boolean = false) {
     if (SlotParkPlan.leave(old, new, next, i, profileSwitch) != SlotParkPlan.Leave.PARK) return
     val host = hostAt(i)?.takeIf { !it.isReleased } ?: return
     val parked = host.park(protect = SlotParkPlan.shown(next))   // app sắp nhận lại ở lượt này không bị trần ô 7 nhả
     Log.i(PARK_TAG, "ô $i: ${(old as? SlotContent.App)?.pkg} rời ô ⇒ ${if (parked) "đỗ ô 7 ${ParkedApps.summary()}" else "không đỗ được — nhả như cũ"}")
+}
+
+/**
+ * 2.97 · R5 (spec `kachi-297-plan.html`) — dựng lại TẤT CẢ ô (đổi bố cục · đổi hồ sơ khác bố cục): gọi NGAY TRƯỚC
+ * `releaseAppHosts()`. Host nào giữ app mà bố cục mới [next] vẫn hiện ⇒ ĐỖ ([VdAppHost.park], 0 lệnh shell) để ô mới nhận lại
+ * đúng màn ảo đang chạy ([ĐO log SL6 08/10]: nhả + mở lại ⇒ YouTube đang hát về trang chủ). Không đỗ được ⇒ nhả như cũ.
+ */
+internal fun WorkspaceView.parkStillShown(next: List<SlotContent>) {
+    val protect = SlotParkPlan.shown(next)
+    for (i in 0 until WorkspaceState.SLOT_CAP) {
+        val host = hostAt(i)?.takeIf { !it.isReleased } ?: continue
+        val pkg = host.heldPkg
+        if (SlotParkPlan.keepOnRebuild(pkg, next) != SlotParkPlan.Leave.PARK) continue
+        val parked = host.park(protect)
+        Log.i(PARK_TAG, "ô $i: $pkg dựng lại cả ⇒ ${if (parked) "đỗ chờ ô mới ${ParkedApps.summary()}" else "không đỗ được — nhả như cũ"}")
+    }
 }
 
 private const val PARK_TAG = "KachiPark"

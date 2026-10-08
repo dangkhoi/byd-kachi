@@ -5,9 +5,12 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadata
 import android.media.session.MediaController
+import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.net.Uri
+import android.os.Handler
+import android.util.Log
 import com.byd.clusternav.NavNotificationListener
 import com.byd.clusternav.launcher.trip.TripMusicPlan
 import com.byd.clusternav.launcher.trip.YoutubeResume
@@ -149,6 +152,52 @@ class MediaBridge(context: Context) : MediaTransport {
             c.packageName, r.title(), r.artist(), r.playing(), r.positionMs(),
             st?.lastPositionUpdateTime ?: 0L, st?.playbackSpeed ?: 0f, r.durationMs(),
         )
+    }
+
+    /**
+     * 2.97 · YT-SAVE-ON-CHANGE — gọi [onChange] (trên [handler]) mỗi khi phiên của một gói trong [pkgs] đổi metadata (đổi bài).
+     * Bám lại tự động khi danh sách phiên đổi (app mở/đóng). Cần quyền đọc thông báo (cùng [activeControllers]); không có ⇒
+     * không nghe gì, trả `null` — bên gọi vẫn còn nhịp định kỳ (và biết là KHÔNG có sự kiện nào sẽ tới — R2d). Mọi trạng thái chỉ
+     * chạm trên [handler].
+     * @return hàm gỡ (bỏ mọi callback + listener), hoặc `null` khi không nghe được.
+     */
+    fun watchPackages(pkgs: Set<String>, handler: Handler, onPlayback: () -> Unit = {}, onChange: () -> Unit): (() -> Unit)? {
+        val msm = app.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager ?: return null
+        val comp = ComponentName(app, NavNotificationListener::class.java)
+        val attached = HashMap<MediaSession.Token, Pair<MediaController, MediaController.Callback>>()
+        fun reattach(list: List<MediaController>?) {
+            val want = list.orEmpty().filter { it.packageName in pkgs }
+            val tokens = want.map { it.sessionToken }.toSet()
+            attached.keys.filter { it !in tokens }.forEach { t ->
+                attached.remove(t)?.let { (c, k) -> runCatching { c.unregisterCallback(k) } }
+            }
+            val fresh = want.filter { it.sessionToken !in attached }
+            fresh.forEach { c ->
+                val k = object : MediaController.Callback() {
+                    override fun onMetadataChanged(metadata: MediaMetadata?) = onChange()
+                    // 2.97 · R2d — tua muộn: phát/dừng của phiên đích (không đụng lượt lưu-khi-đổi-bài R1).
+                    override fun onPlaybackStateChanged(state: PlaybackState?) = onPlayback()
+                }
+                runCatching { c.registerCallback(k, handler) }.onSuccess { attached[c.sessionToken] = c to k }
+            }
+            // Phiên MỚI có thể đã đang phát trước khi kịp gắn ⇒ xét một lần ngay (R2d).
+            if (fresh.isNotEmpty()) onPlayback()
+        }
+        val listener = MediaSessionManager.OnActiveSessionsChangedListener { reattach(it) }
+        try {
+            msm.addOnActiveSessionsChangedListener(listener, comp, handler)
+        } catch (e: SecurityException) {
+            Log.w("KachiMediaBridge", "watchPackages: chưa có quyền đọc thông báo — chỉ còn nhịp định kỳ", e)
+            return null
+        }
+        handler.post { reattach(runCatching { msm.getActiveSessions(comp) }.getOrNull()) }
+        return {
+            handler.post {
+                runCatching { msm.removeOnActiveSessionsChangedListener(listener) }
+                attached.values.forEach { (c, k) -> runCatching { c.unregisterCallback(k) } }
+                attached.clear()
+            }
+        }
     }
 
     /**

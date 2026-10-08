@@ -157,7 +157,7 @@ class SlotHeadAutoHideWiringContractTest {
         assertTrue("entries.keys.filter { it >= count }.forEach { i -> entries.remove(i)?.let(::drop) }" in retain,
             "bỏ khỏi sổ VÀ gỡ hẹn giờ / animation của ô đã mất")
         val rebuild = SourceRoots.body(workspace, "private fun rebuild()")
-        val loop = rebuild.indexOf("for (i in 0 until EffectiveLayout.slotCount(")
+        val loop = rebuild.indexOf("for (i in 0 until n) {")   // 2.97 · R5: số ô tính một lần (`val n`) dùng cho cả lượt đỗ + vòng dựng
         assertTrue(rebuild.indexOf("heads.retain(slotViews.size)") > loop && loop >= 0, "retain SAU khi dựng đủ ô mới: $rebuild")
     }
 

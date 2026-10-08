@@ -913,4 +913,6 @@
     <string name="kachi_keys_pick_camera">ขั้นที่ 3 — กล้องตัวไหน</string>
     <string name="kachi_key_cam_toggle">%1$s — เปิด/ปิด</string>
     <string name="kachi_key_cam_off">ปิดกล้อง</string>
+    <!-- 2.97 · R3 — đổi hồ sơ tắt dẫn đường lên cụm -->
+    <string name="kachi_profile_nav_off">โปรไฟล์ «%1$s» ปิดการนำทางบนหน้าปัด/HUD อยู่ เปิดอีกครั้งได้ที่ การตั้งค่า › การนำทาง + HUD</string>
 </resources>

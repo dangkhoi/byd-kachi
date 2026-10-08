@@ -119,8 +119,7 @@ class SlotLifecycleWiringContractTest {
         val fn = SourceRoots.body(host, "fun relinquish(expect: String)")
         order(fn, "if (pkg != expect) return", "SlotLiveProbe.unwatch(probeKey)", "full.reset()", "pkg = null", "launched = false")
         val release = SourceRoots.body(host, "fun release()")
-        assertTrue("if (wasLaunched && p != null && sh != null && !full.isDetached)" in release,
-            "force-stop của release() phải hỏi gói còn giữ — host đã thả (pkg = null) ⇒ 0 lệnh")
+        assertFalse("force-stop" in release, "2.97 · R5: release() không dừng app nào (khoá ở SlotHostingLifecycleContractTest)")
         assertTrue("val p = pkg ?: return" in SourceRoots.body(host, "private fun maybeLaunch()"), "đã thả ⇒ không mở lại")
     }
 

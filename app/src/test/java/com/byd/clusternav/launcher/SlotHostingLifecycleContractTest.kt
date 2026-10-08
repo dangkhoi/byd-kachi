@@ -184,25 +184,20 @@ class SlotHostingLifecycleContractTest {
     // ══ (3) PROFILE-SWITCH-SLOTS (2026-10-01) — lỗi A: ô đen khi đổi hồ sơ khác cạnh thanh nút ═══════════════════
 
     /**
-     * R-A2 — **nhả trước khi mở thì KHÔNG `am force-stop`.** [ĐO máy ảo 2026-10-01] lượt A→B: `Force stopping
-     * com.google.android.youtube` dù YouTube **chưa từng** được mở trong ô (ô bị nhả trước khi có mặt vẽ). `launched` bật
-     * ở `maybeLaunch` ngay trước luồng mở app ⇒ đọc nó TRƯỚC dòng `launched = false` cuối `release()` là đủ biết.
+     * R-A2 → 2.97 · R5 — **nhả ô KHÔNG `am force-stop` app nào** (kể cả app host đã mở). R-A2 [ĐO máy ảo 2026-10-01] chặn force-stop
+     * khi chưa mở; [ĐO log SL6 08/10 15:16:37] force-stop sau khi mở cũng sai: đổi hồ sơ giết YouTube đang hát. Màn ảo ô mang cờ
+     * 256 (DESTROY_CONTENT_ON_REMOVAL) ⇒ nhả màn ảo đã đóng cửa sổ app; tiến trình sống. Thử ĐỎ: thêm lại lệnh dừng vào `release()`.
      */
     @Test
-    fun `nha truoc khi mo app thi KHONG force-stop app cua nguoi dung`() {
+    fun `nha o KHONG force-stop app cua nguoi dung`() {
         val release = SourceRoots.body(host, "fun release()")
-        val read = release.indexOf("val wasLaunched = launched")
-        val reset = release.indexOf("launched = false")
-        assertTrue(read >= 0, "release() phải chụp cờ đã-mở: $release")
-        assertTrue(reset > read, "phải đọc cờ TRƯỚC khi hạ nó — đọc sau thì luôn là false (hoặc luôn force-stop)")
-        assertEquals(1, Regex("""am force-stop""").findAll(release).count(), "đúng một lệnh dừng app trong release()")
-        assertTrue(
-            Regex("""if \([^)\n]*\bwasLaunched\b[^)\n]*\)[^\n]*am force-stop""").containsMatchIn(release),
-            "lệnh `am force-stop` phải nằm sau điều kiện có `wasLaunched` (R-A2): $release",
-        )
+        listOf("force-stop", "forceStopCmd", "sh(", "shell").forEach { assertFalse(it in release, "'$it' trong release(): $release") }
+        assertTrue("SlotVdOwner.release(owner, slot)" in release, "vẫn nhả màn ảo")
+        assertTrue(Regex("""createVirtualDisplay\(name, w, ht, dpi, h\.surface, 8 or 256\)""").containsMatchIn(host),
+            "cờ 256 là thứ đóng cửa sổ app khi nhả — bỏ nó thì app trôi về display 0")
         val launch = SourceRoots.body(host, "private fun maybeLaunch()")
         assertTrue(launch.indexOf("launched = true") in 0 until launch.indexOf("Thread {"),
-            "`launched` phải bật TRƯỚC luồng mở app — nếu không, wasLaunched = false mà app vẫn được mở")
+            "`launched` phải bật TRƯỚC luồng mở app")
     }
 
     /**

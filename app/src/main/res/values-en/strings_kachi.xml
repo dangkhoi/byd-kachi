@@ -1040,4 +1040,6 @@
     <string name="kachi_keys_pick_camera">Step 3 — which camera</string>
     <string name="kachi_key_cam_toggle">%1$s — on/off</string>
     <string name="kachi_key_cam_off">Camera off</string>
+    <!-- 2.97 · R3 — đổi hồ sơ tắt dẫn đường lên cụm -->
+    <string name="kachi_profile_nav_off">Profile «%1$s» has navigation on the cluster/HUD turned OFF. Turn it on in Settings › Navigation + HUD.</string>
 </resources>

@@ -1,9 +1,12 @@
 package com.byd.clusternav.launcher.trip
 
 import android.content.Context
+import android.os.SystemClock
 import com.byd.clusternav.launcher.MediaBridge
 import com.byd.clusternav.launcher.voice.VoiceAppTarget
 import com.byd.clusternav.launcher.voice.VoiceYoutubeResolver
+import com.byd.clusternav.launcher.voice.YoutubeSearchParse
+import kotlin.random.Random
 
 /**
  * ═══ 2.94 · R3 — YOUTUBE PHÁT TIẾP lúc lên xe: bên thi hành (luồng `kachi-trip`) ════════════════════════════════════════
@@ -27,19 +30,59 @@ internal class TripMusicResume(
     /** Bài đã tìm và khớp: [url] để phát, [plan] để chờ đúng bài + tua. */
     data class Ready(val url: String, val plan: YoutubeResume.Plan)
 
-    /** Kết quả [prepare]: [note] ASCII cho nhật ký `KachiTrip` (rỗng = tính năng không áp cho cấu hình này). */
-    data class Prep(val ready: Ready?, val note: String)
+    /**
+     * Kết quả [prepare]: [note] ASCII cho nhật ký `KachiTrip` (rỗng = tính năng không áp cho cấu hình này). [pending] ≠ `null`
+     * (2.97 · R2) = lượt tìm đầu KHÔNG TỚI ĐƯỢC mạng ⇒ [retry] thử lại sau khi app đã lên; cờ giữ bên lưu vẫn đang giữ.
+     */
+    data class Prep(val ready: Ready?, val note: String, val pending: Pending? = null)
+
+    /** Lượt tìm còn treo vì mạng: [target] + [plan] để [retry] dựng lại đúng URL. */
+    data class Pending(val target: VoiceAppTarget, val plan: YoutubeResume.Plan)
 
     fun prepare(target: VoiceAppTarget, music: TripMusic): Prep {
         if (!YoutubeResume.wanted(music)) return Prep(null, "")
         val plan = YoutubeResume.resumePlan(YoutubeResumeStore(app).read(), target.key, System.currentTimeMillis())
             ?: return Prep(null, "resume:none")
         YoutubeResumeSampler.hold()
-        val hit = VoiceYoutubeResolver.firstVideoBounded(plan.query)
-            ?: return released(Prep(null, "resume:search-fail"))
-        if (!YoutubeResume.matches(hit.title, plan.title)) return released(Prep(null, "resume:mismatch"))
-        val url = TripMusicPlan.watchUrl(target, hit.id) ?: return released(Prep(null, "resume:bad-url"))
-        return Prep(Ready(url, plan), "resume:found")
+        return when (val r = VoiceYoutubeResolver.topVideosBounded(plan.query)) {
+            // [ĐO máy ảo 08/10] không mạng lúc lên xe ⇒ 2.96 bỏ ngay ⇒ YouTube trang chủ, không phát gì. Giữ lại để [retry].
+            YoutubeSearchParse.Search.Offline -> Prep(null, "resume:offline", Pending(target, plan))
+            else -> picked(target, plan, r, "resume")
+        }
+    }
+
+    /**
+     * 2.97 · R2 — [prepare] gặp mất mạng ([Prep.pending]) ⇒ thử tìm lại với nhịp luỹ thừa + jitter
+     * ([YoutubeResume.searchRetryDelayMs]) tới khi tới được YouTube, hết [YoutubeResume.SEARCH_RETRY_BUDGET_MS] hoặc hết hạn chuyến
+     * [deadlineAt] (`elapsedRealtime`). Gọi SAU khi app nhạc đã lên (đường cũ không đổi thứ tự — CLAUDE.md §6). Không treo ⇒ trả
+     * nguyên [p]. Hỏng ⇒ `ready = null`, đã nhả cờ giữ ⇒ đường cũ (chỉ mở app) như 2.96.
+     */
+    fun retry(p: Prep, deadlineAt: Long): Prep {
+        val pend = p.pending ?: return p
+        val t0 = SystemClock.elapsedRealtime()
+        val until = minOf(t0 + YoutubeResume.SEARCH_RETRY_BUDGET_MS, deadlineAt)
+        var attempt = 0
+        while (true) {
+            val wait = YoutubeResume.searchRetryDelayMs(attempt, Random.nextDouble())
+            if (SystemClock.elapsedRealtime() + wait >= until) {
+                return released(Prep(null, "resume:offline:tries=${attempt + 1}+${SystemClock.elapsedRealtime() - t0}ms"))
+            }
+            sleep(wait)
+            attempt++
+            keep()
+            val r = VoiceYoutubeResolver.topVideosBounded(pend.plan.query)
+            if (r != YoutubeSearchParse.Search.Offline) {
+                return picked(pend.target, pend.plan, r, "resume@retry=${attempt}+${SystemClock.elapsedRealtime() - t0}ms")
+            }
+        }
+    }
+
+    /** Lượt tìm đã TỚI mạng: chọn bài khớp ([YoutubeResume.choose]) ⇒ [Ready]; không thì nhả cờ giữ + lý do. */
+    private fun picked(target: VoiceAppTarget, plan: YoutubeResume.Plan, r: YoutubeSearchParse.Search, tag: String): Prep {
+        val hits = (r as? YoutubeSearchParse.Search.Found)?.hits ?: return released(Prep(null, "$tag:search-fail"))
+        val hit = YoutubeResume.choose(hits, plan) ?: return released(Prep(null, "$tag:mismatch:n=${hits.size}"))
+        val url = TripMusicPlan.watchUrl(target, hit.id) ?: return released(Prep(null, "$tag:bad-url"))
+        return Prep(Ready(url, plan), "$tag:found:rank=${hits.indexOf(hit) + 1}")
     }
 
     /**
@@ -55,7 +98,9 @@ internal class TripMusicResume(
                 sleep(TripMusicPlan.SESSION_POLL_MS)
                 if (playingRight(pkg, ready)) return true to seek(pkg, ready.plan.seekMs)
             }
-            return false to "resume-wait-timeout"
+            // 2.97 · R2d — [ĐO máy ảo QA 08/10] app ở ô bị app khác che ⇒ chưa phát ⇒ tua MUỘN khi nó thật phát (cờ giữ ở lại).
+            val armed = YoutubeResumeSampler.armLateSeek(pkg, ready.plan.title, ready.plan.seekMs)
+            return false to if (armed) "resume-wait-timeout:late-seek" else "resume-wait-timeout"
         } finally {
             YoutubeResumeSampler.release()
         }
@@ -81,10 +126,10 @@ internal class TripMusicResume(
     fun keep() = YoutubeResumeSampler.hold()
 
     /**
-     * 2.96 · R9 — lối ra của bước nhạc: [prepare] đã giữ ([Prep.ready] ≠ `null`) ⇒ nhả, kể cả lối NOOP / dừng sớm không tới
+     * 2.96 · R9 — lối ra của bước nhạc: [prepare]/[retry] còn giữ ([Prep.ready] hoặc [Prep.pending] ≠ `null`) ⇒ nhả, kể cả lối NOOP / dừng sớm không tới
      * [finish] (cũ: cờ treo tới trần [YoutubeResumeSampler.HOLD_MAX_MS]). Gọi lại sau [finish] = vô hại.
      */
-    fun close(p: Prep) { if (p.ready != null) YoutubeResumeSampler.release() }
+    fun close(p: Prep) { if (p.ready != null || p.pending != null) YoutubeResumeSampler.release() }
 
     private companion object {
         /** [ĐOÁN] ≈ 45 s: tải trang + video từ mạng xe (đường VIEW đã chờ 20 s) + một quảng cáo đầu video không bỏ qua được. */

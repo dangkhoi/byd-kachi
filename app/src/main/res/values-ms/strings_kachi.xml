@@ -913,4 +913,6 @@
     <string name="kachi_keys_pick_camera">Langkah 3 — kamera mana</string>
     <string name="kachi_key_cam_toggle">%1$s — hidup/mati</string>
     <string name="kachi_key_cam_off">Matikan kamera</string>
+    <!-- 2.97 · R3 — đổi hồ sơ tắt dẫn đường lên cụm -->
+    <string name="kachi_profile_nav_off">Profil «%1$s» mematikan navigasi pada panel instrumen/HUD. Hidupkan semula di Tetapan › Navigasi + HUD.</string>
 </resources>

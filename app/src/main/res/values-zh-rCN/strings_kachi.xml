@@ -913,4 +913,6 @@
     <string name="kachi_keys_pick_camera">第3步——哪个摄像头</string>
     <string name="kachi_key_cam_toggle">%1$s——开/关</string>
     <string name="kachi_key_cam_off">关闭摄像头</string>
+    <!-- 2.97 · R3 — đổi hồ sơ tắt dẫn đường lên cụm -->
+    <string name="kachi_profile_nav_off">配置文件«%1$s»已关闭仪表/HUD 导航。可在 设置 › 导航 + HUD 中重新开启。</string>
 </resources>

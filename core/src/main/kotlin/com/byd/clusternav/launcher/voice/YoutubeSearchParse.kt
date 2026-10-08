@@ -76,64 +76,75 @@ object YoutubeSearchParse {
         return null
     }
 
-    /** Bài đầu: [id] + [title] (`null` = không thấy tiêu đề của CHÍNH bài đó trong [TITLE_WITHIN_CHARS] ký tự sau id). */
-    data class Hit(val id: String, val title: String?)
+    /** Một kết quả: [id] + [title] + [channel] (`null` = không thấy trong khối của CHÍNH kết quả đó). */
+    data class Hit(val id: String, val title: String?, val channel: String? = null)
 
     /**
-     * ═══ 2.94 · R3 — bài đầu KÈM TIÊU ĐỀ (phát tiếp YouTube) ═════════════════════════════════════════════════════════
-     *
-     * Cùng phép quét dòng chảy của [firstVideoId] (cùng cửa sổ [OVERLAP_CHARS], dừng ở khớp `videoId` ĐẦU), rồi đọc tiếp tối
-     * đa [titleWithin] ký tự để lấy `"title":{"runs":[{"text":"…"` (hoặc `"simpleText"`) của chính renderer đó. Một
-     * `"videoId"` THỨ HAI đứng trước tiêu đề ⇒ tiêu đề kia là của bài khác ⇒ `title = null`. Bên gọi (phát tiếp) chỉ phát khi
-     * tiêu đề khớp bài đã lưu, nên `null` = không phát nhầm. [ĐO máy ảo 07/10] trang thật: tiêu đề bài đầu khớp 3/3.
-     *
-     * Chuỗi JSON được giải thoát (`\"`, `\\`, `\/`, `\uXXXX`, `\n`…) — YouTube viết `&` thành `&`.
+     * Một lượt tìm cho phát tiếp (2.97 · R2) — tách **mạng** (thử lại được) khỏi trang không có gì / lỗi khác.
+     * [ĐO máy ảo 08/10, `p297/yt/h1-nonet`] mất mạng lúc lên xe ⇒ `UnknownHostException` sau 19 ms ⇒ 2.96 bỏ luôn (`resume:search-fail`)
+     * ⇒ YouTube mở trang chủ, không phát gì — đúng triệu chứng owner báo 08/10.
      */
-    fun firstVideo(reader: Reader, maxChars: Int, chunkChars: Int = CHUNK_CHARS, titleWithin: Int = TITLE_WITHIN_CHARS): Hit? {
-        if (maxChars <= 0 || chunkChars <= 0) return null
+    sealed interface Search {
+        /** Trang về được; [hits] có thể rỗng (không kết quả / markup đổi). */
+        data class Found(val hits: List<Hit>) : Search
+        /** Không tới được YouTube (không mạng, DNS, quá hạn) — thử lại được. */
+        object Offline : Search
+        /** Tới được nhưng hỏng (HTTP ≠ 200, lỗi khác) — không thử lại. */
+        object Failed : Search
+    }
+
+    /**
+     * ═══ 2.97 · R2 — [limit] KẾT QUẢ ĐẦU (id + tiêu đề + kênh) từ một DÒNG CHẢY HTML ══════════════════════════════════════
+     *
+     * Thay `firstVideo` của 2.94 (chỉ xem `"videoId"` THÔ đầu tiên của trang): bên phát tiếp chọn trong cả [limit] kết quả bài có
+     * tiêu đề khớp (`YoutubeResume.choose`) — không còn phụ thuộc bài của mình phải đứng HẠNG 1 (video mới đăng, thứ hạng đổi), và
+     * không bao giờ coi một `videoId` ngoài kết quả (quảng cáo / kệ) là kết quả.
+     *
+     * Neo vào `"videoRenderer":{"videoId":"…"` — [ĐO trang thật 08/10, 5 truy vấn] mỗi kết quả là một khối ≈ 14 K ký tự mở bằng
+     * đúng chuỗi đó; tiêu đề ở ≈ +420, kênh (`ownerText`) ở ≈ +3,3 K; khối đầu ở ≈ 770 K ký tự. Ngoài neo: không đọc.
+     * RAM: trước neo đầu chỉ giữ cửa sổ [OVERLAP_CHARS]; từ neo đầu giữ tối đa [spanChars] ký tự.
+     * Markup đổi (không còn neo) ⇒ danh sách rỗng ⇒ bên gọi không phát gì (an toàn, như tiêu đề không khớp).
+     */
+    fun topVideos(
+        reader: Reader,
+        maxChars: Int,
+        limit: Int = TOP_LIMIT,
+        chunkChars: Int = CHUNK_CHARS,
+        spanChars: Int = TOP_SPAN_CHARS,
+    ): List<Hit> {
+        if (maxChars <= 0 || chunkChars <= 0 || limit <= 0 || spanChars <= 0) return emptyList()
         val buf = CharArray(chunkChars)
         val window = StringBuilder(chunkChars + OVERLAP_CHARS)
-        var id: String? = null
+        var anchored = false
         var read = 0
         while (read < maxChars) {
             val n = reader.read(buf, 0, minOf(chunkChars, maxChars - read))
             if (n < 0) break
             read += n
             window.append(buf, 0, n)
-            if (id == null) {
-                val m = VIDEO_ID.find(window)
+            if (!anchored) {
+                val m = RENDERER.find(window)
                 if (m == null) {
                     if (window.length > OVERLAP_CHARS) window.delete(0, window.length - OVERLAP_CHARS)
                     continue
                 }
-                id = m.groupValues[1]
-                window.delete(0, m.range.last + 1)   // từ đây cửa sổ = phần SAU khớp id (đuôi tìm tiêu đề)
+                window.delete(0, m.range.first)
+                anchored = true
             }
-            when (val t = titleIn(window, titleWithin)) {
-                is TitleScan.Found -> return Hit(id, t.title)
-                TitleScan.Other -> return Hit(id, null)
-                TitleScan.NotYet -> if (window.length >= titleWithin) return Hit(id, null)
-            }
+            // Đủ [limit] khối TRỌN (có neo của khối kế) hoặc chạm trần ⇒ thôi đọc.
+            if (window.length >= spanChars || RENDERER.findAll(window).take(limit + 1).count() > limit) break
         }
-        return id?.let { Hit(it, (titleIn(window, titleWithin) as? TitleScan.Found)?.title) }
-    }
-
-    private sealed interface TitleScan {
-        data class Found(val title: String) : TitleScan
-        /** Một `"videoId"` khác đứng trước tiêu đề — tiêu đề phía sau không phải của bài đầu. */
-        object Other : TitleScan
-        object NotYet : TitleScan
-    }
-
-    private fun titleIn(tail: CharSequence, within: Int): TitleScan {
-        val t = TITLE.find(tail)
-        val next = VIDEO_ID.find(tail)
-        return when {
-            next != null && (t == null || next.range.first < t.range.first) -> TitleScan.Other
-            t == null || t.range.first >= within -> TitleScan.NotYet
-            else -> unescape(t.groupValues[1])?.trim()?.takeIf { it.isNotEmpty() }?.let { TitleScan.Found(it) } ?: TitleScan.Other
+        if (!anchored) return emptyList()
+        val text: CharSequence = if (window.length > spanChars) window.subSequence(0, spanChars) else window
+        val marks = RENDERER.findAll(text).take(limit + 1).toList()
+        return marks.take(limit).mapIndexed { i, m ->
+            val seg = text.subSequence(m.range.first, marks.getOrNull(i + 1)?.range?.first ?: text.length)
+            Hit(m.groupValues[1], field(TITLE, seg), field(OWNER, seg))
         }
     }
+
+    private fun field(re: Regex, seg: CharSequence): String? =
+        re.find(seg)?.groupValues?.get(1)?.let(::unescape)?.trim()?.takeIf { it.isNotEmpty() }
 
     /** Giải thoát chuỗi JSON; chuỗi hỏng (`\u` cụt / thoát lạ) ⇒ `null`. */
     internal fun unescape(s: String): String? {
@@ -164,16 +175,25 @@ object YoutubeSearchParse {
     private fun scan(html: CharSequence): String? =
         VIDEO_ID.find(html)?.groupValues?.getOrNull(1)?.takeIf { it.length == 11 }
 
-    /** Tiêu đề phải nằm trong chừng này ký tự sau id (renderer: id → ảnh thu nhỏ ≈ 1–2 K → tiêu đề). [ĐOÁN] biên ×4. */
-    const val TITLE_WITHIN_CHARS = 8_192
+    /** Số kết quả đầu bên phát tiếp xét (2.97 · R2). [ĐOÁN] 5: bài của mình đứng hạng 1 ở 5/5 lượt đo 08/10; 5 cho biên khi thứ hạng xê dịch. */
+    const val TOP_LIMIT = 5
+
+    /** Trần ký tự giữ lại từ neo đầu: 5 khối × ≈ 14 K ([ĐO] 13,8–13,9 K) + neo khối thứ sáu + biên. ≈ 240 KB RAM. */
+    const val TOP_SPAN_CHARS = 120_000
 
     /** Một lượt đọc. 16 K ký tự — cùng cỡ đệm mà tầng `:app` vẫn dùng. */
     const val CHUNK_CHARS = 16_384
 
-    /** Đuôi giữ lại giữa hai khối: phải **lớn hơn** một khớp (23 ký tự). 64 cho dư mà vẫn không đáng kể. */
+    /** Đuôi giữ lại giữa hai khối: phải **lớn hơn** một khớp (`videoId` 23 ký tự · neo [RENDERER] 40 ký tự). 64 cho dư mà vẫn không đáng kể. */
     const val OVERLAP_CHARS = 64
 
     private val VIDEO_ID = Regex("\"videoId\":\"([A-Za-z0-9_-]{11})\"")
+
+    /** Neo một KẾT QUẢ tìm kiếm (không bắt `videoId` của quảng cáo / kệ / điều hướng). */
+    private val RENDERER = Regex("\"videoRenderer\":\\{\"videoId\":\"([A-Za-z0-9_-]{11})\"")
+
+    /** Kênh của kết quả: `"ownerText":{"runs":[{"text":"…"`. */
+    private val OWNER = Regex("\"ownerText\":\\{\"runs\":\\[\\{\"text\":\"((?:[^\"\\\\]|\\\\.){0,200})\"")
 
     /** Tiêu đề renderer: `"title":{"runs":[{"text":"…"` hoặc `"title":{"simpleText":"…"`; thân chuỗi JSON có trần 500 ký tự. */
     private val TITLE = Regex("\"title\":\\{(?:\"runs\":\\[\\{\"text\"|\"simpleText\"):\"((?:[^\"\\\\]|\\\\.){0,500})\"")

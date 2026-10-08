@@ -33,15 +33,18 @@ class ParkLedger<T>(private val cap: Int = CAP) {
     /**
      * Đỗ [pkg] với [handle]. Trả danh sách bên gọi PHẢI nhả: bản đỗ cũ của CÙNG gói (một app chỉ một chỗ đỗ) rồi các bản cũ
      * nhất vượt [cap]. Bản vừa đỗ không bao giờ nằm trong danh sách; gói trong [protect] cũng không (app SẮP được nhận lại
-     * ở cùng lượt dựng lại — đặt tạm app đỗ cũ nhất vào ô đang có app khác: đỗ app cũ TRƯỚC, nhận lại SAU). Chỉ còn bản được
-     * che chắn ⇒ sổ vượt trần TẠM (bên nhận lấy ra ngay sau đó; lượt đỗ kế tiếp đưa về trần).
+     * ở cùng lượt dựng lại — đặt tạm app đỗ cũ nhất vào ô đang có app khác: đỗ app cũ TRƯỚC, nhận lại SAU).
+     *
+     * Soát 2.97 R5 Pass 1 [P1]: bản được che chắn là bản TẠM (lấy ra ngay sau lượt này) ⇒ KHÔNG tính vào trần — nếu tính, lượt
+     * dựng lại cả (đổi hồ sơ khác bố cục: mọi app còn hiện đỗ cùng lúc, đều được che chắn) sẽ đẩy app THẬT đang ở ô 7 ra chỉ vì
+     * sổ tạm đầy, dù sau khi nhận lại sổ vẫn dưới trần. Chỉ còn bản được che chắn ⇒ sổ vượt trần TẠM (lượt đỗ kế tiếp đưa về trần).
      */
     fun park(pkg: String, handle: T, protect: Set<String> = emptySet()): List<Evicted<T>> = synchronized(lock) {
         val out = ArrayList<Evicted<T>>()
         entries.remove(pkg)?.let { out += Evicted(pkg, it, Why.SAME_PKG) }
         entries[pkg] = handle
         val victims = entries.keys.filter { it != pkg && it !in protect }.iterator()
-        while (entries.size > cap && victims.hasNext()) {
+        while (entries.keys.count { it !in protect } > cap && victims.hasNext()) {
             val oldest = victims.next()
             out += Evicted(oldest, entries.getValue(oldest), Why.CAP)
             entries.remove(oldest)
@@ -94,11 +97,12 @@ object SlotParkPlan {
      * được không là việc của [parkable] tại chỗ thi hành — không đỗ được thì vẫn nhả như hôm nay.
      */
     fun leave(old: SlotContent, new: SlotContent, next: List<SlotContent>, index: Int, profileSwitch: Boolean = false): Leave {
-        // Review 2.89 Pass 3 · whole-r2-2 — đổi HỒ SƠ không phải một trong các lối đỗ của spec 287 §4.6d dòng B (đặt tạm · lối tắt ·
-        // giọng nói · ⇄ · kéo-thả): nhả như 2.88, CÙNG kết cục với đổi hồ sơ khác bố cục (RebuildAll ⇒ nhả) — không để tới 3 app của
-        // người lái trước chạy ẩn dưới hồ sơ người sau mà không có danh sách ô 7 nào để tắt (OQ-P4).
-        if (profileSwitch) return Leave.RELEASE
         val a = (old as? SlotContent.App)?.pkg ?: return Leave.RELEASE
+        // 2.97 · R5 (thay whole-r2-2 của 2.89) — đổi HỒ SƠ: app hồ sơ MỚI vẫn hiện (ô nào cũng được, kể cả cùng ô) ⇒ ĐỖ để ô mới
+        // nhận lại ĐÚNG màn ảo đang chạy — [ĐO log SL6 08/10] nhả rồi mở lại = YouTube đang hát về trang chủ. App hồ sơ mới không
+        // hiện ⇒ nhả (cửa sổ đóng theo màn ảo; từ R5 nhả không còn giết tiến trình). Không đỗ app không hiện ⇒ không ai nằm ẩn
+        // trong ô 7 mà không có ô để quay về (OQ-P4 giữ nguyên).
+        if (profileSwitch) return if (stillShown(a, next)) Leave.PARK else Leave.RELEASE
         val b = (new as? SlotContent.App)?.pkg
         if (b == a) return Leave.RELEASE
         if (b != null) return Leave.PARK
@@ -143,4 +147,13 @@ object SlotParkPlan {
 
     /** Gói app sẽ HIỆN trong bố cục [next] — được che chắn khỏi trần ô 7 ở lượt đỗ cùng lượt dựng lại ([ParkLedger.park]). */
     fun shown(next: List<SlotContent>): Set<String> = next.mapNotNullTo(HashSet()) { (it as? SlotContent.App)?.pkg }
+
+    /**
+     * 2.97 · R5 — dựng lại TẤT CẢ ô (đổi bố cục · đổi hồ sơ khác bố cục): app của host [pkg] còn trong bố cục MỚI [next] ⇒ đỗ
+     * trước khi nhả để ô mới nhận lại màn ảo (nhạc không ngắt). Không còn ⇒ nhả. `null` gói ⇒ nhả.
+     */
+    fun keepOnRebuild(pkg: String?, next: List<SlotContent>): Leave =
+        if (pkg != null && stillShown(pkg, next)) Leave.PARK else Leave.RELEASE
+
+    private fun stillShown(pkg: String, next: List<SlotContent>): Boolean = next.any { (it as? SlotContent.App)?.pkg == pkg }
 }

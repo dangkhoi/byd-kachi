@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher.voice
 
 import android.util.Log
 import com.byd.clusternav.net.HttpConn
+import java.io.IOException
 import java.net.URLEncoder
 
 /**
@@ -70,18 +71,38 @@ object VoiceYoutubeResolver {
     fun firstVideoId(query: String): String? = search(query, quiet = false) { YoutubeSearchParse.firstVideoId(it, MAX_CHARS) }
 
     /**
-     * 2.94 · R3 (phát tiếp YouTube) — bài đầu KÈM tiêu đề ([YoutubeSearchParse.firstVideo]) để bên gọi kiểm đúng bài trước
-     * khi phát. CÙNG một lượt GET + UA + trần với [firstVideoId] — không đường mạng thứ hai.
+     * 2.94 · R3 → 2.97 · R2 (phát tiếp YouTube) — các kết quả đầu KÈM tiêu đề + kênh ([YoutubeSearchParse.topVideos]) để bên gọi
+     * chọn đúng bài trước khi phát. CÙNG một lượt GET + UA + trần với [firstVideoId] — không đường mạng thứ hai. Khác [search]:
+     * tách lỗi MẠNG ([YoutubeSearchParse.Search.Offline] — bên gọi thử lại) khỏi lỗi khác ([YoutubeSearchParse.Search.Failed]).
      *
      * Soát 2.94 Pass 1 [P2]: [query] ở đây là *"<tiêu đề> <kênh>"* người dùng ĐÃ XEM ⇒ nhật ký lỗi/quá hạn chỉ ghi ĐỘ DÀI
      * ([shown]), không ghi chữ (spec §4.3: nhật ký không mang tiêu đề; logcat đi theo bộ chụp chẩn đoán).
      */
-    fun firstVideo(query: String): YoutubeSearchParse.Hit? = search(query, quiet = true) { YoutubeSearchParse.firstVideo(it, MAX_CHARS) }
+    fun topVideos(query: String): YoutubeSearchParse.Search = try {
+        fetch(query, quiet = true) { YoutubeSearchParse.topVideos(it, MAX_CHARS) }
+            ?.let { YoutubeSearchParse.Search.Found(it) } ?: YoutubeSearchParse.Search.Failed
+    } catch (e: IOException) {
+        Log.w(TAG, "tìm kết quả không tới mạng cho \"${shown(query, true)}\": ${e.javaClass.simpleName}")
+        YoutubeSearchParse.Search.Offline
+    } catch (e: RuntimeException) {
+        Log.w(TAG, "tìm kết quả lỗi cho \"${shown(query, true)}\": ${e.javaClass.simpleName}")
+        YoutubeSearchParse.Search.Failed
+    }
 
     /** Truy vấn trong nhật ký: giọng nói (`quiet = false`) nguyên câu như trước; phát tiếp (`quiet`) chỉ độ dài. */
     private fun shown(query: String, quiet: Boolean): String = if (quiet) "<len=${query.length}>" else query
 
     private fun <T> search(query: String, quiet: Boolean, parse: (java.io.Reader) -> T?): T? = runCatching {
+        fetch(query, quiet, parse)
+    }.getOrElse {
+        // Phát tiếp: lời nhắn ngoại lệ có thể mang URL (= truy vấn) ⇒ chỉ tên lớp. Giọng nói: như trước.
+        if (!quiet) Log.w(TAG, "giải video_id lỗi cho \"$query\"", it)
+        else Log.w(TAG, "giải video_id lỗi cho \"${shown(query, true)}\": ${it.javaClass.simpleName}")
+        null
+    }
+
+    /** Một lượt GET + bóc; `null` = HTTP ≠ 200. Ném lỗi mạng (`IOException`) cho bên gọi phân loại. */
+    private fun <T> fetch(query: String, quiet: Boolean, parse: (java.io.Reader) -> T?): T? {
         val url = "https://www.youtube.com/results?search_query=" + URLEncoder.encode(query, "UTF-8")
         val conn = HttpConn.open(url, READ_TIMEOUT_MS, accept = "text/html")
         // Ghi đè UA "updater" thành UA trình duyệt + bỏ qua trang đồng ý EU, nếu không YouTube trả trang khác.
@@ -92,15 +113,10 @@ object VoiceYoutubeResolver {
             if (conn.responseCode != 200) { Log.w(TAG, "HTTP ${conn.responseCode} cho \"${shown(query, quiet)}\""); return null }
             // Quét THEO DÒNG CHẢY, dừng ở khớp đầu: khớp nằm ở ~765 K ký tự nên bản cũ (gom cả trang vào một
             // `StringBuilder` rồi mới bóc) vừa phải giữ ~2,6 MB trong RAM vừa bị trần 600 K cắt trước khi tới id.
-            conn.inputStream.bufferedReader(Charsets.UTF_8).use(parse)
+            return conn.inputStream.bufferedReader(Charsets.UTF_8).use(parse)
         } finally {
             conn.disconnect()
         }
-    }.getOrElse {
-        // Phát tiếp: lời nhắn ngoại lệ có thể mang URL (= truy vấn) ⇒ chỉ tên lớp. Giọng nói: như trước.
-        if (!quiet) Log.w(TAG, "giải video_id lỗi cho \"$query\"", it)
-        else Log.w(TAG, "giải video_id lỗi cho \"${shown(query, true)}\": ${it.javaClass.simpleName}")
-        null
     }
 
     /**
@@ -109,8 +125,9 @@ object VoiceYoutubeResolver {
      */
     fun firstVideoIdBounded(query: String): String? = bounded(query, quiet = false, ::firstVideoId)
 
-    /** [firstVideo] với cùng hạn cứng [TOTAL_BUDGET_MS] (2.94 · R3). Quá hạn / lỗi ⇒ `null` ⇒ bên gọi lùi về chỉ mở app. */
-    fun firstVideoBounded(query: String): YoutubeSearchParse.Hit? = bounded(query, quiet = true, ::firstVideo)
+    /** [topVideos] với cùng hạn cứng [TOTAL_BUDGET_MS]. Quá hạn = mạng treo ⇒ [YoutubeSearchParse.Search.Offline] (thử lại được). */
+    fun topVideosBounded(query: String): YoutubeSearchParse.Search =
+        bounded(query, quiet = true, ::topVideos) ?: YoutubeSearchParse.Search.Offline
 
     private fun <T> bounded(query: String, quiet: Boolean, work: (String) -> T?): T? {
         var out: T? = null

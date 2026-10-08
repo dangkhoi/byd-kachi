@@ -3,6 +3,8 @@ package com.byd.clusternav.launcher.trip
 import android.annotation.SuppressLint
 import android.content.Context
 import android.media.AudioManager
+import android.os.Handler
+import android.os.HandlerThread
 import android.os.SystemClock
 import android.util.Log
 import com.byd.clusternav.launcher.MediaBridge
@@ -55,6 +57,7 @@ internal object YoutubeResumeSampler {
 
     private val exec = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "kachi-yt-resume").apply { isDaemon = true } }
     private val started = AtomicBoolean(false)
+    private val changePending = AtomicBoolean(false)
 
     @Volatile private var holdUntil = 0L
     @Volatile private var lastLogAt = 0L
@@ -71,16 +74,112 @@ internal object YoutubeResumeSampler {
         } catch (e: RejectedExecutionException) {
             started.set(false)
             Log.e(TAG, "không hẹn được bên lưu", e)
+            return
+        }
+        watchChanges(app)
+    }
+
+    /**
+     * 2.97 · YT-SAVE-ON-CHANGE — nghe sự kiện ĐỔI BÀI của phiên app đích ([YoutubeResume.watchedPackages]) và lưu sau
+     * [YoutubeResume.CHANGE_SETTLE_MS] (gộp nhiều lần đổi liền nhau), để mẫu cuối trước khi tắt máy là bài ĐANG nghe chứ không
+     * phải bài trước (nhịp 60 s vẫn giữ để cập nhật vị trí). Cùng cổng của [tick] (giữ · đang phát · hồ sơ cần) — sự kiện chỉ
+     * làm lượt lưu tới SỚM hơn. Không có quyền đọc thông báo ⇒ chỉ còn nhịp định kỳ như 2.96.
+     */
+    private fun watchChanges(app: Context) {
+        val t = HandlerThread("kachi-yt-watch").apply { isDaemon = true; start() }
+        val b = bridge ?: MediaBridge(app).also { bridge = it }
+        // Soát Pass 4 [P2]: `null` = không nghe được (chưa có quyền) ⇒ tua muộn KHÔNG BAO GIỜ có sự kiện để bắn ⇒ không cho hẹn.
+        watching = b.watchPackages(YoutubeResume.watchedPackages(), Handler(t.looper), onPlayback = { guarded { lateSeek() } }) {
+            // R2d: đổi bài (quảng cáo ⇒ video) có thể không kèm đổi trạng thái phát ⇒ xét tua muộn ở đây nữa (rẻ: `late == null` ⇒ thoát).
+            guarded { lateSeek() }
+            if (!changePending.compareAndSet(false, true)) return@watchPackages
+            try {
+                exec.schedule({ changePending.set(false); guarded { tick(app) } }, YoutubeResume.CHANGE_SETTLE_MS, TimeUnit.MILLISECONDS)
+            } catch (e: RejectedExecutionException) {
+                changePending.set(false)
+                Log.e(TAG, "không hẹn được lượt lưu khi đổi bài", e)
+            }
+        } != null
+    }
+
+    /**
+     * Chuyến lên xe bắt đầu mở lại bài: thôi lưu tới khi [release] (trần [HOLD_MAX_MS]). Soát Pass 4 [P1]: một lượt phát tiếp MỚI
+     * bắt đầu ⇒ lượt tua muộn của chuyến TRƯỚC (tiến trình sống qua lần tắt máy) hết nghĩa — bỏ, kẻo nó tua bài của chuyến này về
+     * điểm cũ ở lần người lái bấm dừng/phát kế tiếp.
+     */
+    fun hold() {
+        holdUntil = SystemClock.elapsedRealtime() + HOLD_MAX_MS
+        synchronized(this) { if (late != null) { late = null; lateHoldUntil = 0L; Log.i(TAG, "late-seek dropped (new resume)") } }
+    }
+
+    /** Nhả cờ giữ của CHUYẾN (y 2.96). Cờ giữ của lượt tua muộn ([lateHoldUntil]) là cờ riêng — [lateSeek] tự nhả. */
+    fun release() { holdUntil = 0L }
+
+    @Volatile private var late: YoutubeLateSeek.Pending? = null
+
+    /** Cờ giữ RIÊNG của tua muộn — tách khỏi [holdUntil] để [release] của chuyến không nhả nhầm (soát Pass 4 [P2], đua arm → SEEK → release). */
+    @Volatile private var lateHoldUntil = 0L
+
+    /** [watchChanges] có nghe được phiên không; không ⇒ [armLateSeek] từ chối (không có sự kiện nào để tua). */
+    @Volatile private var watching = false
+
+    /**
+     * 2.97 · R2d — lượt phát tiếp chờ phiên hết hạn ([TripMusicResume.finish] `resume-wait-timeout`): giữ điểm tua, tua khi phiên
+     * [pkg] THẬT phát đúng [title] (sự kiện phiên ở [watchChanges], không dò định kỳ). Giữ bộ lưu tới lúc đó (không ghi đè điểm
+     * phát tiếp bằng giây 0). `false` = không đáng hẹn (không vị trí / không tiêu đề / không nghe được phiên) ⇒ bên gọi nhả như cũ.
+     */
+    fun armLateSeek(pkg: String, title: String?, seekMs: Long): Boolean {
+        if (!YoutubeLateSeek.worth(title, seekMs)) return false
+        if (!watching) { Log.i(TAG, "late-seek refused target=$pkg (no session watcher)"); return false }
+        val until = SystemClock.elapsedRealtime() + YoutubeLateSeek.MAX_WAIT_MS
+        synchronized(this) {
+            late = YoutubeLateSeek.Pending(pkg, title.orEmpty(), seekMs, until)
+            lateHoldUntil = until
+        }
+        Log.i(TAG, "late-seek armed target=$pkg seek=$seekMs")
+        return true
+    }
+
+    /**
+     * Một lượt xét tua muộn — gọi khi phiên đích đổi (luồng `kachi-yt-watch`) hoặc từ lượt xét lại duy nhất sau [YoutubeLateSeek.OTHER_GRACE_MS]
+     * (luồng `kachi-yt-resume`). Quyết định ngoài khoá; đổi trạng thái trong khoá và chỉ khi [late] vẫn là chính [p] (lượt khác chưa chốt).
+     */
+    private fun lateSeek() {
+        val p = late ?: return
+        val b = bridge ?: return
+        val now = SystemClock.elapsedRealtime()
+        when (YoutubeLateSeek.decide(p, b.lives(), now)) {
+            YoutubeLateSeek.Action.WAIT -> Unit
+            YoutubeLateSeek.Action.SEEK -> {
+                if (!settle(p, lateHold = now + YoutubeLateSeek.AFTER_SEEK_HOLD_MS)) return
+                val ok = b.seekPackage(p.pkg, p.seekMs)
+                Log.i(TAG, "late-seek fired target=${p.pkg} seek=${p.seekMs} ok=$ok")
+            }
+            YoutubeLateSeek.Action.CANCEL -> {
+                if (settle(p, lateHold = 0L)) Log.i(TAG, "late-seek cancelled target=${p.pkg} (expired or other title)")
+            }
+            YoutubeLateSeek.Action.OTHER -> {
+                if (p.otherSinceMs != 0L) return                         // đã hẹn lượt xét lại
+                synchronized(this) { if (late !== p) return; late = p.copy(otherSinceMs = now) }
+                try {
+                    exec.schedule({ guarded { lateSeek() } }, YoutubeLateSeek.OTHER_GRACE_MS + TimeUnit.SECONDS.toMillis(1), TimeUnit.MILLISECONDS)
+                } catch (e: RejectedExecutionException) {
+                    Log.e(TAG, "không hẹn được lượt xét lại tua muộn", e)
+                }
+            }
         }
     }
 
-    /** Chuyến lên xe bắt đầu mở lại bài: thôi lưu tới khi [release] (trần [HOLD_MAX_MS]). */
-    fun hold() { holdUntil = SystemClock.elapsedRealtime() + HOLD_MAX_MS }
-
-    fun release() { holdUntil = 0L }
+    /** Chốt lượt tua muộn [p]: xoá + đặt cờ giữ riêng — `false` = lượt khác đã chốt / đã bỏ trước. */
+    private fun settle(p: YoutubeLateSeek.Pending, lateHold: Long): Boolean = synchronized(this) {
+        if (late !== p) return false
+        late = null
+        lateHoldUntil = lateHold
+        true
+    }
 
     private fun tick(app: Context) {
-        if (SystemClock.elapsedRealtime() < holdUntil) return
+        if (SystemClock.elapsedRealtime() < maxOf(holdUntil, lateHoldUntil)) return
         if (!musicActive(app)) return
         if (!YoutubeResume.wanted(WorkspacePrefs(app).tripConfig().music)) return
         val b = bridge ?: MediaBridge(app).also { bridge = it }

@@ -92,6 +92,9 @@ class VdAppHost(
     /** Chỉ ĐỌC — cho lưới dựng-lại-ô của [WorkspaceView] ([SlotHostHeal]). Host đã nhả không bao giờ sống lại (H2). */
     val isReleased: Boolean get() = released
 
+    /** 2.97 · R5 — gói host đang giữ (chưa nhả); `null` = đã nhả / chưa có app. Để [WorkspaceView] quyết ĐỖ khi dựng lại cả. */
+    val heldPkg: String? get() = if (released) null else pkg
+
     /** H2: khoá theo dõi ở [SlotLiveProbe] — riêng cho từng chủ×ô để hai màn Kachi không đạp lên nhau. */
     private val probeKey = "$owner#$slot"
 
@@ -461,16 +464,13 @@ class VdAppHost(
     fun release() {
         if (released) return
         released = true
-        // ⚠ PROFILE-SWITCH-SLOTS · R-A2: đọc TRƯỚC dòng `launched = false` cuối hàm. `launched` bật ở [maybeLaunch] ngay
-        // trước luồng mở app ⇒ `false` = host này CHƯA từng ra lệnh mở. [ĐO máy ảo 2026-10-01] thiếu rào này thì ô bị
-        // nhả trước khi có mặt vẽ vẫn `am force-stop` app của người dùng (YouTube) dù chưa bao giờ mở nó trong ô.
-        val wasLaunched = launched
+        // 2.97 · R5 (spec `kachi-297-plan.html`) — nhả ô KHÔNG `am force-stop` app nào nữa. [ĐO log SL6 08/10 15:16:37] đổi hồ sơ ⇒
+        // lệnh dừng cả gói ở đây giết YouTube đang hát (và giết được cả app dẫn đường đang chiếu cụm/HUD nếu nó nằm trong ô cũ).
+        // Màn ảo ô mang cờ 256 = DESTROY_CONTENT_ON_REMOVAL (xem [maybeLaunch]) ⇒ nhả màn ảo là hệ thống tự đóng cửa sổ app trên
+        // nó ([ĐO cùng log 37.223] `finishAllActivitiesLocked … immediately`); tiến trình + dịch vụ nền sống như mọi app Android.
         // Ô đang bị nhả giữa một cử chỉ ⇒ bỏ luôn, đừng bắn lệnh chạm cho một màn ảo sắp biến mất.
         gesture.reset()
         SlotLiveProbe.unwatch(probeKey)
-        val p = pkg; val sh = shell
-        // App đang mở TOÀN MÀN (F1 dòng 9) không còn ở ô: nó là app người dùng đang thấy trên display 0 ⇒ nhả ô không giết nó.
-        if (wasLaunched && p != null && sh != null && !full.isDetached) Thread { runCatching { sh("am force-stop $p") } }.start()
         vdDisplayId = null
         SlotVdOwner.release(owner, slot)   // gỡ đăng ký + VirtualDisplay.release() nằm trong VdLease.free()
         vd = null
