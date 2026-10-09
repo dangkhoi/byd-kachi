@@ -1,99 +1,138 @@
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 · **Mục đích**: Danh sách ảnh chụp cho hướng dẫn có hình (bản 2.77). Xếp để chụp HẾT trong MỘT lượt đi qua app trên máy ảo, không phải quay lại màn cũ. Ảnh lưu vào `docs/guide/img/<tên tệp>`.
+> **Trạng thái**: Current · **Cập nhật**: 2026-10-09 · **Chủ**: dangkhoi · **Mục đích**: Danh sách ảnh cho hướng dẫn có hình, bản **2.97**. Ảnh lưu ở `docs/guide/img/<tên tệp>`. Lượt 09/10 chụp lại toàn bộ trên máy ảo `kachi_play` và thêm các màn mới sau 2.79. Bản kê 2.77 cũ nằm trong lịch sử git của tệp này.
 
 > ⛔ **ẢNH XE THẬT ĐÃ BỊ GỠ KHỎI REPO (27/09 tối)** — 7 ảnh chép vào `docs/guide/img/` chứa **biển số xe người khác**, bản đồ sống chỉ đúng vị trí + giờ, số nhà, và avatar tài khoản cá nhân; chúng đã lọt lên repo CÔNG KHAI một lần và được gỡ bằng ghi đè lịch sử. `.gitignore` nay chặn `car-*.png` · `cum-*.png` · `camera-frame-*.png` · `cluster-fb-*.png` **độc lập đường dẫn**. ⇒ Mọi ảnh 🚗 trong tệp này phải **chụp lại** với: app dẫn đường ĐÓNG, **không đăng nhập tài khoản nào**, và không có xe khác trong khung — hoặc che biển số/tên đường/avatar trước khi dùng. Ảnh cũ giữ ngoài repo, không bao giờ commit.
 
 
-## P0 · Chuẩn bị trước khi chụp (làm hết, theo thứ tự)
+## Lượt chụp 2.97 — 09/10 (máy ảo `kachi_play`, `emulator-5556`, bản đăng `Kachi-2.97-release.apk`, mã 200)
 
-1. Máy ảo `clusternav10`, cài bản **2.77** `vehicleTest` (cùng chữ ký, `adb install -r`).
-2. Cài đặt › Hệ thống & quyền → bật **Chế độ kiểm thử qua adb** (dùng `am broadcast … --es name …` để dựng nhanh trạng thái ô; xem memory `kachi-274-morning-session`). Chụp xong nhớ tắt.
-3. Chép **3 ảnh** vào thư mục ảnh nền và **3 ảnh khác** vào thư mục widget Trình chiếu ảnh (hai thư mục KHÁC nhau — lấy đường dẫn bằng nút "Sao chép đường dẫn thư mục" ở Cài đặt › Màn hình chính).
-4. Mở một app nhạc và phát một bài rồi bấm HOME (để ô "Đang phát" và ô "Bảng tổng hợp" có tên bài, không phải "—").
-5. Cài đặt › Giọng nói → tải **mô hình nghe** và **gói giọng đọc** (mất nhiều phút — làm trước, không làm giữa lượt chụp).
-6. Đặt hồ sơ về **Mặc định**, bố cục **3 ô**, giao diện tối (đồng bộ với ảnh trên xe).
-7. Trạng thái ô ban đầu: ô-trái = một app đã nhúng · ô-phải-trên = TRỐNG · ô-phải-dưới = thẻ "Đồng hồ + thời tiết".
-8. Chụp bằng `adb exec-out screencap -p`; ảnh cắt (crop) ghi rõ ở cột "Cần thấy gì".
+**Cách đã dựng (để lượt sau làm lại được):**
 
-**Ký hiệu**: “—” = ảnh sẽ có dấu gạch vì máy ảo không có dữ liệu xe · 🚗 = phải dùng ảnh chụp trên xe thật thay thế/kèm theo.
+1. KHÔNG đụng hồ sơ thật: tạo hồ sơ tạm (bản sao của «Mặc định»), chụp toàn bộ trên hồ sơ đó, cuối lượt về «Mặc định» rồi **xoá** hồ sơ tạm. Lý do: hồ sơ «Mặc định» trên máy ảo đang nhúng YouTube (có avatar + tên bài hát thật) ⇒ cấm chụp.
+2. Ô 1 = app **Clock** (không có dữ liệu cá nhân). Ảnh nền = 5 ảnh vẽ sẵn (đồi + mặt trời, tự sinh). Ảnh widget Trình chiếu = 3 ảnh gradient tự sinh bằng PIL, chép vào `files/photos/` rồi **xoá** sau lượt. Phải tắt-bật lại "Dùng ảnh làm hình nền" thì widget mới quét lại thư mục ảnh.
+3. Giao diện **Tối** cho hầu hết ảnh. Riêng 7 ảnh ngăn kéo đặt ô (`ngan-keo-*`, `nhom-kha-nang`, `the-dung-tay`, `o-tung-muc-rieng`) chụp lúc còn giao diện Sáng.
+4. Ảnh đã nén bảng màu 256 (PNG, cạnh dài ≤ 1600 px). Cả thư mục ≈ 10 MB / 137 tệp.
+5. Không bật Chế độ kiểm thử qua adb, không cần kênh shell. Không mở YouTube/Google/Maps/VietMap/Waze, không mở màn tài khoản, không kéo khay thông báo. Không bật micro (máy ảo thu micro thật của máy chủ).
+6. **Bẫy công cụ**: cuộn trang Cài đặt bằng vuốt ở x=1800. Vuốt ở giữa trang (x≈1100) mà trúng khung xem trước biển báo/camera/bong bóng thì sẽ **kéo luôn vị trí** (lượt này lỡ kéo biển báo 1780→835 px, đã sửa; vì biển báo lưu theo hồ sơ nên xoá hồ sơ tạm là «Mặc định» còn nguyên 1780/80).
 
-## A · Màn hình chính (không rời màn)
+**Cột EN**: owner 09/10 chốt **không cần bộ ảnh tiếng Anh**. Bài viết song ngữ nhưng dùng chung ảnh giao diện tiếng Việt. Một phần ảnh `*-en.png` đã chụp trước khi có quyết định này, vẫn giữ trong thư mục (ghi ✅ ở cột EN), không chụp thêm.
 
-| # | Tệp | Đường đi | Cần thấy gì | “—” ? |
-|---|---|---|---|---|
-| 01 | `man-hinh-chinh-tong-quan.png` | Bấm HOME | Cả màn: thanh trên, 3 ô, thanh nút xe ở viền Dưới, hình nền | Chip trên "—" — **chấp nhận** (ảnh này để chỉ bố cục), đặt kèm 🚗 `car-man-hinh-that.png` |
-| 02 | `thanh-trang-thai-tren.png` | cắt từ #01 | Giờ + ngày, 5 chip, nút mic/Ứng dụng/Cài đặt, chip hồ sơ | **KHÔNG chấp nhận** "—" → dùng 🚗 `car-thanh-tren-chip-that.png` làm ảnh chính, ảnh máy ảo chỉ để chú thích tên từng vật |
-| 03 | `vung-o-lam-viec.png` | cắt từ #01 | Ô trống có dấu ＋ và chữ "Mở ứng dụng" · ô có app · ô có thẻ · nút ⇄ ở mép trên hai ô có nội dung | Không |
-| 04 | `thanh-nut-xe.png` | cắt từ #01 | Dải nút xe: Cốp sau, Đèn đọc, Lọc bụi, Mát ghế lái, Nhiệt độ −/+, Gió −/+, Kính lái | Chấp nhận (hình nút là thứ cần thấy); kèm 🚗 cắt từ `car-man-hinh-that.png` |
+**Ký hiệu**: ✅ đã chụp lượt này · ♻ giữ ảnh cũ (chưa chụp lại được) · 🚗 phải chụp trên xe · ❌ không làm được trên máy ảo · — không cần
 
-## B · Ngăn kéo gán ô (mở một lần, cuộn dần — không đóng giữa chừng)
+### A · Màn hình chính
 
-| # | Tệp | Đường đi | Cần thấy gì | “—” ? |
-|---|---|---|---|---|
-| 05 | `ngan-keo-dat-vao-o.png` | Chạm ô-phải-trên (ô trống) | Tiêu đề "Đặt widget hoặc mở app vào ô này" + câu hướng dẫn + lưới khối "Ứng dụng" | Không |
-| 06 | `nhom-kha-nang.png` | cuộn xuống khối "Nhóm — xem cả cụm cùng lúc" | 8 ô nhóm + câu phụ "Một ô cho cả bộ…" | Không |
-| 07 | `the-dung-tay.png` | cuộn tiếp tới khối "Thẻ dựng tay" | 9 thẻ, thấy rõ huy hiệu loại ở góc ô | Không |
-| 08 | `o-tung-muc-rieng.png` | cuộn tiếp tới khối "Từng mục riêng", mở một lĩnh vực | Huy hiệu con mắt (xanh) và bàn tay (cam), viên "chưa kiểm trên xe", dòng "Đã có trong nhóm: …" | Không |
-| 09 | `ngan-keo-tran-8-muc.png` *(mới, phụ cho §4)* | tích đủ 8 mục trong cùng ngăn kéo | Nút đáy "Đặt 8 mục" + dòng hổ phách "Ô chứa tối đa 8 mục — bỏ một mục để thêm" + các ô bị làm mờ | Không |
+| # | Tệp | Cần thấy gì | VI | EN (không cần — owner 09/10) | Mục bài |
+|---|---|---|---|---|---|
+| 01 | `man-hinh-chinh-tong-quan.png` | Bố cục 3 ô: app Clock · thẻ Đồng hồ + thời tiết · ô trống (chỉ còn nút ⇄); thanh trên; thanh nút xe (Cốp sau · Đèn đọc · Ứng dụng · Nói với xe · Camera sau) | ✅ | ✅ | §1, §2 |
+| 02 | `thanh-trang-thai-tren.png` | Cắt từ #01: giờ, ngày, 5 chip "—", nút Ứng dụng/Cài đặt, chip hồ sơ | ✅ (chip "—", số thật cần 🚗) | ✅ | §2 |
+| 03 | `vung-o-lam-viec.png` | Cắt từ #01: các ô, nút ⇄ / ✕ / "chạy nền" ở mép trên ô | ✅ | ✅ | §2 |
+| 04 | `thanh-nut-xe.png` | Cắt từ #01: thanh nút xe cỡ 110 % | ✅ | ✅ | §2 |
+| 04a | `bo-cuc-1-o.png` · `bo-cuc-2-cot.png` · `bo-cuc-2-hang.png` · `bo-cuc-4-o.png` | 4 bố cục sẵn (mới) | ✅ | ✅ (chỉ `bo-cuc-4-o-en`) | §3 |
+| 04b | `o-nut-tat-xac-nhan.png` | Nút ✕ chuyển ĐỎ chờ chạm lần hai mới tắt ô (mới) | ✅ | — | §3 |
 
-## C · Vòng chụp từng ô (lặp: nút ⇄ của ô-phải-trên → chọn → Đặt → chụp)
+### B · Ngăn kéo đặt ô
 
-> Mỗi ảnh chỉ cần thấy ĐÚNG ô đó (cắt quanh ô). Dùng test-bridge để đặt nội dung ô cho nhanh nếu có.
+| # | Tệp | Cần thấy gì | VI | EN | Mục bài |
+|---|---|---|---|---|---|
+| 05 | `ngan-keo-dat-vao-o.png` | Tiêu đề + lưới "Ứng dụng" | ✅ (Sáng) | ✅ | §3 |
+| 05a | `ngan-keo-widget-app-khac.png` | Khối "Widget của app khác" (widget Android) (mới) | ✅ | ✅ | §3 |
+| 06 | `nhom-kha-nang.png` | 8 ô nhóm | ✅ | ✅ | §3, §4 |
+| 06a | `ngan-keo-camera-theo-yeu-cau.png` | Khối "Camera theo yêu cầu": Sau · Trái · Phải · Trước · Tắt camera (mới, 2.93) | ✅ | ✅ | §5 |
+| 07 | `the-dung-tay.png` | 10 thẻ dựng tay, gồm "Lưới lối tắt app" (mới 2.85) | ✅ | ✅ | §3, §4 |
+| 08 | `o-tung-muc-rieng.png` | Khối "Từng mục riêng" › Năng lượng & sạc, huy hiệu con mắt/bàn tay, dòng "Đã có trong nhóm" | ✅ | ✅ | §3, §4 |
+| 09 | `ngan-keo-tran-8-muc.png` | 8 mục đã chọn, nút "Đặt 8 widget", dòng "Ô chứa tối đa 8 mục" | ✅ | ✅ | §4 |
 
-| # | Tệp | Đặt vào ô | Cần thấy gì | “—” ? |
-|---|---|---|---|---|
-| 10 | `o-nang-luong.png` | thẻ "Năng lượng" | Vòng pin + dòng "≈ N km" | "—" → **cần** 🚗 (chưa có ảnh riêng; cắt tạm từ `car-man-hinh-that.png` nếu có ô pin, nếu không thì để lượt lên xe sau) |
-| 11 | `o-khong-khi.png` | thẻ "Không khí" | Vòng bụi mịn + "PM2.5 · Tốt/TB/Kém" | "—" → cần 🚗 (chưa có ảnh) |
-| 12 | `o-toc-do.png` | thẻ "Tốc độ" | Số to + "km/h" + "Tốc độ hiện tại" | "—" → chấp nhận (dáng số là thứ cần thấy), ghi chú rõ trong bài |
-| 13 | `o-trang-thai-xe.png` | thẻ "Trạng thái xe" | Hình xe nhỏ + dòng kết luận | "—" (“Trạng thái cửa —”) → chấp nhận, kèm chú thích |
-| 14 | `o-bang-tong-hop.png` | thẻ "Bảng tổng hợp" | Bốn ô con: pin · không khí · lốp · nhạc (ô nhạc CÓ dữ liệu nhờ P0.4) | 3/4 ô "—" → cần 🚗 |
-| 15 | `o-ap-suat-lop.png` | thẻ "Áp suất lốp" | Hình xe + 4 thẻ số | **KHÔNG chấp nhận** → dùng 🚗 `car-o-lop-that.png` |
-| 16 | `o-dang-phat.png` | thẻ "Đang phát" | Ảnh bìa, tên bài, thanh tiến trình, 3 nút | Không (không cần xe) |
-| 17 | `o-dong-ho-thoi-tiet.png` | thẻ "Đồng hồ + thời tiết" | Giờ lớn, thứ+ngày, dòng "— · ngoài xe" | Chỉ dòng nhiệt độ "—" → chấp nhận |
-| 18 | `o-trinh-chieu-anh.png` | thẻ "Trình chiếu ảnh" | Một ảnh phủ kín ô (nhờ P0.3) | Không |
-| 19 | `ben-trong-o-nhom.png` | nhóm "Kính" | Ba tầng: đầu ô (hình + tên) · ô con chỉ xem · **hàng nút ở đáy** | "—" ở ô con → chấp nhận (mục đích là chỉ ba tầng) |
-| 20 | `o-cua-va-khoang.png` | nhóm "Cửa & khoang" | Hình xe + hàng nút Cốp / Nóc / Rèm | "—" → chấp nhận |
-| 21 | `o-nhieu-widget.png` | 6 mục lẻ trong một ô | Lưới 3+3, mỗi mục bản nén (hình + số + dòng phụ) | "—" → chấp nhận |
+### C · Từng ô (cắt quanh ô)
 
-## D · Ngăn kéo mở app
+| # | Tệp | Cần thấy gì | VI | EN | Ghi chú |
+|---|---|---|---|---|---|
+| 10 | `o-nang-luong.png` | Vòng pin "— pin" | ✅ "—" | ✅ | số thật 🚗 |
+| 11 | `o-khong-khi.png` | Vòng PM2.5 "— µg/m³" | ✅ "—" | — | số thật 🚗 |
+| 12 | `o-toc-do.png` | "— km/h · Tốc độ hiện tại" | ✅ "—" | — | |
+| 13 | `o-trang-thai-xe.png` | Hình xe + "Trạng thái cửa —" | ✅ "—" | — | |
+| 14 | `o-bang-tong-hop.png` | 4 ô con pin · PM2.5 · lốp · nhạc | ✅ "—" | — | số thật 🚗 |
+| 15 | `o-ap-suat-lop.png` | Hình xe + 4 thẻ TT/TP/ST/SP | ✅ "—" | — | số thật 🚗 |
+| 16 | `o-dang-phat.png` | Ảnh bìa mặc định, 3 nút; KHÔNG có tên bài (cố ý, tránh tên bài thật) | ✅ (trạng thái chờ) | — | |
+| 17 | `o-dong-ho-thoi-tiet.png` | Giờ lớn, thứ + ngày, "— · ngoài xe" | ✅ | ✅ | |
+| 18 | `o-trinh-chieu-anh.png` | Ảnh gradient tự sinh phủ ô | ✅ | — | |
+| 18a | `o-luoi-loi-tat-app.png` | Widget "Lưới lối tắt app" (mới 2.92) | ✅ | — | |
+| 18b | `o-camera-theo-yeu-cau.png` | Ô "Camera sau" (chạm để bật/tắt camera) (mới 2.93) | ✅ | ✅ | hình camera thật 🚗 |
+| 19 | `ben-trong-o-nhom.png` | Nhóm "Kính": đầu ô · 4 ô con · hàng nút đáy | ✅ "—" | — | |
+| 20 | `o-cua-va-khoang.png` | Nhóm "Cửa & khoang": hình xe + Cốp sau / Cửa sổ trời / Rèm che nắng | ✅ "—" | — | |
+| 21 | `o-nhieu-widget.png` | 6 mục lẻ trong một ô (lưới 3+3) | ✅ "—" | — | |
 
-| # | Tệp | Đường đi | Cần thấy gì | “—” ? |
-|---|---|---|---|---|
-| 22 | `ngan-keo-mo-ung-dung.png` | HOME → nút **Ứng dụng** trên thanh trên | Câu "Chạm một app để mở TOÀN MÀN…", hàng "Gần đây", lưới "Tất cả ứng dụng" | Không |
+### D · Ngăn kéo mở app · hồ sơ · giọng nói
 
-## E · Cài đặt — đi thẳng từ trên xuống theo rail, không quay lại
+| # | Tệp | Cần thấy gì | VI | EN | Mục bài |
+|---|---|---|---|---|---|
+| 22 | `ngan-keo-mo-ung-dung.png` | "Mở ứng dụng", hàng Gần đây, lưới Tất cả ứng dụng | ✅ | ✅ | §3 |
+| 45 | `hop-doi-ho-so.png` | "Đổi hồ sơ tài xế": Mặc định · hồ sơ thứ hai · Quản lý hồ sơ… | ✅ | ✅ | §7 |
+| 46 | `noi-voi-xe-dang-nghe.png` | Tấm chữ đang nghe | ♻ ảnh 2.79 (máy ảo chưa có mô hình nghe; không bật micro vì máy ảo thu micro thật của máy chủ) | — | §6 |
+| 46a | `noi-voi-xe-chua-co-mo-hinh.png` | Bấm "Nói với xe" khi chưa tải mô hình: "Chưa tải mô hình nhận dạng" + "Mở Cài đặt" (mới) | ✅ | — | §6, §9 |
+| 47 | `noi-voi-xe-xac-nhan.png` | Tấm chữ trạng thái Xác nhận | ❌ cần mô hình nghe + micro, chưa chụp | — | §6 |
 
-| # | Tệp | Đường đi (từ màn trước) | Cần thấy gì | “—” ? |
-|---|---|---|---|---|
-| 23 | `cai-dat-man-hinh-chinh.png` | Nút **Cài đặt** → nhóm "Màn hình chính" | Câu nhắc hồ sơ, hàng chip 6 bố cục (chip "3 ô" đang sáng), khối Hình nền đang BẬT (đủ 3 hàng chu kỳ/phủ/làm tối), mục Widget Trình chiếu ảnh | Không |
-| 24 | `ve-bo-cuc.png` | cùng trang → "Vẽ bố cục riêng…" | Lưới 12×6, 3–4 khung, dòng trạng thái "còn N ô trống", nút Thêm/Xoá/Về bố cục sẵn/Lưu/Đóng | Không — đóng bằng **Đóng** (đừng Lưu, kẻo hỏng bố cục 3 ô cho các ảnh sau) |
-| 25 | `cai-dat-thanh-tren-va-thanh-nut.png` | rail → "Thanh trạng thái & thanh nút" | Khối "Đang bật · 5/16" có nút ◀ ▶ trên ô, các khối lĩnh vực đang gập, mục "Vị trí trên thanh trên" 6 hàng | Không |
-| 26 | `cai-dat-nut-mic-thanh-tren.png` | cắt từ #25 | Hàng "Nút mic trên thanh trạng thái" + câu phụ | Không |
-| 27 | `chon-nut-thanh-nut-xe.png` | cùng trang → "Chọn nút trên thanh… (N đang bật)" | Khối **Launcher** đứng đầu, khối Nhóm, khối Từng mục riêng, nút đáy "Áp dụng (N)" | Không — thoát bằng Áp dụng với đúng tập nút cũ |
-| 28 | `cai-dat-hien-thi-don-vi.png` ⚠ | rail → "Hiển thị & đơn vị" | Cả trang (chưa có bản kê — chụp trước, kê sau) | Không |
-| 29 | `cai-dat-ho-so-tai-xe.png` | rail → "Hồ sơ tài xế" | Câu mở đầu, ≥2 thẻ hồ sơ (một thẻ ghi "Đang dùng"), nút Đổi tên/Xoá, mục HỒ SƠ LÚC NỔ MÁY, 3 nút Thêm/Xuất/Nhập | Không — **tạo hồ sơ thứ hai ngay ở bước này** (cần cho #30 và #47) |
-| 30 | `hop-hoi-ten-ho-so.png` | cùng trang → "Thêm hồ sơ (bản sao của …)" | Tiêu đề "Hồ sơ mới", ô nhập điền sẵn "Bản sao của «Mặc định»", nút Lưu | Không |
-| 31 | `cai-dat-dan-duong-cum.png` ⚠ | rail → "Dẫn đường & cụm đồng hồ" | Đầu trang (chưa có bản kê) | Không |
-| 32 | `cai-dat-so-dia-chi.png` ⚠ | cùng trang → mục "Sổ địa chỉ" | Danh sách địa chỉ — **thêm 1 địa chỉ ở đây**, bắt buộc cho #33/#34 | Không |
-| 33 | `cai-dat-tu-dan-duong-theo-lich.png` | cuộn tiếp tới "Tự dẫn đường theo lịch" | ≥1 hàng lịch "07:30–09:00 → «tên»", dòng phụ ghi thứ + app + "chờ có GPS", công tắc hàng, nút Sửa, nút "Thêm lịch…" | Không |
-| 34 | `hop-them-lich-dan-duong.png` | cùng trang → "Thêm lịch…" | Bật lịch này · hai ô giờ · 7 ô thứ (T2–T6 đang tick) · "Chỉ dẫn khi đã có GPS" · Dẫn tới · Bằng app · Lưu | Không |
-| 35 | `cai-dat-chieu-len-cum.png` ⚠ | rail → "Chiếu màn lên cụm" | Cả trang (chưa có bản kê) | Có thể có hàng cần cụm thật → kèm 🚗 `car-cum-chieu-1..3.png`, `car-cum-framebuffer.png` |
-| 36 | `cai-dat-phim-vo-lang.png` ⚠ | rail → "Phím vô-lăng" | Danh sách gán (chưa có bản kê) | Không |
-| 37 | `cai-dat-phim-vo-lang-kachi-nghe.png` | cùng trang → thêm/sửa một gán → danh sách đích | Đích **"Kachi nghe (tại máy)"** đang được chọn, thấy cả 3 đích còn lại | Không |
-| 38 | `cai-dat-tien-nghi-xe.png` | rail → "Tiện nghi xe" | Ảnh dài (ghép 2–3 lần cuộn): Lấy gió trong · Tự sấy kính khi mưa (2 ô con **đang mờ** vì công tắc chính tắt) · Ghế mát/sưởi + sơ đồ ghế · Lọc bụi mịn + đồng hồ + nút "Lọc ngay một lượt" | "Bụi mịn hiện tại: chưa đọc được" → chấp nhận, bài phải chú thích |
-| 39 | `cai-dat-camera-xi-nhan.png` | cùng trang, cuộn tới "Camera theo xi-nhan" | **Đúng 10 hàng của 2.77**, KHÔNG có "Nâng cao (kỹ thuật)", KHÔNG có hàng "Nguồn" | Không — nhưng ô camera thật thì cần 🚗 `car-camera-tron-xi-nhan.png` |
-| 40 | `cai-dat-giong-noi.png` | rail → "Giọng nói" | Ảnh dài: Hey Kachi + dòng trạng thái model câu gọi (xanh) · mô hình nghe **đã cài** (nút "Gỡ mô hình") · gói giọng đọc đã cài · 2 công tắc đọc · khối "Hỏi xác nhận" (tích sẵn 2–3 dòng để thấy lý do) · Nguồn micro · App nhạc mặc định | Không |
-| 41 | `cau-lenh-noi-duoc.png` | cuối trang → mở khối "Câu lệnh nói được" | 2–3 nhóm đang mở, mỗi dòng: câu nói + việc sẽ làm; thấy đuôi "· sẽ hỏi lại trước khi chạy" ở dòng đã tích ở #40 | Không |
-| 42 | `cai-dat-he-thong-va-quyen.png` | rail → "Hệ thống & quyền" | Ảnh dài: phần Quyền (máy ảo THIẾU kênh shell nên **sẽ thấy các hàng quyền** — đúng thứ bài cần) · Màn hình chính · Khởi động 2 công tắc · Bảo trì 4 hàng · Nâng cao đúng 1 hàng | Không |
-| 43 | `hop-co-ban-moi.png` | cùng trang → "Kiểm tra cập nhật" | Hộp "Có bản mới: v…", nút "Tải & cài" / "Để sau" | **Khó dựng**: chỉ hiện khi kênh phát hành có bản cao hơn bản đang cài. Cách dựng: cài 2.76 rồi để kênh ở 2.77. Nếu không dựng được → bỏ ảnh, mô tả bằng chữ |
-| 44 | `cai-dat-gioi-thieu.png` | rail → "Giới thiệu" | Dòng phiên bản (phải đọc ra "2.77"), tên gói, giấy phép, miễn trừ | Không |
+### E · Cài đặt (theo cột trái)
 
-## F · Quay về màn chính — hồ sơ và giọng nói (cuối lượt)
+| # | Tệp | Cần thấy gì | VI | EN | Mục bài |
+|---|---|---|---|---|---|
+| 23 | `cai-dat-man-hinh-chinh.png` | Câu nhắc hồ sơ, 6 chip bố cục, "Vẽ bố cục riêng…", "Tự ẩn nút ⇄" (mới 2.88), Hình nền | ✅ | ✅ | §2 |
+| 23a | `cai-dat-hinh-nen-trinh-chieu.png` | Chu kỳ / Cách phủ / Làm tối + "Widget Trình chiếu ảnh" | ✅ | ✅ | §2 |
+| 24 | `ve-bo-cuc.png` | Lưới, 4 khung, nút Thêm/Xoá/Về bố cục sẵn/Lưu | ✅ | — | §3 |
+| 24a | `ve-bo-cuc-bao-chong-lan.png` | Dòng đỏ "Chưa lưu được: khung 1 và khung 3 đè lên nhau", nút Lưu mờ (mới) | ✅ | — | §3 |
+| 25 | `cai-dat-thanh-tren-va-thanh-nut.png` | "Chip trên thanh trạng thái · ĐANG BẬT 5/16" với ◀ ▶ | ✅ | ✅ | §2 |
+| 25a | `cai-dat-vi-tri-thanh-tren.png` | "Hiện nhãn trên thanh trên" + "Vị trí trên thanh trên" 6 hàng | ✅ | ✅ | §2 |
+| 26 | `cai-dat-nut-mic-thanh-tren.png` | Cắt: hàng "Nút mic trên thanh trạng thái" | ✅ | — | §2 |
+| 26a | `cai-dat-nut-mic-va-thanh-nut-xe.png` | Nút mic + khối "Thanh nút xe" (Hiện thanh, Viền đặt thanh, Chọn nút…) | ✅ | ✅ | §2 |
+| 26b | `cai-dat-loi-tat-ung-dung.png` | "Lối tắt ứng dụng (17)": mỗi app Ô 1/2/3 · Toàn màn · Chạy ngầm (mới 2.85) | ✅ | ✅ | §2 |
+| 27 | `chon-nut-thanh-nut-xe.png` | Khối Launcher (Ứng dụng · Cài đặt · Nói với xe · Lối tắt ứng dụng) + Camera theo yêu cầu | ✅ | ✅ | §2 |
+| 28 | `cai-dat-hien-thi-don-vi.png` | Đơn vị · Sáng/Tối/Tự động · Kính thật · Màu nhấn | ✅ | ✅ | §2 |
+| 28a | `cai-dat-do-trong-suot-nen.png` | Màu nhấn · Tông thể · **Độ trong suốt nền** 0–100 % (mới 2.88) · Hình xe | ✅ | ✅ | §2 |
+| 28b | `cai-dat-co-thanh-nut-ngon-ngu.png` | Cỡ thanh nút xe 50–150 % (mới 2.89) + **Ngôn ngữ**: Theo xe · Tiếng Việt · English · 简体中文 · ไทย · Bahasa Melayu (mới 2.87) | ✅ | ✅ | §2, §8 |
+| 29 | `cai-dat-ho-so-tai-xe.png` | 2 thẻ hồ sơ, Đổi tên/Xoá, HỒ SƠ LÚC NỔ MÁY, Thêm/Xuất đầy đủ/Xuất để chia sẻ/Nhập | ✅ | ✅ | §7 |
+| 30 | `hop-hoi-ten-ho-so.png` | Hộp "Hồ sơ mới" điền sẵn "Bản sao của Mặc định" | ✅ | — | §7 |
+| 30a | `ho-so-xuat-chia-se.png` | Thông báo "Đã xuất: …/files/profiles/…-share.kachi" (mới) | ✅ | — | §7 |
+| 30b | `hop-nhap-ho-so.png` | Hộp "Chọn tệp hồ sơ để nhập" (mới) | ✅ | — | §7 |
+| 31 | `cai-dat-dan-duong-cum.png` | Sổ địa chỉ (trống) · Tự dẫn đường theo lịch (trống) · Dẫn đường + HUD với các dòng trạng thái | ✅ | ✅ | §5 |
+| 31a | `cai-dat-dan-duong-hud.png` | Chế độ hiện trên cụm · Chạy chữ tên đường dài · App dẫn đường mặc định · Kết nối lại | ✅ | ✅ | §5 |
+| 31b | `cai-dat-bien-bao-toc-do.png` | Biển báo tốc độ: 3 công tắc, cỡ, vị trí ngang/dọc, khung kéo | ✅ | ✅ | §5 |
+| 32 | `cai-dat-so-dia-chi.png` | Cắt: "Sổ địa chỉ · Chưa lưu địa chỉ nào · Thêm địa chỉ…" (cố ý để trống, không có địa chỉ) | ✅ | — | §5 |
+| 32a | `hop-them-dia-chi.png` | Hộp "Thêm địa chỉ…" trống (Tên gọi · Địa chỉ · Toạ độ) | ✅ | ✅ | §5 |
+| 33 | `cai-dat-tu-dan-duong-theo-lich.png` | Cắt: "Tự dẫn đường theo lịch · Chưa có lịch nào · Thêm lịch…" | ✅ (trạng thái trống) | — | §5 |
+| 34 | `hop-them-lich-dan-duong.png` | Hộp Thêm lịch có giờ/thứ | ♻ ảnh 2.79 (cần có sẵn 1 địa chỉ; `adb input text` không gõ được dấu tiếng Việt) | — | §5 |
+| 34a | `hop-them-lich-chua-co-dia-chi.png` | Hộp "Thêm lịch…" khi sổ trống: "Chưa có địa chỉ nào để dẫn tới…" (mới) | ✅ | ✅ | §5 |
+| 35 | `cai-dat-chieu-len-cum.png` | Bật Cluster Cast · Nút nổi chiếu cụm · **Tỉ lệ chia đôi 1:9…9:1** (mới 2.96) · Tự chiếu khi nổ máy | ✅ (bật tạm để chụp, đã tắt lại) | ✅ (đang tắt) | §5 |
+| 35a | `cai-dat-chieu-ngay-cuu-ho.png` | Chiếu ngay (toàn cụm / nửa trái / nửa phải / dừng) · Cứu hộ (Trả cụm về đồng hồ · Dọn sạch cụm) | ✅ | ✅ | §5, §9 |
+| 35b | Kiểu chiếu cụm, khung **Bo tròn / Chữ nhật**, DPI + khung từng app | Chỉ hiện khi có cụm thật | 🚗 | — | §5 |
+| 36 | `cai-dat-phim-vo-lang.png` | Nhận nút vật lý · Kiểm tra / Sửa ngay · Gán phím · Học phím mới | ✅ | ✅ | §6 |
+| 36a | `gan-phim-buoc-1.png` · `gan-phim-buoc-2.png` | Bước 1 chọn nút · Bước 2 nút này làm gì (Mở ứng dụng · trợ lý / Camera theo yêu cầu / các nhóm xe) (mới) | ✅ | ✅ | §6 |
+| 37 | `cai-dat-phim-vo-lang-kachi-nghe.png` | Bước 3: "Kachi nghe (tại máy)" cùng 3 đích trợ lý + danh sách app | ✅ | ✅ | §6 |
+| 37a | Gán riêng **núm yên ngựa / vô-lăng** (dòng "nguồn: …" dưới nút vừa học) | Chỉ hiện sau khi học phím trên xe | 🚗 | — | §6 |
+| 38 | `cai-dat-tien-nghi-xe.png` | Lấy gió trong · Tự sấy kính khi mưa (2 ô độc lập, 2.84) · Camera theo xi-nhan | ✅ | ✅ | §5 |
+| 39 | `cai-dat-camera-xi-nhan.png` | Hình khung camera · **Kiểu hình** Nắn thẳng / Thẳng rộng / Gương cầu · Thu phóng · Từng camera | ✅ | ✅ | §5 |
+| 39a | `cai-dat-camera-tung-camera.png` | Chọn camera Sau/Trái/Phải/Trước · Xem thử · Góc mặc định · khung kéo đặt chỗ · Cỡ (mới 2.93) | ✅ | ✅ | §5 |
+| 39b | `cai-dat-camera-tung-camera-2.png` | Hình khung / Kiểu hình / Xoay / Lật gương từng camera · thử số camera (mới) | ✅ | ✅ | §5 |
+| 39c | `cai-dat-ghe-va-loc-bui.png` | Ghế mát/sưởi + sơ đồ ghế · Lọc bụi mịn ("chưa đọc được") | ✅ "—" | ✅ | §5 |
+| 39d | Hình camera thật trong ô / trên cụm | — | 🚗 | — | §5 |
+| 40 | `cai-dat-giong-noi.png` | Hey Kachi · Nhận dạng giọng nói (tại máy) **chưa cài** · Giọng đọc offline chưa cài | ✅ (máy ảo chưa tải mô hình) | ✅ | §6 |
+| 40a | `cai-dat-giong-noi-xac-nhan.png` | Đọc phản hồi bằng giọng · "Hỏi xác nhận trước khi chạy" | ✅ | ✅ | §6 |
+| 40b | `cai-dat-day-ten-app-va-nhac.png` | Nguồn micro · **Dạy Kachi tên app** (2.91) · App nhạc mặc định · đầu Câu lệnh nói được | ✅ | ✅ | §6 |
+| 40c | `day-ten-app.png` | Hộp "Dạy tên app": Tất cả 22 / Đã dạy 0 / Nên dạy 13, nút ▶ Thử (mới) | ✅ | ✅ | §6 |
+| 41 | `cau-lenh-noi-duoc.png` | Nhóm "Đèn" mở: câu nói + việc sẽ làm | ✅ | ✅ | §6 |
+| 42 | `cai-dat-he-thong-va-quyen.png` | Quyền (đủ) · Màn hình chính · Khởi động · đầu "Mở app khi nổ máy" | ✅ | ✅ | §8 |
+| 42a | `cai-dat-mo-app-khi-no-may.png` | Mở app khi nổ máy · **Tự mở nhạc khi lên xe** (Tắt / Theo player của xe / YouTube Music / YouTube) · Bảo trì (mới 2.85+) | ✅ | ✅ | §8 |
+| 42b | `chon-app-khi-no-may.png` | Hộp "Chọn app mở khi nổ máy" (mới) | ✅ | ✅ | §8 |
+| 42c | `cai-dat-bao-tri-nang-cao.png` | Bảo trì (Tự động cập nhật · Kiểm tra cập nhật · Dừng toàn bộ dẫn đường · Khởi động lại launcher) · Nâng cao (Chế độ kiểm thử qua adb — TẮT) | ✅ | ✅ | §8, §9 |
+| 43 | `hop-co-ban-moi.png` | Hộp "Có bản mới" | ♻ ảnh cũ (máy ảo đang ở bản mới nhất 2.97) | — | §8 |
+| 43a | `kiem-tra-cap-nhat-moi-nhat.png` | Nút đổi thành "đang ở bản mới nhất (v2.97)" (mới) | ✅ | ✅ | §8 |
+| 44 | `cai-dat-gioi-thieu.png` | "Phiên bản 2.97 (mã 200)", tên gói, giấy phép MIT, miễn trừ | ✅ | ✅ | §1, §8 |
 
-| # | Tệp | Đường đi | Cần thấy gì | “—” ? |
-|---|---|---|---|---|
-| 45 | `hop-doi-ho-so.png` | Nút **Xong** → chạm chip hồ sơ trên thanh trên | Tiêu đề "Đổi hồ sơ tài xế", hàng "«tên» · đang dùng", hàng hồ sơ thứ hai, "Quản lý hồ sơ…" | Không |
-| 46 | `noi-voi-xe-dang-nghe.png` | Chạm nút mic trên thanh trên, nói "bật đèn đọc", chụp lúc đang hiện chữ nghe được | Tấm chữ giữa-dưới: vòng sóng âm + một dòng chữ; chụp thêm một kiểu ở trạng thái "Đã nghe" + câu trả lời | Không (nhận dạng chạy tại máy, không cần xe) |
-| 47 | `noi-voi-xe-xac-nhan.png` | Cài đặt › Giọng nói đã tích "Cốp sau" ở #40 → nói "mở cốp sau" | Tấm chữ ở trạng thái **Xác nhận**: câu hỏi kèm lý do + nút "Đồng ý" | Không — nhưng sau khi bấm Đồng ý thì lệnh không có tác dụng thật (không có xe) |
+### F · Không chụp được trên máy ảo (lượt này)
+
+- **HOME guard / hộp chọn launcher, YouTube phát tiếp, nhắc khi đổi hồ sơ tắt dẫn đường lên cụm**: cần app dẫn đường/YouTube đang chạy ⇒ phải mở app có tài khoản ⇒ **cấm** theo luật riêng tư. ❌
+- **Cụm đồng hồ, HUD, bong bóng VietMap, biển báo trên cụm, khung Bo tròn/Chữ nhật, ô 7 đỗ ẩn**: máy ảo không có cụm. 🚗
+- **Camera (hình thật), số liệu xe (pin, lốp, PM2.5, tốc độ, cửa)**: máy ảo không có HAL xe. 🚗
+- **Nguồn phím núm/vô-lăng (2.88)**: cần học phím trên xe. 🚗
+- **Gửi log / màn Chẩn đoán**: không có lối vào trong Cài đặt của 2.97 ở các trang đã đi qua; chưa chụp.
+
 
 ## G · Ảnh trên xe — không chụp ở máy ảo, chỉ chép vào `docs/guide/img/`
 
@@ -109,12 +148,6 @@
 
 ⚠ Cả 9 ảnh này chụp ở bản **2.74–2.76**. Trước khi dán vào bài phải đối chiếu với 2.77 (ít nhất: thanh trên, thanh nút, khung camera) — nếu lệch thì chụp lại ở lượt lên xe kế tiếp.
 
-## H · Còn thiếu sau lượt này (phải lên xe mới có)
-
-- Ô "Năng lượng", "Không khí", "Bảng tổng hợp", "Tốc độ", "Trạng thái xe" với **số thật** (#10, #11, #12, #13, #14).
-- Ô camera đặt trên **màn cụm** (chip "Hiện camera lên màn cụm" + "Theo cụm").
-- Sơ đồ ghế với **số ghế thật** của xe (máy ảo luôn vẽ 2 ghế).
-
 ---
 
-**Tổng: 47 ảnh chụp máy ảo (gồm 1 ảnh mới `ngan-keo-tran-8-muc.png` ngoài bản kê) + 9 ảnh trên xe.**
+**Tổng lượt 09/10: 79 ảnh VI + 55 ảnh EN (giữ lại, không bổ sung) mới hoặc chụp lại; 3 ảnh cũ giữ nguyên (♻); ≈ 10 MB.**
