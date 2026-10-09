@@ -123,6 +123,10 @@ logs/
 # ─── Ảnh xe (WP3-v5) — nguồn ảnh top-down có BẢN QUYỀN (BYD/hãng), KHÔNG vào repo public.
 # App đọc ảnh xe từ thư mục MÁY (files/car/), không bundle vào APK/repo. images/ chỉ để push demo lên máy ảo.
 images/
+# Ngoại lệ HẸP (2026-10-09): icon CỦA CHÍNH app (hoa anh đào) cho trang giới thiệu GitHub Pages — không phải ảnh xe.
+!docs/images/
+docs/images/*
+!docs/images/site/
 
 # Ảnh chụp máy ảo lượt UX-overhaul (nhiều ảnh render xe) — KHÔNG vào repo public (security scan).
 docs/diagnostics/ux-overhaul-2026-09-20/
