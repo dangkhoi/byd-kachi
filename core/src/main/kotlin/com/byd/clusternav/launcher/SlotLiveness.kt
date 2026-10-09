@@ -116,6 +116,15 @@ class SlotLiveness(
         fun othersInSlot(stackList: String, pkg: String, vd: Int): Boolean =
             vd >= 1 && StackParse.parse(stackList).any { it.displayId == vd && it.pkg != pkg }
 
+        /**
+         * 2.98 · R7 (owner 09/10 #1: *"mở waze nó nhảy full… lâu lắm nó mới nhảy vào ô"* — [ĐO máy ảo] 10–14 s) — mốc đo THÊM, tính từ
+         * lúc một ô bắt đầu được đo sau lượt mở app vào ô (`SlotLiveProbe.watch`). App thoát ô ([ĐO] ~1 s sau khi vào) ⇒ hai mốc
+         * liên tiếp thấy "ở chỗ khác" ([ELSEWHERE_SWEEPS]) ⇒ kết luận ~2–3,5 s thay vì 10 s. Có TRẦN: đúng [LAUNCH_BURST_MS].size lượt
+         * đọc mỗi lần mở (cùng MỘT `am stack list` cho mọi ô, dùng lại bản đọc mới qua `StackListSnapshot`), không lặp, không chạy khi
+         * không mở app nào. Chỉ bật khi R7 bật (`SlotEscapeHome`); R7 tắt ⇒ rỗng = hành vi trước 2.98.
+         */
+        val LAUNCH_BURST_MS: List<Long> = listOf(1_000L, 2_000L, 3_000L, 4_500L, 6_500L, 9_000L)
+
         /** Chu kỳ đo: 5 giây — trần "không poll dày" của H2; 1 lệnh `am stack list` cho TẤT CẢ ô mỗi nhịp. */
         const val PROBE_PERIOD_MS = 5_000L
 

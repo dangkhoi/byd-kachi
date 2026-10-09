@@ -14,6 +14,8 @@ import com.byd.clusternav.modules.hal.BydHal.PATHNAME_OVERSEA_ID
 import com.byd.clusternav.modules.hal.BydHal.cachedSetBytes
 import com.byd.clusternav.modules.hal.BydHal.cachedSetInt
 import com.byd.clusternav.modules.hal.BydHal.featureId
+import com.byd.clusternav.navigation.HudPathName
+import com.byd.clusternav.navigation.HudPathNameGate
 import com.byd.clusternav.navigation.LaneInfo
 import com.byd.clusternav.navigation.NavOutputDecision
 
@@ -48,14 +50,30 @@ object BydHalContentPush {
                 rc.append(" DIST_OVERSEA=").append(cachedSetInt(instr, id, segMeters))
             }
         }
-        if (!road.isNullOrBlank()) {
-            val bytes = road.toByteArray(Charsets.UTF_16LE)
-            featureId("INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_SET")?.let { id -> rc.append(" PATHNAME=").append(cachedSetBytes(instr, id, bytes)) }
-            (featureId("INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_OVERASEA_SET") ?: PATHNAME_OVERSEA_ID).let { id ->
-                rc.append(" PATHNAME_OVERSEA=").append(cachedSetBytes(instr, id, bytes))
-            }
-        }
+        if (!road.isNullOrBlank()) pushPathName(instr, road, keepAlive = false, rc = rc)   // R9: chung cổng dedupe với writeNavFrame
         return rc.toString().trim()
+    }
+
+    /** R9 (2.98): nhớ tên đường đã nhận theo kênh — dùng CHUNG cho mọi đường ghi (một ô firmware = một trạng thái).
+     *  Xả ở [BydHal.clearNavFrame] (status=4) ⇒ lần dẫn sau cùng tên vẫn gửi lại. */
+    internal val pathNameGate = HudPathNameGate()
+
+    /**
+     * R9 (2.98) — ghi tên đường (domestic 0x43FA1008 + oversea 0x1F7A1008) theo nhịp AmapService OEM
+     * [ĐO nguồn fw 2606 AmapService.java:120-145]: KHÔNG ghi ở keep-alive; real push chỉ ghi khi tên khác tên đã
+     * nhận (rc=0) lần trước trên CHÍNH kênh đó; payload = [HudPathName.encode] (≤255 byte UTF-16LE, nguyên văn).
+     * Bỏ qua vì trùng ⇒ KHÔNG thêm token vào [rc] (HudWriteSummary sẽ đếm token lạ là "từ chối").
+     */
+    fun pushPathName(instr: Any, road: String, keepAlive: Boolean, rc: StringBuilder) {
+        val bytes by lazy(LazyThreadSafetyMode.NONE) { HudPathName.encode(road) }
+        fun send(ch: HudPathNameGate.Channel, id: Int, tag: String) {
+            if (!pathNameGate.shouldSend(ch, road, keepAlive)) return
+            val r = cachedSetBytes(instr, id, bytes)
+            rc.append(" $tag=").append(r)
+            pathNameGate.onResult(ch, road, r)
+        }
+        featureId("INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_SET")?.let { send(HudPathNameGate.Channel.DOMESTIC, it, "PATHNAME") }
+        send(HudPathNameGate.Channel.OVERSEA, featureId("INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_OVERASEA_SET") ?: PATHNAME_OVERSEA_ID, "PATHNAME_OVERSEA")
     }
 
     /**

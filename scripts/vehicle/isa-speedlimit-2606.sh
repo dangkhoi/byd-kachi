@@ -59,11 +59,11 @@ preflight() {
 
 # Tập ĐỌC: nguồn biển thật (camera ADAS) · trạng thái ISA/TSR · khung 0x237 (đèn dự báo) · giá trị các ô ISA đang có.
 read_set() {
-  read_id BYDAutoAdasDevice      ADAS_SLA_OUTPUT_SPEED_LIMIT                 # số trên biển cụm (nguồn camera) — chỉ đọc
-  read_id BYDAutoAdasDevice      ADAS_SLA_STATE                              # chế độ SLA (enum, không phải km/h)
-  read_id BYDAutoAdasDevice      ADAS_TSR_SPEED_LIMIT_MAP_CONFIG             # TSR có dùng bản đồ không (2606)
-  read_id BYDAutoAdasDevice      ADAS_INTELLIGENT_SPEED_LIMIT_INFORMATION_GRAY
-  read_id BYDAutoAdasDevice      ADAS_INTELLIGENT_SPEED_LIMIT_CONTROL_GRAY
+  read_id BYDAutoADASDevice      ADAS_SLA_OUTPUT_SPEED_LIMIT                 # số trên biển cụm (nguồn camera) — chỉ đọc
+  read_id BYDAutoADASDevice      ADAS_SLA_STATE                              # chế độ SLA (enum, không phải km/h)
+  read_id BYDAutoADASDevice      ADAS_TSR_SPEED_LIMIT_MAP_CONFIG             # TSR có dùng bản đồ không (2606)
+  read_id BYDAutoADASDevice      ADAS_INTELLIGENT_SPEED_LIMIT_INFORMATION_GRAY
+  read_id BYDAutoADASDevice      ADAS_INTELLIGENT_SPEED_LIMIT_CONTROL_GRAY
   read_id BYDAutoSettingDevice   SETTING_SPEED_LIMIT_CHANGE_SWITCH
   read_id BYDAutoSettingDevice   SETTING_SPEED_LIMIT_CHANGE_CONFIG
   read_id BYDAutoBodyworkDevice  594542592                                   # 0x23700000 khung 0x237 online?
@@ -109,13 +109,13 @@ preflight
 case "$PHASE" in
   read)
     say "== PHA ĐỌC"; read_set
-    "$ADB" -s "$VEH" logcat -d -v time | grep -E "BYDAutoSettingDevice|BYDAutoAdasDevice|BYDAutoStatisticDevice|HalSpeedSign" | tail -40 >> "$LOG"
+    "$ADB" -s "$VEH" logcat -d -v time | grep -E "BYDAutoSettingDevice|BYDAutoADASDevice|BYDAutoStatisticDevice|HalSpeedSign" | tail -40 >> "$LOG"
     ;;
   watch)
     say "== PHA THEO DÕI ${SECS}s (đi qua biển tốc độ)"
     end=$(( $(date +%s) + SECS ))
     while [ "$(date +%s)" -lt "$end" ]; do
-      say "$(date +%T) SLA=$(hal --es op getid --es dev BYDAutoAdasDevice --es m ADAS_SLA_OUTPUT_SPEED_LIMIT | grep -oE 'value=[^,; ]*' | head -1) 0x237=$(hal --es op getid --es dev BYDAutoBodyworkDevice --es m 594542592 | grep -oE 'value=[^,; ]*' | head -1) dựbáo=$(hal --es op getid --es dev BYDAutoBodyworkDevice --es m 594542638 | grep -oE 'value=[^,; ]*' | head -1)"
+      say "$(date +%T) SLA=$(hal --es op getid --es dev BYDAutoADASDevice --es m ADAS_SLA_OUTPUT_SPEED_LIMIT | grep -oE 'value=[^,; ]*' | head -1) 0x237=$(hal --es op getid --es dev BYDAutoBodyworkDevice --es m 594542592 | grep -oE 'value=[^,; ]*' | head -1) dựbáo=$(hal --es op getid --es dev BYDAutoBodyworkDevice --es m 594542638 | grep -oE 'value=[^,; ]*' | head -1)"
       sleep 1
     done
     ;;

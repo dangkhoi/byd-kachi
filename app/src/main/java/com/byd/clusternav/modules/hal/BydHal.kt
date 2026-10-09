@@ -3,6 +3,8 @@ package com.byd.clusternav.modules.hal
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.PackageManager
+import com.byd.clusternav.navigation.HudPathName
+import com.byd.clusternav.navigation.HudPathNameGate
 import com.byd.clusternav.navigation.LaneInfo
 
 /**
@@ -300,23 +302,27 @@ object BydHal {
         //    (caller truyền = navOnlyMode: Cast OFF). Cast ON ⇒ writeSurface=false ⇒ chỉ nội dung lên HUD, KHÔNG dựng cụm.
         if (!keepAlive) w("INSTRUMENT_SEND_NAVI_STATUS_SET", 2)
         if (!keepAlive && writeSurface) featureId("SET_NAVI_SCREEN_STATUS_SET")?.let { id -> setting?.let { s -> rc.append(" NAVI_SCREEN=").append(cachedSetInt(s, id, screenMode)) } }
-        // CONTENT (LUÔN ghi, kể cả keep-alive): guidance icon + dualIcon + cự ly + tên đường.
+        // R9 (2.98): TÊN ĐƯỜNG ngay sau STATUS=2, TRƯỚC cự ly/icon, chỉ real push + chỉ khi ĐỔI (nhịp AmapService OEM,
+        // fw 2606 AmapService.java:120-145). Raw domestic+oversea ở BydHalContentPush.pushPathName; SDK ngay dưới.
+        BydHalContentPush.pushPathName(instr, road, keepAlive, rc)
+        if (road.isNotBlank() && BydHalContentPush.pathNameGate.shouldSend(HudPathNameGate.Channel.SDK, road, keepAlive)) {
+            var sdkRc: Any? = null
+            cachedSdk("sendNextPathName", rc, "sdk.road") { sdkMethod(instr, "sendNextPathName", String::class.java).invoke(instr, HudPathName.fit(road)).also { sdkRc = it } }
+            BydHalContentPush.pathNameGate.onResult(HudPathNameGate.Channel.SDK, road, sdkRc?.toString())
+        }
+        // CONTENT (LUÔN ghi, kể cả keep-alive): guidance icon + dualIcon + cự ly.
         w("INSTRUMENT_GUIDE_INFO_SIMPLE_SET", icon)
         w("INSTRUMENT_GUIDE_INFO_AND_ROAD_AHEAD_DISTANCE_SET", icon)   // OpenBYD "dualIcon" (0x43F01030) — ghi icon vào cả feature này
         w("INSTRUMENT_FRONT_CROSSING_DISTANCE_SET", segMeters)
-        featureId("INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_SET")?.let { id -> rc.append(" PATHNAME=").append(cachedSetBytes(instr, id, road.toByteArray(Charsets.UTF_16LE))) }
         // THỬ NGHIỆM (2026-08-15, insight owner): guidance có bản OVERSEA (export) song song domestic (suffix id trùng,
         // prefix 0x1F7 vs 0x43F). Xe export (Seal) đọc họ 0x1F7 → HUD không lên GÌ khi app chỉ ghi 0x43F. Ghi THÊM
-        // bản oversea cho mũi tên + cự ly + tên đường (KHÔNG bỏ domestic). Feature hiển thị → ghi lành tính; null-safe;
+        // bản oversea cho mũi tên + cự ly (KHÔNG bỏ domestic; tên đường oversea ở khối R9 phía trên). Feature hiển thị → ghi lành tính; null-safe;
         // fallback raw-id (BYDAutoFeatureIds thiếu tên oversea). Xác nhận trên xe: HUD export lên mũi tên/cự ly/tên chưa.
         (featureId("INSTRUMENT_EASY_NAVI_GUIDE_INFOR_SET") ?: EASY_NAVI_GUIDE_OVERSEA_ID).let { id ->
             rc.append(" GUIDE_OVERSEA=").append(cachedSetInt(instr, id, icon))
         }
         (featureId("INSTRUMENT_DISTANCE_TARGET_HEAD_SET") ?: CROSSING_DIST_OVERSEA_ID).let { id ->
             rc.append(" DIST_OVERSEA=").append(cachedSetInt(instr, id, segMeters))
-        }
-        (featureId("INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_OVERASEA_SET") ?: PATHNAME_OVERSEA_ID).let { id ->
-            rc.append(" PATHNAME_OVERSEA=").append(cachedSetBytes(instr, id, road.toByteArray(Charsets.UTF_16LE)))
         }
         // FULL DATA HUD (2026-08-15, owner "ghi hết data lên HUD, domestic + oversea"): thời-gian-còn-lại (giờ/phút/
         // giây/ngày), quãng-đường-còn-lại, giờ-tới (ETA) — CHƯA từng ghi lên HUD (trước chỉ vào CỤM qua broadcast).
@@ -351,9 +357,6 @@ object BydHal {
             cachedSdk("sendSimpleGuidanceInfo", rc, "sdk.guide") {
                 sdkMethod(instr, "sendSimpleGuidanceInfo", Int::class.javaPrimitiveType, Int::class.javaPrimitiveType).invoke(instr, icon, segMeters)
             }
-            if (road.isNotBlank()) cachedSdk("sendNextPathName", rc, "sdk.road") {
-                sdkMethod(instr, "sendNextPathName", String::class.java).invoke(instr, road)
-            }
             if (routeSeconds >= 0 && routeMeters >= 0) cachedSdk("sendRestRouteInfo", rc, "sdk.rest") {
                 sdkMethod(instr, "sendRestRouteInfo", Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, Long::class.javaPrimitiveType)
                     .invoke(instr, routeSeconds / 3600, (routeSeconds % 3600) / 60, routeMeters.toLong())
@@ -364,6 +367,7 @@ object BydHal {
 
     /** TẮT nav HUD (status=4 + clear guide/dist) khi hết dẫn đường — như DashCast setNaviActive(false). */
     fun clearNavFrame(ctx: Context): String {
+        BydHalContentPush.pathNameGate.reset()   // R9: hết dẫn ⇒ lần dẫn sau cùng tên vẫn gửi lại
         val instr = device(INSTRUMENT, systemBypassContext(), bypass(ctx)) ?: return "InstrumentDevice null"
         val rc = StringBuilder()
         fun w(name: String, v: Int) { featureId(name)?.let { id -> rc.append(" $name=").append(runCatching { setInt(instr, id, v) }.getOrElse { root(it) }) } }

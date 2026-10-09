@@ -3,6 +3,7 @@ package com.byd.clusternav.modules.clustercast
 import android.content.Context
 import com.byd.clusternav.launcher.camera.CameraProfileDefaults
 import com.byd.clusternav.launcher.camera.ClusterBandSpec
+import com.byd.clusternav.launcher.escape.TaskBinderCodes
 import com.byd.clusternav.modules.navaccess.AccessibilityRebind
 import com.byd.clusternav.SysProps
 import com.byd.clusternav.modules.clustercast.simplified.CastStyle
@@ -89,6 +90,12 @@ data class ClusterProfile(
      * Không vào [export]/[parse]: chuỗi share (không tin cậy) không được bật đường đổi theme [ĐO 05/10: sập khi còn lớp].
      */
     val themeOnVacantVd: Boolean = false,
+    /**
+     * 2.98 · R7 (SLOT-ESCAPE-POLICY) — bảng mã binder `activity_task` cho việc đưa app thoát ô về khung ô bằng freeform
+     * (`SlotEscape`). Mặc định = Android 10 r47 [ĐO xe Seal 09/10 + máy ảo A10]; chỉ có hiệu lực khi đúng đời API của bảng
+     * (`TaskBinderCodes.usableOn`). DiLink 5 (Android 12) ⇒ `null` ⇒ R7 tắt tới khi đo (OQ6-c). Không vào [export]/[parse].
+     */
+    val taskBinder: TaskBinderCodes? = TaskBinderCodes.ANDROID_10_R47,
 ) {
     /** Đời xe này cho chọn Bo tròn / Chữ nhật không — UI dựa vào đây để hiện hay ẩn lựa chọn (B1b). */
     val supportsStyle: Boolean get() = projectionRecipe().let { it.offers(CastStyle.CURVED) && it.offers(CastStyle.RECT) }
@@ -205,6 +212,9 @@ data class ClusterProfile(
             cameraSignature = AccessibilityRebind.CAMERA_SCREEN_SIGNATURE,
         )
 
+        /** 2.98 · R7 — bảng mã binder theo đời DiLink: 5 (Android 12) chưa đo ⇒ `null`; còn lại = A10 r47 (vẫn bị chặn theo API lúc chạy). */
+        fun taskBinderFor(diLink: Int): TaskBinderCodes? = if (diLink >= 5) null else TaskBinderCodes.ANDROID_10_R47
+
         /** Dấu hiệu màn camera theo `id` seed — cùng luật với [cameraFor]: chỉ đời ĐÃ ĐO mới có; khác ⇒ `null`. */
         fun cameraSignatureFor(id: String): String? = if (id == SEAL_DL3.id) SEAL_DL3.cameraSignature else null
 
@@ -228,7 +238,8 @@ data class ClusterProfile(
         val DL5 = ClusterProfile(
             id = "dilink5", diLink = 5, clusterW = 1920, clusterH = 720,
             castSeq = listOf(16), teardownSeq = listOf(18, 0), vdNameHint = "fission", svcName = ProjectionRecipe.SVC_DILINK5,
-            styleOps = emptyMap()      // DL5 không có opcode kiểu (30 là no-op trên DL5 — DashCast CHANGELOG:591) → KHÔNG đổi kiểu
+            styleOps = emptyMap(),     // DL5 không có opcode kiểu (30 là no-op trên DL5 — DashCast CHANGELOG:591) → KHÔNG đổi kiểu
+            taskBinder = taskBinderFor(5),   // 2.98 · R7: mã binder Android 12 chưa đo (OQ6-c) ⇒ null ⇒ không đưa app thoát ô về khung
         )
 
         // Model BYD lạ chưa verify: cùng DiLink3 + XDJA (de-risk Q5) → recipe Seal-like (30 → 16 → 35), dò xdja/fission.
@@ -292,7 +303,7 @@ data class ClusterProfile(
             val native = f.getOrNull(9)?.trim()?.let { raw -> CastStyle.entries.firstOrNull { it.name.equals(raw, ignoreCase = true) } }
             return ClusterProfile(
                 id, diLink, w, h, castLeft, tear, hint, svc, style, native,
-                camera = cameraFor(id), band = bandFor(id), cameraSignature = cameraSignatureFor(id),
+                camera = cameraFor(id), band = bandFor(id), cameraSignature = cameraSignatureFor(id), taskBinder = taskBinderFor(diLink),
             )
         }
 

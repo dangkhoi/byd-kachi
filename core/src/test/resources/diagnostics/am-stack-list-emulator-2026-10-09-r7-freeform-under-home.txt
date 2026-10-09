@@ -1,0 +1,28 @@
+Stack id=122 bounds=[0,0][1882,896] displayId=65 userId=0
+ configuration={1.0 310mcc260mnc [en_US] ldltr sw716dp w1505dp h716dp 200dpi lrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1882, 896) mAppBounds=Rect(0, 0 - 1882, 896) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.6}
+  taskId=294: com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell$HomeActivity bounds=[0,0][1882,896] userId=0 visible=true topActivity=ComponentInfo{com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell$HomeActivity}
+
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [en_US] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.6}
+  taskId=292: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+
+Stack id=129 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [en_US] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=freeform mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.6}
+  taskId=301: com.waze/com.waze.FreeMapAppActivity bounds=[19,89][1901,985] userId=0 visible=false topActivity=ComponentInfo{com.waze/com.waze.uid.activities.UidFragmentActivity}
+
+Stack id=65 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [en_US] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.6}
+  taskId=250: com.android.settings/com.android.settings.Settings bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.android.settings/com.android.settings.Settings}
+
+Stack id=114 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [en_US] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.6}
+  taskId=285: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+
+Stack id=73 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [en_US] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.6}
+  taskId=255: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=68 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [en_US] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.6}
+  taskId=252: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=false
+

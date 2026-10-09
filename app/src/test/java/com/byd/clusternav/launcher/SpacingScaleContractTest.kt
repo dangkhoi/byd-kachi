@@ -329,6 +329,12 @@ class SpacingScaleContractTest {
                 "(badge tốc độ trên cụm, 60..240dp, mặc định 120). Phép kẹp phải ở `:core` để kiểm được " +
                 "off-car — đó chính là lý do nó không thuộc tầng vẽ. Ngoài ra nó là bề mặt ClusterNav, " +
                 "không phải launcher, nên không dùng thang KachiSpace.",
+            "SlotEscapePlan.kt" to
+                "2.98 R7 — không phải khoảng cách bố cục: cỡ tối thiểu task freeform của FRAMEWORK (220dp [ĐO máy ảo]) để biết ô " +
+                "có nhận freeform được không; quyết định thuần phải test off-car ở `:core`.",
+            "EscapeCoverPlan.kt" to
+                "2.98 R7 — không phải khoảng cách bố cục: cao thanh tiêu đề freeform và viền tay nắm đổi cỡ của FRAMEWORK " +
+                "(64 px @240dpi, 30dp — [ĐO máy ảo] `dumpsys input`) để đặt lớp che đúng chỗ; hình học thuần test ở `:core`.",
         )
         val roots = SourceRoots.moduleSourceRoots().filter { it.toString().contains("core") }
         assertTrue(roots.isNotEmpty(), "phải tìm được cây nguồn :core")

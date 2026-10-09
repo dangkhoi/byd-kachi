@@ -62,6 +62,7 @@ class NavAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         NavAccessibilitySource.connected = true
+        A11yOverlayPort.attach(this)   // 2.98 · R7 — lớp che thanh hệ thống/thanh tiêu đề freeform (SlotEscape)
         voiceKeyMatcher.reset()
         learnTail.reset()
         keySource?.stop()
@@ -75,12 +76,14 @@ class NavAccessibilityService : AccessibilityService() {
 
     override fun onUnbind(intent: android.content.Intent?): Boolean {
         NavAccessibilitySource.connected = false
+        A11yOverlayPort.detach(this)
         keySource?.stop()
         keySource = null
         return super.onUnbind(intent)
     }
 
     override fun onDestroy() {
+        A11yOverlayPort.detach(this)
         keySource?.stop()
         keySource = null
         super.onDestroy()

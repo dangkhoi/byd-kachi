@@ -164,7 +164,9 @@ class SlotHostingLifecycleContractTest {
     @Test
     fun `man khuat thi ngung nhip do, va dem theo so man dang hien`() {
         val tick = SourceRoots.body(probe, "override fun run()")
-        assertTrue("if (paused) { ticking = false; return }" in tick, "màn khuất ⇒ ticker phải dừng hẳn")
+        // 2.98 · R7 — ĐỔI GHIM có lý do: màn khuất vẫn dừng hẳn, TRỪ vài nhịp ân hạn sau khi một ô bắt đầu được đo (app vừa mở
+        // tự thoát toàn màn che màn chính — `SlotLiveProbe.pausedGraceSweeps`, mặc định 0 = như cũ; R7 bật = 3 nhịp rồi dừng).
+        assertTrue("if (paused && !graceLeft()) { ticking = false; return }" in tick, "màn khuất ⇒ ticker phải dừng hẳn")
         assertTrue("visible.decrementAndGet()" in SourceRoots.body(probe, "fun pause()"),
             "phải ĐẾM màn đang hiện: cờ trần bị `A.onStop` tắt sau `B.onStart` ⇒ nhịp đo chết vĩnh viễn")
         assertTrue("SlotLiveProbe.pause()" in SourceRoots.body(activity, "override fun onStop()"),

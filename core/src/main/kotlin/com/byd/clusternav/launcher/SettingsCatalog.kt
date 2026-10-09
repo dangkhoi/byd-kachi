@@ -166,6 +166,12 @@ object SettingsCatalog {
                 "tay là hoặc đóng nhầm cửa sổ của người khác, hoặc để sót cửa sổ của Kachi",
         )
         put(
+            "kachi_slot_escape",
+            "trạng thái máy, không phải cấu hình — dấu bền 2.98 R7 (`EscapeMarkers`, tệp `clusternav_state`): app thoát ô " +
+                "mà Kachi đã đổi sang freeform đúng khung ô, ghi TRƯỚC mã 89. Android nhớ freeform theo app qua cả khởi động " +
+                "lại; lượt đối chiếu dùng dấu để trả app về toàn màn khi thôi quản. Sửa tay là app bị kẹt cửa sổ nổi",
+        )
+        put(
             "kachi_behind_marks",
             "trạng thái máy, không phải cấu hình — dấu bền BEHIND-HOME (`BehindMarks`, tệp `clusternav_state`): task Kachi " +
                 "đã đẩy ra sau màn nhà, ghi TRƯỚC `move-task`. Lượt thức sau một lần Kachi bị giết dùng nó để đưa màn nhà " +
@@ -236,7 +242,8 @@ object SettingsCatalog {
             "dấu mốc gieo cờ cửa sổ tự do, dùng CHUNG với đường chiếu-cụm (cố ý không đổi tên: nó là trạng thái " +
                 "đã nằm trên đĩa của máy đang chạy). Chứa `freeform_state`, `kachi_floating_opened` (dấu cửa sổ nổi " +
                 "Kachi đã mở, PROFILE-SWITCH-SLOTS), `kachi_shell_approval` (dấu xe đã duyệt khoá adb, READY-AT-HOME) " +
-                "`kachi_behind_marks` (task Kachi đẩy ra sau màn nhà, BEHIND-HOME) và sổ chuyến lên xe " +
+                "`kachi_behind_marks` (task Kachi đẩy ra sau màn nhà, BEHIND-HOME), `kachi_slot_escape` (app thoát ô Kachi đổi " +
+                "sang freeform, 2.98 R7) và sổ chuyến lên xe " +
                 "(`kachi_trip_ledger`/`kachi_trip_last`/`kachi_boot_seen`, F2/F3) " +
                 "— đều là dấu theo XE của trạng thái ngoài hệ thống, không đi theo hồ sơ",
         "kachi_test_bridge" to

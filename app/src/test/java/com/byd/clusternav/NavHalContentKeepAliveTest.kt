@@ -42,9 +42,39 @@ class NavHalContentKeepAliveTest {
         val guardIdx = hal.indexOf("if (!keepAlive) {")
         assertTrue(guardIdx >= 0, "the 3 SDK calls must be wrapped in an if (!keepAlive) { } block")
         val afterGuard = hal.substring(guardIdx)
-        listOf("sendSimpleGuidanceInfo", "sendNextPathName", "sendRestRouteInfo").forEach { m ->
+        listOf("sendSimpleGuidanceInfo", "sendRestRouteInfo").forEach { m ->
             assertTrue(afterGuard.contains(m), "SDK method $m must live inside the keep-alive skip block")
         }
+        // R9 (2.98): sendNextPathName dời lên khối tên đường (trước cự ly/icon); keep-alive bị chặn bởi CHÍNH cổng
+        // HudPathNameGate.shouldSend(…, keepAlive) — HudPathNameTest khoá "keep-alive ⇒ không ghi".
+        assertTrue(
+            hal.contains("pathNameGate.shouldSend(HudPathNameGate.Channel.SDK, road, keepAlive)"),
+            "sendNextPathName must be gated by the R9 path-name gate with keepAlive",
+        )
+    }
+
+    /** R9 (2.98) — khoá THỨ TỰ trên real push theo AmapService OEM [ĐO fw 2606 AmapService.java:120-145]:
+     *  STATUS=2 → tên đường (raw domestic+oversea, rồi SDK) → cự ly/icon. Cự ly/icon/status giữ nguyên câu lệnh. */
+    @Test
+    fun `R9 pathname is written after STATUS=2 and before icon and distance`() {
+        val status = hal.indexOf("if (!keepAlive) w(\"INSTRUMENT_SEND_NAVI_STATUS_SET\", 2)")
+        val raw = hal.indexOf("BydHalContentPush.pushPathName(instr, road, keepAlive, rc)")
+        val sdk = hal.indexOf("\"sendNextPathName\", String::class.java")
+        val icon = hal.indexOf("w(\"INSTRUMENT_GUIDE_INFO_SIMPLE_SET\", icon)")
+        val dist = hal.indexOf("w(\"INSTRUMENT_FRONT_CROSSING_DISTANCE_SET\", segMeters)")
+        assertTrue(listOf(status, raw, sdk, icon, dist).all { it >= 0 }, "all anchors must exist")
+        assertTrue(status < raw && raw < sdk && sdk < icon && icon < dist, "order must be STATUS → PATHNAME → icon → distance")
+        // Không còn ghi tên đường thô nào khác trong writeNavFrame (cũ: mỗi khung, sau icon/cự ly).
+        assertTrue(!hal.contains("road.toByteArray(Charsets.UTF_16LE)"), "raw pathname writes must go through pushPathName")
+    }
+
+    /** R9 — khoá: hết dẫn (clearNavFrame, status=4) xả bộ nhớ tên đã gửi ⇒ lần dẫn sau cùng tên vẫn gửi lại. */
+    @Test
+    fun `R9 clearNavFrame resets the path-name gate`() {
+        val clear = hal.substring(hal.indexOf("fun clearNavFrame("))
+        assertTrue(clear.substring(0, clear.indexOf("INSTRUMENT_SEND_NAVI_STATUS_SET")).contains("pathNameGate.reset()"))
+        val push = SourceRoots.text("src/main/java/com/byd/clusternav/modules/hal/BydHalContentPush.kt")
+        assertTrue(push.contains("HudPathName.encode(road)"), "payload must be the ≤255-byte UTF-16LE encoding")
     }
 
     @Test

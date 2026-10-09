@@ -15,6 +15,7 @@ import com.byd.clusternav.system.inputd.InputDaemonClient
 import com.byd.clusternav.system.inputd.SlotTouchMapper
 import com.byd.clusternav.system.inputd.TouchRouter
 import com.byd.clusternav.launcher.behind.BehindHomePlan
+import com.byd.clusternav.launcher.escape.SlotEscape
 
 /**
  * Dudu-style app projection, done a bit better.
@@ -209,6 +210,8 @@ class VdAppHost(
      * Chặn (ngủ) ⇒ CHỈ gọi trên luồng nền.
      */
     private fun launchInto(displayId: Int, p: String, sh: (String) -> String) {
+        // 2.98 · R7 — app này đang được quản dạng freeform ĐÚNG khung ô (đã tự thoát màn ảo) ⇒ không kéo nó về màn ảo, ô để trống dưới cửa sổ.
+        if (SlotEscape.claimsLive(context, slot, p, sh)) { post { if (!released && pkg == p) { dead = true; surface.visibility = GONE } }; return }
         // TẤT CẢ lệnh dadb (blocking) chạy TRONG thread nền — KHÔNG gọi trên UI thread (chặn dựng SurfaceView → ô đen).
         val comp = FreeformLaunch.resolveComponent(p, sh) ?: "$p/.MainActivity"
         // B1: built by the pure FreeformLaunch builder (byte-locked by LauncherCommandGoldenTest) instead of
@@ -403,6 +406,9 @@ class VdAppHost(
 
     /** L6 — host chưa nhả và đang giữ [p] (kể cả khi chưa mở xong vào màn ảo — [stage] khi đó còn `null`). Luồng chính. */
     fun holds(p: String): Boolean = !released && pkg == p
+
+    /** 2.98 · R7 — giữ [p] mà màn ảo đã trống (app đã thoát ô / đang được quản dạng freeform), không phải lượt mở đang chạy. */
+    fun holdsEmpty(p: String): Boolean = holds(p) && dead
 
     /** A3 · SLOT-CLOSE-SETTLE — lệnh *tắt* [expect] đã gửi ⇒ giấu mặt vẽ NGAY (không khung đứng); gỡ không xong ⇒ hiện lại. Luồng chính. */
     fun closing(expect: String, on: Boolean) { if (!released && !dead && pkg == expect) surface.visibility = if (on) INVISIBLE else VISIBLE }

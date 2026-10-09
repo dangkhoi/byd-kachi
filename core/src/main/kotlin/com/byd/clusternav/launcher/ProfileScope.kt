@@ -204,6 +204,7 @@ object ProfileScope {
                 "cửa sổ nằm trên màn của CHIẾC XE này; theo hồ sơ thì đổi hồ sơ — đúng lúc cần dọn — là mất dấu. Cũng " +
                 "khai ở [SettingsCatalog.NOT_SETTINGS]",
         )
+        put("kachi_slot_escape", "2.98 R7 — dấu app thoát ô Kachi đổi sang freeform (`EscapeMarkers`); theo XE vì task nằm trên xe này")
         put(
             "kachi_behind_marks",
             "BEHIND-HOME — dấu 'task này do Kachi đẩy ra sau màn nhà' (`BehindMarks`). Theo XE: task nằm trên màn của " +
