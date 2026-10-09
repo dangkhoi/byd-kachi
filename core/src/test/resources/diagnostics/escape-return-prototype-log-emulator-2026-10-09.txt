@@ -1,0 +1,23 @@
+# Nguyên văn logcat máy ảo emulator-5556 (kachi_play A10), 09/10 21:56–22:00 — nguyên mẫu hướng A (docs/diagnostics/emu-slot-escape-approaches-2026-10-09.md §2.3).
+# 'Failed to put' = ActivityStackSupervisor.java:2436 (task vừa bị đá sang display 0, StackId = stack MỚI ở display 0); EscWatchL = nguyên mẫu uid 2000.
+10-09 21:57:23.928 W/ActivityTaskManager(  375): Failed to put TaskRecord{27788e4 #429 A=com.google.android.apps.docs U=0 StackId=26 sz=2} on display 10
+10-09 21:57:23.943 I/EscWatchL(31271): FAIL task=429 stack=26 pkg=com.google.android.apps.docs req=10 owner=null tasksInStack=1 => MOVE
+10-09 21:57:23.954 I/EscWatchL(31271): MOVED#5 stack=26 -> 10 in 17ms
+10-09 21:56:23.146 W/ActivityTaskManager(  375): Failed to put TaskRecord{e80297f #427 A=com.google.android.gm U=0 StackId=22 sz=2} on display 8
+10-09 21:56:23.205 I/EscWatchL(31271): FAIL task=427 stack=22 pkg=com.google.android.gm req=8 owner=null tasksInStack=1 => MOVE
+10-09 21:56:23.238 I/EscWatchL(31271): MOVED#3 stack=22 -> 8 in 49ms
+10-09 21:56:57.159 W/ActivityTaskManager(  375): Failed to put TaskRecord{fc8250d #428 A=com.google.android.apps.messaging U=0 StackId=24 sz=2} on display 9
+10-09 21:56:57.242 I/EscWatchL(31271): FAIL task=428 stack=24 pkg=com.google.android.apps.messaging req=9 owner=null tasksInStack=1 => MOVE
+10-09 21:56:57.273 I/EscWatchL(31271): MOVED#4 stack=24 -> 9 in 47ms
+10-09 22:00:15.673 W/ActivityTaskManager(  375): Failed to put TaskRecord{be42c26 #432 A=com.waze U=0 StackId=38 sz=2} on display 13
+10-09 22:00:15.686 I/EscWatchL(31271): FAIL task=432 stack=38 pkg=com.waze req=13 owner=null tasksInStack=1 => MOVE
+10-09 22:00:15.696 I/EscWatchL(31271): MOVED#14 stack=38 -> 13 in 13ms
+10-09 21:57:53.970 W/ActivityTaskManager(  375): Failed to put TaskRecord{8c184 #430 A=com.google.android.apps.tachyon U=0 StackId=28 sz=2} on display 11
+10-09 21:57:53.999 I/EscWatchL(31271): FAIL task=430 stack=28 pkg=com.google.android.apps.tachyon req=11 owner=null tasksInStack=1 => MOVE
+10-09 21:57:54.038 I/EscWatchL(31271): MOVED#6 stack=28 -> 11 in 47ms
+10-09 21:57:54.295 W/ActivityTaskManager(  375): Failed to put TaskRecord{8c184 #430 A=com.google.android.apps.tachyon U=0 StackId=29 sz=3} on display 11
+10-09 21:57:54.309 I/EscWatchL(31271): FAIL task=430 stack=29 pkg=com.google.android.apps.tachyon req=11 owner=null tasksInStack=1 => MOVE
+10-09 21:57:54.330 I/EscWatchL(31271): MOVED#7 stack=29 -> 11 in 27ms
+10-09 21:59:00.559 W/ActivityTaskManager(  375): Failed to put TaskRecord{bc1c027 #431 A=vn.vietmap.live U=0 StackId=31 sz=2} on display 12
+10-09 21:59:00.633 I/EscWatchL(31271): FAIL task=431 stack=31 pkg=vn.vietmap.live req=12 owner=null tasksInStack=1 => MOVE
+10-09 21:59:00.676 I/EscWatchL(31271): MOVED#8 stack=31 -> 12 in 50ms

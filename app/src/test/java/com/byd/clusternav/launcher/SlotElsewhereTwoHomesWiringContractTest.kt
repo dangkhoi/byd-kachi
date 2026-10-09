@@ -65,9 +65,8 @@ class SlotElsewhereTwoHomesWiringContractTest {
     fun `cau bao cua host khong doi - elsewhere chi tu SlotLiveness`() {
         val actions = code("KachiHomeSlotActions.kt")
         val gone = SourceRoots.body(actions, "override fun onAppGone(index: Int, pkg: String, elsewhere: Boolean)")
-        // 2.98 · R7 — ĐỔI GHIM có lý do: câu báo 2.93 nay nằm trong đường LÙI của `escape.tryAdopt` (app không nhận về khung ô
-        // được) — `SlotEscapeWiringContractTest` khoá thứ tự; cờ `elsewhere` vẫn chỉ đến từ `SlotLiveness`.
-        assertTrue("sayIfStill(index, R.string.kachi_slot_app_elsewhere, pkg)" in gone)
+        // 2.98 · R18 — ghim TRẢ VỀ nguyên văn 2.93 (R7 đã gỡ).
+        assertTrue("if (elsewhere) sayIfStill(index, R.string.kachi_slot_app_elsewhere, pkg)" in gone)
         assertTrue("val elsewhere = sub.liveness.elsewhere" in SourceRoots.body(probe, "private fun sweep()"))
     }
 }

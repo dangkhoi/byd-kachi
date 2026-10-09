@@ -305,7 +305,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         drawerController = DrawerController(
             this, rootFrame,
             currentWidgets = { (viewModel.uiState.value.slots.getOrNull(it) as? SlotContent.Widget)?.ids ?: emptyList() },
-            onClearOverlays = { windows.drawerShown() },
+            onClearOverlays = { windows.clearOverlays() },
             onOverlayHeads = { windows.updateOverlayHeads() },
             onPickApp = { idx, pkg -> slots.assignApp(idx, pkg) },
             onPickWidgets = { idx, ids -> slots.assignWidgets(idx, ids) },

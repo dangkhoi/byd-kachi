@@ -49,6 +49,29 @@ class TcpLoopbackChannelTest {
     }
 
     @Test
+    fun `R18 - doc dong bao cao chieu nguoc, EOF thi null, dong qua dai bi cat`() {
+        ServerSocket(0, 1, InetAddress.getLoopbackAddress()).use { server ->
+            Thread {
+                server.accept().use { c ->
+                    val input = DataInputStream(c.getInputStream())
+                    while (true) { val b = input.read(); if (b < 0 || b == '\n'.code) break }
+                    val out = c.getOutputStream()
+                    out.write("esc moved com.waze 432 38 13 13\n".toByteArray())
+                    out.write(("esc skip " + "x".repeat(2_000) + "\n").toByteArray())
+                    out.flush()
+                }
+            }.apply { isDaemon = true }.start()
+            val ch = TcpLoopbackChannel(server.localPort, "abcdef0123456789")
+            assertTrue(ch.connect())
+            assertEquals("esc moved com.waze 432 38 13 13", ch.readLine())
+            assertEquals(TcpLoopbackChannel.LINE_MAX_BYTES, ch.readLine()!!.length, "dòng dài bị cắt ở trần, vẫn đồng bộ theo \\n")
+            assertEquals(null, ch.readLine(), "server đóng ⇒ null")
+            ch.close()
+            assertEquals(null, ch.readLine(), "đã đóng ⇒ null")
+        }
+    }
+
+    @Test
     fun `khong ai nghe thi false va ly do nguyen van`() {
         val free = ServerSocket(0, 1, InetAddress.getLoopbackAddress()).use { it.localPort }
         val ch = TcpLoopbackChannel(free, "abcdef0123456789")
@@ -60,11 +83,14 @@ class TcpLoopbackChannelTest {
     }
 
     @Test
-    fun `cong theo uid on dinh va trong dai 38000-38999`() {
+    fun `cong theo uid on dinh va trong dai 39000-39999 (the he day 2)`() {
+        // 2.98 · R18 — ĐỔI GHIM có lý do: dây thế hệ 2 (khung điều khiển + báo cáo ngược) ⇒ dải 39xxx để Kachi mới không bao giờ
+        // nói với daemon thế hệ 1 còn thường trú (cùng token) trên dải 38xxx — nó sẽ đọc thân khung điều khiển như khung chạm rác.
+        assertEquals(2, InputWireProtocol.WIRE_GENERATION)
         assertEquals(InputDaemonLaunch.portFor(10138), InputDaemonLaunch.portFor(10138))
-        assertEquals(38_138, InputDaemonLaunch.portFor(10138))
-        assertEquals(38_000, InputDaemonLaunch.portFor(20_000))
-        assertTrue(InputDaemonLaunch.portFor(-7) in 38_000..38_999)
+        assertEquals(39_138, InputDaemonLaunch.portFor(10138))
+        assertEquals(39_000, InputDaemonLaunch.portFor(20_000))
+        assertTrue(InputDaemonLaunch.portFor(-7) in 39_000..39_999)
         assertTrue(InputDaemonLaunch.validToken("abcdef0123456789"))
         assertFalse(InputDaemonLaunch.validToken("short"))
         assertFalse(InputDaemonLaunch.validToken("abcdef0123456789 x"), "khoảng trắng phá dòng lệnh")

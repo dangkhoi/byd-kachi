@@ -49,33 +49,7 @@ object SlotLiveProbe {
         val onMissing: (() -> Unit)? = null,
     ) {
         val liveness = SlotLiveness(adopted = onMissing != null)
-        /** 2.98 · R7 — số nhịp còn được đo khi màn chính khuất (đếm lùi mỗi nhịp lúc khuất). */
-        @Volatile var grace = pausedGraceSweeps
     }
-
-    /**
-     * 2.98 · R7 (SLOT-ESCAPE-POLICY) — số nhịp đo VẪN chạy khi màn chính khuất, tính từ lúc một ô bắt đầu được đo. App vừa mở vào
-     * ô có thể tự thoát ra display 0 TOÀN MÀN (Waze `launchToSide` — đúng lúc che màn chính ⇒ [pause]); không có mấy nhịp này thì
-     * chỉ khi người lái bấm HOME mới đo được, rồi thêm ~10 s mới kết luận. 0 (mặc định, R7 tắt) = đúng hành vi trước 2.98. Không
-     * phải vòng hỏi mới: cùng nhịp, cùng MỘT `am stack list`, hết đếm là ngưng như cũ. Đặt bởi `SlotEscapeHome`.
-     */
-    @Volatile var pausedGraceSweeps = 0
-
-    private fun graceLeft(): Boolean = subs.any { it.grace > 0 }
-
-    /**
-     * 2.98 · R7 (owner 09/10 #1) — mốc đo thêm sau lượt mở app vào ô ([SlotLiveness.LAUNCH_BURST_MS]); rỗng (mặc định, R7 tắt) = như
-     * trước 2.98. Đặt bởi `SlotEscapeHome`. Chạy cả khi màn chính khuất (app thoát ô che màn chính đúng lúc đó) — có trần, mỗi mốc
-     * một lượt [sweep] (MỘT `am stack list` cho mọi ô), bỏ khi ô đã thôi được đo hoặc một lượt đang bay.
-     */
-    @Volatile var launchBurstMs: List<Long> = emptyList()
-
-    private fun burst(sub: Sub) {
-        for (off in launchBurstMs) ui.postDelayed({ if (sub in subs && !running) { burstNow = true; sweep() } }, off)
-    }
-
-    /** Lượt [sweep] kế đến từ [burst] (không tiêu nhịp ân hạn). Chỉ chạm trên luồng UI. */
-    private var burstNow = false
 
     private val subs = CopyOnWriteArrayList<Sub>()
     private val ui = Handler(Looper.getMainLooper())
@@ -100,7 +74,7 @@ object SlotLiveProbe {
         unwatch(key)
         subs.add(Sub(key, pkg, displayId, shell, onDead, onMissing))
         start()
-        if (onMissing != null) kick() else subs.lastOrNull { it.key == key }?.let(::burst)
+        if (onMissing != null) kick()
     }
 
     /**
@@ -181,7 +155,7 @@ object SlotLiveProbe {
     }
 
     private fun start() {
-        if (ticking || (paused && !graceLeft())) return
+        if (ticking || paused) return
         ticking = true
         ui.postDelayed(tick, SlotLiveness.PROBE_PERIOD_MS)
     }
@@ -196,7 +170,7 @@ object SlotLiveProbe {
     private val tick = object : Runnable {
         override fun run() {
             if (subs.isEmpty()) { ticking = false; return }   // hết ô ⇒ dừng hẳn, không hẹn tiếp
-            if (paused && !graceLeft()) { ticking = false; return }   // màn khuất ⇒ ngưng (trừ nhịp ân hạn R7); `resume()` hẹn lại
+            if (paused) { ticking = false; return }           // màn khuất ⇒ ngưng; `resume()` hẹn lại
             if (!running) sweep()
             // Nhịp SAU tính từ bức tranh của nhịp TRƯỚC (nhịp này còn đang chạy trên luồng nền) — SlotLiveness.PROBE_PERIOD_MS là sàn.
             ui.postDelayed(this, SlotLiveness.probePeriodMs(unchangedSweeps))
@@ -205,10 +179,8 @@ object SlotLiveProbe {
 
     /** Một lượt: MỘT `am stack list` trên luồng nền → chia kết quả cho từng ô → báo chết trên luồng UI. */
     private fun sweep() {
-        val burst = burstNow.also { burstNow = false }
         val snapshot = subs.toList()
         val shell = snapshot.firstOrNull()?.shell ?: return
-        if (paused && !burst) for (s in snapshot) if (s.grace > 0) s.grace--   // 2.98 · R7: nhịp lúc khuất tiêu một nhịp ân hạn
         running = true
         io.execute {
             // 2.96 · R18 — lượt dò repin (đang chiếu, 4 s) vừa đọc CÙNG lệnh ⇒ dùng lại bản đọc chụp SAU nhịp đo trước (0 lệnh); không có
@@ -226,11 +198,11 @@ object SlotLiveProbe {
             running = false
             if (out.isNullOrBlank()) return@execute            // không đọc được ⇒ KHÔNG kết luận (nhịp này bỏ qua)
             val picture = snapshot.map { it.key to (FreeformLaunch.parseTaskIdOnDisplay(out, it.pkg, it.displayId) != null) }
-            // 2.98 · R12 — [ĐO máy ảo 09/10, Maps sập trong ô] (1) lượt đo THÊM sau lượt mở (burst) không tính vào lùi nhịp: 6 mốc burst
-            // đứng yên từng đẩy nhịp thường lên 15 s ngay sau lượt mở; (2) bức tranh ĐỔI (một ô vắng app) ⇒ nhịp kế về 5 s NGAY (nhịp đã
-            // hẹn theo bức tranh cũ — 15 s — bị thay): lần đo kết luận chết đến sau 5 s thay vì 15 s. 0 lệnh thêm khi đứng yên.
+            // 2.98 · R12 — [ĐO máy ảo 09/10, Maps sập trong ô] bức tranh ĐỔI (một ô vắng app) ⇒ nhịp kế về 5 s NGAY (nhịp đã hẹn theo
+            // bức tranh cũ — 15 s — bị thay): lần đo kết luận chết đến sau 5 s thay vì 15 s. 0 lệnh thêm khi đứng yên. (Phần "burst không
+            // tính lùi nhịp" của R12 đi cùng burst R7 — 2.98 · R18 gỡ burst.)
             val changed = picture != lastPicture
-            unchangedSweeps = if (!changed) (if (burst) unchangedSweeps else unchangedSweeps + 1) else 0
+            unchangedSweeps = if (!changed) unchangedSweeps + 1 else 0
             lastPicture = picture
             if (changed) ui.post(::rearm)
             val readable = "Stack id=" in out                  // ô 7: màn ảo nhận lại chỉ kết luận "trống" trên bản đọc có tiêu đề stack

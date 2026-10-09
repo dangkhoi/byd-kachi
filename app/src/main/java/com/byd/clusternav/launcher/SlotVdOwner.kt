@@ -15,6 +15,7 @@ class VdLease(
     private val unregister: (Int) -> Unit,
 ) {
     internal fun free() {
+        com.byd.clusternav.launcher.escape.SlotEscapeReturn.revokeDisplay(displayId)   // 2.98 · R18: màn chết ⇒ không còn là ô
         runCatching { unregister(displayId) }
             .onFailure { Log.w(TAG, "gỡ đăng ký display $displayId hỏng: ${it.javaClass.simpleName}") }
         runCatching { vd.release() }

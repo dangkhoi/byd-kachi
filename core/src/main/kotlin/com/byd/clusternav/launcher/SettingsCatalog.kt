@@ -167,9 +167,15 @@ object SettingsCatalog {
         )
         put(
             "kachi_slot_escape",
-            "trạng thái máy, không phải cấu hình — dấu bền 2.98 R7 (`EscapeMarkers`, tệp `clusternav_state`): app thoát ô " +
-                "mà Kachi đã đổi sang freeform đúng khung ô, ghi TRƯỚC mã 89. Android nhớ freeform theo app qua cả khởi động " +
-                "lại; lượt đối chiếu dùng dấu để trả app về toàn màn khi thôi quản. Sửa tay là app bị kẹt cửa sổ nổi",
+            "trạng thái máy, không phải cấu hình — dấu bền 2.98 R7 (SUPERSEDED bởi R18, tệp `clusternav_state`): app thoát ô " +
+                "mà bản R7 đã đổi sang freeform. Bản R18 chỉ ĐỌC để trả task về toàn màn (mã 89 mode 1) rồi xoá " +
+                "(`LegacyFreeformUndo`). Sửa tay là app bị kẹt cửa sổ nổi",
+        )
+        put(
+            "kachi_escape_return_trip",
+            "trạng thái máy, không phải cấu hình — cầu chì BỀN 2.98 R18 (tệp `clusternav_state`, `versionCode|lý do`): daemon " +
+                "báo dấu hiệu NPE 08-01 / task mất khi dời app thoát ô về màn ảo ⇒ bản cài này thôi dời (đường 2.93). Sửa tay " +
+                "là bật lại một cơ chế vừa làm mất task của người lái",
         )
         put(
             "kachi_behind_marks",
@@ -242,8 +248,8 @@ object SettingsCatalog {
             "dấu mốc gieo cờ cửa sổ tự do, dùng CHUNG với đường chiếu-cụm (cố ý không đổi tên: nó là trạng thái " +
                 "đã nằm trên đĩa của máy đang chạy). Chứa `freeform_state`, `kachi_floating_opened` (dấu cửa sổ nổi " +
                 "Kachi đã mở, PROFILE-SWITCH-SLOTS), `kachi_shell_approval` (dấu xe đã duyệt khoá adb, READY-AT-HOME) " +
-                "`kachi_behind_marks` (task Kachi đẩy ra sau màn nhà, BEHIND-HOME), `kachi_slot_escape` (app thoát ô Kachi đổi " +
-                "sang freeform, 2.98 R7) và sổ chuyến lên xe " +
+                "`kachi_behind_marks` (task Kachi đẩy ra sau màn nhà, BEHIND-HOME), `kachi_slot_escape` (dấu R7 cũ chờ trả, 2.98 R18), " +
+                "`kachi_escape_return_trip` (cầu chì bền R18) và sổ chuyến lên xe " +
                 "(`kachi_trip_ledger`/`kachi_trip_last`/`kachi_boot_seen`, F2/F3) " +
                 "— đều là dấu theo XE của trạng thái ngoài hệ thống, không đi theo hồ sơ",
         "kachi_test_bridge" to

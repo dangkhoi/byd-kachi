@@ -1,5 +1,6 @@
 package com.byd.clusternav.system.inputd
 
+import java.io.InputStream
 import java.io.OutputStream
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -27,6 +28,7 @@ class TcpLoopbackChannel(
 ) : DaemonChannel {
     private var socket: Socket? = null
     private var out: OutputStream? = null
+    @Volatile private var input: InputStream? = null
 
     @Volatile private var lastError: String? = null
 
@@ -43,6 +45,7 @@ class TcpLoopbackChannel(
             o.flush()
             socket = s
             out = o
+            input = s.getInputStream()
             lastError = null
             true
         }.getOrElse { t ->
@@ -61,7 +64,27 @@ class TcpLoopbackChannel(
         true
     }.getOrDefault(false)
 
+    /** Dòng `\n` (UTF-8, trần [LINE_MAX_BYTES] — dài hơn ⇒ cắt phần thừa tới `\n`). EOF / lỗi ⇒ `null`. */
+    override fun readLine(): String? {
+        val inp = input ?: return null
+        val buf = java.io.ByteArrayOutputStream()
+        return try {
+            while (true) {
+                val b = inp.read()
+                if (b < 0) return null
+                if (b == '\n'.code) break
+                if (buf.size() < LINE_MAX_BYTES) buf.write(b)
+            }
+            buf.toString(Charsets.UTF_8.name())
+        } catch (_: java.io.IOException) {
+            null
+        }
+    }
+
+    override fun readsReports(): Boolean = true
+
     override fun close() {
+        input = null
         runCatching { out?.close() }
         runCatching { socket?.close() }
         out = null
@@ -77,5 +100,8 @@ class TcpLoopbackChannel(
 
         /** Trần bắt tay daemon chịu đọc trước khi đóng — chặn kẻ nối vào rồi bơm rác vô hạn. */
         const val HANDSHAKE_MAX_BYTES: Int = 80
+
+        /** Trần một dòng báo cáo daemon → Kachi (log, không phải dữ liệu lớn). */
+        const val LINE_MAX_BYTES: Int = 512
     }
 }

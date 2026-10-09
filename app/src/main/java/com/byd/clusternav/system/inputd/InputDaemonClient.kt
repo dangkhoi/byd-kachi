@@ -87,7 +87,20 @@ class InputDaemonClient(
      * khởi động lại đẻ một tệp. Tiêm được để test đếm mà không đụng đĩa.
      */
     private val pruneLogs: (String) -> Unit = { dir -> pruneLogDir(dir) },
+    /**
+     * 2.98 · R18 — mỗi dòng daemon báo về (`esc …`, `EscapeReturnWire`) trên luồng đọc của kết nối. Mặc định bỏ qua (test cũ).
+     */
+    private val onReport: (String) -> Unit = {},
+    /** 2.98 · R18 — chạy vòng đọc báo cáo của MỘT kết nối (mặc định: một luồng daemon ngủ chặn trên socket). Tiêm được cho test. */
+    private val startReader: (Runnable) -> Unit = { r -> Thread(r, "kachi-inputd-read").apply { isDaemon = true }.start() },
 ) {
+    /**
+     * 2.98 · R18 — khung điều khiển MỚI NHẤT (bảng "app thoát ô ⇒ về lại màn ảo ô", `InputWireProtocol.controlFrame`) và có cần
+     * daemon sống vì nó không ([controlWantsDaemon] = bảng có ô). Gửi lại ở MỌI lượt nối (daemon xoá bảng khi client rớt — §5).
+     */
+    @Volatile private var control: ByteArray? = null
+    @Volatile private var controlWantsDaemon = false
+
     @Volatile private var channel: DaemonChannel? = null
     @Volatile private var healthy = false
 
@@ -141,6 +154,21 @@ class InputDaemonClient(
         return false
     }
 
+    /**
+     * 2.98 · R18 — đặt khung điều khiển [frame] (`null` = không có). Đang nối ⇒ gửi ngay trên CÙNG luồng gửi khung chạm (không xen
+     * byte); chưa nối ⇒ gửi khi nối. [wantsDaemon] ⇒ khởi daemon nếu chưa có (bảng có ô thì phải có người nghe). Không ném.
+     */
+    fun setControl(frame: ByteArray?, wantsDaemon: Boolean) {
+        control = frame
+        controlWantsDaemon = wantsDaemon
+        val ch = channel
+        if (healthy && ch != null && frame != null) {
+            senderExecutor.execute { if (!ch.write(frame)) markDown(WRITE_FAILED) }
+        } else if (wantsDaemon) {
+            ensureStarted()
+        }
+    }
+
     /** Khởi động daemon (throttled, 1 in-flight). An toàn gọi nhiều lần / từ nhiều thread. Không block caller. */
     fun ensureStarted() {
         if (healthy || disabled() || fused) return
@@ -149,12 +177,19 @@ class InputDaemonClient(
         // CAS: đúng MỘT luồng thắng cuộc và đi tiếp; kẻ thua trả về ngay (soát OCR #69).
         if (!starting.compareAndSet(false, true)) return
         lastStartAttempt = t
-        lifecycleExecutor.execute {
-            try {
-                startAndConnect()
-            } finally {
-                starting.set(false)
+        try {
+            lifecycleExecutor.execute {
+                try {
+                    startAndConnect()
+                } finally {
+                    starting.set(false)
+                }
             }
+        } catch (e: java.util.concurrent.RejectedExecutionException) {
+            // Executor đã tắt ([close]) — gọi từ luồng đọc báo cáo (R18) sau khi client đóng: không khởi gì nữa, và KHÔNG để một ngoại lệ
+            // không ai bắt giết tiến trình (Android: uncaught trên luồng phụ = sập app).
+            starting.set(false)
+            log("ensureStarted sau close ⇒ bỏ")
         }
     }
 
@@ -220,11 +255,30 @@ class InputDaemonClient(
             lastError = ""
             publish()
             log("connected to daemon socket :$socketName (lượt thứ $attempt)")
+            control?.let { f -> senderExecutor.execute { if (!ch.write(f)) markDown(WRITE_FAILED) } }   // R18: bảng đi trước mọi khung chạm sau
+            if (ch.readsReports()) {
+                runCatching { startReader(Runnable { readReports(ch) }) }.onFailure { log("không dựng được luồng đọc báo cáo: ${it.message}") }
+            }
             true
         } else {
             lastError = ch.lastError().orEmpty()
             runCatching { ch.close() }
             false
+        }
+    }
+
+    /**
+     * 2.98 · R18 — vòng đọc báo cáo của kết nối [ch] tới khi nó đóng. Kênh đóng mà vẫn là kênh hiện hành ⇒ daemon đã chết/đóng ⇒ hạ
+     * cờ khoẻ (lần chạm sau đi đường lùi + nối lại) và, nếu bảng còn ô, khởi lại ngay để bộ nghe "thoát ô" không vắng mặt.
+     */
+    private fun readReports(ch: DaemonChannel) {
+        while (true) {
+            val line = runCatching { ch.readLine() }.getOrNull() ?: break
+            runCatching { onReport(line) }
+        }
+        if (channel === ch) {
+            markDown(DAEMON_CLOSED)
+            if (controlWantsDaemon) ensureStarted()
         }
     }
 
@@ -241,8 +295,12 @@ class InputDaemonClient(
     private fun markDown(reason: String) {
         healthy = false
         lastError = reason
-        runCatching { channel?.close() }
+        // Soát R18 Pass 11 [P1]: gỡ tham chiếu TRƯỚC khi đóng — đóng socket đánh thức luồng đọc báo cáo ([readReports]), và nếu nó còn
+        // thấy `channel === ch` thì nó hạ cờ LẦN HAI với lý do "daemon đóng" — ghi đè đúng câu chữ vừa đo (vd `socket write failed`),
+        // rồi kick khởi động lại sau cả [close]. Gỡ trước ⇒ luồng đọc thấy kênh đã không còn hiện hành ⇒ im lặng.
+        val ch = channel
         channel = null
+        runCatching { ch?.close() }
         publish()
     }
 
@@ -299,6 +357,9 @@ class InputDaemonClient(
 
         /** Lượt ghi socket hỏng ⇒ daemon coi như rớt (lần chạm sau đi đường lùi + kick khởi động lại). */
         private const val WRITE_FAILED = "socket write failed"
+
+        /** 2.98 · R18 — luồng đọc thấy daemon đóng kết nối (daemon chết / tự thoát). */
+        private const val DAEMON_CLOSED = "daemon closed connection"
 
         /** [close] — KHÔNG phải một lỗi; xem KDoc [markDown] về vì sao hai ca này không được dùng chung câu chữ. */
         private const val CLOSED = "closed"

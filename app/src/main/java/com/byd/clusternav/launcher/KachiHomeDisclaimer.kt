@@ -29,5 +29,5 @@ internal fun Activity.maybeShowDisclaimer() {
         .setTitle(getString(R.string.kachi_disclaimer_title))
         .setMessage(getString(R.string.kachi_disclaimer_body))
         .setPositiveButton(getString(R.string.kachi_disclaimer_ok), null)
-        .show().let(com.byd.clusternav.launcher.escape.SlotEscape::shade)   // 2.98 · R16: hộp thoại nổi trên app freeform
+        .show()
 }

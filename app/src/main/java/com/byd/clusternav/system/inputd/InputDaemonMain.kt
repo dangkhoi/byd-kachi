@@ -76,7 +76,14 @@ object InputDaemonMain {
                     client.tcpNoDelay = true
                     val input = client.getInputStream()
                     if (!handshake(input, token)) { log("client từ chối: sai token"); return@runCatching }
-                    serve(input, injector)
+                    // 2.98 · R18 — chiều ngược: dòng báo cáo "thoát ô" về đúng client đã qua bắt tay (không ai khác đọc được).
+                    val out = client.getOutputStream()
+                    EscapeReturnDaemon.attach({ line -> synchronized(out) { out.write((line + "\n").toByteArray(Charsets.UTF_8)); out.flush() } }, ::log)
+                    try {
+                        serve(input, injector)
+                    } finally {
+                        EscapeReturnDaemon.detach()
+                    }
                 }.onFailure { log("client error: ${it.message}") }
                 runCatching { client.close() }
             }
@@ -136,6 +143,18 @@ object InputDaemonMain {
             }
             val frame = InputWireProtocol.decode(buf)
             if (frame == null) {
+                // 2.98 · R18 — khung điều khiển: đầu cố định + thân UTF-8 (bảng "thoát ô ⇒ về lại màn ảo ô").
+                val len = InputWireProtocol.controlLength(buf)
+                if (len != null) {
+                    val body = ByteArray(len)
+                    try {
+                        input.readFully(body)
+                    } catch (_: Throwable) {
+                        return
+                    }
+                    EscapeReturnDaemon.onConfig(String(body, Charsets.UTF_8))
+                    continue
+                }
                 log("skip malformed frame")
                 continue
             }

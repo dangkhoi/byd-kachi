@@ -15,7 +15,7 @@ import com.byd.clusternav.system.inputd.InputDaemonClient
 import com.byd.clusternav.system.inputd.SlotTouchMapper
 import com.byd.clusternav.system.inputd.TouchRouter
 import com.byd.clusternav.launcher.behind.BehindHomePlan
-import com.byd.clusternav.launcher.escape.SlotEscape
+import com.byd.clusternav.launcher.escape.SlotEscapeReturn
 
 /**
  * Dudu-style app projection, done a bit better.
@@ -210,8 +210,9 @@ class VdAppHost(
      * Chặn (ngủ) ⇒ CHỈ gọi trên luồng nền.
      */
     private fun launchInto(displayId: Int, p: String, sh: (String) -> String) {
-        // 2.98 · R7 — app này đang được quản dạng freeform ĐÚNG khung ô (đã tự thoát màn ảo) ⇒ không kéo nó về màn ảo, ô để trống dưới cửa sổ.
-        if (SlotEscape.claimsLive(context, slot, p, sh)) { post { if (!released && pkg == p) { dead = true; surface.visibility = GONE } }; return }
+        // 2.98 · R18 (SLOT-ESCAPE-VD-RETURN) — báo daemon "màn ảo này là ô của [p]" TRƯỚC mọi lệnh mở: app có thể tự thoát ~1–3 s sau
+        // `am start` (Waze `launchToSide`), daemon phải biết bảng trước lúc đó để dời stack về. Không lệnh shell (khung điều khiển).
+        SlotEscapeReturn.allow(context, inputClient, probeKey, displayId, p)
         // TẤT CẢ lệnh dadb (blocking) chạy TRONG thread nền — KHÔNG gọi trên UI thread (chặn dựng SurfaceView → ô đen).
         val comp = FreeformLaunch.resolveComponent(p, sh) ?: "$p/.MainActivity"
         // B1: built by the pure FreeformLaunch builder (byte-locked by LauncherCommandGoldenTest) instead of
@@ -302,6 +303,7 @@ class VdAppHost(
         val sh = shell ?: return
         if (released) return
         pkg = shownPkg
+        SlotEscapeReturn.allow(context, inputClient, probeKey, v.display.displayId, shownPkg)   // 2.98 · R18: ô nhận lại A
         SlotLiveProbe.watch(probeKey, shownPkg, v.display.displayId, sh) { onAppClosed(it) }
     }
 
@@ -345,6 +347,7 @@ class VdAppHost(
         if (!SlotParkPlan.parkable(released, launched, true, p, dead, full.isDetached, SlotLiveProbe.watching(probeKey))) return false
         if (!ParkedApps.park(p, name, VdLease(v, id, unregisterVd), dispW, dispH, dispDpi, protect)) return false
         SlotLiveProbe.unwatch(probeKey); gesture.reset(); full.reset()
+        SlotEscapeReturn.revoke(probeKey)   // 2.98 · R18: màn ảo đỗ không còn là ô của host này
         released = true; vd = null; vdDisplayId = null; pkg = null; launched = false
         surface.visibility = INVISIBLE   // khung cuối không đứng lại trên ô trong lúc chờ lượt render dựng lại ô
         return true
@@ -357,6 +360,7 @@ class VdAppHost(
     private fun unpark(p: ParkedApps.Parked) {
         vd = p.lease.vd; vdDisplayId = p.lease.displayId; vdName = p.name; dispW = p.width; dispH = p.height; launched = true
         dispDpi = p.densityDpi; keepDpi = true
+        SlotEscapeReturn.allow(context, inputClient, probeKey, p.lease.displayId, p.pkg)   // 2.98 · R18: màn ảo nhận lại = ô của gói đỗ
         shell?.let { sh -> SlotLiveProbe.watch(probeKey, p.pkg, p.lease.displayId, sh, onMissing = ::reopen) { onAppClosed(it) } }
         inputClient?.let { c -> Thread { runCatching { c.ensureStarted() } }.start() }   // như đường golden (B4)
     }
@@ -374,6 +378,7 @@ class VdAppHost(
     private fun onAppClosed(elsewhere: Boolean = false) {
         if (released || dead) return
         dead = true
+        SlotEscapeReturn.revoke(probeKey)   // 2.98 · R18: app đã rời ô theo nhịp đo ⇒ ô đi luật hoàn ô, daemon thôi dời nó về
         surface.visibility = GONE
         pkg?.let { onGone(it, elsewhere) }   // 2.93 · R3: [elsewhere] = app ra khỏi ô, task còn ở display khác (không phải đã đóng)
     }
@@ -401,14 +406,12 @@ class VdAppHost(
     fun relinquish(expect: String) {
         if (pkg != expect) return
         SlotLiveProbe.unwatch(probeKey); full.reset()
+        SlotEscapeReturn.revoke(probeKey)   // 2.98 · R18
         pkg = null; launched = false
     }
 
     /** L6 — host chưa nhả và đang giữ [p] (kể cả khi chưa mở xong vào màn ảo — [stage] khi đó còn `null`). Luồng chính. */
     fun holds(p: String): Boolean = !released && pkg == p
-
-    /** 2.98 · R7 — giữ [p] mà màn ảo đã trống (app đã thoát ô / đang được quản dạng freeform), không phải lượt mở đang chạy. */
-    fun holdsEmpty(p: String): Boolean = holds(p) && dead
 
     /** A3 · SLOT-CLOSE-SETTLE — lệnh *tắt* [expect] đã gửi ⇒ giấu mặt vẽ NGAY (không khung đứng); gỡ không xong ⇒ hiện lại. Luồng chính. */
     fun closing(expect: String, on: Boolean) { if (!released && !dead && pkg == expect) surface.visibility = if (on) INVISIBLE else VISIBLE }
@@ -479,6 +482,7 @@ class VdAppHost(
         // Ô đang bị nhả giữa một cử chỉ ⇒ bỏ luôn, đừng bắn lệnh chạm cho một màn ảo sắp biến mất.
         gesture.reset()
         SlotLiveProbe.unwatch(probeKey)
+        SlotEscapeReturn.revoke(probeKey)   // 2.98 · R18: màn ảo sắp nhả ⇒ không còn là ô
         vdDisplayId = null
         SlotVdOwner.release(owner, slot)   // gỡ đăng ký + VirtualDisplay.release() nằm trong VdLease.free()
         vd = null

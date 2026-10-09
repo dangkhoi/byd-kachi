@@ -252,6 +252,8 @@ class AppContainer internal constructor(
                 token = token,
                 logDir = { runCatching { KachiLog.dir(app)?.absolutePath }.getOrNull() },
                 disabled = { forced },
+                // 2.98 · R18 — báo cáo "app thoát ô ⇒ về lại màn ảo ô" của daemon (log + cầu chì bền).
+                onReport = { line -> com.byd.clusternav.launcher.escape.SlotEscapeReturn.onReport(app, line) },
             )
         }
     }

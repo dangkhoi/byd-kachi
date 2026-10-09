@@ -67,7 +67,7 @@ object UpdateFlow {
             ))
             .setPositiveButton(Lang.t("Tải & cài", "Download & install")) { _, _ -> doUpdate(activity, url, setStatus) }
             .setNegativeButton(Lang.t("Để sau", "Later"), null)
-            .show().let(com.byd.clusternav.launcher.escape.SlotEscape::shade)   // 2.98 · R16: hộp thoại nổi trên app freeform
+            .show()
     }
 
     private fun doUpdate(activity: Activity, url: String, setStatus: (String, Boolean) -> Unit) {

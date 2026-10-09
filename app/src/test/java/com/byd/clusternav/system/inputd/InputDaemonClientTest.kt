@@ -1,7 +1,9 @@
 package com.byd.clusternav.system.inputd
 
 import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import org.junit.jupiter.api.Assertions.assertArrayEquals
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -376,5 +378,120 @@ class InputDaemonClientTest {
         c.close()
         assertTrue(life.isShutdown, "lifecycleExecutor phải được shutdown")
         assertTrue(send.isShutdown, "senderExecutor phải được shutdown")
+    }
+
+    /** Kênh giả CÓ chiều ngược: [lines] trả lần lượt rồi `null` (EOF). */
+    private class ReportChannel(private val lines: MutableList<String>, private val writeOk: Boolean = true) : DaemonChannel {
+        val writes = mutableListOf<ByteArray>()
+        var closes = 0
+        override fun connect(): Boolean = true
+        override fun write(frame: ByteArray): Boolean { writes += frame; return writeOk }
+        override fun close() { closes++ }
+        override fun readLine(): String? = if (lines.isNotEmpty()) lines.removeAt(0) else null
+        override fun readsReports(): Boolean = true
+    }
+
+    /** KHOÁ 2.98 · R18: bảng đặt TRƯỚC khi nối ⇒ gửi ngay khi nối, trước mọi khung chạm; đặt khi đã nối ⇒ gửi ngay; nối lại ⇒ gửi lại. */
+    @Test
+    fun `R18 - khung dieu khien gui khi noi, gui ngay khi doi, gui lai sau khi noi lai`() {
+        val ch = ReportChannel(mutableListOf())
+        val runs = mutableListOf<Runnable>()
+        val c = InputDaemonClient(
+            apkPath = "/x/base.apk", launchShell = { "" }, port = PORT, token = TOKEN, channelFactory = { ch },
+            lifecycleExecutor = direct, senderExecutor = direct, sleep = {}, now = { 1_000L }, connectTries = 1, connectStepMs = 0L,
+            log = {}, startReader = { runs += it },
+        )
+        val cfg = InputWireProtocol.controlFrame("kachi-esc 1\napi a10r47\nvd 13 com.waze\n".toByteArray())
+        c.setControl(cfg, wantsDaemon = true)                          // chưa nối ⇒ wantsDaemon kích khởi daemon ⇒ nối (lượt 0)
+        assertTrue(c.isHealthy())
+        assertArrayEquals(cfg, ch.writes.first(), "khung đầu tiên sau khi nối là bảng")
+        assertEquals(1, runs.size, "một vòng đọc báo cáo mỗi kết nối")
+        assertTrue(c.sendTouch(13, 0, 1, 2))
+        val cfg2 = InputWireProtocol.controlFrame("kachi-esc 1\napi a10r47\n".toByteArray())
+        c.setControl(cfg2, wantsDaemon = false)
+        assertArrayEquals(cfg2, ch.writes.last(), "đang nối ⇒ gửi ngay")
+        assertEquals(3, ch.writes.size)
+    }
+
+    /** KHOÁ 2.98 · R18: dòng báo cáo tới [onReport]; daemon đóng kết nối ⇒ hạ cờ khoẻ + khởi lại nếu bảng còn ô. */
+    @Test
+    fun `R18 - vong doc bao cao, daemon dong thi ha co va khoi lai`() {
+        val chans = ArrayDeque(listOf(ReportChannel(mutableListOf("esc ready a10r47", "esc moved com.waze 432 38 13 13")), ReportChannel(mutableListOf())))
+        val got = mutableListOf<String>()
+        val runs = mutableListOf<Runnable>()
+        var t = 1_000L
+        val c = InputDaemonClient(
+            apkPath = "/x/base.apk", launchShell = { "" }, port = PORT, token = TOKEN, channelFactory = { chans.first() },
+            lifecycleExecutor = direct, senderExecutor = direct, sleep = {}, now = { t }, connectTries = 1, connectStepMs = 0L,
+            retryCooldownMs = 3_000L, log = {}, onReport = { got += it }, startReader = { runs += it },
+        )
+        c.setControl(InputWireProtocol.controlFrame("kachi-esc 1\n".toByteArray()), wantsDaemon = true)
+        assertTrue(c.isHealthy())
+        chans.removeFirst()
+        t += 5_000L                                                     // qua cooldown
+        runs.removeAt(0).run()                                          // vòng đọc: 2 dòng rồi EOF
+        assertEquals(listOf("esc ready a10r47", "esc moved com.waze 432 38 13 13"), got)
+        assertTrue(c.isHealthy(), "EOF ⇒ hạ cờ rồi khởi lại ngay (bảng còn ô) ⇒ nối kênh mới")
+        assertEquals(1, runs.size, "kết nối mới có vòng đọc mới")
+    }
+
+    /** Kênh không có chiều ngược (giả cũ / socket abstract) ⇒ KHÔNG dựng vòng đọc (null mặc định không phải EOF). */
+    @Test
+    fun `R18 - kenh khong chieu nguoc thi khong dung vong doc`() {
+        val runs = mutableListOf<Runnable>()
+        val c = InputDaemonClient(
+            apkPath = "/x/base.apk", launchShell = { "" }, port = PORT, token = TOKEN, channelFactory = { FakeChannel(mutableListOf(true)) },
+            lifecycleExecutor = direct, senderExecutor = direct, sleep = {}, connectTries = 1, connectStepMs = 0L, log = {},
+            startReader = { runs += it },
+        )
+        c.ensureStarted()
+        assertTrue(c.isHealthy())
+        assertTrue(runs.isEmpty())
+    }
+
+    /**
+     * KHOÁ soát R18 Pass 11 [P1]: ghi socket hỏng ⇒ [markDown] đóng kênh ⇒ luồng đọc báo cáo thức dậy (EOF). Kênh đã KHÔNG còn hiện hành ⇒
+     * luồng đọc im lặng — không hạ cờ lần hai (ghi đè `socket write failed` bằng "daemon đóng"), không kick khởi động lại. Trước vá: `channel`
+     * được gỡ SAU khi đóng ⇒ luồng đọc còn thấy `channel === ch`.
+     */
+    @Test
+    fun `R18 - ghi hong roi luong doc thuc day thi khong ha co lan hai`() {
+        val ch = ReportChannel(mutableListOf(), writeOk = false)
+        val runs = mutableListOf<Runnable>()
+        var launches = 0
+        val c = InputDaemonClient(
+            apkPath = "/x/base.apk", launchShell = { launches++; "" }, port = PORT, token = TOKEN, channelFactory = { ch },
+            lifecycleExecutor = direct, senderExecutor = direct, sleep = {}, now = { 1_000L }, connectTries = 1, connectStepMs = 0L,
+            log = {}, startReader = { runs += it },
+        )
+        c.setControl(InputWireProtocol.controlFrame("kachi-esc 1\nvd 13 com.waze\n".toByteArray()), wantsDaemon = true)
+        assertFalse(c.isHealthy(), "khung bảng ghi hỏng ngay khi nối ⇒ hạ cờ")
+        assertEquals("socket write failed", InputDaemonClient.lastSnapshot().lastError)
+        assertEquals(1, ch.closes)
+        val before = launches
+        runs.single().run()                                             // luồng đọc: EOF ngay (kênh đã đóng)
+        assertEquals("socket write failed", InputDaemonClient.lastSnapshot().lastError, "lý do THẬT không bị ghi đè")
+        assertEquals(1, ch.closes, "không đóng lần hai")
+        assertEquals(before, launches, "không kick khởi động lại từ luồng đọc của kênh đã bỏ")
+    }
+
+    /** Soát R18 Pass 11 [P1]: [close] rồi luồng đọc mới thấy EOF ⇒ `ensureStarted` trên executor đã tắt KHÔNG ném (sập tiến trình). */
+    @Test
+    fun `R18 - ensureStarted sau close khong nem`() {
+        val life = Executors.newSingleThreadExecutor()
+        val ch = ReportChannel(mutableListOf())
+        val runs = mutableListOf<Runnable>()
+        val c = InputDaemonClient(
+            apkPath = "/x/base.apk", launchShell = { "" }, port = PORT, token = TOKEN, channelFactory = { ch },
+            lifecycleExecutor = life, senderExecutor = direct, sleep = {}, now = { 1_000L }, connectTries = 1, connectStepMs = 0L, log = {},
+            startReader = { runs += it },
+        )
+        c.setControl(InputWireProtocol.controlFrame("kachi-esc 1\nvd 13 com.waze\n".toByteArray()), wantsDaemon = true)
+        life.submit {}.get()                                            // lượt nối trên executor vòng đời xong
+        assertTrue(c.isHealthy())
+        c.close()
+        assertTrue(life.isShutdown)
+        assertDoesNotThrow { c.ensureStarted() }
+        assertDoesNotThrow { runs.single().run() }
     }
 }

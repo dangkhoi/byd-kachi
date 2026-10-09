@@ -10,7 +10,6 @@ import com.byd.clusternav.launcher.SlotHeadActions.Button
 import com.byd.clusternav.launcher.SlotRevertPlan.Event
 import com.byd.clusternav.launcher.SlotRevertPlan.Next
 import com.byd.clusternav.launcher.behind.BehindReason
-import com.byd.clusternav.launcher.escape.SlotEscapeHome
 
 /**
  * ═══ L6 · VÒNG ĐỜI Ô — keo của màn chính cho (a) app chết · (b) hết lượt đặt tạm · (c) nút *chạy nền* / *tắt* ═══════════
@@ -79,23 +78,10 @@ internal class KachiHomeSlotActions(
      * trên app thật thoát ô, CLAUDE.md §14). Câu nói TRƯỚC [revert] để [sayIfStill] còn thấy ô hiện [pkg].
      */
     override fun onAppGone(index: Int, pkg: String, elsewhere: Boolean) {
-        if (!elsewhere) return revert(index, Event.APP_DIED, pkg)
-        // 2.98 · R7 (SLOT-ESCAPE-POLICY, owner duyệt 09/10) — app RA KHỎI ô mà còn mở ở display 0 ⇒ thử đưa về ĐÚNG khung ô bằng
-        // freeform (`SlotEscapeHome.tryAdopt`): ô GIỮ app, không câu báo. R7 tắt / không nhận được ⇒ đúng đường 2.93 dưới đây.
-        escape.tryAdopt(index, pkg) {
-            sayIfStill(index, R.string.kachi_slot_app_elsewhere, pkg)
-            revert(index, Event.APP_ELSEWHERE, pkg)
-        }
-    }
-
-    /**
-     * 2.98 · R7 — keo "app thoát ô ⇒ freeform đúng khung ô" của màn nhà này (sống theo vòng đời [activity]). Task app đang quản
-     * mất mà ô còn hiện app ⇒ ô đi luật hoàn ô như app vừa đóng (`APP_DIED`).
-     */
-    private val escape = SlotEscapeHome(activity, viewModel, workspace, shell) { i, p ->
-        // Chỉ khi host ô đang giữ app với màn ảo TRỐNG (app đã ra freeform): lúc khởi động lại host còn đang MỞ app vào ô ⇒ task
-        // cũ mất là chuyện bình thường, không phải "app đã đóng" ([ĐO máy ảo 09/10] sau reboot: bỏ điều kiện này là ô bị xoá).
-        if (workspace().hostAt(i)?.holdsEmpty(p) == true) revert(i, Event.APP_DIED, p)
+        // 2.98 · R18: app thoát ô thường đã được daemon dời về màn ảo trước khi nhịp đo kịp thấy (`SlotEscapeReturn`); tới đây là
+        // đường lùi (R18 tắt / cầu chì / daemon chưa nối) — đúng nguyên văn 2.93.
+        if (elsewhere) sayIfStill(index, R.string.kachi_slot_app_elsewhere, pkg)
+        revert(index, if (elsewhere) Event.APP_ELSEWHERE else Event.APP_DIED, pkg)
     }
 
     private fun shownAt(index: Int): SlotContent =

@@ -76,7 +76,13 @@ object InputDaemonLaunch {
      */
     fun portFor(uid: Int): Int = PORT_BASE + ((uid % PORT_SPAN + PORT_SPAN) % PORT_SPAN)
 
-    private const val PORT_BASE = 38_000
+    /**
+     * 2.98 · R18 — dải cổng theo THẾ HỆ dây ([InputWireProtocol.WIRE_GENERATION]): 1 = 38000–38999 (≤ 2.97), 2 = 39000–39999.
+     * Daemon thường trú của bản cũ (cùng token theo cài đặt) KHÔNG hiểu khung điều khiển; nếu Kachi mới nối vào nó thì thân khung
+     * bị đọc như khung chạm rác. Đổi dải ⇒ Kachi mới luôn khởi daemon mới; daemon cũ không còn client, tự thoát sau
+     * `InputDaemonMain.IDLE_EXIT_MS` (10 phút).
+     */
+    private const val PORT_BASE = 37_000 + 1_000 * InputWireProtocol.WIRE_GENERATION
     private const val PORT_SPAN = 1_000
 
     /** Token hợp lệ: 16–64 ký tự hex/chữ số — đủ ngẫu nhiên, và không mang khoảng trắng phá dòng lệnh. */

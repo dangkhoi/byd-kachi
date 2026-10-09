@@ -2,7 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.app.Activity
 import android.util.Log
-import com.byd.clusternav.launcher.escape.SlotEscape
+import com.byd.clusternav.launcher.escape.LegacyFreeformCleanup
 import com.byd.clusternav.system.WindowCommandDispatcher
 import java.util.concurrent.ExecutorService
 import com.byd.clusternav.launcher.KachiSpace as Sp
@@ -90,7 +90,8 @@ class LauncherWindows(
      */
     fun sweepFloating(reason: String) {
         val s = shell() ?: return
-        if (reason == "shell-up") SlotEscape.shellUp()   // 2.98 · R7 — lượt đối chiếu dấu freeform đầu tiên của tiến trình (quét khởi động)
+        // 2.98 · R18 — máy đã chạy bản R7: trả task freeform còn dấu về toàn màn, một lượt mỗi tiến trình (0 lệnh khi không dấu).
+        if (reason == "shell-up") submit { LegacyFreeformCleanup.runOnce(activity, s) }
         submit {
             val held = state().slots.filterIsInstance<SlotContent.App>().mapTo(HashSet()) { it.pkg }
             Log.i(FLOAT_TAG, floatingSweep.run(s, held, reason).line())
@@ -98,9 +99,6 @@ class LauncherWindows(
     }
 
     fun clearOverlays() = overlayHeads.clear()
-
-    /** Ngăn kéo vừa dựng (`DrawerController.show`) ⇒ gỡ ⇄ nổi; 2.98 · R7: bảng Kachi mở ⇒ gỡ lớp che freeform + màn nhà lên trước. */
-    fun drawerShown() { clearOverlays(); SlotEscape.panels(activity, open = true) }
 
     /**
      * Huỷ MỌI lượt đã hẹn của bộ này + khoá không nhận việc mới. Gọi từ `onDestroy` TRƯỚC khi tắt thread nền.
@@ -145,7 +143,6 @@ class LauncherWindows(
     }
 
     fun updateOverlayHeads() {
-        SlotEscape.panels(activity, drawerOpen())                                // 2.98 · R7: bảng mở/đóng ⇒ lớp che freeform theo
         workspace.removeCallbacks(overlayUpdate)                       // debounce: gọi dồn → chỉ chạy 1 lần
         if (embedding() || drawerOpen()) { overlayHeads.clear(); return }
         if (!stopped) workspace.postDelayed(overlayUpdate, 350)

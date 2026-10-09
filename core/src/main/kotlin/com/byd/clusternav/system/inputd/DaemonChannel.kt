@@ -29,4 +29,13 @@ interface DaemonChannel {
      * Mặc định `null` ⇒ kênh giả trong test không phải cài đặt gì thêm.
      */
     fun lastError(): String? = null
+
+    /**
+     * 2.98 · R18 — đọc MỘT dòng daemon báo về (chiều ngược trên cùng kết nối: `esc …`, `EscapeReturnWire`). CHẶN tới khi có dòng;
+     * `null` = kênh đóng / hỏng. Chỉ gọi khi [readsReports]; chỉ một luồng đọc mỗi kết nối.
+     */
+    fun readLine(): String? = null
+
+    /** 2.98 · R18 — kênh có chiều ngược không (mặc định không — kênh giả trong test, socket abstract cũ). */
+    fun readsReports(): Boolean = false
 }

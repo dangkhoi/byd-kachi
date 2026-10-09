@@ -106,10 +106,11 @@ class SlotLifecycleWiringContractTest {
         // 2.93 · SLOT-APP-ESCAPE (R3) — ĐỔI GHIM có lý do: app rời ô mà còn mở ở display khác ⇒ sự kiện riêng (cùng bảng, câu báo
         // đúng TRƯỚC khi ô đổi); không lệnh nào chạm app đó (không K12 / kéo về ô — cơ chế mới chưa đo, CLAUDE.md §14).
         val gone = SourceRoots.body(actions, "override fun onAppGone(")
-        // 2.98 · R7 — ĐỔI GHIM có lý do: app ra khỏi ô ⇒ thử đưa về khung ô bằng freeform (`SlotEscapeHome.tryAdopt`, lệnh chạy
-        // trên luồng R7, không ở đây); không nhận được ⇒ ĐÚNG đường 2.93 (câu báo rồi `APP_ELSEWHERE`). App chết ⇒ `APP_DIED` như cũ.
-        assertTrue("if (!elsewhere) return revert(index, Event.APP_DIED, pkg)" in gone)
-        order(gone, "escape.tryAdopt(index, pkg)", "sayIfStill(index, R.string.kachi_slot_app_elsewhere, pkg)", "revert(index, Event.APP_ELSEWHERE, pkg)")
+        // 2.98 · R18 — ghim TRẢ VỀ nguyên văn 2.93 (R7 freeform đã SUPERSEDED): việc đưa app thoát ô về ô nằm ở daemon
+        // (`SlotEscapeReturn` → `EscapeReturnDaemon`), TRƯỚC khi nhịp đo kịp thấy; tới được đây là đường lùi.
+        assertTrue("revert(index, if (elsewhere) Event.APP_ELSEWHERE else Event.APP_DIED, pkg)" in gone)
+        order(gone, "if (elsewhere) sayIfStill(index, R.string.kachi_slot_app_elsewhere, pkg)", "revert(index,")
+        assertFalse("escape." in gone, "R7 đã gỡ")
         listOf("sh(", "submitBg", "GO_HOME", "toBack(", "reviveInSlot").forEach { assertFalse(it in gone, "onAppGone không được '$it'") }
         val vm = code("HomeViewModel.kt")
         assertFalse("persist" in SourceRoots.body(vm, "fun applySlotRevert("), "luật hoàn ô chỉ đổi lớp TẠM (owner 01/10)")
