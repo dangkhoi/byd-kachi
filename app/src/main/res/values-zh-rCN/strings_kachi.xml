@@ -123,7 +123,7 @@
     <string name="kachi_row_boot_profile">上电时使用</string>
     <string name="kachi_profile_boot_last">上次使用</string>
     <string name="kachi_boot_profile_note">“上次使用”会以下电时正在使用的档案启动。固定某个档案后，每次上电都会回到该档案，即使上一趟行程中切换过档案。</string>
-    <string name="kachi_home_profile_note">设置中的所有项目——除了“系统与权限”（但“上电自动打开Kachi”“上电运行后台服务”“上电时打开应用”和“上车自动播放音乐”仍跟随档案）、“语音”的大部分、“默认导航应用”、“真实玻璃效果（背景模糊）”、“雨天自动除霜”、按车辆调校的摄像头（旋转、镜像、视角）以及“关于”——都保存到档案“%1$s”，包括仪表投屏、每个应用的框和DPI、悬浮按钮和摄像头。在“驾驶员档案”中切换到其他档案后，布局、格位内容、顶栏标签、车控栏、主题和单位会立即改变；投屏框和DPI从下次投屏起改变，投屏开启/关闭从下次上电起改变。</string>
+    <string name="kachi_home_profile_note">设置中的所有项目——除了“系统与权限”（但“上电自动打开Kachi”“上电运行后台服务”“上电时打开应用”和“上车自动播放音乐”仍跟随档案）、“语音”的大部分、“默认导航应用”、“真实玻璃效果（背景模糊）”、“将跳出框的应用拉回框内（实验性）”、“雨天自动除霜”、按车辆调校的摄像头（旋转、镜像、视角）以及“关于”——都保存到档案“%1$s”，包括仪表投屏、每个应用的框和DPI、悬浮按钮和摄像头。在“驾驶员档案”中切换到其他档案后，布局、格位内容、顶栏标签、车控栏、主题和单位会立即改变；投屏框和DPI从下次投屏起改变，投屏开启/关闭从下次上电起改变。</string>
     <string name="kachi_delete">删除</string>
     <string name="kachi_sec_recirc">内循环</string>
     <string name="kachi_recirc_title">上电时自动开启内循环</string>
@@ -226,6 +226,10 @@
     <string name="kachi_slot_close_failed">无法关闭%1$s</string>
     <string name="kachi_slot_head_autohide_title">自动隐藏⇄按钮</string>
     <string name="kachi_slot_head_autohide_sub">框上的应用/小组件切换按钮自动隐藏，画面更清爽；点按该框（或屏幕空白处）即可显示几秒</string>
+    <string name="kachi_escape_return_title">将跳出框的应用拉回框内（实验性）</string>
+    <string name="kachi_escape_return_sub">部分应用（如 Waze）有时会从框中跳出变成全屏。开启后 Kachi 会把该应用放回原来的框。实验功能，默认关闭——如有异常，关闭即可恢复原有行为（应用离开框时，框会提示并空出）。</string>
+    <string name="kachi_escape_return_sub_tripped">因出错已自动关闭（%1$s）——框按原方式运行。下个更新版本会再次尝试。</string>
+    <string name="kachi_escape_return_sub_unsupported">此车机暂不支持（仅 Android 10 车机）——开启也无效；框按原方式运行。</string>
     <string name="kachi_drawer_section_appwidgets">其他应用的小组件</string>
     <string name="kachi_drawer_note_appwidgets">由其他应用绘制的Android小组件（时钟、日历、音乐…）。点按即可放入此格位。</string>
     <string name="kachi_drawer_note_appwidgets_none">此设备上没有应用提供小组件。</string>

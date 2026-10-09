@@ -174,7 +174,7 @@
     <string name="kachi_row_boot_profile">Lên bằng hồ sơ</string>
     <string name="kachi_profile_boot_last">Gần nhất</string>
     <string name="kachi_boot_profile_note">"Gần nhất" = lên đúng hồ sơ bạn đang dùng lúc tắt máy. Chọn một hồ sơ cụ thể thì mỗi lần nổ máy Kachi đều đổi về hồ sơ đó, kể cả khi chuyến trước bạn đã đổi sang hồ sơ khác.</string>
-    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền (riêng Tự mở Kachi khi nổ máy, Chạy dịch vụ nền khi nổ máy, Mở app khi nổ máy và Tự mở nhạc khi lên xe vẫn theo hồ sơ), hầu hết nhóm Giọng nói, App dẫn đường mặc định, Kính thật (làm mờ nền), Tự sấy kính khi mưa, phần chỉnh camera theo xe (xoay, lật gương, góc nhìn), và Giới thiệu — đều lưu cho hồ sơ «%1$s», kể cả chiếu lên cụm, khung và DPI từng app, nút nổi và camera. Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đổi ngay; khung và DPI khi chiếu đổi từ lần chiếu sau, còn bật/tắt chiếu đổi từ lần nổ máy sau.</string>
+    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền (riêng Tự mở Kachi khi nổ máy, Chạy dịch vụ nền khi nổ máy, Mở app khi nổ máy và Tự mở nhạc khi lên xe vẫn theo hồ sơ), hầu hết nhóm Giọng nói, App dẫn đường mặc định, Kính thật (làm mờ nền), Kéo app thoát ô về lại ô (thử nghiệm), Tự sấy kính khi mưa, phần chỉnh camera theo xe (xoay, lật gương, góc nhìn), và Giới thiệu — đều lưu cho hồ sơ «%1$s», kể cả chiếu lên cụm, khung và DPI từng app, nút nổi và camera. Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đổi ngay; khung và DPI khi chiếu đổi từ lần chiếu sau, còn bật/tắt chiếu đổi từ lần nổ máy sau.</string>
     <string name="kachi_delete">Xoá</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -300,6 +300,10 @@
     <string name="kachi_slot_close_failed">Chưa tắt được %1$s</string>
     <string name="kachi_slot_head_autohide_title">Tự ẩn nút ⇄</string>
     <string name="kachi_slot_head_autohide_sub">Nút đổi app/widget của khung ẩn đi cho thoáng; chạm vào khung (hoặc chỗ trống trên màn) là hiện lại vài giây</string>
+    <string name="kachi_escape_return_title">Kéo app thoát ô về lại ô (thử nghiệm)</string>
+    <string name="kachi_escape_return_sub">Có app (vd Waze) đôi khi tự bật ra khỏi ô sang toàn màn hình. Bật thì Kachi đưa app đó về lại đúng ô. Đang thử nghiệm, mặc định tắt — nếu thấy lỗi, tắt đi là về như cũ (app ra khỏi ô thì ô báo và trả lại chỗ trống).</string>
+    <string name="kachi_escape_return_sub_tripped">Đã tự tắt vì lỗi (%1$s) — ô đang chạy như cũ. Bản cập nhật sau sẽ thử lại.</string>
+    <string name="kachi_escape_return_sub_unsupported">Đầu xe này chưa hỗ trợ (chỉ đầu xe Android 10) — bật cũng không có tác dụng; ô chạy như cũ.</string>
 
     <!-- ── T4 · Widget của app khác (AppWidget bên thứ ba) ── -->
     <string name="kachi_drawer_section_appwidgets">Widget của app khác</string>

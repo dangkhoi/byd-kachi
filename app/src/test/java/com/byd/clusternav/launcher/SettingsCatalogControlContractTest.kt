@@ -79,6 +79,8 @@ class SettingsCatalogControlContractTest {
             "home_grid_editor" to ("SettingsSectionsHome" to "deps.onOpenLayoutEditor()"),
             // 2.87 · R-AH3 — ô tích "Tự ẩn nút ⇄"; dấu vết là intent ghi (hành vi), không phải nhãn.
             "home_swap_autohide" to ("SettingsSectionsHome" to "deps.onSlotHeadAutoHide("),
+            // 2.98 · R18 — công tắc thử nghiệm "Kéo app thoát ô về lại ô", theo XE qua bridge (ghi + gửi lại bảng daemon).
+            "home_escape_return" to ("SettingsSectionsHome" to "deps.bridge.setEscapeReturn("),
             "home_wallpaper" to ("SettingsSectionsHome" to "deps.onWallpaper("),
             // ── 2 · Thanh trạng thái & thanh nút ──
             "bars_top_strip" to ("SettingsSectionsBars" to "stripPicker.section("),

@@ -36,6 +36,13 @@ internal object SettingsCatalogEntries {
         SettingsEntry("home_grid_editor", SettingsGroup.HOME, "Vẽ bố cục riêng…", labelEn = "Draw your own layout…"),
         // 2.87 · R-AH3 (owner 03/10) — nút ⇄ của KHUNG tự ẩn: nói về chính các khung vừa chọn ở trên, trước nội dung (hình nền).
         SettingsEntry("home_swap_autohide", SettingsGroup.HOME, "Tự ẩn nút ⇄", "swap_button_autohide", "Auto-hide the ⇄ button"),
+        // 2.98 · R18 (owner 10/10: OTA với R18 TẮT mặc định) — công tắc thử nghiệm, nói về CHÍNH các ô vừa chọn ở trên. Khoá
+        // `escape_return_enabled` ở `clusternav_prefs` (`Prefs`, THEO XE — `ProfileScopeSlotEscape`), đi qua `deps.bridge` như
+        // `display_glass_real`; đổi là gửi lại bảng cho daemon ngay (`SlotEscapeReturn.refresh`).
+        SettingsEntry(
+            "home_escape_return", SettingsGroup.HOME, "Kéo app thoát ô về lại ô (thử nghiệm)",
+            "escape_return_enabled", "Pull apps that leave a frame back in (experimental)",
+        ),
         SettingsEntry(
             "home_wallpaper", SettingsGroup.HOME, "Hình nền & trình chiếu",
             "wallpaper_prefs", "Wallpaper & slideshow",

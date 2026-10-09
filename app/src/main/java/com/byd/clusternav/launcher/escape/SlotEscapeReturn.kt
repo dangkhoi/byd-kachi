@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import com.byd.clusternav.BuildConfig
+import com.byd.clusternav.Prefs
 import com.byd.clusternav.modules.clustercast.ClusterProfile
 import com.byd.clusternav.system.FreeformSeedStore
 import com.byd.clusternav.system.inputd.InputDaemonClient
@@ -22,8 +23,11 @@ import com.byd.clusternav.system.inputd.InputWireProtocol
  *  - đọc báo cáo daemon ([onReport]) ⇒ một dòng log `KachiEscape` (vào `usage-*.log`) và, khi daemon báo cầu chì BỀN (dấu hiệu NPE
  *    08-01 / task mất), ghi `kachi_escape_return_trip` = versionCode rồi gửi bảng TẮT (daemon gỡ bộ nghe).
  *
- * Bật khi: hồ sơ đời xe có bảng tên hàm ([ClusterProfile.escapeReturn]) đúng đời API đang chạy VÀ bản cài này chưa bị ngắt bền.
- * Không bật ⇒ bảng gửi đi không có api ⇒ daemon không nghe ⇒ app thoát ô đi đúng đường 2.93 (nhịp đo ô ⇒ `APP_ELSEWHERE`).
+ * Bật khi: hồ sơ đời xe có bảng tên hàm ([ClusterProfile.escapeReturn]) đúng đời API đang chạy VÀ bản cài này chưa bị ngắt bền
+ * VÀ người dùng bật công tắc *Cài đặt › Màn hình chính › Kéo app thoát ô về lại ô (thử nghiệm)* (MẶC ĐỊNH TẮT — owner 10/10,
+ * [EscapeReturnSwitch]). Không bật ⇒ bảng gửi đi là [EscapeReturnConfig.OFF] (không api, không ô — bảng hằng nên đổi ô cũng không
+ * sinh khung nào) ⇒ daemon không đăng ký bộ nghe ⇒ app thoát ô đi đúng đường 2.93 (nhịp đo ô ⇒ `APP_ELSEWHERE`). Đổi công tắc ⇒
+ * [refresh] gửi lại bảng ngay (daemon đăng ký / gỡ bộ nghe tại chỗ, không cần khởi động lại).
  * 0 nhịp hỏi, 0 lệnh shell: chỉ một khung điều khiển khi bảng đổi.
  */
 internal object SlotEscapeReturn {
@@ -64,6 +68,21 @@ internal object SlotEscapeReturn {
         if (changed) push()
     }
 
+    /** Công tắc / cầu chì vừa đổi ⇒ tính lại bảng và gửi nếu khác (bật ⇒ daemon đăng ký bộ nghe; tắt ⇒ gỡ). Không chặn. */
+    fun refresh(ctx: Context) {
+        app = ctx.applicationContext
+        push()
+    }
+
+    /** Trạng thái hiện hành cho dòng mô tả ở màn Cài đặt — CÙNG phép quyết với bảng gửi daemon ([EscapeReturnSwitch.resolve]). */
+    fun status(ctx: Context): EscapeReturnSwitch.Status = EscapeReturnSwitch.resolve(
+        switchOn = Prefs.escapeReturnEnabled(ctx),
+        profileApi = ClusterProfile.resolveCached(ctx).escapeReturn,
+        sdkInt = Build.VERSION.SDK_INT,
+        tripStored = prefs(ctx).getString(TRIP_KEY, null),
+        versionCode = BuildConfig.VERSION_CODE,
+    )
+
     /** Một dòng daemon báo về (luồng đọc của `InputDaemonClient`). */
     fun onReport(ctx: Context, line: String) {
         val r = EscapeReturnWire.parseReport(line) ?: return
@@ -75,35 +94,25 @@ internal object SlotEscapeReturn {
         }
     }
 
-    /** Bảng tên hàm dùng được trên máy này lúc này (`null` = tắt). Đọc trong tiến trình, rẻ. */
-    private fun api(ctx: Context): EscapeReturnApi? {
-        val api = ClusterProfile.resolveCached(ctx).escapeReturn ?: return null
-        if (!api.usableOn(Build.VERSION.SDK_INT)) return null
-        return api.takeUnless { tripped(ctx) }
-    }
-
     private fun push() {
         val ctx = app ?: return
         val c = client ?: return
-        val api = runCatching { api(ctx) }
-            .onFailure { Log.w(TAG, "đọc bảng tên hàm/dấu ngắt hỏng ⇒ coi như tắt: ${it.javaClass.simpleName}") }
-            .getOrNull()
+        val status = runCatching { status(ctx) }
+            .onFailure { Log.w(TAG, "đọc công tắc/bảng tên hàm/dấu ngắt hỏng ⇒ coi như tắt: ${it.javaClass.simpleName}") }
+            .getOrNull() ?: EscapeReturnSwitch.Status.Off
         // Soát R18 Pass 11 [P2]: mã hoá VÀ gửi trong cùng khoá — hai lượt đổi bảng từ hai luồng (`launchInto` nền · `release` luồng chính)
         // mà gửi ngoài khoá có thể tới daemon NGƯỢC thứ tự ⇒ daemon giữ bảng cũ tới lần đổi kế. `setControl` chỉ xếp hàng (không chặn).
         synchronized(lock) {
-            val cfg = EscapeReturnConfig(api, slots.values.associate { (vd, pkg) -> vd to pkg })
+            val cfg = EscapeReturnSwitch.config(status, slots.values.associate { (vd, pkg) -> vd to pkg })
             val text = EscapeReturnWire.encodeConfig(cfg)
             if (text == lastSent) return
             lastSent = text
             Log.i(TAG, "bảng → daemon: ${text.trim().replace("\n", " · ")}")
-            c.setControl(InputWireProtocol.controlFrame(text.toByteArray(Charsets.UTF_8)), wantsDaemon = api != null && cfg.slots.isNotEmpty())
+            c.setControl(InputWireProtocol.controlFrame(text.toByteArray(Charsets.UTF_8)), wantsDaemon = cfg.enabled && cfg.slots.isNotEmpty())
         }
     }
 
     private fun prefs(ctx: Context) = ctx.applicationContext.getSharedPreferences(FreeformSeedStore.PREF, Context.MODE_PRIVATE)
-
-    private fun tripped(ctx: Context): Boolean =
-        EscapeReturnBreaker.persistActive(prefs(ctx).getString(TRIP_KEY, null), BuildConfig.VERSION_CODE)
 
     @SuppressLint("ApplySharedPref")   // commit() đồng bộ: dấu ngắt phải nằm trên đĩa trước lượt khởi động lại kế (CLAUDE.md §5)
     private fun persistTrip(ctx: Context, why: String) {

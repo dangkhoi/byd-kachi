@@ -1,10 +1,13 @@
 package com.byd.clusternav.launcher
 
+import android.util.Log
 import com.byd.clusternav.AdbKeys
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.carexec.LocalDeviceShell
 import com.byd.clusternav.carexec.LocalSetHomeOutcome
 import com.byd.clusternav.carexec.LocalShellFailure
+import com.byd.clusternav.launcher.escape.EscapeReturnSwitch
+import com.byd.clusternav.launcher.escape.SlotEscapeReturn
 
 /**
  * ═══ S5 — "MÀN HÌNH CHÍNH" trên cầu Settings (hàm mở rộng của [ClusterNavBridge]) ═════════════════════════════
@@ -113,3 +116,24 @@ fun ClusterNavBridge.glassReal(): Boolean = Prefs.glassReal(app)
 
 /** Xem [glassReal]. */
 fun ClusterNavBridge.setGlassReal(on: Boolean) = Prefs.setGlassReal(app, on)
+
+/**
+ * 2.98 · R18 — công tắc **"Kéo app thoát ô về lại ô (thử nghiệm)"** (`escape_return_enabled`, theo XE, MẶC ĐỊNH TẮT — owner 10/10).
+ * Đọc trạng thái HIỆU LỰC (công tắc + máy có hỗ trợ + cầu chì bền) từ cùng phép quyết với bảng gửi daemon; ghi ⇒ gửi lại bảng ngay.
+ *
+ * Soát Pass 14 [P2]: đọc hỏng (dấu bền `kachi_escape_return_trip` sai kiểu trên đĩa · hồ sơ đời xe không phân tích được) ⇒ coi như
+ * TẮT — CÙNG kết luận với `SlotEscapeReturn.push` (bảng gửi daemon), để màn Cài đặt không sập ở đúng ca mà daemon đã lặng lẽ tắt.
+ */
+fun ClusterNavBridge.escapeReturnStatus(): EscapeReturnSwitch.Status =
+    runCatching { SlotEscapeReturn.status(app) }
+        .onFailure { Log.w(SlotEscapeReturn.TAG, "đọc trạng thái công tắc hỏng ⇒ hiện như TẮT: ${it.javaClass.simpleName}") }
+        .getOrDefault(EscapeReturnSwitch.Status.Off)
+
+/** Công tắc người dùng (giá trị đã lưu, kể cả khi cầu chì/máy không hỗ trợ đang chặn). */
+fun ClusterNavBridge.escapeReturnSwitchOn(): Boolean = Prefs.escapeReturnEnabled(app)
+
+/** Xem [escapeReturnStatus]. Bật/tắt có hiệu lực NGAY: daemon đăng ký / gỡ bộ nghe ở lượt gửi bảng kế (không khởi động lại). */
+fun ClusterNavBridge.setEscapeReturn(on: Boolean) {
+    Prefs.setEscapeReturnEnabled(app, on)
+    SlotEscapeReturn.refresh(app)
+}

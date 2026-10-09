@@ -163,7 +163,7 @@
     <string name="kachi_row_boot_profile">Start up with</string>
     <string name="kachi_profile_boot_last">Last used</string>
     <string name="kachi_boot_profile_note">"Last used" starts with whichever profile was active when you switched the engine off. Pin a specific profile and every engine start returns to it, even if you switched profile on the previous trip.</string>
-    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start, Open apps at ignition and Play music when you get in do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
+    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start, Open apps at ignition and Play music when you get in do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Pull apps that leave a frame back in (experimental), Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
     <string name="kachi_delete">Delete</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -286,6 +286,10 @@
     <string name="kachi_slot_close_failed">Couldn\'t close %1$s</string>
     <string name="kachi_slot_head_autohide_title">Auto-hide the ⇄ button</string>
     <string name="kachi_slot_head_autohide_sub">The app/widget switch on each frame hides for a cleaner screen; tap a frame (or any empty spot) to show it for a few seconds</string>
+    <string name="kachi_escape_return_title">Pull apps that leave a frame back in (experimental)</string>
+    <string name="kachi_escape_return_sub">Some apps (e.g. Waze) sometimes pop out of their frame to full screen. Turn this on and Kachi puts the app back in its frame. Experimental, off by default — if anything looks wrong, turn it off to go back to the old behaviour (the frame tells you the app left and frees up).</string>
+    <string name="kachi_escape_return_sub_tripped">Turned itself off after an error (%1$s) — frames work the old way. The next update will try again.</string>
+    <string name="kachi_escape_return_sub_unsupported">Not supported on this head unit (Android 10 units only) — turning it on has no effect; frames work the old way.</string>
 
     <!-- ── T4 · Widget của app khác (AppWidget bên thứ ba) ── -->
     <string name="kachi_drawer_section_appwidgets">Widgets from other apps</string>

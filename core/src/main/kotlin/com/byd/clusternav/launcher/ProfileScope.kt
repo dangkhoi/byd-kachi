@@ -198,19 +198,8 @@ object ProfileScope {
                 "`adb_keys` của CHIẾC XE này; chép sang hồ sơ/xe khác là nối sớm bằng khoá chưa được nhận ở đó. Cũng khai " +
                 "ở [SettingsCatalog.NOT_SETTINGS]",
         )
-        put(
-            "kachi_floating_opened",
-            "PROFILE-SWITCH-SLOTS R-B4 — dấu 'Kachi đã mở gói này thành cửa sổ nổi' ([FloatingWindowLedger]). Theo XE: " +
-                "cửa sổ nằm trên màn của CHIẾC XE này; theo hồ sơ thì đổi hồ sơ — đúng lúc cần dọn — là mất dấu. Cũng " +
-                "khai ở [SettingsCatalog.NOT_SETTINGS]",
-        )
-        put("kachi_slot_escape", "2.98 R7 (SUPERSEDED) — dấu freeform cũ, chỉ đọc để trả rồi xoá (`LegacyFreeformUndo`); theo XE"); put("kachi_escape_return_trip", "2.98 R18 — cầu chì bền (`EscapeReturnBreaker`); theo XE: lỗi của ROM xe này")
-        put(
-            "kachi_behind_marks",
-            "BEHIND-HOME — dấu 'task này do Kachi đẩy ra sau màn nhà' (`BehindMarks`). Theo XE: task nằm trên màn của " +
-                "CHIẾC XE này và sống qua lần BYD giết Kachi; theo hồ sơ thì đổi hồ sơ là mất dấu. Cũng khai ở " +
-                "[SettingsCatalog.NOT_SETTINGS]",
-        )
+        // Cửa sổ nổi Kachi mở · dấu R7 cũ · cầu chì + công tắc R18 · BEHIND-HOME — bảng + lý do ở [ProfileScopeSlotEscape] (trần 500).
+        putAll(ProfileScopeSlotEscape.DEVICE_KEYS)
         // ⚠ 2026-09-30 — `cast_enabled` ĐÃ RỜI danh sách này, chuyển sang theo HỒ SƠ. Owner: *"Phần cụm lưu hết thành
         // profile nhé"* — THAY chốt S4-OQ2 của Pass 1 review (2026-09-14; không phải quyết định của owner). Lý do kỹ
         // thuật của chốt cũ VẪN ĐÚNG ([ĐO] mọi cổng đọc đều LIVE qua `SimpleCastPrefs.castEnabled()` ⇒ ghi thẳng khoá

@@ -77,12 +77,48 @@ class SlotEscapeReturnWiringContractTest {
         assertTrue("catch (e: Exception)" in SourceRoots.body(d, "private fun guarded("))
     }
 
+    /**
+     * Owner 10/10 — OTA 2.98 với R18 TẮT mặc định. TẮT ⇒ bảng gửi là `EscapeReturnConfig.OFF` (daemon không đăng ký bộ nghe ⇒ đường
+     * 2.93); bảng tắt không kéo daemon dậy; đổi công tắc ⇒ gửi lại bảng NGAY (không đợi lượt đổi ô kế); daemon CHỈ đăng ký khi bảng có api.
+     */
+    @Test
+    fun `cong tac R18 - mac dinh tat, tat la bang OFF, doi la gui lai ngay`() {
+        val prefs = code("Prefs.kt")
+        assertTrue("getBoolean(\"escape_return_enabled\", com.byd.clusternav.launcher.escape.EscapeReturnSwitch.DEFAULT_ON)" in prefs)
+        val ret = code("launcher/escape/SlotEscapeReturn.kt")
+        val push = SourceRoots.body(ret, "private fun push(")
+        assertTrue("EscapeReturnSwitch.config(status, " in push, "bảng gửi daemon đi qua phép quyết công tắc")
+        assertTrue("wantsDaemon = cfg.enabled && cfg.slots.isNotEmpty()" in push, "bảng tắt không khởi daemon")
+        assertTrue("?: EscapeReturnSwitch.Status.Off" in push, "đọc hỏng ⇒ coi như TẮT")
+        assertTrue("push()" in SourceRoots.body(ret, "fun refresh("))
+        val bridge = code("launcher/ClusterNavBridgeHome.kt")
+        val set = SourceRoots.body(bridge, "fun ClusterNavBridge.setEscapeReturn(")
+        assertTrue(set.indexOf("Prefs.setEscapeReturnEnabled(app, on)") in 0 until set.indexOf("SlotEscapeReturn.refresh(app)"), "ghi rồi gửi lại bảng")
+        // Soát Pass 14 [P2]: dòng mô tả Cài đặt đọc cùng phép quyết với bảng gửi daemon ⇒ đọc hỏng cũng phải ra CÙNG kết luận (TẮT),
+        // không sập màn Cài đặt (dấu bền sai kiểu trên đĩa — bài học PROFILE-IMPORT-TYPES).
+        val status = SourceRoots.body(bridge, "fun ClusterNavBridge.escapeReturnStatus(")
+        assertTrue("runCatching { SlotEscapeReturn.status(app) }" in status && ".getOrDefault(EscapeReturnSwitch.Status.Off)" in status,
+            "UI đọc trạng thái hỏng ⇒ hiện như TẮT, như push()")
+        val home = code("launcher/SettingsSectionsHome.kt")
+        assertTrue("escapeReturn(body)" in SourceRoots.body(home, "private fun slotHeads("), "hàng công tắc phải được dựng (§8)")
+        assertTrue("deps.bridge.setEscapeReturn(on)" in home && "is EscapeReturnSwitch.Status.Tripped ->" in home)
+        val d = code("system/inputd/EscapeReturnDaemon.kt")
+        val cfg = SourceRoots.body(d, "fun onConfig(")
+        assertTrue("api == null -> unregister(\"config-off\")" in cfg && "registered == null -> register(api)" in cfg,
+            "daemon chỉ đăng ký bộ nghe khi bảng có api; bảng tắt ⇒ gỡ")
+    }
+
     @Test
     fun `cau chi ben, DL5 tat, R7 go, duong tra R7 khi kenh len`() {
         val ret = code("launcher/escape/SlotEscapeReturn.kt")
-        assertTrue("EscapeReturnBreaker.persistActive(prefs(ctx).getString(TRIP_KEY, null), BuildConfig.VERSION_CODE)" in ret)
+        // 2.98 công tắc (owner 10/10): MỘT phép quyết `EscapeReturnSwitch.resolve` (`:core`, `EscapeReturnSwitchTest`) đọc công tắc +
+        // bảng tên hàm + đời API + dấu bền — cho cả bảng gửi daemon lẫn dòng mô tả Cài đặt.
+        val status = SourceRoots.body(ret, "fun status(")
+        for (arg in listOf("switchOn = Prefs.escapeReturnEnabled(ctx)", "profileApi = ClusterProfile.resolveCached(ctx).escapeReturn",
+            "sdkInt = Build.VERSION.SDK_INT", "tripStored = prefs(ctx).getString(TRIP_KEY, null)", "versionCode = BuildConfig.VERSION_CODE")) {
+            assertTrue(arg in status, "status() phải đọc $arg")
+        }
         assertTrue("if (r is EscapeReport.Tripped && r.persist)" in SourceRoots.body(ret, "fun onReport("))
-        assertTrue("if (!api.usableOn(Build.VERSION.SDK_INT)) return null" in SourceRoots.body(ret, "private fun api("))
         val profile = code("modules/clustercast/ClusterProfile.kt")
         assertTrue("escapeReturn = escapeReturnFor(5)," in profile, "DL5 (Android 12) chưa đo ⇒ tắt")
         assertTrue("fun escapeReturnFor(diLink: Int): EscapeReturnApi? = if (diLink >= 5) null else EscapeReturnApi.ANDROID_10_R47" in profile)

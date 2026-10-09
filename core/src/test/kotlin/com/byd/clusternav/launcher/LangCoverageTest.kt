@@ -150,7 +150,9 @@ class LangCoverageTest {
         // *"Auto-open VietMap for the bubble"* — tách nghĩa cũ của `vm_bubble_enabled` khỏi công tắc hiện bóng.
         // 2.91 VOICE-APP-NAMES (owner 06/10, spec kachi-290-voice-app-names §4.5): **83 → 84 (+1)** = `voice_app_names_list`
         // *"Dạy tên app"* / *"Teach app names"* (khoá `voice_app_names` theo hồ sơ).
-        assertEquals(84, SettingsCatalog.ENTRIES.size)
+        // 2.98 · R18 (owner 10/10: OTA với R18 tắt mặc định): **84 → 85 (+1)** = `home_escape_return` *"Kéo app thoát ô về lại ô (thử
+        // nghiệm)"* / *"Pull apps that leave a frame back in (experimental)"* (khoá `escape_return_enabled` theo XE).
+        assertEquals(85, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -259,7 +261,8 @@ class LangCoverageTest {
         // "Teach app names"), EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
         // 2.93 · CAMERA-ON-DEMAND (2026-10-06): **264 → 269 (+5)** = bốn việc *"Camera sau/trái/phải/trước"* + *"Tắt camera"*
         // (`LauncherActions`), EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
-        assertEquals(269, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 2.98 · R18 (2026-10-10): **269 → 270 (+1)** = mục Cài đặt `home_escape_return`, EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
+        assertEquals(270, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

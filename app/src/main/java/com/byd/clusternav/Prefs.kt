@@ -130,6 +130,11 @@ object Prefs {
     fun glassReal(ctx: Context): Boolean = sp(ctx).getBoolean("ui_glass_real", false)
     fun setGlassReal(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean("ui_glass_real", v).apply()
 
+    // 2.98 · R18 — "Kéo app thoát ô về lại ô (thử nghiệm)", MẶC ĐỊNH TẮT (owner 10/10), theo XE (`EscapeReturnSwitch`).
+    fun escapeReturnEnabled(ctx: Context): Boolean =
+        sp(ctx).getBoolean("escape_return_enabled", com.byd.clusternav.launcher.escape.EscapeReturnSwitch.DEFAULT_ON)
+    fun setEscapeReturnEnabled(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean("escape_return_enabled", v).apply()
+
     // ─── T3 (1.13): Nút vật lý → Trợ lý giọng nói ───────────────────────────────────────────────
     // 1.19: KHÔNG thay chức năng gốc — onKeyEvent chỉ "nuốt" đúng keycode đã cấu hình, còn lại pass-through.
     // Bỏ cử chỉ (Nhấn/Nhấn-giữ) vì nút short/long ra keycode khác nhau. Đích lưu STRING (package/sentinel);

@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.View
 import android.widget.LinearLayout
 import com.byd.clusternav.R
+import com.byd.clusternav.launcher.escape.EscapeReturnSwitch
 
 /**
  * Nội dung nhóm **"Màn hình chính"** của màn Cài đặt — bố cục · hình nền.
@@ -51,6 +52,25 @@ class SettingsHomeSection(
             title = context.getString(R.string.kachi_slot_head_autohide_title),
             sub = context.getString(R.string.kachi_slot_head_autohide_sub),
         ) { on -> deps.onSlotHeadAutoHide(on) })
+        escapeReturn(body)
+    }
+
+    /**
+     * 2.98 · R18 — **"Kéo app thoát ô về lại ô (thử nghiệm)"** (owner 10/10: OTA 2.98 với R18 TẮT mặc định, owner tự bật trên xe khi
+     * đỗ). Theo XE (`escape_return_enabled`, `Prefs`), đi qua `deps.bridge` như "Kính thật". Dòng mô tả đọc trạng thái HIỆU LỰC từ
+     * cùng phép quyết với bảng gửi daemon ([EscapeReturnSwitch.resolve]): cầu chì bền đã ngắt ⇒ nói lý do; máy chưa hỗ trợ ⇒ nói thẳng.
+     */
+    private fun escapeReturn(body: LinearLayout) {
+        val sub = when (val st = deps.bridge.escapeReturnStatus()) {
+            is EscapeReturnSwitch.Status.Tripped -> context.getString(R.string.kachi_escape_return_sub_tripped, st.why)
+            EscapeReturnSwitch.Status.Unsupported -> context.getString(R.string.kachi_escape_return_sub_unsupported)
+            else -> context.getString(R.string.kachi_escape_return_sub)
+        }
+        body.addView(rows.checkRow(
+            on = deps.bridge.escapeReturnSwitchOn(),
+            title = context.getString(R.string.kachi_escape_return_title),
+            sub = sub,
+        ) { on -> deps.bridge.setEscapeReturn(on) })
     }
 
     // ── Bố cục ───────────────────────────────────────────────────────────────────────────────────

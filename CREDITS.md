@@ -44,6 +44,9 @@ trong app (*Cài đặt › Giọng nói*), kiểm sha256. Not bundled; download
 ### Mô hình từ khoá · Keyword model `sherpa-onnx-kws-zipformer-gigaspeech-3.3M` (int8)
 Phát hiện "Hey Kachi"; tệp nằm ở `voice/kws/` của repo này, tải trong app. Wake-word spotter, hosted in `voice/kws/`. **License: Apache-2.0 (k2-fsa).**
 
+### Mô hình phát hiện tiếng nói · Voice activity detection `silero_vad.onnx`
+[`snakers4/silero-vad`](https://github.com/snakers4/silero-vad) — biết lúc nào người lái bắt đầu/ngừng nói để cắt câu; đóng trong APK
+(`app/src/main/assets/voice/silero_vad.onnx`). Detects speech start/end to segment utterances; bundled in the APK. **License: MIT.**
 ### Giọng đọc · TTS voice Piper `vi_VN-vais1000-medium`
 Gói `vits-piper-vi_VN-vais1000-medium` (sherpa-onnx `tts-models`), host tại `voice/tts/piper-vi_VN-vais1000-medium/`, tải trong app.
 Dữ liệu huấn luyện VAIS-1000 Vietnamese Speech Synthesis Corpus (IEEE DataPort) — **License: CC-BY-4.0** (ghi công bắt buộc · attribution
