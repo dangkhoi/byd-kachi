@@ -6,7 +6,7 @@ nên gói được đăng **ngay trong repo** và app tải từng tệp qua `ra
 
 | Gói | Nội dung | Cỡ | Giấy phép |
 |---|---|---|---|
-| `tts/piper-vi_VN-vais1000-medium/` | Piper VITS tiếng Việt VAIS-1000 (medium) + `espeak-ng-data` **đã tỉa còn phần tiếng Việt** (11 tệp, 728 KB thay 18 MB) — [ĐO host 2026-09-16] audio giống hệt gói đầy đủ | 61 MB | CC-BY-4.0 (VAIS-1000) · Piper · sherpa-onnx |
+| `tts/piper-vi_VN-vais1000-medium/` | Piper VITS tiếng Việt VAIS-1000 (medium) + `espeak-ng-data` **đã tỉa còn phần tiếng Việt** (11 tệp, 728 KB thay 18 MB) — [ĐO host 2026-09-16] audio giống hệt gói đầy đủ | 61 MB | CC-BY-4.0 (VAIS-1000) · Piper (MIT) · sherpa-onnx (Apache-2.0) · `espeak-ng-data`: **GPL-3.0-or-later** (espeak-ng, bản sao nguyên trạng, nguồn: github.com/espeak-ng/espeak-ng) — xem `CREDITS.md` |
 | `tts/kachi-giong-be-v1/` | **Giọng Kachi bé** — gói **phát âm sẵn**, không phải mô hình: 1 607 clip ADTS AAC-LC 32 kbps / 24 kHz mono (425 câu trọn · 158 đầu câu · 24 đuôi/đơn vị · 1 000 số 0–999) + `index.tsv`/`num.tsv` để tra theo **chuỗi chính xác**. Sinh **một lần trên máy soạn thảo** bằng F5-TTS nhân bản từ một bản thu có đồng thuận; xe chỉ tra bảng và phát. Số đo chính xác (byte · thời lượng · tỉ lệ ASR đọc lại đúng từng clip) nằm trong `manifest.json` của chính gói — **một chỗ duy nhất**, đừng chép sang đây. | xem `manifest.json` | audio tự sinh · mô hình sinh ra nó: `toandev/F5-TTS-Vietnamese` **CC-BY-NC-4.0** (ghi công + đồng thuận ở `tts/kachi-giong-be-v1/LICENSE-NOTES.md`) |
 
 Bảng ghim: `tts/piper-vi_VN-vais1000-medium.sha256.tsv` · `tts/kachi-giong-be-v1.sha256.tsv`. Gói gốc: `github.com/k2-fsa/sherpa-onnx/releases/tag/tts-models`

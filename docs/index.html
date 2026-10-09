@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi Launcher</title>
+<meta name="description" content="Kachi — màn hình chính (launcher) cộng đồng cho đầu xe BYD DiLink: ô app, chiếu cụm đồng hồ, dẫn đường lên cụm, giọng nói offline, phím vô-lăng, camera, điều khiển xe, cập nhật tự động. Dự án không chính thức.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a84ff'/%3E%3Cpath d='M10 8v16M10 16l9-8M13 13.5L21 24' stroke='white' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#fbfbfd; --bg-alt:#f2f2f6; --card:#ffffff; --text:#1d1d1f; --muted:#5d5d64; --faint:#8a8a92;
+  --line:#e2e2e8; --accent:#0a6cdf; --accent-soft:rgba(10,108,223,.10); --accent-ink:#ffffff;
+  --ok:#1f8a3b; --ok-soft:rgba(31,138,59,.12); --warn:#a35a00; --warn-soft:rgba(214,130,0,.14);
+  --info:#6440c9; --info-soft:rgba(100,64,201,.11); --danger:#c4301c; --danger-soft:rgba(196,48,28,.10);
+  --dg-fill:#ffffff; --dg-fill2:#f4f6fb; --dg-stroke:#c9ccd6; --dg-strong:#0a6cdf; --dg-text:#1d1d1f;
+  --screen:#0e1116; --screen-2:#1a1f29; --screen-3:#252c39; --screen-ink:#e9eef7; --screen-dim:#7d8799;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 28px rgba(0,0,0,.06);
+  --radius:20px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b0b0e; --bg-alt:#131317; --card:#17171c; --text:#f5f5f7; --muted:#a6a6ae; --faint:#7c7c85;
+    --line:#2a2a31; --accent:#4ea1ff; --accent-soft:rgba(78,161,255,.14); --accent-ink:#06121f;
+    --ok:#4cd471; --ok-soft:rgba(76,212,113,.14); --warn:#ffb340; --warn-soft:rgba(255,179,64,.14);
+    --info:#b79cff; --info-soft:rgba(183,156,255,.14); --danger:#ff7b6b; --danger-soft:rgba(255,123,107,.13);
+    --dg-fill:#1c1c22; --dg-fill2:#22222a; --dg-stroke:#3a3a44; --dg-strong:#4ea1ff; --dg-text:#f0f0f4;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 28px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b0b0e; --bg-alt:#131317; --card:#17171c; --text:#f5f5f7; --muted:#a6a6ae; --faint:#7c7c85;
+  --line:#2a2a31; --accent:#4ea1ff; --accent-soft:rgba(78,161,255,.14); --accent-ink:#06121f;
+  --ok:#4cd471; --ok-soft:rgba(76,212,113,.14); --warn:#ffb340; --warn-soft:rgba(255,179,64,.14);
+  --info:#b79cff; --info-soft:rgba(183,156,255,.14); --danger:#ff7b6b; --danger-soft:rgba(255,123,107,.13);
+  --dg-fill:#1c1c22; --dg-fill2:#22222a; --dg-stroke:#3a3a44; --dg-strong:#4ea1ff; --dg-text:#f0f0f4;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 28px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:17px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:8px}
+code{font:0.86em ui-monospace,"SF Mono",Menlo,Consolas,monospace;background:var(--bg-alt);border:1px solid var(--line);border-radius:6px;padding:.1em .38em;word-break:break-word}
+pre{font:14px/1.55 ui-monospace,"SF Mono",Menlo,Consolas,monospace;background:var(--bg-alt);border:1px solid var(--line);border-radius:12px;padding:14px 16px;overflow-x:auto;margin:12px 0}
+pre code{background:none;border:0;padding:0}
+.skip{position:absolute;left:-999px;top:8px;background:var(--card);padding:8px 12px;border-radius:8px;z-index:20}
+.skip:focus{left:16px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+@media (max-width:560px){.wrap{padding:0 16px}}
+
+/* nav */
+.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 82%,transparent);
+  backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;height:56px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:650;color:var(--text);letter-spacing:-.01em}
+.brand:hover{text-decoration:none}
+.brand svg{width:28px;height:28px}
+.top nav{margin-left:auto;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.top nav::-webkit-scrollbar{display:none}
+.top nav a{color:var(--muted);font-size:14px;padding:6px 10px;border-radius:999px;white-space:nowrap}
+.top nav a:hover{color:var(--text);background:var(--bg-alt);text-decoration:none}
+@media (max-width:760px){.top nav .opt{display:none}}
+
+/* hero */
+.hero{padding:72px 0 40px;text-align:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted);
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+h1{font-size:clamp(44px,9vw,84px);line-height:1.02;letter-spacing:-.035em;margin:20px 0 12px;font-weight:700}
+.lead{font-size:clamp(18px,2.4vw,22px);color:var(--muted);max-width:760px;margin:0 auto;line-height:1.5}
+.cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:30px 0 10px}
+.btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:16px;padding:12px 20px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text)}
+.btn:hover{text-decoration:none;border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn svg{width:18px;height:18px}
+.meta{font-size:13px;color:var(--faint);margin-top:6px}
+.hero-art{margin:44px auto 0;max-width:900px}
+.hero-art svg{width:100%;height:auto;display:block}
+.unofficial{margin:28px auto 0;max-width:760px;font-size:14px;color:var(--muted);background:var(--warn-soft);border-radius:14px;padding:12px 16px;text-align:left}
+.unofficial b{color:var(--text)}
+
+/* sections */
+section{padding:72px 0;border-top:1px solid var(--line)}
+section.alt{background:var(--bg-alt)}
+.kicker{font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+h2{font-size:clamp(30px,5vw,44px);line-height:1.1;letter-spacing:-.025em;margin:0 0 14px}
+h3{font-size:20px;letter-spacing:-.01em;margin:0 0 6px;line-height:1.3}
+.sub{color:var(--muted);font-size:18px;max-width:760px;margin:0 0 36px}
+p{margin:0 0 12px}
+
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+@media (max-width:400px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);min-width:0}
+.card .ic{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:14px}
+.card .ic svg{width:24px;height:24px}
+.card p,.card li{color:var(--muted);font-size:15.5px}
+.card ul{margin:8px 0 0;padding-left:18px}
+.card li{margin:3px 0}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.tag{font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;line-height:1.5}
+.t-ok{background:var(--ok-soft);color:var(--ok)}
+.t-new{background:var(--warn-soft);color:var(--warn)}
+.t-info{background:var(--info-soft);color:var(--info)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-size:14px;color:var(--muted);margin:-14px 0 28px}
+
+/* architecture */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:var(--shadow)}
+.layer{border-radius:16px;padding:16px;border:1px dashed var(--dg-stroke);background:var(--dg-fill2)}
+.layer.kachi{border:1.5px solid var(--dg-strong);background:var(--accent-soft)}
+.layer-h{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:12px}
+.layer-h b{font-size:15px}
+.layer-h span{font-size:13px;color:var(--muted)}
+.nodes{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.node{background:var(--dg-fill);border:1px solid var(--dg-stroke);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.4;min-width:0}
+.node b{display:block;font-size:14px;color:var(--dg-text)}
+.node small{color:var(--muted);font-size:12.5px}
+.node.strong{border-color:var(--dg-strong)}
+.down{display:flex;justify-content:center;align-items:center;gap:10px;padding:8px 0;color:var(--faint);font-size:12.5px}
+.down svg{width:22px;height:26px;flex:none}
+.two{display:grid;gap:16px;grid-template-columns:1fr 1fr}
+@media (max-width:820px){.two{grid-template-columns:1fr}}
+.notes{margin-top:24px}
+.notes li{margin:6px 0;color:var(--muted)}
+.notes b{color:var(--text)}
+
+.flow-svg{width:100%;height:auto;display:block}
+.flow-wrap{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:var(--shadow);margin-top:20px}
+.flow-wrap h3{margin-bottom:12px}
+.flow-mobile{display:none}
+@media (max-width:640px){.flow-svg{display:none}.flow-mobile{display:block}}
+.fstep{background:var(--dg-fill);border:1px solid var(--dg-stroke);border-radius:12px;padding:10px 12px;font-size:14px}
+.fstep b{display:block}
+.fstep small{color:var(--muted)}
+
+/* steps */
+.steps{list-style:none;margin:0;padding:0;counter-reset:s;display:grid;gap:14px}
+.steps>li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);min-width:0}
+.steps>li::before{content:counter(s);width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:16px}
+.steps>li>div{min-width:0}
+.steps p{color:var(--muted);font-size:15.5px;margin:4px 0 0}
+.path{font-weight:600;color:var(--text)}
+.callout{border-radius:14px;padding:14px 16px;font-size:15px;margin-top:18px}
+.callout.warn{background:var(--warn-soft)}
+.callout.info{background:var(--accent-soft)}
+.callout.danger{background:var(--danger-soft)}
+.callout b{color:var(--text)}
+
+/* tables */
+.table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;font-size:15px}
+.table th,.table td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.table tr:last-child td{border-bottom:0}
+.table th{background:var(--bg-alt);font-size:13px;color:var(--muted);font-weight:650;letter-spacing:.02em}
+.tscroll{overflow-x:auto;border-radius:18px}
+@media (max-width:560px){.table{font-size:14px}.table th,.table td{padding:10px}}
+
+/* faq */
+details{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0 18px;margin:0 0 10px}
+summary{cursor:pointer;font-weight:600;padding:16px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--faint);font-weight:400;font-size:22px;line-height:1}
+details[open] summary::after{content:"–"}
+details>div{padding:0 0 16px;color:var(--muted);font-size:15.5px}
+
+.credits{columns:2 320px;column-gap:16px}
+.credit{break-inside:avoid;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin:0 0 16px}
+.credit h3{font-size:16px}
+.credit p{font-size:14.5px;color:var(--muted);margin:4px 0 0}
+.lic{display:inline-block;font-size:12px;font-weight:650;color:var(--info);background:var(--info-soft);border-radius:999px;padding:2px 9px;margin-top:8px}
+
+.en p{color:var(--muted)}
+footer{border-top:1px solid var(--line);padding:40px 0 56px;font-size:14px;color:var(--faint)}
+footer .row{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between}
+footer p{margin:6px 0}
+
+/* hero svg tokens */
+.s-body{fill:var(--screen)} .s-frame{fill:none;stroke:var(--dg-stroke);stroke-width:2}
+.s-panel{fill:var(--screen-2)} .s-panel2{fill:var(--screen-3)}
+.s-ink{fill:var(--screen-ink)} .s-dim{fill:var(--screen-dim)}
+.s-acc{fill:#4ea1ff} .s-acc-s{stroke:#4ea1ff} .s-ok{fill:#4cd471} .s-warm{fill:#ffb340}
+.s-road{stroke:var(--screen-dim);stroke-width:3;fill:none;stroke-linecap:round}
+.s-route{stroke:#4ea1ff;stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.s-link{stroke:var(--accent);stroke-width:2;fill:none;stroke-dasharray:5 6}
+.s-label{fill:var(--muted);font:600 13px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.s-txt{fill:var(--screen-ink);font:600 12px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.s-txt-dim{fill:var(--screen-dim);font:500 10px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.s-big{fill:var(--screen-ink);font:700 26px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+/* flow svg tokens */
+.f-box{fill:var(--dg-fill);stroke:var(--dg-stroke);stroke-width:1.2}
+.f-box-s{fill:var(--accent-soft);stroke:var(--dg-strong);stroke-width:1.5}
+.f-t{fill:var(--dg-text);font:650 13px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.f-s{fill:var(--muted);font:500 11px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.f-a{stroke:var(--faint);stroke-width:1.6;fill:none}
+.f-ah{fill:var(--faint)}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Bỏ qua tới nội dung</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-logo" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="currentColor"/><path d="M10 8v16M10 16l9-8M13 13.5L21 24" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="10" height="16" rx="2"/><rect x="15" y="4" width="6" height="7" rx="2"/><rect x="15" y="13" width="6" height="7" rx="2"/></g></symbol>
+    <symbol id="i-person" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.8-3.2 3-5 5.5-5s4.7 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.3c2.3-.3 4.3 1.2 5 4.2"/></g></symbol>
+    <symbol id="i-cluster" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 15.5c0-4.7 4.3-8.5 9.5-8.5s9.5 3.8 9.5 8.5"/><path d="M2.5 15.5h19"/><path d="M12 7v8.5"/><path d="M12 11l3-2"/></g></symbol>
+    <symbol id="i-nav" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l7.5 17.7L12 16.6l-7.5 3.9z"/></g></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></g></symbol>
+    <symbol id="i-wheel" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.4"/><path d="M3.8 10.5c3.5-.8 5.5.3 5.9 1.5M20.2 10.5c-3.5-.8-5.5.3-5.9 1.5M12 14.4v6"/></g></symbol>
+    <symbol id="i-cam" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.5" y="6.5" width="13" height="11" rx="2.5"/><path d="M15.5 10.5l6-3v9l-6-3z"/></g></symbol>
+    <symbol id="i-car" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5v-4l2-5.2c.3-.8 1-1.3 1.9-1.3h8.2c.9 0 1.6.5 1.9 1.3l2 5.2v4"/><path d="M3 16.5h18v2.5H3z"/><path d="M4.5 12.5h15"/><circle cx="7.5" cy="14.5" r=".6" fill="currentColor"/><circle cx="16.5" cy="14.5" r=".6" fill="currentColor"/></g></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="M10 9.2v5.6l4.8-2.8z" fill="currentColor"/></g></symbol>
+    <symbol id="i-update" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4.5h-4.5"/><path d="M12 8v5l3 2"/></g></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.6 3.6 5.4 3.6 8.5s-1 5.9-3.6 8.5c-2.6-2.6-3.6-5.4-3.6-8.5s1-5.9 3.6-8.5z"/></g></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></g></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5.5C6.5 4.3 9.3 4.3 12 6c2.7-1.7 5.5-1.7 8-.5V19c-2.5-1.2-5.3-1.2-8 .5-2.7-1.7-5.5-1.7-8-.5z"/><path d="M12 6v13.5"/></g></symbol>
+    <symbol id="i-gh" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5a9.5 9.5 0 0 0-3 18.5c.5.1.7-.2.7-.5v-1.7c-2.7.6-3.2-1.2-3.2-1.2-.4-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.1-.2-4.4-1.1-4.4-4.7 0-1 .4-1.9 1-2.6-.1-.2-.4-1.2.1-2.5 0 0 .8-.3 2.6 1a9 9 0 0 1 4.8 0c1.8-1.3 2.6-1 2.6-1 .5 1.3.2 2.3.1 2.5.6.7 1 1.6 1 2.6 0 3.7-2.3 4.5-4.4 4.7.3.3.7.9.7 1.8v2.6c0 .3.2.6.7.5A9.5 9.5 0 0 0 12 2.5z"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 22 26"><path d="M11 2v18M4 14l7 8 7-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Kachi — về đầu trang"><svg style="color:var(--accent)" aria-hidden="true"><use href="#i-logo"/></svg>Kachi</a>
+    <nav aria-label="Mục lục">
+      <a href="#tinh-nang">Tính năng</a>
+      <a href="#kien-truc">Kiến trúc</a>
+      <a href="#cai-dat">Cài đặt</a>
+      <a class="opt" href="#cap-nhat">Cập nhật</a>
+      <a class="opt" href="#ho-tro">Gửi log</a>
+      <a href="#faq">Giới hạn</a>
+      <a href="#english">English</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<div id="top" class="hero">
+  <div class="wrap">
+    <span class="eyebrow"><span class="dot" aria-hidden="true"></span>Bản mới nhất 2.97 · mã 200 · 08/10/2026</span>
+    <h1>Kachi</h1>
+    <p class="lead">Màn hình chính (launcher) cho đầu xe <strong>BYD DiLink</strong>, do cộng đồng làm. Chạy app thật trong từng ô, chiếu bản đồ lên cụm đồng hồ, nói lệnh tiếng Việt không cần mạng, gán phím vô-lăng, mở camera, điều khiển tiện nghi xe — và tự cập nhật qua mạng.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk"><svg aria-hidden="true"><use href="#i-down"/></svg>Tải Kachi 2.97 (APK, ~47 MB)</a>
+      <a class="btn" href="#cai-dat"><svg aria-hidden="true"><use href="#i-book"/></svg>Cách cài</a>
+      <a class="btn" href="https://github.com/dangkhoi/byd-kachi"><svg aria-hidden="true"><use href="#i-gh"/></svg>Mã nguồn</a>
+    </div>
+    <p class="meta">Gói <code>com.byd.launcher</code> · thư mục phát hành: <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk">apk/ trên nhánh main</a> · giấy phép MIT</p>
+
+    <figure class="hero-art" role="img" aria-label="Hình minh hoạ: màn hình giữa của xe chia ba ô (bản đồ, widget xe, nhạc) với thanh trạng thái và thanh nút; một mũi tên nối ô bản đồ xuống cụm đồng hồ đang hiện bản đồ chia đôi.">
+      <svg viewBox="0 0 900 430" aria-hidden="true">
+        <!-- head unit -->
+        <rect x="70" y="10" width="760" height="300" rx="22" class="s-body"/>
+        <rect x="70" y="10" width="760" height="300" rx="22" class="s-frame"/>
+        <!-- top strip -->
+        <rect x="92" y="28" width="62" height="20" rx="10" class="s-panel2"/><text x="123" y="42" text-anchor="middle" class="s-txt">10:24</text>
+        <rect x="162" y="28" width="78" height="20" rx="10" class="s-panel2"/><circle cx="174" cy="38" r="4" class="s-ok"/><text x="210" y="42" text-anchor="middle" class="s-txt">Pin 78%</text>
+        <rect x="248" y="28" width="66" height="20" rx="10" class="s-panel2"/><text x="281" y="42" text-anchor="middle" class="s-txt">24°C</text>
+        <rect x="322" y="28" width="86" height="20" rx="10" class="s-panel2"/><circle cx="334" cy="38" r="4" class="s-warm"/><text x="372" y="42" text-anchor="middle" class="s-txt">Ghế lái 2</text>
+        <rect x="742" y="28" width="66" height="20" rx="10" class="s-acc"/><text x="775" y="42" text-anchor="middle" class="s-txt" style="fill:#06121f">Hồ sơ A</text>
+        <!-- slot 1 map -->
+        <rect x="92" y="60" width="388" height="196" rx="14" class="s-panel"/>
+        <path d="M110 230 C170 200 200 210 250 170 S330 110 460 96" class="s-road"/>
+        <path d="M120 120 L300 250" class="s-road"/>
+        <path d="M150 238 C190 214 220 200 256 168 S320 124 380 112" class="s-route"/>
+        <circle cx="380" cy="112" r="7" class="s-acc"/>
+        <rect x="106" y="74" width="132" height="44" rx="10" class="s-panel2"/>
+        <path d="M122 106 v-14 h8 l-4-6 l-4 6" fill="none" stroke="#4ea1ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="142" y="92" class="s-txt">300 m</text><text x="142" y="108" class="s-txt-dim">rẽ phải</text>
+        <text x="106" y="248" class="s-txt-dim">Ô 1 · app dẫn đường chạy thật</text>
+        <!-- slot 2 widget -->
+        <rect x="490" y="60" width="318" height="94" rx="14" class="s-panel"/>
+        <circle cx="540" cy="107" r="28" fill="none" stroke="var(--screen-3)" stroke-width="7"/>
+        <path d="M540 79 a28 28 0 1 1 -26.6 36.6" fill="none" stroke="#4cd471" stroke-width="7" stroke-linecap="round"/>
+        <text x="540" y="112" text-anchor="middle" class="s-txt">78%</text>
+        <text x="586" y="96" class="s-txt">Năng lượng</text><text x="586" y="114" class="s-txt-dim">Quãng đường còn lại · lốp · bụi mịn</text>
+        <text x="586" y="132" class="s-txt-dim">Ô 2 · widget Kachi</text>
+        <!-- slot 3 music -->
+        <rect x="490" y="162" width="318" height="94" rx="14" class="s-panel"/>
+        <rect x="506" y="178" width="62" height="62" rx="10" class="s-panel2"/>
+        <path d="M528 196 v26 l20 -13 z" class="s-ink"/>
+        <text x="584" y="200" class="s-txt">Đang phát tiếp</text><text x="584" y="218" class="s-txt-dim">đúng bài, đúng giây sau khi nổ máy</text>
+        <rect x="584" y="228" width="200" height="4" rx="2" class="s-panel2"/><rect x="584" y="228" width="88" height="4" rx="2" class="s-acc"/>
+        <!-- button bar -->
+        <rect x="92" y="266" width="716" height="30" rx="15" class="s-panel2"/>
+        <g class="s-dim">
+          <rect x="130" y="275" width="36" height="12" rx="6"/><rect x="200" y="275" width="36" height="12" rx="6"/>
+          <rect x="270" y="275" width="36" height="12" rx="6" class="s-acc"/><rect x="340" y="275" width="36" height="12" rx="6"/>
+          <rect x="410" y="275" width="36" height="12" rx="6"/><rect x="480" y="275" width="36" height="12" rx="6"/>
+          <rect x="550" y="275" width="36" height="12" rx="6"/><rect x="620" y="275" width="36" height="12" rx="6"/>
+        </g>
+        <circle cx="770" cy="281" r="10" class="s-acc"/><rect x="767" y="275" width="6" height="9" rx="3" fill="#06121f"/>
+        <!-- link to cluster -->
+        <path d="M286 312 C286 340 330 352 380 356" class="s-link"/>
+        <path d="M376 351 l8 5 l-8 5" fill="none" stroke="var(--accent)" stroke-width="2"/>
+        <text x="300" y="380" class="s-label" text-anchor="end">chiếu lên cụm</text>
+        <!-- cluster -->
+        <path d="M392 340 Q392 326 412 326 L808 326 Q828 326 828 340 L828 404 Q828 418 808 418 L412 418 Q392 418 392 404 Z" class="s-body"/>
+        <path d="M392 340 Q392 326 412 326 L808 326 Q828 326 828 340 L828 404 Q828 418 808 418 L412 418 Q392 418 392 404 Z" class="s-frame"/>
+        <rect x="408" y="336" width="198" height="72" rx="10" class="s-panel"/>
+        <path d="M420 398 C470 380 500 386 530 360 S580 344 598 344" class="s-route"/>
+        <rect x="614" y="336" width="198" height="72" rx="10" class="s-panel"/>
+        <text x="713" y="374" text-anchor="middle" class="s-big">62</text><text x="713" y="394" text-anchor="middle" class="s-txt-dim">km/h · đồng hồ của xe</text>
+        <text x="610" y="430" text-anchor="middle" class="s-label" style="font-size:12px">Cụm đồng hồ — chia đôi hoặc toàn màn</text>
+      </svg>
+    </figure>
+
+    <p class="unofficial"><b>Dự án cá nhân, không chính thức.</b> Kachi không liên kết, không được BYD chứng nhận hay bảo trợ. Không có bảo đảm nào về an toàn lái xe, tương thích hay độ ổn định — cài và dùng với rủi ro của riêng bạn. Đừng thao tác màn hình khi xe đang chạy.</p>
+  </div>
+</div>
+
+<!-- ============ FEATURES ============ -->
+<section id="tinh-nang">
+  <div class="wrap">
+    <p class="kicker">Kachi làm được gì</p>
+    <h2>Một màn hình chính, gom mọi thứ bạn cần khi lái.</h2>
+    <p class="sub">Mọi tính năng nằm trong một app duy nhất, cấu hình ở <span class="path">Cài đặt</span> của Kachi. Hầu hết lưu theo <strong>hồ sơ tài xế</strong>.</p>
+    <div class="legend" aria-label="Chú thích trạng thái">
+      <span><span class="tag t-ok">Đã đo trên xe</span> có bằng chứng chạy trên xe thật</span>
+      <span><span class="tag t-new">Mới — chờ xác nhận</span> đã kiểm trên máy ảo, chờ anh em thử trên xe</span>
+    </div>
+
+    <div class="grid">
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-grid"/></svg></div>
+        <h3>Màn hình chính theo ô</h3>
+        <p>Chia màn giữa thành nhiều ô, mỗi ô là một app hoặc một widget.</p>
+        <ul>
+          <li>5 bố cục sẵn (1 ô · 2 cột · 2 hàng · 3 ô · 4 ô) hoặc <strong>tự vẽ</strong> trên lưới 12 × 6.</li>
+          <li>App chạy <strong>thật</strong> trong ô (màn ảo) — vd bản đồ bên trái, nhạc bên phải.</li>
+          <li>Widget dựng sẵn: tổng hợp, xe, năng lượng, đồng hồ, trình chiếu ảnh, lối tắt ứng dụng — hoặc widget Android của app khác.</li>
+          <li>Thanh trạng thái (chip pin, nhiệt độ, ghế…) và thanh nút xe tuỳ chỉnh được; hình nền, sáng/tối.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-person"/></svg></div>
+        <h3>Hồ sơ tài xế</h3>
+        <p>Mỗi hồ sơ giữ riêng bố cục, nội dung ô, thanh trên, thanh nút, hình nền, giao diện, đơn vị, ngôn ngữ, sổ địa chỉ, kiểu hình camera và kiểu chiếu cụm.</p>
+        <ul>
+          <li>Đổi nhanh bằng chip trên thanh trên hoặc nói <em>“chuyển sang hồ sơ …”</em>.</li>
+          <li>Đổi hồ sơ <strong>không tắt app</strong> — nhạc và dẫn đường chạy tiếp (2.97).</li>
+          <li>Xuất / nhập tệp <code>.kachi</code>; có bản “chia sẻ” bỏ địa chỉ và lịch.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-cluster"/></svg></div>
+        <h3>Chiếu lên cụm đồng hồ</h3>
+        <p>Đưa app (bản đồ, CarPlay, Android Auto…) lên màn cụm sau vô-lăng.</p>
+        <ul>
+          <li><strong>Toàn màn</strong> hoặc <strong>chia đôi</strong> trái/phải, chỉnh được tỉ lệ; CarPlay / Android Auto luôn toàn màn.</li>
+          <li>Tự chiếu khi nổ máy, nút nổi bật/tắt nhanh, nút <em>Cứu hộ cụm</em>.</li>
+          <li>Hai kiểu cụm <em>Bo tròn</em> / <em>Chữ nhật</em>; vị trí, cỡ, DPI lưu theo kiểu cụm.</li>
+          <li>Nền quanh bản đồ đổi theo chế độ sáng/tối của xe (2.94–2.96).</li>
+        </ul>
+        <div class="tags"><span class="tag t-ok">Seal · Sealion 6</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-nav"/></svg></div>
+        <h3>Dẫn đường lên cụm &amp; HUD</h3>
+        <p>Kachi đọc hướng rẽ từ app dẫn đường rồi ghi xuống cụm đồng hồ (mũi tên, khoảng cách, tên đường, giờ đến) và kính lái.</p>
+        <ul>
+          <li><strong>Google Maps</strong>: đọc từ thông báo, chạy cả khi app ở nền.</li>
+          <li><strong>VietMap</strong>: tốc độ, biển giới hạn, cảnh báo camera; hướng rẽ cần app đang hiện.</li>
+          <li><strong>Waze</strong>: cần app đang hiện trên màn.</li>
+          <li>Sổ địa chỉ theo hồ sơ (<em>“về nhà”</em>), tự dẫn đường theo lịch.</li>
+        </ul>
+        <div class="tags"><span class="tag t-ok">Google Maps → cụm</span><span class="tag t-new">Lịch dẫn đường</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-mic"/></svg></div>
+        <h3>Giọng nói “Hey Kachi”</h3>
+        <p>Nhận dạng tiếng Việt <strong>ngay trên đầu xe</strong> — tiếng nói không gửi ra mạng.</p>
+        <ul>
+          <li>Mô hình tải một lần trong app (~74 MB) hoặc chép qua USB khi xe không có mạng.</li>
+          <li>Điều khiển xe, mở app (cả <em>“vào ô số 2”</em>), nhạc, dẫn đường, đổi hồ sơ, bố cục; ghép hai việc bằng <em>“và”</em> / <em>“rồi”</em>.</li>
+          <li>Đọc phản hồi bằng giọng offline; tự dạy Kachi tên app khó đọc.</li>
+          <li>Gọi bằng phím vô-lăng, nút mic, hoặc “Hey Kachi” (mặc định tắt).</li>
+        </ul>
+        <div class="tags"><span class="tag t-ok">Hey Kachi</span><span class="tag t-info">Danh sách câu lệnh có trong app</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-wheel"/></svg></div>
+        <h3>Phím vật lý &amp; vô-lăng</h3>
+        <p>Học mã phím rồi gán cho việc bạn muốn — chức năng gốc của phím vẫn giữ.</p>
+        <ul>
+          <li>Đích: mở một app, trợ lý của xe, Kachi nghe, bất kỳ nút điều khiển xe, hoặc một camera.</li>
+          <li>Gán riêng cho núm bệ giữa và phím vô-lăng.</li>
+          <li>Tự kiểm và tự nối lại sau mỗi lần tắt/mở xe; có nút <em>Kiểm tra / Sửa ngay</em>.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-cam"/></svg></div>
+        <h3>Camera</h3>
+        <ul>
+          <li><strong>Theo xi-nhan</strong>: bật xi-nhan trái/phải là camera bên đó nổi lên, tắt theo đèn.</li>
+          <li><strong>Theo yêu cầu</strong> (2.93): mở camera sau · trái · phải · trước bằng nút, phím hoặc giọng; bấm lại để tắt.</li>
+          <li>Ba kiểu hình (Nắn thẳng · Thẳng rộng · Gương cầu), thu phóng 50–150 %, xoay/lật, hiện trên màn chính hoặc lên cụm.</li>
+        </ul>
+        <div class="tags"><span class="tag t-ok">Xi-nhan: Seal · Sealion 6</span><span class="tag t-new">Camera theo yêu cầu</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-car"/></svg></div>
+        <h3>Tiện nghi xe</h3>
+        <p>Nút trên thanh nút, trong ô, gán phím hoặc nói bằng giọng:</p>
+        <ul>
+          <li>Kính 4 cửa (cả mức 50 %), cốp, cửa sổ trời.</li>
+          <li>Điều hoà: nhiệt độ, gió −/+ (về AUTO), sấy kính, lọc bụi mịn.</li>
+          <li>Ghế sưởi/mát — tự chỉnh theo nhiệt độ.</li>
+          <li>Tự lấy gió trong khi nổ máy; mưa thì tự bật sấy kính.</li>
+        </ul>
+        <p style="margin-top:8px;font-size:14px">Nút nào chạy được tuỳ đời xe — tra từng nút trong <a href="kachi-feature-catalog.html">danh mục chức năng</a>.</p>
+        <div class="tags"><span class="tag t-ok">Kính · sấy · lọc bụi · ghế tự động</span><span class="tag t-new">Tự sấy khi mưa</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-play"/></svg></div>
+        <h3>Nhạc &amp; YouTube phát tiếp</h3>
+        <ul>
+          <li>Tự mở app nhạc đã chọn khi lên xe.</li>
+          <li>YouTube: nhớ bài đang nghe, nổ máy là phát tiếp <strong>đúng bài, đúng giây</strong>, toàn màn hình.</li>
+          <li>Mạng chưa có lúc nổ máy thì thử lại tới 1 phút mà không chặn app khác; bạn đã bật nhạc khác thì không phát đè.</li>
+        </ul>
+        <div class="tags"><span class="tag t-new">2.94 → 2.97</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-update"/></svg></div>
+        <h3>Cập nhật tự động</h3>
+        <p>Kachi tự tìm bản mới trên GitHub, hỏi trước rồi cài đè — không cần máy tính. Dữ liệu, hồ sơ, cấu hình giữ nguyên.</p>
+        <div class="tags"><span class="tag t-ok">Đã đo trên xe</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-globe"/></svg></div>
+        <h3>Đa ngôn ngữ</h3>
+        <p>Giao diện Tiếng Việt, English, 中文, ไทย, Bahasa Melayu — hoặc theo ngôn ngữ của xe. Giọng nói hiện chỉ tiếng Việt.</p>
+      </article>
+    </div>
+    <p class="meta" style="margin-top:22px">Nguồn trạng thái: <a href="kachi-feature-catalog.html">danh mục chức năng</a> (sinh bằng máy từ mã nguồn) và ghi chú phát hành 2.90–2.97. Lần đếm gần nhất ghi trong README: <strong>141/165</strong> chức năng đã đo trên xe (đo ở bản 2.79; tính năng từ 2.81 trở đi chưa tính).</p>
+  </div>
+</section>
+
+<!-- ============ ARCHITECTURE ============ -->
+<section id="kien-truc" class="alt">
+  <div class="wrap">
+    <p class="kicker">Bên trong Kachi</p>
+    <h2>Kiến trúc hệ thống</h2>
+    <p class="sub">Kachi là một app Android bình thường — <strong>không root</strong>, không sửa firmware. Các việc cần quyền cao hơn đi qua kênh gỡ lỗi nội bộ của chính đầu xe, sau khi bạn cho phép một lần.</p>
+
+    <div class="diagram" role="img" aria-label="Sơ đồ ba tầng: đầu vào (app dẫn đường, nhạc, micro, phím, cảm biến xe) đi vào Kachi (màn hình chính, ô màn ảo, chiếu cụm, dẫn đường, giọng nói, phím, camera, điều khiển xe, cập nhật); Kachi dùng các cầu nối hệ thống (kênh shell loopback, dịch vụ xe BYD, trợ năng, đọc thông báo); đầu ra là màn giữa, cụm đồng hồ, HUD kính lái, loa và tiện nghi xe.">
+      <div class="layer">
+        <div class="layer-h"><b>Đầu vào</b><span>những gì Kachi lắng nghe</span></div>
+        <div class="nodes">
+          <div class="node"><b>App dẫn đường</b><small>Google Maps · VietMap · Waze</small></div>
+          <div class="node"><b>App nhạc / video</b><small>YouTube, YouTube Music…</small></div>
+          <div class="node"><b>Micro</b><small>“Hey Kachi” · nút mic · phím</small></div>
+          <div class="node"><b>Phím vật lý</b><small>vô-lăng · núm bệ giữa</small></div>
+          <div class="node"><b>Trạng thái xe</b><small>xi-nhan · pin · nhiệt độ · mưa · tắt/mở máy</small></div>
+        </div>
+      </div>
+      <div class="down" aria-hidden="true"><svg><use href="#i-chev"/></svg></div>
+      <div class="layer kachi">
+        <div class="layer-h"><b>Kachi — màn hình chính (HOME)</b><span>gói com.byd.launcher</span></div>
+        <div class="nodes">
+          <div class="node strong"><b>Màn hình chính</b><small>bố cục · ô · widget · hồ sơ</small></div>
+          <div class="node strong"><b>Ô màn ảo</b><small>app chạy thật trong từng ô</small></div>
+          <div class="node strong"><b>Chiếu cụm</b><small>toàn màn · chia đôi · tự chiếu</small></div>
+          <div class="node strong"><b>Dẫn đường</b><small>chọn nguồn → một hướng rẽ → cụm + HUD</small></div>
+          <div class="node strong"><b>Giọng nói offline</b><small>sherpa-onnx · Zipformer-vi · Piper</small></div>
+          <div class="node strong"><b>Phím &amp; camera</b><small>học phím · gán việc · camera nổi</small></div>
+          <div class="node strong"><b>Điều khiển xe</b><small>kính · AC · ghế · tự động hoá</small></div>
+          <div class="node strong"><b>Cập nhật OTA</b><small>GitHub → cài đè</small></div>
+        </div>
+      </div>
+      <div class="down" aria-hidden="true"><svg><use href="#i-chev"/></svg><span>qua các cầu nối của hệ thống</span></div>
+      <div class="layer">
+        <div class="layer-h"><b>Cầu nối hệ thống</b><span>không root</span></div>
+        <div class="nodes">
+          <div class="node"><b>Kênh shell nội bộ</b><small>thư viện dadb nối vào adb của chính đầu xe qua localhost — cần “Cho phép gỡ lỗi USB” một lần</small></div>
+          <div class="node"><b>Dịch vụ xe BYD</b><small>đọc/ghi trạng thái xe qua HAL của DiLink</small></div>
+          <div class="node"><b>Trợ năng</b><small>nhận phím vật lý, đọc màn app dẫn đường đang hiện</small></div>
+          <div class="node"><b>Đọc thông báo</b><small>hướng rẽ của Google Maps khi chạy nền</small></div>
+        </div>
+      </div>
+      <div class="down" aria-hidden="true"><svg><use href="#i-chev"/></svg></div>
+      <div class="layer">
+        <div class="layer-h"><b>Đầu ra</b><span>nơi bạn thấy và nghe</span></div>
+        <div class="nodes">
+          <div class="node"><b>Màn giữa</b><small>màn hình chính, ô, camera nổi</small></div>
+          <div class="node"><b>Cụm đồng hồ</b><small>app chiếu lên · hướng rẽ · biển tốc độ</small></div>
+          <div class="node"><b>HUD kính lái</b><small>hướng rẽ (chỉ nhận Google Maps)</small></div>
+          <div class="node"><b>Loa</b><small>câu trả lời bằng giọng offline</small></div>
+          <div class="node"><b>Tiện nghi xe</b><small>kính, cốp, điều hoà, ghế, sấy</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-wrap">
+      <h3>Đường đi của một hướng rẽ</h3>
+      <p style="color:var(--muted);font-size:15px">Mỗi lúc chỉ một nguồn dẫn đường được chọn. Hướng rẽ được chuẩn hoá một lần, rồi mã hoá riêng cho từng màn.</p>
+      <svg class="flow-svg" viewBox="0 0 1000 250" role="img" aria-label="Google Maps, VietMap hoặc Waze → bộ chọn nguồn → hướng rẽ chuẩn hoá → ba đầu ra: làn của cụm, giữa cụm kèm giờ đến, HUD kính lái.">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="f-ah"/></marker></defs>
+        <rect x="10" y="20" width="190" height="56" rx="12" class="f-box"/><text x="105" y="44" text-anchor="middle" class="f-t">Google Maps</text><text x="105" y="62" text-anchor="middle" class="f-s">thông báo · chạy nền</text>
+        <rect x="10" y="97" width="190" height="56" rx="12" class="f-box"/><text x="105" y="121" text-anchor="middle" class="f-t">VietMap</text><text x="105" y="139" text-anchor="middle" class="f-s">widget + màn đang hiện</text>
+        <rect x="10" y="174" width="190" height="56" rx="12" class="f-box"/><text x="105" y="198" text-anchor="middle" class="f-t">Waze</text><text x="105" y="216" text-anchor="middle" class="f-s">màn đang hiện</text>
+        <path d="M200 48 C240 48 240 125 268 125" class="f-a" marker-end="url(#ah)"/>
+        <path d="M200 125 L268 125" class="f-a" marker-end="url(#ah)"/>
+        <path d="M200 202 C240 202 240 125 268 125" class="f-a" marker-end="url(#ah)"/>
+        <rect x="272" y="97" width="170" height="56" rx="12" class="f-box-s"/><text x="357" y="121" text-anchor="middle" class="f-t">Chọn nguồn</text><text x="357" y="139" text-anchor="middle" class="f-s">một nguồn tại một lúc</text>
+        <path d="M442 125 L494 125" class="f-a" marker-end="url(#ah)"/>
+        <rect x="498" y="97" width="190" height="56" rx="12" class="f-box-s"/><text x="593" y="121" text-anchor="middle" class="f-t">Hướng rẽ chuẩn hoá</text><text x="593" y="139" text-anchor="middle" class="f-s">loại rẽ · cự ly · tên đường</text>
+        <path d="M688 125 C730 125 730 48 776 48" class="f-a" marker-end="url(#ah)"/>
+        <path d="M688 125 L776 125" class="f-a" marker-end="url(#ah)"/>
+        <path d="M688 125 C730 125 730 202 776 202" class="f-a" marker-end="url(#ah)"/>
+        <rect x="780" y="20" width="210" height="56" rx="12" class="f-box"/><text x="885" y="44" text-anchor="middle" class="f-t">Làn chỉ đường của cụm</text><text x="885" y="62" text-anchor="middle" class="f-s">biểu tượng rẽ</text>
+        <rect x="780" y="97" width="210" height="56" rx="12" class="f-box"/><text x="885" y="121" text-anchor="middle" class="f-t">Giữa cụm + giờ đến</text><text x="885" y="139" text-anchor="middle" class="f-s">ghi qua HAL của xe</text>
+        <rect x="780" y="174" width="210" height="56" rx="12" class="f-box"/><text x="885" y="198" text-anchor="middle" class="f-t">HUD kính lái</text><text x="885" y="216" text-anchor="middle" class="f-s">tuỳ cấu hình xe</text>
+      </svg>
+      <div class="flow-mobile" aria-hidden="true">
+        <div class="fstep"><b>Google Maps · VietMap · Waze</b><small>nguồn hướng rẽ</small></div>
+        <div class="down"><svg><use href="#i-chev"/></svg></div>
+        <div class="fstep"><b>Chọn nguồn → hướng rẽ chuẩn hoá</b><small>loại rẽ · cự ly · tên đường</small></div>
+        <div class="down"><svg><use href="#i-chev"/></svg></div>
+        <div class="fstep"><b>Làn của cụm · giữa cụm + giờ đến · HUD kính lái</b><small>mỗi màn mã hoá riêng</small></div>
+      </div>
+    </div>
+
+    <ul class="notes">
+      <li><b>Chiếu cụm và dẫn đường là hai phần độc lập</b> — trạng thái, lệnh và nhật ký riêng, hỏng một bên không kéo bên kia.</li>
+      <li><b>Mọi lệnh đổi trạng thái hệ thống đều nhắm đúng màn, đúng app</b> và có đường hoàn tác; Kachi không quét mù mọi màn hình.</li>
+      <li><b>Điều khiển xe được viết lại “clean-room”</b> từ các dữ kiện API công khai (mã tính năng, tên hàm) — không chép mã của dự án khác. Xem <a href="#credits">ghi công</a>.</li>
+      <li><b>Mọi tự động hoá chỉ hoàn tác cái nó đã bật</b> — bạn tự bật tay thì Kachi không đụng.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ INSTALL ============ -->
+<section id="cai-dat">
+  <div class="wrap">
+    <p class="kicker">Bắt đầu</p>
+    <h2>Cài đặt lần đầu</h2>
+    <p class="sub">Cài một lần bằng máy tính, sau đó Kachi tự cập nhật. Các bước lấy từ <a href="https://github.com/dangkhoi/byd-kachi/blob/main/docs/HUONG-DAN-KACHI.md">hướng dẫn sử dụng đầy đủ</a>.</p>
+
+    <ol class="steps">
+      <li><div>
+        <h3>Tải APK</h3>
+        <p>Tải <a href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk"><code>Kachi-2.97-release.apk</code></a> từ thư mục <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk"><code>apk/</code></a> trên nhánh <code>main</code>. Thư mục chỉ giữ một bản — luôn là bản mới nhất.</p>
+      </div></li>
+      <li><div>
+        <h3>Cài bằng adb</h3>
+        <p>Từ máy tính đã kết nối adb tới đầu xe:</p>
+        <pre><code>adb install -r Kachi-2.97-release.apk</code></pre>
+        <p>Chép APK vào xe rồi chạm để cài có thể bị ROM DiLink báo <em>“Fail in installation of desktop apps”</em> (vì Kachi là launcher) — cài bằng adb thì qua.</p>
+      </div></li>
+      <li><div>
+        <h3>Cho phép gỡ lỗi USB</h3>
+        <p>Mở Kachi. Khi hệ thống hỏi <em>“Cho phép gỡ lỗi USB?”</em>: tích <strong>“Luôn cho phép từ máy tính này”</strong> rồi bấm <strong>OK</strong>. Đây là kênh Kachi dùng để đưa app vào ô, chiếu lên cụm, tự cấp quyền, tự sửa phím vô-lăng và tự cập nhật.</p>
+      </div></li>
+      <li><div>
+        <h3>Cấp quyền còn thiếu</h3>
+        <p><span class="path">Cài đặt › Hệ thống &amp; quyền › Quyền còn thiếu</span> — Kachi tự cấp qua kênh ở bước 3, không cần máy tính. Quyền trợ năng (cho phím vật lý) và đọc thông báo (cho dẫn đường lên cụm) cũng được bật theo cách này; nếu không bật được, Kachi chỉ đường bật tay trong cài đặt hệ thống.</p>
+      </div></li>
+      <li><div>
+        <h3>Đặt Kachi làm màn hình chính</h3>
+        <p><span class="path">Cài đặt › Hệ thống &amp; quyền › Màn hình chính › Đặt Kachi làm màn hình chính</span>. ROM BYD không hiện hộp chọn HOME nên Kachi tự đặt. Muốn quay lại launcher gốc: <em>Bỏ chọn Kachi làm màn hình chính</em>.</p>
+      </div></li>
+      <li><div>
+        <h3>Bật những gì bạn cần</h3>
+        <p>
+          <span class="path">Giọng nói</span> › Tải mô hình tiếng Việt (và gói giọng đọc nếu muốn) ·
+          <span class="path">Dẫn đường &amp; cụm đồng hồ</span> › Dẫn đường lên cụm ·
+          <span class="path">Chiếu màn lên cụm</span> › Bật chiếu màn ·
+          <span class="path">Phím vô-lăng</span> › Học phím mới ·
+          <span class="path">Tiện nghi xe</span> › Camera theo xi-nhan.
+        </p>
+      </div></li>
+      <li><div>
+        <h3>Kiểm tra phiên bản</h3>
+        <p><span class="path">Cài đặt › Giới thiệu</span> phải hiện <strong>Phiên bản 2.97 (mã 200)</strong>.</p>
+      </div></li>
+    </ol>
+    <div class="callout warn"><b>Bản rất cũ:</b> bản Kachi cài trước 1.41 ký bằng khoá khác — phải gỡ (<code>pm uninstall com.byd.launcher</code>) rồi cài tay một lần, sau đó cập nhật tự động bình thường.</div>
+  </div>
+</section>
+
+<!-- ============ UPDATE ============ -->
+<section id="cap-nhat" class="alt">
+  <div class="wrap">
+    <p class="kicker">Cập nhật</p>
+    <h2>Cập nhật qua mạng, không cần máy tính</h2>
+    <div class="two">
+      <div class="card">
+        <h3>Cập nhật tay</h3>
+        <p><span class="path">Cài đặt › Hệ thống &amp; quyền › Kiểm tra cập nhật</span>. Kachi hỏi GitHub thư mục <code>apk/</code> trên nhánh <code>main</code>, tìm tệp <code>Kachi-&lt;phiên bản&gt;-release.apk</code> mới hơn, tải về rồi cài đè. Hồ sơ và cấu hình giữ nguyên.</p>
+      </div>
+      <div class="card">
+        <h3>Tự dò bản mới</h3>
+        <p>Bật <span class="path">Tự động cập nhật</span> (cùng mục): mỗi lần mở Kachi sẽ tự dò; có bản mới thì <strong>hỏi trước</strong> khi tải, không có thì im lặng. Xe phải có mạng lúc dò.</p>
+      </div>
+    </div>
+    <div class="callout info" style="margin-top:16px"><b>Không lùi bản được.</b> Cập nhật tự động chỉ đi lên. Gặp lỗi ở một bản thì lỗi được gom sửa ở bản sau — hãy gửi log (mục dưới).</div>
+  </div>
+</section>
+
+<!-- ============ SUPPORT ============ -->
+<section id="ho-tro">
+  <div class="wrap">
+    <p class="kicker">Hỗ trợ</p>
+    <h2>Gặp lỗi? Gửi log về</h2>
+    <p class="sub">Kachi tự ghi nhật ký suốt phiên — bạn không cần bật gì, không cần adb.</p>
+    <ol class="steps">
+      <li><div><h3>Chép thư mục log</h3><p>Mở trình quản lý tệp trên xe, chép cả thư mục <code>Android/data/com.byd.launcher/files/kachi-logs/</code> (ra USB chẳng hạn). Tệp <code>usage-*.log</code> luôn có.</p></div></li>
+      <li><div><h3>Ghi lại phiên bản</h3><p>Chụp <span class="path">Cài đặt › Giới thiệu</span> — đừng đoán bản đang chạy.</p></div></li>
+      <li><div><h3>Mô tả + ảnh chụp màn</h3><p>Lỗi xảy ra lúc nào, đang làm gì, ảnh chụp màn hình (hoặc ảnh cụm đồng hồ). Gửi kèm thư mục log qua <a href="https://github.com/dangkhoi/byd-kachi/issues">GitHub Issues</a> hoặc nhóm anh em đang dùng.</p></div></li>
+    </ol>
+    <p class="meta" style="margin-top:14px">Có adb: <code>adb pull /sdcard/Android/data/com.byd.launcher/files/kachi-logs/ ./kachi-logs/</code>. Log có thể chứa tên app, địa chỉ đã lưu và giờ chuyến đi — xem qua trước khi chia sẻ công khai.</p>
+    <div class="callout info"><b>Trước khi gửi, thử nhanh:</b> cụm im mà app dẫn đường vẫn chạy → <em>Kết nối lại nguồn dẫn đường</em> hoặc <em>Cứu hộ cụm</em>; giao diện lỗi → <span class="path">Hệ thống &amp; quyền › Khởi động lại launcher</span> (không cần khởi động lại đầu xe); phím vô-lăng chết → <span class="path">Phím vô-lăng › Kiểm tra / Sửa ngay</span>.</div>
+  </div>
+</section>
+
+<!-- ============ CARS ============ -->
+<section id="xe" class="alt">
+  <div class="wrap">
+    <p class="kicker">Tương thích</p>
+    <h2>Chạy trên xe nào?</h2>
+    <p class="sub">Chỉ liệt kê những gì đã có bằng chứng. Xe hay đời DiLink khác: <strong>chưa biết</strong> — rất mong anh em thử và gửi log.</p>
+    <div class="tscroll">
+    <table class="table">
+      <thead><tr><th scope="col">Xe / nền tảng</th><th scope="col">Trạng thái</th><th scope="col">Ghi chú</th></tr></thead>
+      <tbody>
+        <tr><td><strong>BYD Seal</strong> (cụm phẳng)</td><td><span class="tag t-ok">Đã đo trên xe</span></td><td>Xe chạy thử chính qua nhiều buổi đo: camera xi-nhan, nút xe, chiếu cụm, dẫn đường, giọng nói.</td></tr>
+        <tr><td><strong>BYD Sealion 6</strong> (cụm cong)</td><td><span class="tag t-ok">Đã đo trên xe</span></td><td>Anh em chạy thử: camera xi-nhan, lượt kiểm nút xe; lỗi chiếu cụm cong sửa ở 2.95 từ log anh em gửi.</td></tr>
+        <tr><td>DiLink 3 · Android 10</td><td><span class="tag t-ok">Nền tảng chính</span></td><td>Toàn bộ hành vi được đối chiếu với mã nguồn Android 10 và đo trên ROM này. Firmware mới 2606 (V2.0.4): launcher gốc giành lại HOME sau mỗi lần nổ máy — Kachi tự lấy lại từ 2.96 nếu bạn đã chọn Kachi.</td></tr>
+        <tr><td>DiLink 5 · Android 12</td><td><span class="tag t-new">Chưa đo</span></td><td>Có chuẩn bị cấu hình riêng cho đời xe này nhưng chưa có buổi chạy thật.</td></tr>
+        <tr><td>Xe / đời khác</td><td><span class="tag t-info">Chưa biết</span></td><td>Mỗi nút điều khiển xe có trạng thái riêng — tra <a href="kachi-feature-catalog.html">danh mục chức năng</a>.</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ / LIMITS ============ -->
+<section id="faq">
+  <div class="wrap">
+    <p class="kicker">Hỏi đáp</p>
+    <h2>Câu hỏi thường gặp &amp; giới hạn đã biết</h2>
+    <p class="sub">Nói thẳng những gì Kachi chưa làm được, và vì sao.</p>
+
+    <details><summary>Có cần root hay sửa firmware không?</summary><div>Không. Kachi là app thường. Các việc cần quyền cao (đưa app vào ô, chiếu cụm, tự cấp quyền, cài cập nhật) đi qua kênh gỡ lỗi nội bộ của đầu xe, sau khi bạn bấm “Cho phép gỡ lỗi USB” một lần. Chưa cho phép thì các tính năng đó không chạy và Kachi sẽ nhắc.</div></details>
+
+    <details><summary>Cụm đồng hồ không hiện ô biển tốc độ gốc?</summary><div>Ô biển giới hạn tốc độ có sẵn của cụm: Kachi ghi được qua HAL (lệnh được chấp nhận) nhưng cụm và HUD không hiện ra. Vì vậy Kachi vẽ <strong>biển tốc độ của riêng mình</strong> trên cụm (chỉnh cỡ và vị trí ở <span class="path">Dẫn đường &amp; cụm đồng hồ</span>).</div></details>
+
+    <details><summary>HUD kính lái không hiện dẫn đường?</summary><div>HUD chỉ nhận hướng rẽ từ <strong>Google Maps</strong>. Với HUD zin của xe, việc có hiện dẫn đường hay không phụ thuộc cấu hình firmware của xe — Kachi gửi dữ liệu đúng (một HUD gắn thêm đọc cùng dữ liệu đã hiện được), nhưng không thể bật cấu hình đó từ app.</div></details>
+
+    <details><summary>Kiểu cụm Chữ nhật có khung ADAS trắng bên phải?</summary><div>Khung đó do firmware xe vẽ cố định, không thu nhỏ được. Muốn ADAS nhỏ thì chọn kiểu <em>Bo tròn</em>.</div></details>
+
+    <details><summary>Sao không có khoá xe, âm lượng, độ sáng màn?</summary><div>Những việc này (khoá/mở khoá cửa, âm lượng, độ sáng màn, đèn viền) đã bỏ khỏi Kachi — hãy dùng màn hình của xe. Hỏi bằng giọng, Kachi sẽ nói rõ là đã bỏ. Không phải nút nào ROM cũng cho ghi; tra từng nút trong <a href="kachi-feature-catalog.html">danh mục</a>.</div></details>
+
+    <details><summary>Sau khi tắt máy, mở lại thấy Kachi khởi động chậm vài giây?</summary><div>Firmware BYD tắt các app mỗi lần tắt máy, nên lúc nổ máy Kachi phải khởi động lại từ đầu. Kachi tự nối lại kênh, phím vô-lăng và ô app; vài giây đầu là bình thường.</div></details>
+
+    <details><summary>Kachi có dùng hay giả lập GPS không?</summary><div>Không giả lập vị trí, không bao giờ là app “mock location”. Quyền vị trí (nếu cấp) chỉ để <strong>đọc</strong>, vd cho điều kiện “chỉ khi có GPS” của lịch dẫn đường.</div></details>
+
+    <details><summary>Giọng nói có gửi lên mạng không?</summary><div>Không. Nhận dạng chạy trên đầu xe; mạng chỉ dùng để tải mô hình một lần (mỗi tệp được kiểm SHA-256). Kachi chỉ nghe tiếng Việt — tên app tiếng Anh khó đọc thì dạy ở <span class="path">Giọng nói › Dạy Kachi tên app</span>. Huỷ lượt nghe bằng cách chạm ra ngoài tấm chữ (nút Back cố ý không huỷ).</div></details>
+
+    <details><summary>Bấm Home lại về launcher gốc?</summary><div><span class="path">Hệ thống &amp; quyền › Màn hình chính</span> cho biết ai đang là màn hình chính; bấm <em>Đặt Kachi làm màn hình chính</em>. Nếu ROM hay đổi lại, bật <em>Giữ Kachi làm màn hình chính khi nổ máy</em>.</div></details>
+
+    <details><summary>Không thấy bản mới khi kiểm tra cập nhật?</summary><div>Xe phải có mạng lúc dò. Kênh cập nhật chỉ có đúng một tệp <code>apk/Kachi-&lt;phiên bản&gt;-release.apk</code> trên <code>main</code> — chưa đăng bản mới thì không có gì để tải. Bản cài trước 1.41 phải gỡ rồi cài tay một lần.</div></details>
+  </div>
+</section>
+
+<!-- ============ CREDITS ============ -->
+<section id="credits" class="alt">
+  <div class="wrap">
+    <p class="kicker">Ghi công</p>
+    <h2>Mã nguồn mở &amp; giấy phép</h2>
+    <p class="sub">Kachi phát hành theo <a href="https://github.com/dangkhoi/byd-kachi/blob/main/LICENSE">giấy phép MIT</a>. Cảm ơn các dự án dưới đây — danh sách đầy đủ trong <a href="https://github.com/dangkhoi/byd-kachi/blob/main/CREDITS.md">CREDITS.md</a>.</p>
+    <div class="credits">
+      <div class="credit"><h3><a href="https://github.com/mobile-dev-inc/dadb">dadb</a></h3><p>ADB client thuần JVM, nhúng trong app để nối kênh shell nội bộ của đầu xe.</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3><a href="https://github.com/k2-fsa/sherpa-onnx">sherpa-onnx</a></h3><p>Bộ nhận dạng và tổng hợp giọng nói chạy tại máy. Đóng kèm thư viện native ONNX Runtime (Microsoft, giấy phép MIT).</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3>Mô hình Zipformer tiếng Việt (int8)</h3><p>Mô hình nghe, tải về khi bạn bấm Tải trong app, không đóng trong APK. Gói sherpa-onnx đóng gói từ mô hình gốc huấn luyện tiếng Việt.</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3>Mô hình “Hey Kachi”</h3><p>Bộ dò từ khoá <code>sherpa-onnx-kws-zipformer-gigaspeech-3.3M</code> (k2-fsa).</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3>Giọng đọc Piper — VAIS-1000</h3><p>Gói giọng đọc tiếng Việt, tải riêng. Ghi công: VAIS-1000 Vietnamese speech synthesis corpus · Piper · sherpa-onnx.</p><span class="lic">CC-BY-4.0</span></div>
+      <div class="credit"><h3>espeak-ng (dữ liệu phát âm)</h3><p>Piper dùng một phần dữ liệu espeak-ng cho tiếng Việt, đi kèm gói giọng đọc, nguyên trạng. Mã nguồn: github.com/espeak-ng/espeak-ng.</p><span class="lic">GPL-3.0-or-later</span></div>
+      <div class="credit"><h3><a href="https://github.com/square/okio">okio</a> · <a href="https://github.com/JetBrains/kotlin">Kotlin stdlib</a></h3><p>Thư viện I/O và runtime Kotlin, đóng gói gián tiếp.</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3><a href="https://www.bouncycastle.org/">Bouncy Castle</a></h3><p>Thư viện mật mã mà dadb dùng để tạo/ký khoá xác thực ADB.</p><span class="lic">Bouncy Castle License (kiểu MIT)</span></div>
+      <div class="credit"><h3>Tham chiếu nghiên cứu (clean-room)</h3><p><a href="https://github.com/yash-srivastava/Overdrive-release">Overdrive-release</a> © 2026 Yash Srivastava và <a href="https://github.com/Kiroha/byd-dashcast">byd-dashcast</a> © 2026 Cedric Carre — chỉ dùng lại dữ kiện API (mã tính năng, opcode, tên hàm), <strong>không chép mã nguồn</strong>.</p><span class="lic">MIT</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ENGLISH ============ -->
+<section id="english" class="en" lang="en">
+  <div class="wrap">
+    <p class="kicker">English summary</p>
+    <h2>Kachi in one minute</h2>
+    <div class="two">
+      <div>
+        <p><strong>Kachi</strong> is an unofficial, community-built home-screen launcher for <strong>BYD DiLink</strong> head units (Vietnamese-first UI; English, Chinese, Thai and Malay also available). Current release: <strong>2.97 (versionCode 200)</strong>.</p>
+        <p>It runs real apps inside resizable home-screen slots, casts apps to the instrument cluster (full or split), forwards turn-by-turn guidance from Google Maps / VietMap / Waze to the cluster and HUD, offers fully on-device Vietnamese voice control (sherpa-onnx), remaps steering-wheel and console keys, shows cameras on turn signal or on demand, drives comfort controls (windows, climate, seats, defrost, air filter) and updates itself over the air.</p>
+      </div>
+      <div>
+        <p><strong>Install:</strong> download <a href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk">Kachi-2.97-release.apk</a>, run <code>adb install -r</code>, open Kachi and accept “Allow USB debugging” (tick “Always allow”), then <em>Settings › System &amp; permissions › Set Kachi as home</em>. Later updates: <em>Check for updates</em> in the same group.</p>
+        <p><strong>Verified on</strong> BYD Seal and Sealion 6 (DiLink 3, Android 10); everything else is unknown. Full guide (VI + EN): <a href="https://github.com/dangkhoi/byd-kachi/blob/main/docs/HUONG-DAN-KACHI.md">HUONG-DAN-KACHI.md</a>.</p>
+        <p><strong>Not affiliated with or endorsed by BYD.</strong> No warranty of any kind; use at your own risk and never operate the screen while driving.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DISCLAIMER ============ -->
+<section id="mien-tru" class="alt">
+  <div class="wrap">
+    <p class="kicker">Miễn trừ trách nhiệm</p>
+    <h2>An toàn là trên hết</h2>
+    <div class="callout danger"><b>Kachi là thử nghiệm cá nhân, không liên kết với BYD.</b> Không có bảo đảm nào về an toàn lái xe, tương thích, khả năng hoàn tác hay độ ổn định. Cài và dùng với rủi ro của riêng bạn.</div>
+    <ul class="notes">
+      <li><b>Chỉ thao tác màn hình khi xe đã dừng an toàn.</b> Khi đang lái, dùng giọng nói hoặc phím đã gán.</li>
+      <li><b>Camera, cụm đồng hồ và HUD do Kachi hiển thị chỉ để tham khảo</b> — luôn quan sát trực tiếp và dùng gương.</li>
+            <li>BYD, DiLink và tên các app được nhắc tới là nhãn hiệu của chủ sở hữu tương ứng, chỉ dùng để mô tả tương thích.</li>
+    </ul>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="row">
+      <div>
+        <p><strong style="color:var(--text)">Kachi</strong> · phiên bản 2.97 (mã 200) · cập nhật 08/10/2026</p>
+        <p>Dự án cộng đồng của <a href="https://github.com/dangkhoi">dangkhoi</a> · giấy phép MIT · không chính thức.</p>
+      </div>
+      <div>
+        <p><a href="https://github.com/dangkhoi/byd-kachi">GitHub</a> · <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk">Bản phát hành</a> · <a href="https://github.com/dangkhoi/byd-kachi/blob/main/docs/HUONG-DAN-KACHI.md">Hướng dẫn</a> · <a href="kachi-feature-catalog.html">Danh mục chức năng</a> · <a href="https://github.com/dangkhoi/byd-kachi/issues">Báo lỗi</a></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

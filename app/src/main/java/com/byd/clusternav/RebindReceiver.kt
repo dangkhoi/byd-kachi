@@ -249,7 +249,10 @@ class RebindReceiver : BroadcastReceiver() {
             )
             runCatching {
                 am.setInexactRepeating(
-                    AlarmManager.ELAPSED_REALTIME_WAKEUP,   // R4: WAKEUP để watchdog vẫn chạy khi head-unit SoC suspend
+                    // 2.98 · R6-B′ (owner duyệt 09/10): KHÔNG thức máy. Máy thức (xe chạy, màn sáng) ⇒ nổ y như cũ ⇒ độ trễ chữa phím/NLS
+                    // không đổi; standby ⇒ dồn tới lần thức kế (lớp khởi động/màn sáng lo). [ĐO log xe 17/09→08/10] 6 929 lượt, 0 lần cứu
+                    // phím; standby gần như không được giao (soát 09/10, spec kachi-298-plan R6-B). Bản cũ R4 dùng WAKEUP.
+                    AlarmManager.ELAPSED_REALTIME,
                     SystemClock.elapsedRealtime() + INTERVAL_MS,
                     INTERVAL_MS,
                     pi
