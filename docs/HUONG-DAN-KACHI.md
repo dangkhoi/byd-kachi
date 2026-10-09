@@ -82,7 +82,7 @@ xe** và không còn hàng nào để chỉnh; giá trị bạn đã đặt trư
 
 | Khối | Hàng | Ghi chú |
 |---|---|---|
-| **Nhận dạng giọng nói (tại máy)** | **Tải mô hình tiếng Việt** · **Cập nhật mô hình** · **Gỡ mô hình** | sherpa-onnx + mô hình `zipformer-vi`, **~266 MB**, tải một lần, sha256 ghim. **Tiếng nói không gửi ra mạng.** Xe không có mạng: chép cả cây thư mục gói vào `Android/data/com.byd.launcher/files/sherpa/import/<gói>/` rồi bấm Tải (máy vẫn kiểm sha256). |
+| **Nhận dạng giọng nói (tại máy)** | **Tải mô hình tiếng Việt** · **Cập nhật mô hình** · **Gỡ mô hình** | sherpa-onnx + mô hình `zipformer-vi` (int8), **~74 MB**, tải một lần, sha256 ghim. **Tiếng nói không gửi ra mạng.** Xe không có mạng: chép cả cây thư mục gói vào `Android/data/com.byd.launcher/files/sherpa/import/<gói>/` rồi bấm Tải (máy vẫn kiểm sha256). |
 | **Giọng đọc offline (tại máy)** | **Tải gói giọng đọc** · **Cập nhật** · **Gỡ** | Gói Piper; **Đọc phản hồi bằng giọng** để Kachi đọc to; **Ưu tiên giọng offline** chỉ có tác dụng khi gói đã cài (chưa cài thì dùng máy đọc của hệ thống). |
 | **Hey Kachi** (thử nghiệm) | **"Hey Kachi" — gọi bằng giọng** · **Cách nghe "Hey Kachi": ASR (không cần train)** | **Mặc định tắt** (tốn pin/CPU). Nghe nền khi màn sáng. Nghe nhầm nhiều lần thì **tự tắt** kèm thông báo. Bật lên thì nút mic cũng đi qua tiến trình nghe ⇒ **lần bấm đầu không phải chờ nạp mô hình**. |
 | **Xác nhận** | **Hỏi xác nhận trước khi chạy** · **Đọc to câu hỏi xác nhận** | **Mặc định Kachi chạy luôn** (danh sách rỗng). Tích việc nào thì **việc đó** hỏi lại trước khi bắn (cốp · cửa sổ trời · 4 kính…). |
@@ -94,7 +94,7 @@ xe** và không còn hàng nào để chỉnh; giá trị bạn đã đặt trư
 
 #### 5.3 Phím vô-lăng
 
-*Cài đặt › **Phím vô-lăng***: **Nhận nút vật lý** (công tắc chính) · **Danh sách gán nút** · **Nút tự học thêm** · **Học phím mới** (bấm nút trên vô-lăng để Kachi học mã) · **Kiểm tra và sửa ngay** (nút ghi *Kiểm tra / Sửa ngay*: cấp lại quyền + nối lại khi mất; từ **2.83** giao diện khởi động lại một nhịp rồi **tự về màn nhà** (không về khi màn camera của xe đang hiện); sau khi tắt máy rồi mở lại Kachi đã tự kiểm và tự sửa, nên nút này chỉ cần khi phím chết lúc xe đang chạy). Đích gán được: một app, trợ lý của xe, **Kachi nghe (tại máy)**, nút xe, hoặc (2.93) **Camera theo yêu cầu** — *Camera sau/trái/phải/trước — bật/tắt* · *Tắt camera*. Chức năng gốc của nút **không bị mất** — Kachi chỉ nhận đúng tổ hợp đã cấu hình.
+*Cài đặt › **Phím vô-lăng***: **Nhận nút vật lý** (công tắc chính) · **Danh sách gán nút** · **Nút tự học thêm** · **Học phím mới** (bấm nút trên vô-lăng để Kachi học mã) · **Kiểm tra và sửa ngay** (nút ghi *Kiểm tra / Sửa ngay*: cấp lại quyền + nối lại khi mất; từ **2.83** giao diện khởi động lại một nhịp rồi **tự về màn nhà** (không về khi màn camera của xe đang hiện); sau khi tắt máy rồi mở lại Kachi đã tự kiểm và tự sửa, nên nút này chỉ cần khi phím chết lúc xe đang chạy). Đích gán được: một app, trợ lý của xe, **Kachi nghe (tại máy)**, nút xe, hoặc (2.93) **Camera theo yêu cầu** — *Camera sau/trái/phải/trước — bật/tắt* · *Tắt camera*. Nút **đã gán** thì Kachi **thay** chức năng gốc của nút đó (từ 2.86; owner xác nhận 09/10 — đang chạy đúng như vậy). Nút **không gán** giữ nguyên chức năng gốc.
 
 #### 5.4 Dẫn đường & cụm đồng hồ
 
@@ -298,7 +298,7 @@ tune; values you set earlier **survive the upgrade**. To probe them again, use `
 
 | Block | Row | Notes |
 |---|---|---|
-| **Speech recognition (on-device)** | **Download / Update / Remove the Vietnamese model** | sherpa-onnx + `zipformer-vi`, **~266 MB**, once, sha256-pinned. **No audio leaves the car.** No network in the car: copy the whole pack tree into `Android/data/com.byd.launcher/files/sherpa/import/<pack>/` and press Download (sha256 still checked). |
+| **Speech recognition (on-device)** | **Download / Update / Remove the Vietnamese model** | sherpa-onnx + `zipformer-vi` (int8), **~74 MB**, once, sha256-pinned. **No audio leaves the car.** No network in the car: copy the whole pack tree into `Android/data/com.byd.launcher/files/sherpa/import/<pack>/` and press Download (sha256 still checked). |
 | **Offline voice pack (on-device)** | **Download / Update / Remove** | A Piper pack; **Speak replies out loud** makes Kachi talk; **Prefer the offline voice** only matters once the pack is installed. |
 | **Hey Kachi** (experimental) | wake-word switch · **Wake engine: ASR (no training needed)** | **Default off** (battery/CPU). Listens while the screen is on. **Auto-disables** with a notice after repeated false accepts. With it on the mic button also goes through the listening process, so **the first press no longer waits for a model load**. |
 | **Confirmation** | **Ask before running** · **Read confirmation questions aloud** | **Kachi just runs by default** (empty list). Tick an action and **that** action asks first (trunk · sunroof · all windows…). |
@@ -310,7 +310,7 @@ tune; values you set earlier **survive the upgrade**. To probe them again, use `
 
 #### 5.3 Steering-wheel keys
 
-*Settings › **Steering-wheel keys***: **Listen to physical buttons** (master switch) · **Button bindings** · **Self-learned buttons** · **Learn a new key** (press the wheel button so Kachi captures the code) · **Check and fix now** (re-grants and rebinds when the binding drops; from **2.83** the interface restarts for a beat and then **returns to the home screen by itself** (not while the car's own camera screen is showing, e.g. when reversing); after an engine off/on Kachi already checks and repairs on its own, so the button is only needed when the key dies while driving). **2.83** also: Google Maps switches destination while navigating (no more *"Exit navigation?"* dialog) and the camera distance guide is gone. Targets: an app, the car's own assistant, **Kachi listens (on-device)**, a car control, or (2.93) **Camera on demand** — *Rear/Left/Right/Front camera — on/off* · *Camera off*. The button's native function is **preserved** — Kachi consumes only the exact configured combo.
+*Settings › **Steering-wheel keys***: **Listen to physical buttons** (master switch) · **Button bindings** · **Self-learned buttons** · **Learn a new key** (press the wheel button so Kachi captures the code) · **Check and fix now** (re-grants and rebinds when the binding drops; from **2.83** the interface restarts for a beat and then **returns to the home screen by itself** (not while the car's own camera screen is showing, e.g. when reversing); after an engine off/on Kachi already checks and repairs on its own, so the button is only needed when the key dies while driving). **2.83** also: Google Maps switches destination while navigating (no more *"Exit navigation?"* dialog) and the camera distance guide is gone. Targets: an app, the car's own assistant, **Kachi listens (on-device)**, a car control, or (2.93) **Camera on demand** — *Rear/Left/Right/Front camera — on/off* · *Camera off*. A **bound** button **replaces** its native function (since 2.86; confirmed by the owner 09/10 — this is the intended behaviour). Unbound buttons keep their native function.
 
 #### 5.4 Navigation & cluster
 
