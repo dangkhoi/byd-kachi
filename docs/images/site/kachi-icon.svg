@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" role="img" aria-label="Kachi">
+<defs>
+<linearGradient id="kbg" x1="0" y1="0" x2="108" y2="108" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#161C3A"/><stop offset=".5" stop-color="#2A1E46"/><stop offset="1" stop-color="#3E2145"/></linearGradient>
+<radialGradient id="kglow" cx="54" cy="50" r="46" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E86F9A" stop-opacity=".22"/><stop offset=".5" stop-color="#E86F9A" stop-opacity=".1"/><stop offset="1" stop-color="#E86F9A" stop-opacity="0"/></radialGradient>
+<radialGradient id="kpetal" cx="54" cy="54" r="31" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E86F9A"/><stop offset=".5" stop-color="#F2A9C2"/><stop offset="1" stop-color="#F8C8D8"/></radialGradient>
+</defs>
+<rect width="108" height="108" rx="24" fill="url(#kbg)"/>
+<rect width="108" height="108" rx="24" fill="url(#kglow)"/>
+<path d="M54.00,54.00 C43.42,44.76,42.24,37.20,48.12,28.74 C51.35,27.11,52.94,26.84,54.00,30.48 C55.06,26.84,56.65,27.11,59.88,28.74 C65.76,37.20,64.58,44.76,54.00,54.00 z" fill="url(#kpetal)"/>
+<path d="M54.00,54.00 C59.52,41.08,66.34,37.62,76.21,40.60 C78.75,43.17,79.50,44.60,76.37,46.73 C80.16,46.61,80.39,48.21,79.84,51.79 C73.61,59.99,66.06,61.21,54.00,54.00 z" fill="url(#kpetal)"/>
+<path d="M54.00,54.00 C67.99,55.25,73.39,60.68,73.60,70.98 C71.95,74.20,70.82,75.35,67.82,73.03 C69.11,76.60,67.66,77.31,64.09,77.89 C54.36,74.50,50.87,67.70,54.00,54.00 z" fill="url(#kpetal)"/>
+<path d="M54.00,54.00 C57.13,67.70,53.64,74.50,43.91,77.89 C40.34,77.31,38.89,76.60,40.18,73.03 C37.18,75.35,36.05,74.20,34.40,70.98 C34.61,60.68,40.01,55.25,54.00,54.00 z" fill="url(#kpetal)"/>
+<path d="M54.00,54.00 C41.94,61.21,34.39,59.99,28.16,51.79 C27.61,48.21,27.84,46.61,31.63,46.73 C28.50,44.60,29.25,43.17,31.79,40.60 C41.66,37.62,48.48,41.08,54.00,54.00 z" fill="url(#kpetal)"/>
+<path d="M57.97,45.51 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 z" fill="#F5C451"/>
+<path d="M61.79,57.24 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 z" fill="#F5C451"/>
+<path d="M51.8,64.5 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 z" fill="#F5C451"/>
+<path d="M41.81,57.24 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 z" fill="#F5C451"/>
+<path d="M45.63,45.51 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 z" fill="#F5C451"/>
+<path d="M49.8,54 a4.2,4.2 0 1,0 8.4,0 a4.2,4.2 0 1,0 -8.4,0 z" fill="#E8A93A"/>
+</svg>

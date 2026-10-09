@@ -1,12 +1,69 @@
 <!doctype html>
-<html lang="vi">
+<html lang="vi" class="l-vi">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kachi Launcher</title>
 <meta name="description" content="Kachi — màn hình chính (launcher) cộng đồng cho đầu xe BYD DiLink: ô app, chiếu cụm đồng hồ, dẫn đường lên cụm, giọng nói offline, phím vô-lăng, camera, điều khiển xe, cập nhật tự động. Dự án không chính thức.">
 <meta name="color-scheme" content="light dark">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a84ff'/%3E%3Cpath d='M10 8v16M10 16l9-8M13 13.5L21 24' stroke='white' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<meta property="og:title" content="Kachi Launcher">
+<meta property="og:description" content="Kachi — màn hình chính (launcher) cộng đồng cho đầu xe BYD DiLink. Dự án không chính thức. / A community-built home-screen launcher for BYD DiLink head units. Unofficial.">
+<meta property="og:image" content="https://dangkhoi.github.io/byd-kachi/images/site/kachi-icon-512.png">
+<link rel="icon" type="image/svg+xml" href="images/site/kachi-icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="images/site/kachi-icon-32.png">
+<link rel="apple-touch-icon" href="images/site/kachi-icon-180.png">
+<link rel="alternate" hreflang="vi" href="?lang=vi">
+<link rel="alternate" hreflang="en" href="?lang=en">
+<script>
+/* Language: (1) ?lang=vi|en  (2) #en / #english / #vi  (3) saved choice  (4) browser language (vi* => vi, else en).
+   Runs in <head> so the right language is shown on first paint. Without JS the page stays Vietnamese
+   and #en switches to English through CSS :has(:target). */
+(function(){
+  var d=document.documentElement, KEY='kachi-lang', META={
+    vi:'Kachi — màn hình chính (launcher) cộng đồng cho đầu xe BYD DiLink: ô app, chiếu cụm đồng hồ, dẫn đường lên cụm, giọng nói offline, phím vô-lăng, camera, điều khiển xe, cập nhật tự động. Dự án không chính thức.',
+    en:'Kachi — a community-built home-screen launcher for BYD DiLink head units: app slots, cluster casting, navigation on the cluster, offline voice, steering-wheel keys, cameras, car controls and over-the-air updates. Unofficial project.'
+  };
+  function ok(v){return v==='vi'||v==='en'?v:null}
+  function pick(){
+    var l=null;
+    try{l=ok(new URLSearchParams(location.search).get('lang'))}catch(e){}
+    if(!l){var h=location.hash; if(h==='#en'||h==='#english')l='en'; else if(h==='#vi')l='vi';}
+    if(!l){try{l=ok(localStorage.getItem(KEY))}catch(e){}}
+    if(!l){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'vi'; l=/^vi\b/i.test(n)?'vi':'en';}
+    return l;
+  }
+  function labels(l){
+    var els=document.querySelectorAll('[data-label-'+l+']');
+    for(var i=0;i<els.length;i++)els[i].setAttribute('aria-label',els[i].getAttribute('data-label-'+l));
+    var t=document.querySelectorAll('[data-set-lang]');
+    for(var j=0;j<t.length;j++)t[j].setAttribute('aria-current',t[j].getAttribute('data-set-lang')===l?'true':'false');
+  }
+  function apply(l){
+    d.classList.remove('l-vi','l-en'); d.classList.add('l-'+l); d.setAttribute('lang',l);
+    var m=document.querySelector('meta[name="description"]'); if(m)m.setAttribute('content',META[l]);
+    if(document.readyState!=='loading')labels(l);
+  }
+  d.classList.add('js');
+  var cur=pick(); apply(cur);
+  document.addEventListener('DOMContentLoaded',function(){
+    labels(cur);
+    document.addEventListener('click',function(ev){
+      var a=ev.target.closest&&ev.target.closest('[data-set-lang]'); if(!a)return;
+      ev.preventDefault(); cur=a.getAttribute('data-set-lang'); apply(cur); labels(cur);
+      try{localStorage.setItem(KEY,cur)}catch(e){}
+      try{
+        var u=new URL(location.href); u.searchParams.set('lang',cur);
+        if(u.hash==='#en'||u.hash==='#vi'||u.hash==='#english')u.hash='';
+        history.replaceState(null,'',u.toString());
+      }catch(e){}
+    });
+  });
+  window.addEventListener('hashchange',function(){
+    var h=location.hash, l=(h==='#en'||h==='#english')?'en':(h==='#vi'?'vi':null);
+    if(l&&l!==cur){cur=l; apply(l); labels(l);}
+  });
+})();
+</script>
 <style>
 :root{
   --bg:#fbfbfd; --bg-alt:#f2f2f6; --card:#ffffff; --text:#1d1d1f; --muted:#5d5d64; --faint:#8a8a92;
@@ -173,7 +230,6 @@ details>div{padding:0 0 16px;color:var(--muted);font-size:15.5px}
 .credit p{font-size:14.5px;color:var(--muted);margin:4px 0 0}
 .lic{display:inline-block;font-size:12px;font-weight:650;color:var(--info);background:var(--info-soft);border-radius:999px;padding:2px 9px;margin-top:8px}
 
-.en p{color:var(--muted)}
 footer{border-top:1px solid var(--line);padding:40px 0 56px;font-size:14px;color:var(--faint)}
 footer .row{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between}
 footer p{margin:6px 0}
@@ -197,14 +253,41 @@ footer p{margin:6px 0}
 .f-s{fill:var(--muted);font:500 11px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 .f-a{stroke:var(--faint);stroke-width:1.6;fill:none}
 .f-ah{fill:var(--faint)}
+
+/* language switching: JS sets html.l-vi / html.l-en; without JS, VI by default and #en via :target */
+html.js.l-vi [lang="en"],
+html.js.l-en [lang="vi"]:not(.say){display:none!important}
+html:not(.js):not(:has(#en:target,#english:target)) [lang="en"],
+html:not(.js):has(#en:target,#english:target) [lang="vi"]:not(.say){display:none!important}
+.anchor{position:absolute;top:0;left:0;width:1px;height:1px}
+section,[id]{scroll-margin-top:64px}
+.sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.top nav{min-width:0}
+.lang{display:flex;flex:none;gap:2px;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--card)}
+.lang a{font-size:13px;font-weight:650;line-height:1;padding:6px 10px;border-radius:999px;color:var(--muted);letter-spacing:.02em}
+.lang a:hover{text-decoration:none;color:var(--text)}
+.lang a[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
+html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="en"]{background:var(--accent);color:var(--accent-ink)}
+html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{background:none;color:var(--muted)}
+.brand img{width:28px;height:28px;border-radius:7px;display:block}
+.app-icon{display:block;width:112px;height:112px;margin:0 auto 18px;border-radius:26px;
+  box-shadow:0 2px 6px rgba(0,0,0,.10),0 14px 36px rgba(60,30,90,.22)}
+@media (max-width:560px){.app-icon{width:96px;height:96px;border-radius:22px}}
+.guide-cta{display:grid;grid-template-columns:52px 1fr auto;gap:16px;align-items:center;background:var(--accent-soft);
+  border:1.5px solid var(--accent);border-radius:20px;padding:18px 20px;margin:0 0 28px}
+.guide-cta .gi{width:52px;height:52px;border-radius:14px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.guide-cta .gi svg{width:28px;height:28px}
+.guide-cta h3{margin:0 0 2px}
+.guide-cta p{margin:0;color:var(--muted);font-size:15px}
+@media (max-width:620px){.guide-cta{grid-template-columns:44px 1fr}.guide-cta .gi{width:44px;height:44px}.guide-cta .btn{grid-column:1/-1;justify-content:center}}
 </style>
 </head>
 <body>
-<a class="skip" href="#main">Bỏ qua tới nội dung</a>
+<span id="vi" class="anchor" aria-hidden="true"></span><span id="en" class="anchor" aria-hidden="true"></span><span id="english" class="anchor" aria-hidden="true"></span>
+<a class="skip" href="#main"><span lang="vi">Bỏ qua tới nội dung</span><span lang="en">Skip to content</span></a>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
-    <symbol id="i-logo" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="currentColor"/><path d="M10 8v16M10 16l9-8M13 13.5L21 24" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none"/></symbol>
     <symbol id="i-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="10" height="16" rx="2"/><rect x="15" y="4" width="6" height="7" rx="2"/><rect x="15" y="13" width="6" height="7" rx="2"/></g></symbol>
     <symbol id="i-person" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.8-3.2 3-5 5.5-5s4.7 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.3c2.3-.3 4.3 1.2 5 4.2"/></g></symbol>
     <symbol id="i-cluster" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 15.5c0-4.7 4.3-8.5 9.5-8.5s9.5 3.8 9.5 8.5"/><path d="M2.5 15.5h19"/><path d="M12 7v8.5"/><path d="M12 11l3-2"/></g></symbol>
@@ -218,6 +301,7 @@ footer p{margin:6px 0}
     <symbol id="i-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.6 3.6 5.4 3.6 8.5s-1 5.9-3.6 8.5c-2.6-2.6-3.6-5.4-3.6-8.5s1-5.9 3.6-8.5z"/></g></symbol>
     <symbol id="i-down" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></g></symbol>
     <symbol id="i-book" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5.5C6.5 4.3 9.3 4.3 12 6c2.7-1.7 5.5-1.7 8-.5V19c-2.5-1.2-5.3-1.2-8 .5-2.7-1.7-5.5-1.7-8-.5z"/><path d="M12 6v13.5"/></g></symbol>
+    <symbol id="i-photo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17.5l5.2-4.6 3.6 3.1 2.7-2.3 4.5 3.8"/></g></symbol>
     <symbol id="i-gh" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5a9.5 9.5 0 0 0-3 18.5c.5.1.7-.2.7-.5v-1.7c-2.7.6-3.2-1.2-3.2-1.2-.4-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.1-.2-4.4-1.1-4.4-4.7 0-1 .4-1.9 1-2.6-.1-.2-.4-1.2.1-2.5 0 0 .8-.3 2.6 1a9 9 0 0 1 4.8 0c1.8-1.3 2.6-1 2.6-1 .5 1.3.2 2.3.1 2.5.6.7 1 1.6 1 2.6 0 3.7-2.3 4.5-4.4 4.7.3.3.7.9.7 1.8v2.6c0 .3.2.6.7.5A9.5 9.5 0 0 0 12 2.5z"/></symbol>
     <symbol id="i-chev" viewBox="0 0 22 26"><path d="M11 2v18M4 14l7 8 7-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </defs>
@@ -225,43 +309,64 @@ footer p{margin:6px 0}
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="Kachi — về đầu trang"><svg style="color:var(--accent)" aria-hidden="true"><use href="#i-logo"/></svg>Kachi</a>
-    <nav aria-label="Mục lục">
-      <a href="#tinh-nang">Tính năng</a>
-      <a href="#kien-truc">Kiến trúc</a>
-      <a href="#cai-dat">Cài đặt</a>
-      <a class="opt" href="#cap-nhat">Cập nhật</a>
-      <a class="opt" href="#ho-tro">Gửi log</a>
-      <a href="#faq">Giới hạn</a>
-      <a href="#english">English</a>
+    <a class="brand" href="#top"><img src="images/site/kachi-icon.svg" alt="" width="28" height="28">Kachi<span class="sr"><span lang="vi"> — về đầu trang</span><span lang="en"> — back to top</span></span></a>
+    <nav aria-label="Mục lục" data-label-vi="Mục lục" data-label-en="Contents">
+      <a href="#tinh-nang"><span lang="vi">Tính năng</span><span lang="en">Features</span></a>
+      <a href="#kien-truc"><span lang="vi">Kiến trúc</span><span lang="en">Architecture</span></a>
+      <a href="#cai-dat"><span lang="vi">Cài đặt</span><span lang="en">Install</span></a>
+      <a class="opt" href="#cap-nhat"><span lang="vi">Cập nhật</span><span lang="en">Updates</span></a>
+      <a class="opt" href="#ho-tro"><span lang="vi">Gửi log</span><span lang="en">Send logs</span></a>
+      <a href="#faq"><span lang="vi">Giới hạn</span><span lang="en">Limits</span></a>
     </nav>
+    <div class="lang" role="group" aria-label="Ngôn ngữ" data-label-vi="Ngôn ngữ" data-label-en="Language">
+      <a href="#vi" hreflang="vi" data-set-lang="vi" aria-current="true" title="Tiếng Việt">VI</a>
+      <a href="#en" hreflang="en" data-set-lang="en" aria-current="false" title="English">EN</a>
+    </div>
   </div>
 </header>
 
 <main id="main">
 <div id="top" class="hero">
   <div class="wrap">
-    <span class="eyebrow"><span class="dot" aria-hidden="true"></span>Bản mới nhất 2.97 · mã 200 · 08/10/2026</span>
+    <img class="app-icon" src="images/site/kachi-icon.svg" alt="" width="112" height="112">
+    <div lang="vi"><span class="eyebrow"><span class="dot" aria-hidden="true"></span>Bản mới nhất 2.97 · mã 200 · 08/10/2026</span></div>
+    <div lang="en"><span class="eyebrow"><span class="dot" aria-hidden="true"></span>Latest release 2.97 · build 200 · 8 Oct 2026</span></div>
     <h1>Kachi</h1>
-    <p class="lead">Màn hình chính (launcher) cho đầu xe <strong>BYD DiLink</strong>, do cộng đồng làm. Chạy app thật trong từng ô, chiếu bản đồ lên cụm đồng hồ, nói lệnh tiếng Việt không cần mạng, gán phím vô-lăng, mở camera, điều khiển tiện nghi xe — và tự cập nhật qua mạng.</p>
-    <div class="cta">
-      <a class="btn primary" href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk"><svg aria-hidden="true"><use href="#i-down"/></svg>Tải Kachi 2.97 (APK, ~47 MB)</a>
-      <a class="btn" href="#cai-dat"><svg aria-hidden="true"><use href="#i-book"/></svg>Cách cài</a>
-      <a class="btn" href="https://github.com/dangkhoi/byd-kachi"><svg aria-hidden="true"><use href="#i-gh"/></svg>Mã nguồn</a>
-    </div>
-    <p class="meta">Gói <code>com.byd.launcher</code> · thư mục phát hành: <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk">apk/ trên nhánh main</a> · giấy phép MIT</p>
 
-    <figure class="hero-art" role="img" aria-label="Hình minh hoạ: màn hình giữa của xe chia ba ô (bản đồ, widget xe, nhạc) với thanh trạng thái và thanh nút; một mũi tên nối ô bản đồ xuống cụm đồng hồ đang hiện bản đồ chia đôi.">
+    <div lang="vi">
+      <p class="lead">Màn hình chính (launcher) cho đầu xe <strong>BYD DiLink</strong>, do cộng đồng làm. Chạy app thật trong từng ô, chiếu bản đồ lên cụm đồng hồ, nói lệnh tiếng Việt không cần mạng, gán phím vô-lăng, mở camera, điều khiển tiện nghi xe — và tự cập nhật qua mạng.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk"><svg aria-hidden="true"><use href="#i-down"/></svg>Tải Kachi 2.97 (APK, ~47 MB)</a>
+        <a class="btn" href="#cai-dat"><svg aria-hidden="true"><use href="#i-book"/></svg>Cách cài</a>
+        <a class="btn" href="guide/HUONG-DAN-CO-HINH.html"><svg aria-hidden="true"><use href="#i-photo"/></svg>Hướng dẫn có hình</a>
+        <a class="btn" href="https://github.com/dangkhoi/byd-kachi"><svg aria-hidden="true"><use href="#i-gh"/></svg>Mã nguồn</a>
+      </div>
+      <p class="meta">Gói <code>com.byd.launcher</code> · thư mục phát hành: <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk">apk/ trên nhánh main</a> · giấy phép MIT</p>
+    </div>
+    <div lang="en">
+      <p class="lead">A community-built home screen (launcher) for <strong>BYD DiLink</strong> head units. It runs real apps inside home-screen slots, casts maps to the instrument cluster, takes Vietnamese voice commands without a network, remaps steering-wheel keys, opens the cameras, controls the car’s comfort features — and updates itself over the air.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk"><svg aria-hidden="true"><use href="#i-down"/></svg>Download Kachi 2.97 (APK, ~47 MB)</a>
+        <a class="btn" href="#cai-dat"><svg aria-hidden="true"><use href="#i-book"/></svg>How to install</a>
+        <a class="btn" href="guide/HUONG-DAN-CO-HINH.html" hreflang="vi"><svg aria-hidden="true"><use href="#i-photo"/></svg>Illustrated guide (Vietnamese)</a>
+        <a class="btn" href="https://github.com/dangkhoi/byd-kachi"><svg aria-hidden="true"><use href="#i-gh"/></svg>Source code</a>
+      </div>
+      <p class="meta">Package <code>com.byd.launcher</code> · release folder: <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk">apk/ on the main branch</a> · MIT licence</p>
+    </div>
+
+    <figure class="hero-art">
+      <p class="sr" lang="vi">Hình minh hoạ: màn hình giữa của xe chia ba ô (bản đồ, widget xe, nhạc) với thanh trạng thái và thanh nút; một mũi tên nối ô bản đồ xuống cụm đồng hồ đang hiện bản đồ chia đôi.</p>
+      <p class="sr" lang="en">Illustration: the car’s centre screen split into three slots (map, car widget, music) with a status bar and a button bar; an arrow links the map slot down to the instrument cluster, which shows the map in split view.</p>
       <svg viewBox="0 0 900 430" aria-hidden="true">
         <!-- head unit -->
         <rect x="70" y="10" width="760" height="300" rx="22" class="s-body"/>
         <rect x="70" y="10" width="760" height="300" rx="22" class="s-frame"/>
         <!-- top strip -->
         <rect x="92" y="28" width="62" height="20" rx="10" class="s-panel2"/><text x="123" y="42" text-anchor="middle" class="s-txt">10:24</text>
-        <rect x="162" y="28" width="78" height="20" rx="10" class="s-panel2"/><circle cx="174" cy="38" r="4" class="s-ok"/><text x="210" y="42" text-anchor="middle" class="s-txt">Pin 78%</text>
+        <rect x="162" y="28" width="78" height="20" rx="10" class="s-panel2"/><circle cx="174" cy="38" r="4" class="s-ok"/><text lang="vi" x="210" y="42" text-anchor="middle" class="s-txt">Pin 78%</text><text lang="en" x="210" y="42" text-anchor="middle" class="s-txt">Batt 78%</text>
         <rect x="248" y="28" width="66" height="20" rx="10" class="s-panel2"/><text x="281" y="42" text-anchor="middle" class="s-txt">24°C</text>
-        <rect x="322" y="28" width="86" height="20" rx="10" class="s-panel2"/><circle cx="334" cy="38" r="4" class="s-warm"/><text x="372" y="42" text-anchor="middle" class="s-txt">Ghế lái 2</text>
-        <rect x="742" y="28" width="66" height="20" rx="10" class="s-acc"/><text x="775" y="42" text-anchor="middle" class="s-txt" style="fill:#06121f">Hồ sơ A</text>
+        <rect x="322" y="28" width="86" height="20" rx="10" class="s-panel2"/><circle cx="334" cy="38" r="4" class="s-warm"/><text lang="vi" x="372" y="42" text-anchor="middle" class="s-txt">Ghế lái 2</text><text lang="en" x="372" y="42" text-anchor="middle" class="s-txt">Seat 2</text>
+        <rect x="742" y="28" width="66" height="20" rx="10" class="s-acc"/><text lang="vi" x="775" y="42" text-anchor="middle" class="s-txt" style="fill:#06121f">Hồ sơ A</text><text lang="en" x="775" y="42" text-anchor="middle" class="s-txt" style="fill:#06121f">Profile A</text>
         <!-- slot 1 map -->
         <rect x="92" y="60" width="388" height="196" rx="14" class="s-panel"/>
         <path d="M110 230 C170 200 200 210 250 170 S330 110 460 96" class="s-road"/>
@@ -270,20 +375,22 @@ footer p{margin:6px 0}
         <circle cx="380" cy="112" r="7" class="s-acc"/>
         <rect x="106" y="74" width="132" height="44" rx="10" class="s-panel2"/>
         <path d="M122 106 v-14 h8 l-4-6 l-4 6" fill="none" stroke="#4ea1ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        <text x="142" y="92" class="s-txt">300 m</text><text x="142" y="108" class="s-txt-dim">rẽ phải</text>
-        <text x="106" y="248" class="s-txt-dim">Ô 1 · app dẫn đường chạy thật</text>
+        <text x="142" y="92" class="s-txt">300 m</text><text lang="vi" x="142" y="108" class="s-txt-dim">rẽ phải</text><text lang="en" x="142" y="108" class="s-txt-dim">turn right</text>
+        <text lang="vi" x="106" y="248" class="s-txt-dim">Ô 1 · app dẫn đường chạy thật</text><text lang="en" x="106" y="248" class="s-txt-dim">Slot 1 · a real navigation app</text>
         <!-- slot 2 widget -->
         <rect x="490" y="60" width="318" height="94" rx="14" class="s-panel"/>
         <circle cx="540" cy="107" r="28" fill="none" stroke="var(--screen-3)" stroke-width="7"/>
         <path d="M540 79 a28 28 0 1 1 -26.6 36.6" fill="none" stroke="#4cd471" stroke-width="7" stroke-linecap="round"/>
         <text x="540" y="112" text-anchor="middle" class="s-txt">78%</text>
-        <text x="586" y="96" class="s-txt">Năng lượng</text><text x="586" y="114" class="s-txt-dim">Quãng đường còn lại · lốp · bụi mịn</text>
-        <text x="586" y="132" class="s-txt-dim">Ô 2 · widget Kachi</text>
+        <text lang="vi" x="586" y="96" class="s-txt">Năng lượng</text><text lang="en" x="586" y="96" class="s-txt">Energy</text>
+        <text lang="vi" x="586" y="114" class="s-txt-dim">Quãng đường còn lại · lốp · bụi mịn</text><text lang="en" x="586" y="114" class="s-txt-dim">Range · tyres · PM2.5</text>
+        <text lang="vi" x="586" y="132" class="s-txt-dim">Ô 2 · widget Kachi</text><text lang="en" x="586" y="132" class="s-txt-dim">Slot 2 · Kachi widget</text>
         <!-- slot 3 music -->
         <rect x="490" y="162" width="318" height="94" rx="14" class="s-panel"/>
         <rect x="506" y="178" width="62" height="62" rx="10" class="s-panel2"/>
         <path d="M528 196 v26 l20 -13 z" class="s-ink"/>
-        <text x="584" y="200" class="s-txt">Đang phát tiếp</text><text x="584" y="218" class="s-txt-dim">đúng bài, đúng giây sau khi nổ máy</text>
+        <text lang="vi" x="584" y="200" class="s-txt">Đang phát tiếp</text><text lang="en" x="584" y="200" class="s-txt">Resumed playback</text>
+        <text lang="vi" x="584" y="218" class="s-txt-dim">đúng bài, đúng giây sau khi nổ máy</text><text lang="en" x="584" y="218" class="s-txt-dim">same track, same second after start-up</text>
         <rect x="584" y="228" width="200" height="4" rx="2" class="s-panel2"/><rect x="584" y="228" width="88" height="4" rx="2" class="s-acc"/>
         <!-- button bar -->
         <rect x="92" y="266" width="716" height="30" rx="15" class="s-panel2"/>
@@ -297,25 +404,27 @@ footer p{margin:6px 0}
         <!-- link to cluster -->
         <path d="M286 312 C286 340 330 352 380 356" class="s-link"/>
         <path d="M376 351 l8 5 l-8 5" fill="none" stroke="var(--accent)" stroke-width="2"/>
-        <text x="300" y="380" class="s-label" text-anchor="end">chiếu lên cụm</text>
+        <text lang="vi" x="300" y="380" class="s-label" text-anchor="end">chiếu lên cụm</text><text lang="en" x="300" y="380" class="s-label" text-anchor="end">cast to the cluster</text>
         <!-- cluster -->
         <path d="M392 340 Q392 326 412 326 L808 326 Q828 326 828 340 L828 404 Q828 418 808 418 L412 418 Q392 418 392 404 Z" class="s-body"/>
         <path d="M392 340 Q392 326 412 326 L808 326 Q828 326 828 340 L828 404 Q828 418 808 418 L412 418 Q392 418 392 404 Z" class="s-frame"/>
         <rect x="408" y="336" width="198" height="72" rx="10" class="s-panel"/>
         <path d="M420 398 C470 380 500 386 530 360 S580 344 598 344" class="s-route"/>
         <rect x="614" y="336" width="198" height="72" rx="10" class="s-panel"/>
-        <text x="713" y="374" text-anchor="middle" class="s-big">62</text><text x="713" y="394" text-anchor="middle" class="s-txt-dim">km/h · đồng hồ của xe</text>
-        <text x="610" y="430" text-anchor="middle" class="s-label" style="font-size:12px">Cụm đồng hồ — chia đôi hoặc toàn màn</text>
+        <text x="713" y="374" text-anchor="middle" class="s-big">62</text><text lang="vi" x="713" y="394" text-anchor="middle" class="s-txt-dim">km/h · đồng hồ của xe</text><text lang="en" x="713" y="394" text-anchor="middle" class="s-txt-dim">km/h · the car’s own gauge</text>
+        <text lang="vi" x="610" y="430" text-anchor="middle" class="s-label" style="font-size:12px">Cụm đồng hồ — chia đôi hoặc toàn màn</text><text lang="en" x="610" y="430" text-anchor="middle" class="s-label" style="font-size:12px">Instrument cluster — split or full screen</text>
       </svg>
     </figure>
 
-    <p class="unofficial"><b>Dự án cá nhân, không chính thức.</b> Kachi không liên kết, không được BYD chứng nhận hay bảo trợ. Không có bảo đảm nào về an toàn lái xe, tương thích hay độ ổn định — cài và dùng với rủi ro của riêng bạn. Đừng thao tác màn hình khi xe đang chạy.</p>
+    <p class="unofficial" lang="vi"><b>Dự án cá nhân, không chính thức.</b> Kachi không liên kết, không được BYD chứng nhận hay bảo trợ. Không có bảo đảm nào về an toàn lái xe, tương thích hay độ ổn định — cài và dùng với rủi ro của riêng bạn. Đừng thao tác màn hình khi xe đang chạy.</p>
+    <p class="unofficial" lang="en"><b>A personal project, not official.</b> Kachi is not affiliated with, certified or endorsed by BYD. There is no warranty of any kind on driving safety, compatibility or stability — install and use it at your own risk. Don’t operate the screen while the car is moving.</p>
   </div>
 </div>
 
 <!-- ============ FEATURES ============ -->
 <section id="tinh-nang">
   <div class="wrap">
+  <div lang="vi">
     <p class="kicker">Kachi làm được gì</p>
     <h2>Một màn hình chính, gom mọi thứ bạn cần khi lái.</h2>
     <p class="sub">Mọi tính năng nằm trong một app duy nhất, cấu hình ở <span class="path">Cài đặt</span> của Kachi. Hầu hết lưu theo <strong>hồ sơ tài xế</strong>.</p>
@@ -449,11 +558,148 @@ footer p{margin:6px 0}
     </div>
     <p class="meta" style="margin-top:22px">Nguồn trạng thái: <a href="kachi-feature-catalog.html">danh mục chức năng</a> (sinh bằng máy từ mã nguồn) và ghi chú phát hành 2.90–2.97. Lần đếm gần nhất ghi trong README: <strong>141/165</strong> chức năng đã đo trên xe (đo ở bản 2.79; tính năng từ 2.81 trở đi chưa tính).</p>
   </div>
+
+  <div lang="en">
+    <p class="kicker">What Kachi does</p>
+    <h2>One home screen for everything you need on the road.</h2>
+    <p class="sub">Every feature lives in a single app and is configured under Kachi’s own <span class="path">Settings</span>. Most of it is saved per <strong>driver profile</strong>.</p>
+    <div class="legend" aria-label="Status legend">
+      <span><span class="tag t-ok">Measured on a car</span> evidence from a real car</span>
+      <span><span class="tag t-new">New — awaiting confirmation</span> checked on the emulator, waiting for testers to try it on a car</span>
+    </div>
+
+    <div class="grid">
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-grid"/></svg></div>
+        <h3>A home screen made of slots</h3>
+        <p>Split the centre screen into slots, each holding an app or a widget.</p>
+        <ul>
+          <li>5 preset layouts (1 slot · 2 columns · 2 rows · 3 slots · 4 slots) or <strong>draw your own</strong> on a 12 × 6 grid.</li>
+          <li>Apps run <strong>for real</strong> inside a slot (virtual display) — e.g. a map on the left, music on the right.</li>
+          <li>Built-in widgets: board, car, energy, clock, photo slideshow, app shortcuts — or another app’s Android widget.</li>
+          <li>A customisable status bar (battery, temperature, seat chips…) and car button bar; wallpaper, light/dark theme.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-person"/></svg></div>
+        <h3>Driver profiles</h3>
+        <p>Each profile keeps its own layout, slot contents, top bar, button bar, wallpaper, theme, units, language, address book, camera view style and cluster cast style.</p>
+        <ul>
+          <li>Switch quickly with the profile chip on the top bar, or say <em class="say" lang="vi">“chuyển sang hồ sơ …”</em> (“switch to profile …”).</li>
+          <li>Switching profiles <strong>doesn’t close your apps</strong> — music and navigation keep running (2.97).</li>
+          <li>Export / import <code>.kachi</code> files; the “sharing” export leaves out addresses and the schedule.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-cluster"/></svg></div>
+        <h3>Cast to the instrument cluster</h3>
+        <p>Put an app (maps, CarPlay, Android Auto…) on the cluster screen behind the steering wheel.</p>
+        <ul>
+          <li><strong>Full screen</strong> or <strong>split</strong> left/right with an adjustable ratio; CarPlay / Android Auto always cast full screen.</li>
+          <li>Auto-cast on engine start, a floating button to toggle it quickly, and a <em>Cluster rescue</em> button.</li>
+          <li>Two cluster styles, <em>Rounded</em> / <em>Rectangle</em>; position, size and DPI are saved per style.</li>
+          <li>The background around the map follows the car’s light/dark mode (2.94–2.96).</li>
+        </ul>
+        <div class="tags"><span class="tag t-ok">Seal · Sealion 6</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-nav"/></svg></div>
+        <h3>Navigation on the cluster &amp; HUD</h3>
+        <p>Kachi reads turn-by-turn guidance from your navigation app and writes it to the instrument cluster (arrow, distance, street name, arrival time) and the windscreen HUD.</p>
+        <ul>
+          <li><strong>Google Maps</strong>: read from its notification, so it works even with the app in the background.</li>
+          <li><strong>VietMap</strong>: speed, limit sign, speed-camera alerts; turn guidance needs the app on screen.</li>
+          <li><strong>Waze</strong>: needs the app on screen.</li>
+          <li>Address book per profile (<em class="say" lang="vi">“về nhà”</em> — “go home”) and scheduled navigation.</li>
+        </ul>
+        <div class="tags"><span class="tag t-ok">Google Maps → cluster</span><span class="tag t-new">Scheduled navigation</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-mic"/></svg></div>
+        <h3>“Hey Kachi” voice control</h3>
+        <p>Vietnamese speech recognition <strong>right on the head unit</strong> — your voice never leaves the car.</p>
+        <ul>
+          <li>The model downloads once inside the app (~74 MB), or copy it over USB when the car has no network.</li>
+          <li>Control the car, open apps (even <em class="say" lang="vi">“vào ô số 2”</em> — “into slot 2”), music, navigation, profiles and layouts; chain two actions with <em class="say" lang="vi">“và”</em> / <em class="say" lang="vi">“rồi”</em> (“and” / “then”).</li>
+          <li>Speaks its replies in an offline voice; teach Kachi app names that are hard to say.</li>
+          <li>Start it with a steering-wheel key, the mic button, or “Hey Kachi” (off by default).</li>
+        </ul>
+        <div class="tags"><span class="tag t-ok">Hey Kachi</span><span class="tag t-info">Full command list inside the app</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-wheel"/></svg></div>
+        <h3>Physical &amp; steering-wheel keys</h3>
+        <p>Learn a key’s code, then bind it to whatever you want — the key keeps its original function.</p>
+        <ul>
+          <li>Targets: open an app, the car’s own assistant, Kachi listens, any car control, or a camera.</li>
+          <li>Separate bindings for the centre-console knob and the steering-wheel keys.</li>
+          <li>Checks and reconnects itself after every engine off/on; there is also a <em>Check / Fix now</em> button.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-cam"/></svg></div>
+        <h3>Cameras</h3>
+        <ul>
+          <li><strong>On turn signal</strong>: signal left or right and that side’s camera pops up, closing when the lamp goes off.</li>
+          <li><strong>On demand</strong> (2.93): open the rear · left · right · front camera with a button, a key or your voice; press again to close it.</li>
+          <li>Three view styles (Straight · Wide straight · Convex mirror), zoom 50–150 %, rotate/mirror, shown on the main screen or on the cluster.</li>
+        </ul>
+        <div class="tags"><span class="tag t-ok">Turn signal: Seal · Sealion 6</span><span class="tag t-new">Camera on demand</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-car"/></svg></div>
+        <h3>Car comfort</h3>
+        <p>Buttons on the button bar or in a slot, bound to a key, or by voice:</p>
+        <ul>
+          <li>All four windows (including a 50 % step), trunk, sunroof.</li>
+          <li>Climate: temperature, fan −/+ (down to AUTO), defrost, PM2.5 air filter.</li>
+          <li>Seat heating/cooling — adjusted automatically by temperature.</li>
+          <li>Recirculation on engine start; auto-defrost when it rains.</li>
+        </ul>
+        <p style="margin-top:8px;font-size:14px">Which buttons work depends on the car — look each one up in the <a href="kachi-feature-catalog.html">feature catalogue</a>.</p>
+        <div class="tags"><span class="tag t-ok">Windows · defrost · PM2.5 · auto seats</span><span class="tag t-new">Auto-defrost in rain</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-play"/></svg></div>
+        <h3>Music &amp; YouTube resume</h3>
+        <ul>
+          <li>Opens your chosen music app when you get in.</li>
+          <li>YouTube: remembers what you were playing and, on engine start, resumes <strong>the same track at the same second</strong>, full screen.</li>
+          <li>If the network isn’t up yet at start-up, it retries for up to a minute without blocking other apps; if you’ve already started other music, it won’t play over it.</li>
+        </ul>
+        <div class="tags"><span class="tag t-new">2.94 → 2.97</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-update"/></svg></div>
+        <h3>Automatic updates</h3>
+        <p>Kachi looks for new builds on GitHub, asks first, then installs over the top — no computer needed. Your data, profiles and settings are kept.</p>
+        <div class="tags"><span class="tag t-ok">Measured on a car</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-globe"/></svg></div>
+        <h3>Multilingual</h3>
+        <p>Interface in Tiếng Việt, English, 中文, ไทย, Bahasa Melayu — or follow the car’s language. Voice control is Vietnamese only for now.</p>
+      </article>
+    </div>
+    <p class="meta" style="margin-top:22px">Status sources: the <a href="kachi-feature-catalog.html">feature catalogue</a> (machine-generated from the source code) and the 2.90–2.97 release notes. Latest count recorded in the README: <strong>141/165</strong> functions measured on a car (counted at 2.79; features from 2.81 onwards not included).</p>
+  </div>
+  </div>
 </section>
 
 <!-- ============ ARCHITECTURE ============ -->
 <section id="kien-truc" class="alt">
   <div class="wrap">
+  <div lang="vi">
     <p class="kicker">Bên trong Kachi</p>
     <h2>Kiến trúc hệ thống</h2>
     <p class="sub">Kachi là một app Android bình thường — <strong>không root</strong>, không sửa firmware. Các việc cần quyền cao hơn đi qua kênh gỡ lỗi nội bộ của chính đầu xe, sau khi bạn cho phép một lần.</p>
@@ -510,19 +756,19 @@ footer p{margin:6px 0}
       <h3>Đường đi của một hướng rẽ</h3>
       <p style="color:var(--muted);font-size:15px">Mỗi lúc chỉ một nguồn dẫn đường được chọn. Hướng rẽ được chuẩn hoá một lần, rồi mã hoá riêng cho từng màn.</p>
       <svg class="flow-svg" viewBox="0 0 1000 250" role="img" aria-label="Google Maps, VietMap hoặc Waze → bộ chọn nguồn → hướng rẽ chuẩn hoá → ba đầu ra: làn của cụm, giữa cụm kèm giờ đến, HUD kính lái.">
-        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="f-ah"/></marker></defs>
+        <defs><marker id="ah-vi" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="f-ah"/></marker></defs>
         <rect x="10" y="20" width="190" height="56" rx="12" class="f-box"/><text x="105" y="44" text-anchor="middle" class="f-t">Google Maps</text><text x="105" y="62" text-anchor="middle" class="f-s">thông báo · chạy nền</text>
         <rect x="10" y="97" width="190" height="56" rx="12" class="f-box"/><text x="105" y="121" text-anchor="middle" class="f-t">VietMap</text><text x="105" y="139" text-anchor="middle" class="f-s">widget + màn đang hiện</text>
         <rect x="10" y="174" width="190" height="56" rx="12" class="f-box"/><text x="105" y="198" text-anchor="middle" class="f-t">Waze</text><text x="105" y="216" text-anchor="middle" class="f-s">màn đang hiện</text>
-        <path d="M200 48 C240 48 240 125 268 125" class="f-a" marker-end="url(#ah)"/>
-        <path d="M200 125 L268 125" class="f-a" marker-end="url(#ah)"/>
-        <path d="M200 202 C240 202 240 125 268 125" class="f-a" marker-end="url(#ah)"/>
+        <path d="M200 48 C240 48 240 125 268 125" class="f-a" marker-end="url(#ah-vi)"/>
+        <path d="M200 125 L268 125" class="f-a" marker-end="url(#ah-vi)"/>
+        <path d="M200 202 C240 202 240 125 268 125" class="f-a" marker-end="url(#ah-vi)"/>
         <rect x="272" y="97" width="170" height="56" rx="12" class="f-box-s"/><text x="357" y="121" text-anchor="middle" class="f-t">Chọn nguồn</text><text x="357" y="139" text-anchor="middle" class="f-s">một nguồn tại một lúc</text>
-        <path d="M442 125 L494 125" class="f-a" marker-end="url(#ah)"/>
+        <path d="M442 125 L494 125" class="f-a" marker-end="url(#ah-vi)"/>
         <rect x="498" y="97" width="190" height="56" rx="12" class="f-box-s"/><text x="593" y="121" text-anchor="middle" class="f-t">Hướng rẽ chuẩn hoá</text><text x="593" y="139" text-anchor="middle" class="f-s">loại rẽ · cự ly · tên đường</text>
-        <path d="M688 125 C730 125 730 48 776 48" class="f-a" marker-end="url(#ah)"/>
-        <path d="M688 125 L776 125" class="f-a" marker-end="url(#ah)"/>
-        <path d="M688 125 C730 125 730 202 776 202" class="f-a" marker-end="url(#ah)"/>
+        <path d="M688 125 C730 125 730 48 776 48" class="f-a" marker-end="url(#ah-vi)"/>
+        <path d="M688 125 L776 125" class="f-a" marker-end="url(#ah-vi)"/>
+        <path d="M688 125 C730 125 730 202 776 202" class="f-a" marker-end="url(#ah-vi)"/>
         <rect x="780" y="20" width="210" height="56" rx="12" class="f-box"/><text x="885" y="44" text-anchor="middle" class="f-t">Làn chỉ đường của cụm</text><text x="885" y="62" text-anchor="middle" class="f-s">biểu tượng rẽ</text>
         <rect x="780" y="97" width="210" height="56" rx="12" class="f-box"/><text x="885" y="121" text-anchor="middle" class="f-t">Giữa cụm + giờ đến</text><text x="885" y="139" text-anchor="middle" class="f-s">ghi qua HAL của xe</text>
         <rect x="780" y="174" width="210" height="56" rx="12" class="f-box"/><text x="885" y="198" text-anchor="middle" class="f-t">HUD kính lái</text><text x="885" y="216" text-anchor="middle" class="f-s">tuỳ cấu hình xe</text>
@@ -543,14 +789,113 @@ footer p{margin:6px 0}
       <li><b>Mọi tự động hoá chỉ hoàn tác cái nó đã bật</b> — bạn tự bật tay thì Kachi không đụng.</li>
     </ul>
   </div>
+
+  <div lang="en">
+    <p class="kicker">Inside Kachi</p>
+    <h2>System architecture</h2>
+    <p class="sub">Kachi is an ordinary Android app — <strong>no root</strong>, no firmware changes. Anything that needs higher privileges goes through the head unit’s own internal debugging channel, once you have allowed it.</p>
+
+    <div class="diagram" role="img" aria-label="Three-tier diagram: inputs (navigation apps, music, microphone, keys, car sensors) flow into Kachi (home screen, virtual-display slots, cluster cast, navigation, voice, keys, cameras, car controls, updates); Kachi uses system bridges (loopback shell channel, BYD vehicle service, accessibility, notification access); the outputs are the centre screen, instrument cluster, windscreen HUD, speakers and car comfort features.">
+      <div class="layer">
+        <div class="layer-h"><b>Inputs</b><span>what Kachi listens to</span></div>
+        <div class="nodes">
+          <div class="node"><b>Navigation apps</b><small>Google Maps · VietMap · Waze</small></div>
+          <div class="node"><b>Music / video apps</b><small>YouTube, YouTube Music…</small></div>
+          <div class="node"><b>Microphone</b><small>“Hey Kachi” · mic button · key</small></div>
+          <div class="node"><b>Physical keys</b><small>steering wheel · centre-console knob</small></div>
+          <div class="node"><b>Car state</b><small>turn signals · battery · temperature · rain · engine on/off</small></div>
+        </div>
+      </div>
+      <div class="down" aria-hidden="true"><svg><use href="#i-chev"/></svg></div>
+      <div class="layer kachi">
+        <div class="layer-h"><b>Kachi — the home screen (HOME)</b><span>package com.byd.launcher</span></div>
+        <div class="nodes">
+          <div class="node strong"><b>Home screen</b><small>layouts · slots · widgets · profiles</small></div>
+          <div class="node strong"><b>Virtual-display slots</b><small>real apps running in each slot</small></div>
+          <div class="node strong"><b>Cluster cast</b><small>full screen · split · auto-cast</small></div>
+          <div class="node strong"><b>Navigation</b><small>pick a source → one instruction → cluster + HUD</small></div>
+          <div class="node strong"><b>Offline voice</b><small>sherpa-onnx · Zipformer-vi · Piper</small></div>
+          <div class="node strong"><b>Keys &amp; cameras</b><small>learn keys · bind actions · floating camera</small></div>
+          <div class="node strong"><b>Car controls</b><small>windows · AC · seats · automation</small></div>
+          <div class="node strong"><b>OTA updates</b><small>GitHub → install over the top</small></div>
+        </div>
+      </div>
+      <div class="down" aria-hidden="true"><svg><use href="#i-chev"/></svg><span>through the system’s own bridges</span></div>
+      <div class="layer">
+        <div class="layer-h"><b>System bridges</b><span>no root</span></div>
+        <div class="nodes">
+          <div class="node"><b>Internal shell channel</b><small>the dadb library connects to the head unit’s own adb over localhost — needs “Allow USB debugging” once</small></div>
+          <div class="node"><b>BYD vehicle service</b><small>reads/writes car state through DiLink’s HAL</small></div>
+          <div class="node"><b>Accessibility</b><small>receives physical keys, reads the navigation app on screen</small></div>
+          <div class="node"><b>Notification access</b><small>Google Maps guidance while it runs in the background</small></div>
+        </div>
+      </div>
+      <div class="down" aria-hidden="true"><svg><use href="#i-chev"/></svg></div>
+      <div class="layer">
+        <div class="layer-h"><b>Outputs</b><span>where you see and hear it</span></div>
+        <div class="nodes">
+          <div class="node"><b>Centre screen</b><small>home screen, slots, floating camera</small></div>
+          <div class="node"><b>Instrument cluster</b><small>cast apps · turn guidance · speed badge</small></div>
+          <div class="node"><b>Windscreen HUD</b><small>turn guidance (Google Maps only)</small></div>
+          <div class="node"><b>Speakers</b><small>replies in the offline voice</small></div>
+          <div class="node"><b>Car comfort</b><small>windows, trunk, climate, seats, defrost</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-wrap">
+      <h3>How one turn instruction travels</h3>
+      <p style="color:var(--muted);font-size:15px">Only one navigation source is active at a time. The instruction is normalised once, then encoded separately for each display.</p>
+      <svg class="flow-svg" viewBox="0 0 1000 250" role="img" aria-label="Google Maps, VietMap or Waze → source picker → normalised instruction → three outputs: the cluster guidance lane, the cluster centre with arrival time, and the windscreen HUD.">
+        <defs><marker id="ah-en" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="f-ah"/></marker></defs>
+        <rect x="10" y="20" width="190" height="56" rx="12" class="f-box"/><text x="105" y="44" text-anchor="middle" class="f-t">Google Maps</text><text x="105" y="62" text-anchor="middle" class="f-s">notification · background</text>
+        <rect x="10" y="97" width="190" height="56" rx="12" class="f-box"/><text x="105" y="121" text-anchor="middle" class="f-t">VietMap</text><text x="105" y="139" text-anchor="middle" class="f-s">widget + on-screen view</text>
+        <rect x="10" y="174" width="190" height="56" rx="12" class="f-box"/><text x="105" y="198" text-anchor="middle" class="f-t">Waze</text><text x="105" y="216" text-anchor="middle" class="f-s">on-screen view</text>
+        <path d="M200 48 C240 48 240 125 268 125" class="f-a" marker-end="url(#ah-en)"/>
+        <path d="M200 125 L268 125" class="f-a" marker-end="url(#ah-en)"/>
+        <path d="M200 202 C240 202 240 125 268 125" class="f-a" marker-end="url(#ah-en)"/>
+        <rect x="272" y="97" width="170" height="56" rx="12" class="f-box-s"/><text x="357" y="121" text-anchor="middle" class="f-t">Source picker</text><text x="357" y="139" text-anchor="middle" class="f-s">one source at a time</text>
+        <path d="M442 125 L494 125" class="f-a" marker-end="url(#ah-en)"/>
+        <rect x="498" y="97" width="190" height="56" rx="12" class="f-box-s"/><text x="593" y="121" text-anchor="middle" class="f-t">Normalised instruction</text><text x="593" y="139" text-anchor="middle" class="f-s">turn type · distance · street</text>
+        <path d="M688 125 C730 125 730 48 776 48" class="f-a" marker-end="url(#ah-en)"/>
+        <path d="M688 125 L776 125" class="f-a" marker-end="url(#ah-en)"/>
+        <path d="M688 125 C730 125 730 202 776 202" class="f-a" marker-end="url(#ah-en)"/>
+        <rect x="780" y="20" width="210" height="56" rx="12" class="f-box"/><text x="885" y="44" text-anchor="middle" class="f-t">Cluster guidance lane</text><text x="885" y="62" text-anchor="middle" class="f-s">turn icon</text>
+        <rect x="780" y="97" width="210" height="56" rx="12" class="f-box"/><text x="885" y="121" text-anchor="middle" class="f-t">Cluster centre + ETA</text><text x="885" y="139" text-anchor="middle" class="f-s">written through the car’s HAL</text>
+        <rect x="780" y="174" width="210" height="56" rx="12" class="f-box"/><text x="885" y="198" text-anchor="middle" class="f-t">Windscreen HUD</text><text x="885" y="216" text-anchor="middle" class="f-s">depends on the car’s config</text>
+      </svg>
+      <div class="flow-mobile" aria-hidden="true">
+        <div class="fstep"><b>Google Maps · VietMap · Waze</b><small>guidance sources</small></div>
+        <div class="down"><svg><use href="#i-chev"/></svg></div>
+        <div class="fstep"><b>Source picker → normalised instruction</b><small>turn type · distance · street</small></div>
+        <div class="down"><svg><use href="#i-chev"/></svg></div>
+        <div class="fstep"><b>Cluster lane · cluster centre + ETA · windscreen HUD</b><small>each display encoded separately</small></div>
+      </div>
+    </div>
+
+    <ul class="notes">
+      <li><b>Cluster casting and navigation are independent</b> — separate state, commands and logs; if one breaks, it doesn’t drag the other down.</li>
+      <li><b>Every command that changes system state targets the exact display and app</b> and has an undo path; Kachi never blindly sweeps every screen.</li>
+      <li><b>Car controls were rewritten “clean-room”</b> from public API facts (feature codes, function names) — no code copied from other projects. See the <a href="#credits">credits</a>.</li>
+      <li><b>Every automation only undoes what it turned on itself</b> — if you switched something by hand, Kachi leaves it alone.</li>
+    </ul>
+  </div>
+  </div>
 </section>
 
 <!-- ============ INSTALL ============ -->
 <section id="cai-dat">
   <div class="wrap">
+  <div lang="vi">
     <p class="kicker">Bắt đầu</p>
     <h2>Cài đặt lần đầu</h2>
     <p class="sub">Cài một lần bằng máy tính, sau đó Kachi tự cập nhật. Các bước lấy từ <a href="https://github.com/dangkhoi/byd-kachi/blob/main/docs/HUONG-DAN-KACHI.md">hướng dẫn sử dụng đầy đủ</a>.</p>
+
+    <div class="guide-cta">
+      <div class="gi"><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
+      <div><h3>Hướng dẫn chi tiết có hình</h3><p>Từng bước kèm ảnh chụp màn hình: cài đặt, màn hình chính, hồ sơ, chiếu cụm, giọng nói, camera.</p></div>
+      <a class="btn primary" href="guide/HUONG-DAN-CO-HINH.html">Mở hướng dẫn</a>
+    </div>
 
     <ol class="steps">
       <li><div>
@@ -592,11 +937,65 @@ footer p{margin:6px 0}
     </ol>
     <div class="callout warn"><b>Bản rất cũ:</b> bản Kachi cài trước 1.41 ký bằng khoá khác — phải gỡ (<code>pm uninstall com.byd.launcher</code>) rồi cài tay một lần, sau đó cập nhật tự động bình thường.</div>
   </div>
+
+  <div lang="en">
+    <p class="kicker">Get started</p>
+    <h2>First install</h2>
+    <p class="sub">Install once from a computer; after that Kachi updates itself. These steps come from the <a href="https://github.com/dangkhoi/byd-kachi/blob/main/docs/HUONG-DAN-KACHI.md">full user guide</a> (Vietnamese + English).</p>
+
+    <div class="guide-cta">
+      <div class="gi"><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
+      <div><h3>Illustrated step-by-step guide</h3><p>Step by step with screenshots: install, home screen, profiles, cluster casting, voice, cameras. Written in Vietnamese for now.</p></div>
+      <a class="btn primary" href="guide/HUONG-DAN-CO-HINH.html" hreflang="vi">Open the guide</a>
+    </div>
+
+    <ol class="steps">
+      <li><div>
+        <h3>Download the APK</h3>
+        <p>Download <a href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk"><code>Kachi-2.97-release.apk</code></a> from the <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk"><code>apk/</code></a> folder on the <code>main</code> branch. The folder holds a single build — always the latest one.</p>
+      </div></li>
+      <li><div>
+        <h3>Install with adb</h3>
+        <p>From a computer connected to the head unit over adb:</p>
+        <pre><code>adb install -r Kachi-2.97-release.apk</code></pre>
+        <p>If you copy the APK to the car and tap it, the DiLink ROM may refuse with <em>“Fail in installation of desktop apps”</em> (because Kachi is a launcher) — installing with adb gets past that.</p>
+      </div></li>
+      <li><div>
+        <h3>Allow USB debugging</h3>
+        <p>Open Kachi. When the system asks <em>“Allow USB debugging?”</em>, tick <strong>“Always allow from this computer”</strong> and press <strong>OK</strong>. This is the channel Kachi uses to put apps into slots, cast to the cluster, grant its own permissions, repair the steering-wheel keys and update itself.</p>
+      </div></li>
+      <li><div>
+        <h3>Grant the missing permissions</h3>
+        <p><span class="path">Settings › System &amp; permissions › Missing permissions</span> — Kachi grants them itself through the channel from step 3, no computer needed. Accessibility (for physical keys) and notification access (for navigation on the cluster) are switched on the same way; if that fails, Kachi shows you where to turn them on by hand in the system settings.</p>
+      </div></li>
+      <li><div>
+        <h3>Set Kachi as the home screen</h3>
+        <p><span class="path">Settings › System &amp; permissions › Home screen › Set Kachi as home screen</span>. The BYD ROM shows no home-app chooser, so Kachi sets itself. To go back to the stock launcher: <em>Stop using Kachi as home screen</em>.</p>
+      </div></li>
+      <li><div>
+        <h3>Turn on what you need</h3>
+        <p>
+          <span class="path">Voice</span> › Download the Vietnamese model (and the voice pack if you like) ·
+          <span class="path">Navigation &amp; cluster</span> › Navigation on the cluster ·
+          <span class="path">Cluster cast</span> › Enable Cluster cast ·
+          <span class="path">Steering-wheel keys</span> › Learn a new key ·
+          <span class="path">Car comfort</span> › Camera on turn signal.
+        </p>
+      </div></li>
+      <li><div>
+        <h3>Check the version</h3>
+        <p><span class="path">Settings › About</span> should show <strong>Version 2.97 (build 200)</strong>.</p>
+      </div></li>
+    </ol>
+    <div class="callout warn"><b>Very old builds:</b> Kachi builds installed before 1.41 were signed with a different key — uninstall them (<code>pm uninstall com.byd.launcher</code>) and install by hand once; after that, automatic updates work normally.</div>
+  </div>
+  </div>
 </section>
 
 <!-- ============ UPDATE ============ -->
 <section id="cap-nhat" class="alt">
   <div class="wrap">
+  <div lang="vi">
     <p class="kicker">Cập nhật</p>
     <h2>Cập nhật qua mạng, không cần máy tính</h2>
     <div class="two">
@@ -611,11 +1010,29 @@ footer p{margin:6px 0}
     </div>
     <div class="callout info" style="margin-top:16px"><b>Không lùi bản được.</b> Cập nhật tự động chỉ đi lên. Gặp lỗi ở một bản thì lỗi được gom sửa ở bản sau — hãy gửi log (mục dưới).</div>
   </div>
+
+  <div lang="en">
+    <p class="kicker">Updates</p>
+    <h2>Update over the air, no computer needed</h2>
+    <div class="two">
+      <div class="card">
+        <h3>Update by hand</h3>
+        <p><span class="path">Settings › System &amp; permissions › Check for updates</span>. Kachi asks GitHub for the <code>apk/</code> folder on the <code>main</code> branch, looks for a newer <code>Kachi-&lt;version&gt;-release.apk</code>, downloads it and installs it over the top. Profiles and settings are kept.</p>
+      </div>
+      <div class="card">
+        <h3>Check automatically</h3>
+        <p>Turn on <span class="path">Auto update</span> (same group): Kachi checks every time it opens; if there is a new build it <strong>asks first</strong> before downloading, otherwise it stays quiet. The car needs a network while checking.</p>
+      </div>
+    </div>
+    <div class="callout info" style="margin-top:16px"><b>No downgrades.</b> Automatic updates only go forward. A bug in one build gets fixed in the next — please send logs (see below).</div>
+  </div>
+  </div>
 </section>
 
 <!-- ============ SUPPORT ============ -->
 <section id="ho-tro">
   <div class="wrap">
+  <div lang="vi">
     <p class="kicker">Hỗ trợ</p>
     <h2>Gặp lỗi? Gửi log về</h2>
     <p class="sub">Kachi tự ghi nhật ký suốt phiên — bạn không cần bật gì, không cần adb.</p>
@@ -627,11 +1044,26 @@ footer p{margin:6px 0}
     <p class="meta" style="margin-top:14px">Có adb: <code>adb pull /sdcard/Android/data/com.byd.launcher/files/kachi-logs/ ./kachi-logs/</code>. Log có thể chứa tên app, địa chỉ đã lưu và giờ chuyến đi — xem qua trước khi chia sẻ công khai.</p>
     <div class="callout info"><b>Trước khi gửi, thử nhanh:</b> cụm im mà app dẫn đường vẫn chạy → <em>Kết nối lại nguồn dẫn đường</em> hoặc <em>Cứu hộ cụm</em>; giao diện lỗi → <span class="path">Hệ thống &amp; quyền › Khởi động lại launcher</span> (không cần khởi động lại đầu xe); phím vô-lăng chết → <span class="path">Phím vô-lăng › Kiểm tra / Sửa ngay</span>.</div>
   </div>
+
+  <div lang="en">
+    <p class="kicker">Support</p>
+    <h2>Hit a bug? Send us the logs</h2>
+    <p class="sub">Kachi logs every session on its own — nothing to switch on, no adb needed.</p>
+    <ol class="steps">
+      <li><div><h3>Copy the log folder</h3><p>Open the file manager on the car and copy the whole <code>Android/data/com.byd.launcher/files/kachi-logs/</code> folder (to a USB stick, for example). A <code>usage-*.log</code> file is always there.</p></div></li>
+      <li><div><h3>Note the version</h3><p>Take a screenshot of <span class="path">Settings › About</span> — don’t guess which build is running.</p></div></li>
+      <li><div><h3>Describe it, add screenshots</h3><p>When it happened, what you were doing, and a screenshot (or a photo of the cluster). Send it with the log folder via <a href="https://github.com/dangkhoi/byd-kachi/issues">GitHub Issues</a> or the community group you use.</p></div></li>
+    </ol>
+    <p class="meta" style="margin-top:14px">With adb: <code>adb pull /sdcard/Android/data/com.byd.launcher/files/kachi-logs/ ./kachi-logs/</code>. Logs may contain app names, saved addresses and trip times — look them over before sharing publicly.</p>
+    <div class="callout info"><b>Quick things to try first:</b> the cluster goes quiet while the navigation app is still running → <em>Reconnect the navigation source</em> or <em>Cluster rescue</em>; interface glitches → <span class="path">System &amp; permissions › Restart launcher</span> (no need to restart the head unit); a steering-wheel key stops working → <span class="path">Steering-wheel keys › Check / Fix now</span>.</div>
+  </div>
+  </div>
 </section>
 
 <!-- ============ CARS ============ -->
 <section id="xe" class="alt">
   <div class="wrap">
+  <div lang="vi">
     <p class="kicker">Tương thích</p>
     <h2>Chạy trên xe nào?</h2>
     <p class="sub">Chỉ liệt kê những gì đã có bằng chứng. Xe hay đời DiLink khác: <strong>chưa biết</strong> — rất mong anh em thử và gửi log.</p>
@@ -648,11 +1080,31 @@ footer p{margin:6px 0}
     </table>
     </div>
   </div>
+
+  <div lang="en">
+    <p class="kicker">Compatibility</p>
+    <h2>Which cars does it run on?</h2>
+    <p class="sub">Only what has evidence behind it is listed. Other cars or DiLink generations: <strong>unknown</strong> — testers who try it and send logs are very welcome.</p>
+    <div class="tscroll">
+    <table class="table">
+      <thead><tr><th scope="col">Car / platform</th><th scope="col">Status</th><th scope="col">Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>BYD Seal</strong> (flat cluster)</td><td><span class="tag t-ok">Measured on a car</span></td><td>The main test car across many measurement sessions: turn-signal camera, car buttons, cluster casting, navigation, voice.</td></tr>
+        <tr><td><strong>BYD Sealion 6</strong> (curved cluster)</td><td><span class="tag t-ok">Measured on a car</span></td><td>Tested by a community member: turn-signal camera, a pass over the car buttons; the curved-cluster casting bug was fixed in 2.95 from the logs they sent.</td></tr>
+        <tr><td>DiLink 3 · Android 10</td><td><span class="tag t-ok">Main platform</span></td><td>All behaviour is checked against the Android 10 source code and measured on this ROM. Newer firmware 2606 (V2.0.4): the stock launcher takes HOME back after every engine start — since 2.96 Kachi takes it back again if you chose Kachi.</td></tr>
+        <tr><td>DiLink 5 · Android 12</td><td><span class="tag t-new">Not measured</span></td><td>A dedicated configuration for this generation is prepared, but it has not had a real test run yet.</td></tr>
+        <tr><td>Other cars / generations</td><td><span class="tag t-info">Unknown</span></td><td>Each car control has its own status — look it up in the <a href="kachi-feature-catalog.html">feature catalogue</a>.</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  </div>
 </section>
 
 <!-- ============ FAQ / LIMITS ============ -->
 <section id="faq">
   <div class="wrap">
+  <div lang="vi">
     <p class="kicker">Hỏi đáp</p>
     <h2>Câu hỏi thường gặp &amp; giới hạn đã biết</h2>
     <p class="sub">Nói thẳng những gì Kachi chưa làm được, và vì sao.</p>
@@ -677,11 +1129,39 @@ footer p{margin:6px 0}
 
     <details><summary>Không thấy bản mới khi kiểm tra cập nhật?</summary><div>Xe phải có mạng lúc dò. Kênh cập nhật chỉ có đúng một tệp <code>apk/Kachi-&lt;phiên bản&gt;-release.apk</code> trên <code>main</code> — chưa đăng bản mới thì không có gì để tải. Bản cài trước 1.41 phải gỡ rồi cài tay một lần.</div></details>
   </div>
+
+  <div lang="en">
+    <p class="kicker">FAQ</p>
+    <h2>Frequently asked questions &amp; known limits</h2>
+    <p class="sub">A straight account of what Kachi can’t do yet, and why.</p>
+
+    <details><summary>Do I need root or modified firmware?</summary><div>No. Kachi is an ordinary app. Tasks that need higher privileges (putting apps into slots, casting to the cluster, granting its own permissions, installing updates) go through the head unit’s internal debugging channel once you have tapped “Allow USB debugging”. Until you allow it, those features don’t work and Kachi will remind you.</div></details>
+
+    <details><summary>The cluster doesn’t show its built-in speed-limit sign?</summary><div>The cluster’s own speed-limit field: Kachi can write it through the HAL (the command is accepted), but the cluster and the HUD don’t display it. That’s why Kachi draws <strong>its own speed badge</strong> on the cluster (set its size and position under <span class="path">Navigation &amp; cluster</span>).</div></details>
+
+    <details><summary>The windscreen HUD shows no navigation?</summary><div>The HUD only receives guidance from <strong>Google Maps</strong>. On the car’s factory HUD, whether guidance appears depends on the car’s firmware configuration — Kachi sends the right data (an add-on HUD reading the same data already shows it), but that configuration can’t be switched on from an app.</div></details>
+
+    <details><summary>The Rectangle cluster style has a white ADAS panel on the right?</summary><div>That panel is drawn by the car’s firmware and can’t be shrunk. For a small ADAS view, choose the <em>Rounded</em> style.</div></details>
+
+    <details><summary>Why is there no door lock, volume or screen brightness?</summary><div>Those (locking/unlocking the doors, volume, screen brightness, ambient lighting) were removed from Kachi — use the car’s own screens for them. Ask by voice and Kachi will tell you they were removed. Not every button can be written on every ROM; look each one up in the <a href="kachi-feature-catalog.html">catalogue</a>.</div></details>
+
+    <details><summary>After switching the car off and on, Kachi takes a few seconds to start?</summary><div>BYD firmware closes apps every time the car is switched off, so Kachi starts from scratch on engine start. It reconnects its channel, the steering-wheel keys and the app slots by itself; a few seconds at first is normal.</div></details>
+
+    <details><summary>Does Kachi use or fake GPS?</summary><div>It never fakes your location and is never a “mock location” app. Location permission (if granted) is <strong>read-only</strong>, e.g. for the “only with GPS” condition of scheduled navigation.</div></details>
+
+    <details><summary>Does my voice go to the internet?</summary><div>No. Recognition runs on the head unit; the network is only used to download the model once (every file is SHA-256 checked). Kachi only understands Vietnamese — teach it English or hard-to-say app names under <span class="path">Voice › Teach Kachi app names</span>. Cancel a listening turn by tapping outside the card (the Back button deliberately doesn’t cancel).</div></details>
+
+    <details><summary>Pressing Home goes back to the stock launcher?</summary><div><span class="path">System &amp; permissions › Home screen</span> tells you which app is the home screen; press <em>Set Kachi as home screen</em>. If the ROM keeps switching it back, turn on <em>Keep Kachi as home screen on engine start</em>.</div></details>
+
+    <details><summary>No new build shows up when checking for updates?</summary><div>The car needs a network while checking. The update channel holds exactly one file, <code>apk/Kachi-&lt;version&gt;-release.apk</code> on <code>main</code> — if no new build has been published, there is nothing to download. Builds installed before 1.41 must be uninstalled and installed by hand once.</div></details>
+  </div>
+  </div>
 </section>
 
 <!-- ============ CREDITS ============ -->
 <section id="credits" class="alt">
   <div class="wrap">
+  <div lang="vi">
     <p class="kicker">Ghi công</p>
     <h2>Mã nguồn mở &amp; giấy phép</h2>
     <p class="sub">Kachi phát hành theo <a href="https://github.com/dangkhoi/byd-kachi/blob/main/LICENSE">giấy phép MIT</a>. Cảm ơn các dự án dưới đây — danh sách đầy đủ trong <a href="https://github.com/dangkhoi/byd-kachi/blob/main/CREDITS.md">CREDITS.md</a>.</p>
@@ -697,51 +1177,72 @@ footer p{margin:6px 0}
       <div class="credit"><h3>Tham chiếu nghiên cứu (clean-room)</h3><p><a href="https://github.com/yash-srivastava/Overdrive-release">Overdrive-release</a> © 2026 Yash Srivastava và <a href="https://github.com/Kiroha/byd-dashcast">byd-dashcast</a> © 2026 Cedric Carre — chỉ dùng lại dữ kiện API (mã tính năng, opcode, tên hàm), <strong>không chép mã nguồn</strong>.</p><span class="lic">MIT</span></div>
     </div>
   </div>
-</section>
 
-<!-- ============ ENGLISH ============ -->
-<section id="english" class="en" lang="en">
-  <div class="wrap">
-    <p class="kicker">English summary</p>
-    <h2>Kachi in one minute</h2>
-    <div class="two">
-      <div>
-        <p><strong>Kachi</strong> is an unofficial, community-built home-screen launcher for <strong>BYD DiLink</strong> head units (Vietnamese-first UI; English, Chinese, Thai and Malay also available). Current release: <strong>2.97 (versionCode 200)</strong>.</p>
-        <p>It runs real apps inside resizable home-screen slots, casts apps to the instrument cluster (full or split), forwards turn-by-turn guidance from Google Maps / VietMap / Waze to the cluster and HUD, offers fully on-device Vietnamese voice control (sherpa-onnx), remaps steering-wheel and console keys, shows cameras on turn signal or on demand, drives comfort controls (windows, climate, seats, defrost, air filter) and updates itself over the air.</p>
-      </div>
-      <div>
-        <p><strong>Install:</strong> download <a href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk">Kachi-2.97-release.apk</a>, run <code>adb install -r</code>, open Kachi and accept “Allow USB debugging” (tick “Always allow”), then <em>Settings › System &amp; permissions › Set Kachi as home</em>. Later updates: <em>Check for updates</em> in the same group.</p>
-        <p><strong>Verified on</strong> BYD Seal and Sealion 6 (DiLink 3, Android 10); everything else is unknown. Full guide (VI + EN): <a href="https://github.com/dangkhoi/byd-kachi/blob/main/docs/HUONG-DAN-KACHI.md">HUONG-DAN-KACHI.md</a>.</p>
-        <p><strong>Not affiliated with or endorsed by BYD.</strong> No warranty of any kind; use at your own risk and never operate the screen while driving.</p>
-      </div>
+  <div lang="en">
+    <p class="kicker">Credits</p>
+    <h2>Open source &amp; licences</h2>
+    <p class="sub">Kachi is released under the <a href="https://github.com/dangkhoi/byd-kachi/blob/main/LICENSE">MIT licence</a>. Thanks to the projects below — the full list is in <a href="https://github.com/dangkhoi/byd-kachi/blob/main/CREDITS.md">CREDITS.md</a>.</p>
+    <div class="credits">
+      <div class="credit"><h3><a href="https://github.com/mobile-dev-inc/dadb">dadb</a></h3><p>A pure-JVM ADB client, embedded in the app to connect to the head unit’s internal shell channel.</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3><a href="https://github.com/k2-fsa/sherpa-onnx">sherpa-onnx</a></h3><p>On-device speech recognition and speech synthesis. Ships with the ONNX Runtime native library (Microsoft, MIT licence).</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3>Vietnamese Zipformer model (int8)</h3><p>The listening model, downloaded when you press Download in the app — not bundled in the APK. A sherpa-onnx package built from the original model trained for Vietnamese.</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3>“Hey Kachi” model</h3><p>The keyword spotter <code>sherpa-onnx-kws-zipformer-gigaspeech-3.3M</code> (k2-fsa).</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3>Piper voice — VAIS-1000</h3><p>Vietnamese voice pack, downloaded separately. Attribution: VAIS-1000 Vietnamese speech synthesis corpus · Piper · sherpa-onnx.</p><span class="lic">CC-BY-4.0</span></div>
+      <div class="credit"><h3>espeak-ng (pronunciation data)</h3><p>Piper uses part of espeak-ng’s data for Vietnamese, shipped unmodified with the voice pack. Source code: github.com/espeak-ng/espeak-ng.</p><span class="lic">GPL-3.0-or-later</span></div>
+      <div class="credit"><h3><a href="https://github.com/square/okio">okio</a> · <a href="https://github.com/JetBrains/kotlin">Kotlin stdlib</a></h3><p>I/O library and the Kotlin runtime, bundled indirectly.</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3><a href="https://www.bouncycastle.org/">Bouncy Castle</a></h3><p>The cryptography library dadb uses to create and sign the ADB authentication key.</p><span class="lic">Bouncy Castle License (MIT-style)</span></div>
+      <div class="credit"><h3>Research references (clean-room)</h3><p><a href="https://github.com/yash-srivastava/Overdrive-release">Overdrive-release</a> © 2026 Yash Srivastava and <a href="https://github.com/Kiroha/byd-dashcast">byd-dashcast</a> © 2026 Cedric Carre — only API facts were reused (feature codes, opcodes, function names); <strong>no source code was copied</strong>.</p><span class="lic">MIT</span></div>
     </div>
+  </div>
   </div>
 </section>
 
 <!-- ============ DISCLAIMER ============ -->
-<section id="mien-tru" class="alt">
+<section id="mien-tru">
   <div class="wrap">
+  <div lang="vi">
     <p class="kicker">Miễn trừ trách nhiệm</p>
     <h2>An toàn là trên hết</h2>
     <div class="callout danger"><b>Kachi là thử nghiệm cá nhân, không liên kết với BYD.</b> Không có bảo đảm nào về an toàn lái xe, tương thích, khả năng hoàn tác hay độ ổn định. Cài và dùng với rủi ro của riêng bạn.</div>
     <ul class="notes">
       <li><b>Chỉ thao tác màn hình khi xe đã dừng an toàn.</b> Khi đang lái, dùng giọng nói hoặc phím đã gán.</li>
       <li><b>Camera, cụm đồng hồ và HUD do Kachi hiển thị chỉ để tham khảo</b> — luôn quan sát trực tiếp và dùng gương.</li>
-            <li>BYD, DiLink và tên các app được nhắc tới là nhãn hiệu của chủ sở hữu tương ứng, chỉ dùng để mô tả tương thích.</li>
+      <li>BYD, DiLink và tên các app được nhắc tới là nhãn hiệu của chủ sở hữu tương ứng, chỉ dùng để mô tả tương thích.</li>
     </ul>
+  </div>
+
+  <div lang="en">
+    <p class="kicker">Disclaimer</p>
+    <h2>Safety comes first</h2>
+    <div class="callout danger"><b>Kachi is a personal experiment, not affiliated with BYD.</b> There is no warranty of any kind on driving safety, compatibility, reversibility or stability. Install and use it at your own risk.</div>
+    <ul class="notes">
+      <li><b>Only operate the screen when the car is safely stopped.</b> While driving, use voice or the keys you have bound.</li>
+      <li><b>The camera, cluster and HUD views Kachi shows are for reference only</b> — always look for yourself and use your mirrors.</li>
+      <li>BYD, DiLink and the app names mentioned are trademarks of their respective owners and are used only to describe compatibility.</li>
+    </ul>
+  </div>
   </div>
 </section>
 </main>
 
 <footer>
   <div class="wrap">
-    <div class="row">
+    <div class="row" lang="vi">
       <div>
         <p><strong style="color:var(--text)">Kachi</strong> · phiên bản 2.97 (mã 200) · cập nhật 08/10/2026</p>
         <p>Dự án cộng đồng của <a href="https://github.com/dangkhoi">dangkhoi</a> · giấy phép MIT · không chính thức.</p>
       </div>
       <div>
-        <p><a href="https://github.com/dangkhoi/byd-kachi">GitHub</a> · <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk">Bản phát hành</a> · <a href="https://github.com/dangkhoi/byd-kachi/blob/main/docs/HUONG-DAN-KACHI.md">Hướng dẫn</a> · <a href="kachi-feature-catalog.html">Danh mục chức năng</a> · <a href="https://github.com/dangkhoi/byd-kachi/issues">Báo lỗi</a></p>
+        <p><a href="https://github.com/dangkhoi/byd-kachi">GitHub</a> · <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk">Bản phát hành</a> · <a href="https://github.com/dangkhoi/byd-kachi/blob/main/docs/HUONG-DAN-KACHI.md">Hướng dẫn</a> · <a href="guide/HUONG-DAN-CO-HINH.html">Hướng dẫn có hình</a> · <a href="kachi-feature-catalog.html">Danh mục chức năng</a> · <a href="https://github.com/dangkhoi/byd-kachi/issues">Báo lỗi</a></p>
+      </div>
+    </div>
+    <div class="row" lang="en">
+      <div>
+        <p><strong style="color:var(--text)">Kachi</strong> · version 2.97 (build 200) · updated 8 Oct 2026</p>
+        <p>A community project by <a href="https://github.com/dangkhoi">dangkhoi</a> · MIT licence · unofficial.</p>
+      </div>
+      <div>
+        <p><a href="https://github.com/dangkhoi/byd-kachi">GitHub</a> · <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk">Releases</a> · <a href="https://github.com/dangkhoi/byd-kachi/blob/main/docs/HUONG-DAN-KACHI.md">User guide</a> · <a href="guide/HUONG-DAN-CO-HINH.html" hreflang="vi">Illustrated guide (VI)</a> · <a href="kachi-feature-catalog.html">Feature catalogue</a> · <a href="https://github.com/dangkhoi/byd-kachi/issues">Report a bug</a></p>
       </div>
     </div>
   </div>
