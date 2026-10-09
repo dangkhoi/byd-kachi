@@ -292,6 +292,7 @@ class SettingsSections(
         // giây trên mạng xe, và một nút im lặng vài giây thì người dùng bấm lại lần hai.
         val update = rows.button(context.getString(R.string.kachi_check_update)) {} as TextView
         update.setOnClickListener { deps.bridge.checkUpdate { text -> update.text = text } }
+        UpdateDotBadge.bind(update)   // 2.98 · OTA-UPDATE-DOT — cùng chấm với nút ⚙ thanh trên, tự tắt khi đã ở bản mới nhất
         body.addView(update)
         body.addView(rows.button(context.getString(R.string.kachi_nav_stop)) { deps.bridge.navStop() })
         // Nút khởi động lại launcher (owner 2026-09-25): khi có lỗi (bind rớt / cụm kẹt / overlay treo) → restart

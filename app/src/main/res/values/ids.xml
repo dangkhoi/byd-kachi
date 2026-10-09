@@ -22,4 +22,6 @@
     <!-- 2.88 (chip lốp): khoá "chữ đang hiện" của một chip thanh trên — chuỗi + MÀU của từng đoạn (TopStripChipInk
          applyChipText), để đổi màu một con số mà chữ đứng yên vẫn vẽ lại. -->
     <item name="kachi_chip_text_key" type="id" />
+    <!-- 2.98 · OTA-UPDATE-DOT: drawable chấm "có bản mới" gắn vào một view (UpdateDotBadge.bind — chặn gắn hai lần). -->
+    <item name="kachi_update_dot" type="id" />
 </resources>

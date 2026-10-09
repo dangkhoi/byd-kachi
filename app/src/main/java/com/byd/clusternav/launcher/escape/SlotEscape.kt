@@ -122,4 +122,29 @@ internal object SlotEscape {
 
     /** Bảng của Kachi (ngăn kéo / Cài đặt / sửa bố cục) của màn [activity] mở/đóng — `LauncherWindows`. Màn khác ⇒ bỏ qua. */
     fun panels(activity: android.app.Activity, open: Boolean) { current?.takeIf { it.owns(activity) }?.onPanels(open) }
+
+    /**
+     * 2.98 · R16 (OQ6 [P3]) — MỘT móc cho mọi hộp thoại Kachi có thể hiện trên màn nhà (gọi ngay sau `show()` ở các cửa dựng hộp thoại
+     * dùng chung: `SettingsDialogs` · `UpdateFlow` · `KachiHomeDisclaimer`). [ĐO máy ảo 09/10] bộ chọn hồ sơ (chạm chip QUA lớp che) là
+     * cửa sổ `ty=APPLICATION` của task Kachi ⇒ nằm DƯỚI cửa sổ Waze freeform (Window #13 dưới #12), người lái không thấy. Hiện ⇒ như
+     * bảng mở (gỡ che + Home qua rào camera: app xuống dưới); đóng (decor rời cửa sổ) ⇒ đối chiếu + đưa app lên lại. Theo dõi bằng
+     * `OnAttachStateChangeListener` của decor — không đè listener đóng/huỷ của bên gọi. Màn nhà nhận tin là màn đang hiện LÚC hộp
+     * thoại hiện (báo đóng về đúng nó, kể cả khi nó đã khuất). 0 lệnh khi không có app đang được quản.
+     */
+    fun shade(dialog: android.app.Dialog?): android.app.Dialog? {
+        val d = dialog ?: return null
+        val decor = d.window?.decorView ?: return d
+        var home: SlotEscapeHome? = null
+        fun shown(on: Boolean) {
+            if (on == (home != null)) return
+            if (on) home = current?.takeIf { it.ownsContext(d.context) }?.also { it.onDialog(true) }
+            else { home?.onDialog(false); home = null }
+        }
+        if (d.isShowing) shown(true)
+        decor.addOnAttachStateChangeListener(object : android.view.View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: android.view.View) = shown(true)
+            override fun onViewDetachedFromWindow(v: android.view.View) = shown(false)
+        })
+        return d
+    }
 }

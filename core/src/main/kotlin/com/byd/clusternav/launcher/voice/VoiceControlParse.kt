@@ -267,15 +267,19 @@ internal object VoiceControlParse {
 
     /**
      * Tách câu MIX không liên từ ở ranh giới ĐỘNG TỪ HÀNH ĐỘNG ("hạ kính lấy gió ngoài tắt máy lạnh" = 3 lệnh).
-     * Trả `null` nếu < 2 động từ. Mỗi vế = [start_i, start_{i+1}), cắt từ nối AN TOÀN + cặp "sau đó" ở đuôi.
+     * Trả `null` nếu < 2 vế. Ranh giới = [VoiceClauseSplit.starts] (động từ THẬT theo dấu, không nằm trong lòng một cụm). Mỗi vế = [start_i, start_{i+1}), cắt từ nối AN TOÀN + cặp "sau đó" ở đuôi.
      *
      * ⚠ An toàn nằm ở CHỖ GỌI ([VoiceIntentParser]): chỉ nhận kết quả khi MỌI vế parse ra ý định hiểu được — nên
      * câu có động từ nằm giữa tên đối tượng ("mở bài Cỏ dại và hoa dành dành") không bị cắt bừa.
      */
-    fun multiVerbSplit(t: List<Token>): List<List<Token>>? {
-        val starts = t.indices.filter { i -> VoiceGrammar.actionVerbAt(t, i) }
-        if (starts.size < 2) return null
+    fun multiVerbSplit(t: List<Token>, terms: List<VoiceTerm> = emptyList()): List<List<Token>>? {
+        val starts = VoiceClauseSplit.starts(t, terms)
+        if (starts.isEmpty()) return null
         val out = ArrayList<List<Token>>()
+        // 2.98 R11 — vế ĐẦU không động từ (*"sưởi ghế phụ bật gió tự động"*) chỉ được giữ khi mở bằng một cụm của từ vựng; cổng
+        // nghĩa (vế đầu phải là lệnh GHI, vế sau phải nêu đối tượng) ở [VoiceClauseSplit.parts].
+        if (starts[0] > 0 && VoiceClauseSplit.leadsWithTerm(t, terms)) out.add(t.subList(0, starts[0]))
+        if (out.size + starts.size < 2) return null
         for (k in starts.indices) {
             val from = starts[k]
             val to = starts.getOrNull(k + 1) ?: t.size

@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.escape
 import com.byd.clusternav.launcher.escape.SlotEscapePlan.Adopt
 import com.byd.clusternav.launcher.escape.SlotEscapePlan.Step
 import com.byd.clusternav.launcher.behind.BehindHomePlan
+import com.byd.clusternav.modules.clustercast.StackEntry
 import com.byd.clusternav.modules.clustercast.StackParse
 
 /**
@@ -15,7 +16,8 @@ import com.byd.clusternav.modules.clustercast.StackParse
  * ## Chi phí lệnh shell mỗi sự kiện (cột "Chi phí" spec 2.98 R7)
  *  - [adopt]: 1 đọc (`am stack list`) + 1 thử mã (chỉ đọc) + 2 lệnh (mode 5 · resize) + 1 đọc lại = 5. Lần đầu mỗi tiến trình hệ
  *    dời khung xuống dưới đỉnh ổn định ([EscapeFit]) ⇒ +1 resize +1 đọc = 7. Hỏng ⇒ +1–2 (trả).
- *  - [reconcile]: 0 khi không có dấu; có dấu ⇒ 1 đọc + (0–1 resize) + (0–1 đưa lại lên) + (1–2 mỗi dấu phải trả). Soát Pass 9: có lớp
+ *  - [reconcile]: 0 khi không có dấu; có dấu ⇒ 1 đọc + (0–1 resize) + (0–1 đưa lại lên) + (1–2 mỗi dấu phải trả). R10: đưa lại lên
+ *    = `am task focus`, +1 đọc xác nhận MỘT lần mỗi tiến trình; focus hỏng ⇒ +1 `dumpsys activity recents` (+0–1 `am start`). Soát Pass 9: có lớp
  *    che mà chưa biết đỉnh ổn định và vừa kéo khung ⇒ +1 đọc +0–1 resize, MỘT lần mỗi tiến trình ([TopMemory.probed]).
  *  - [claims]: 0 khi không có dấu; có dấu ⇒ 1 đọc.
  */
@@ -47,6 +49,8 @@ class SlotEscapeRun(
     class TopMemory {
         @Volatile var minTop: Int? = null
         @Volatile var probed = false
+        /** R10 — `am task focus` đã xác nhận đưa task lên đỉnh (`true`) / hỏng trên ROM này (`false` ⇒ đi thẳng đường lùi); `null` = chưa thử. */
+        @Volatile var focusWorks: Boolean? = null
     }
 
     private fun want(slot: PxRect): PxRect = EscapeFit.taskRect(slot, liftPx, tops.minTop)
@@ -184,9 +188,7 @@ class SlotEscapeRun(
                     }
                     if (m != markers.firstOrNull { it.pkg == m.pkg }) { list = EscapeMarkers.upsert(list, m); store.write(list) }
                     var top = s.onTop
-                    if (refront && !top) {
-                        SlotEscapePlan.refrontCmd(s.task.comp, cameraSig, homeComps)?.let { sh(it); top = true; log += "${m.pkg} refront" }
-                    }
+                    if (refront && !top) refront(s.task).let { (ok, note) -> top = ok; log += "${m.pkg} $note" }
                     if (top) onTop += m
                     log += "${m.pkg} keep task ${m.task} onTop=$top"
                 }
@@ -204,6 +206,37 @@ class SlotEscapeRun(
             }
         }
         return Reconciled(onTop, gone, released, "reconcile ${markers.size} dấu ⇒ ${log.joinToString(" · ")}")
+    }
+
+    /**
+     * R10 — đưa task [task] (id từ CHÍNH bản đọc của lượt) lên trên màn nhà: `am task focus` ([SlotEscapePlan.focusCmd]). Lần đầu mỗi
+     * tiến trình +1 `am stack list` xác nhận task đã lên đỉnh display 0 ([TopMemory.focusWorks]) — ROM có lệnh mà không có tác dụng
+     * thì không được để lớp che dựng lên khung trống. Focus hỏng / không tác dụng ⇒ đường lùi `am start MAIN/LAUNCHER` CHỈ khi intent
+     * gốc của task là MAIN/LAUNCHER (+1 `dumpsys activity recents`) — không thì không đưa lên (chồng instance tệ hơn). `true` = đã lên.
+     */
+    private fun refront(task: StackEntry): Pair<Boolean, String> {
+        if (tops.focusWorks != false) {
+            val cmd = SlotEscapePlan.focusCmd(task.taskId, cameraSig, homeComps) ?: return false to "refront: không lệnh"
+            when (SlotEscapePlan.focusResult(sh(cmd))) {
+                SlotEscapePlan.Focus.SKIPPED -> return false to "refront bỏ (rào màn nhà/camera)"
+                SlotEscapePlan.Focus.OK -> {
+                    if (tops.focusWorks == true) return true to "refront focus"
+                    val after = read() ?: return false to "refront focus: đọc lại hỏng"
+                    if (BehindHomePlan.topVisibleStackId(StackParse.parse(after), SlotEscapePlan.MAIN_DISPLAY) == task.stackId) {
+                        tops.focusWorks = true
+                        return true to "refront focus (xác nhận đỉnh)"
+                    }
+                    tops.focusWorks = false
+                }
+                SlotEscapePlan.Focus.FAILED -> tops.focusWorks = false
+            }
+        }
+        if (!SlotEscapePlan.rootIsLauncher(sh(SlotEscapePlan.RECENTS_CMD), task.taskId)) {
+            return false to "refront: focus không dùng được, intent gốc task ${task.taskId} không MAIN/LAUNCHER ⇒ không đưa lên"
+        }
+        val start = SlotEscapePlan.launcherFrontCmd(task.comp, cameraSig, homeComps) ?: return false to "refront: component lạ"
+        sh(start)
+        return true to "refront am start (lùi)"
     }
 
     /** Ô [slot] có task freeform đang sống của [pkg] do Kachi quản không ⇒ host KHÔNG mở lại app vào màn ảo. 0 lệnh khi không dấu. */

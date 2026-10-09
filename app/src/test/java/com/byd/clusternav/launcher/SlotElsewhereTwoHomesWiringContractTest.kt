@@ -29,10 +29,11 @@ class SlotElsewhereTwoHomesWiringContractTest {
         val sweep = SourceRoots.body(probe, "private fun sweep()")
         assertEquals(1, Regex("shell\\(\"am stack list\"\\)").findAll(sweep).count(), "vẫn MỘT lệnh mỗi nhịp")
         assertTrue("val held by lazy(LazyThreadSafetyMode.NONE) { SlotVdOwner.held() }" in sweep, "sổ đọc lười, một lần mỗi nhịp")
-        val away = sweep.substring(sweep.indexOf("val away = "))
-        assertTrue(away.startsWith("val away = !alive && SlotPresence.of(out, sub.pkg, sub.displayId,"),
-            "ô còn app (alive) ⇒ không chạm sổ (đoản mạch &&)")
-        assertTrue("SlotProbeScope.otherHomes(held, sub.key, sub.displayId)) == SlotPresence.ELSEWHERE" in away)
+        // 2.98 · R12 — ĐỔI GHIM có lý do: một `presence` cho cả ELSEWHERE lẫn GONE (app sập ngay lượt mở); đoản mạch giữ nguyên.
+        val away = sweep.substring(sweep.indexOf("val presence = "))
+        assertTrue(away.startsWith("val presence = if (alive) SlotPresence.IN_SLOT"), "ô còn app (alive) ⇒ không chạm sổ (đoản mạch)")
+        assertTrue("else SlotPresence.of(out, sub.pkg, sub.displayId, SlotProbeScope.otherHomes(held, sub.key, sub.displayId))" in away)
+        assertTrue("val away = presence == SlotPresence.ELSEWHERE" in away)
         assertTrue(sweep.indexOf("val held by lazy") < sweep.indexOf("snapshot.forEach"), "một sổ cho cả nhịp, không mỗi ô một lần")
     }
 
@@ -46,7 +47,9 @@ class SlotElsewhereTwoHomesWiringContractTest {
     @Test
     fun `khoa do va ten chu khop luat thuan - man chinh ws@, o 7 va dan dung khong phai`() {
         val host = code("VdAppHost.kt")
-        assertTrue("private val probeKey = \"\$owner#\$slot\"" in host, "SlotProbeScope.ownerOf đọc ngược đúng dạng khoá này")
+        // 2.98 · R14 — ĐỔI GHIM có lý do: khoá dựng bằng `SlotVdLedger.keyOf` (dùng chung với sổ màn ảo để gỡ bộ đo host cũ) — cùng dạng.
+        assertTrue("private val probeKey = SlotVdLedger.keyOf(owner, slot)" in host, "SlotProbeScope.ownerOf đọc ngược đúng dạng khoá này")
+        assertTrue("fun keyOf(owner: String, slot: Int) = \"\$owner#\$slot\"" in SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/SlotVdLedger.kt"))
         assertTrue("private val owner: String = \"ws\"," in host, "chủ mặc định = SlotProbeScope.HOME_OWNER")
         assertTrue("private val hostOwner = \"ws@\${System.identityHashCode(this)}\"" in code("WorkspaceView.kt"),
             "mỗi cây workspace một chủ 'ws@…' ⇒ hai màn chính là hai chủ khác nhau")

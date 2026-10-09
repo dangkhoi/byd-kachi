@@ -230,3 +230,6 @@ t125	end-neg	tắt đi	Unknown	-	0	0	-	-
 t126	end-neg	đóng đi	Unknown	-	0	0	-	-
 t127	end-neg	thôi lấy gió ngoài	Control	-	0	0	-	-
 t128	end-neg	đúng rồi	Unknown	-	0	0	-	-
+# 2.98 R11 VOICE-COMPOUND-NO-CONNECTOR [ĐO off-car 09/10] — câu ghép KHÔNG liên từ từng mất vế sau (spec kachi-298-plan.html R11).
+t129	compound-noconn	tắt sưởi ghế phụ tắt gió tự động	Control,Control	Gió tự động	0	0	-	-
+t130	compound-noconn	sưởi ghế phụ bật gió tự động	Control,Control	Gió tự động	0	0	-	-

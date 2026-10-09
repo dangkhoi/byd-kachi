@@ -49,7 +49,18 @@ object SlotVdOwner {
     fun adopt(owner: String, slot: Int, name: String, lease: VdLease) {
         val stale = ledger.adopt(owner, slot, name, lease)
         Log.i(TAG, "tạo màn ảo $name — ô $slot · display ${lease.displayId} · chủ $owner · đang sống ${ledger.live().size}")
-        stale.forEach { free(it, WHY_SLOT_TAKEN) }
+        stale.forEach { taken(it) }
+    }
+
+    /**
+     * 2.98 · R14 (OQ4 `SLOT-ADOPT-NOTIFY-OLD-HOST`) — màn ảo của host CŨ bị lấy: thôi nhịp đo của host đó TRƯỚC khi nhả. [ĐO máy ảo
+     * 09/10 15:48:57] HOME dựng màn chính MỚI ⇒ `slot-taken` nhả màn ảo màn cũ, 1,6 s sau bộ đo màn cũ (`ws@…#0`) kết luận "app đã
+     * đóng" ⇒ `APP_DIED -> Clear` trên màn đang ẩn (lớp tạm của màn cũ bị xoá, câu/Toast có thể bắn từ màn khuất). Khoá trùng chủ+ô
+     * của host mới (cùng cây dựng lại ô) cũng gỡ — host mới chỉ `watch` SAU khi nhận màn ảo (lượt mở chạy sau `adopt`/[move]).
+     */
+    private fun taken(e: SlotVdLedger.Entry<VdLease>) {
+        SlotLiveProbe.unwatch(SlotVdLedger.keyOf(e.owner, e.slot))
+        free(e, WHY_SLOT_TAKEN)
     }
 
     /**
@@ -59,7 +70,7 @@ object SlotVdOwner {
     fun move(owner: String, slot: Int, name: String, lease: VdLease) {
         val stale = ledger.adopt(owner, slot, name, lease)
         Log.i(TAG, "chuyển màn ảo $name — display ${lease.displayId} → $owner#$slot · đang sống ${ledger.live().size}")
-        stale.forEach { free(it, WHY_SLOT_TAKEN) }
+        stale.forEach { taken(it) }
     }
 
     /** 2.98 · R4: tên các màn ảo ô Kachi đang sống (kể cả app đỗ ô 7) — [SlotVdName.pick] né chúng để sổ không nhầm hai màn là một. */

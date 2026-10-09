@@ -16,7 +16,8 @@ import kotlin.math.ceil
  * `docs/diagnostics/oncar-freeform-waze-2026-10-09.md` §2.
  *
  * ## Bốn câu CLAUDE.md §4 cho mọi lệnh ở đây
- *  1. **Display nào** — chỉ task có `displayId=0` trong bản đọc của CHÍNH lượt đó; đưa lại lên = `am start --display 0`.
+ *  1. **Display nào** — chỉ task có `displayId=0` trong bản đọc của CHÍNH lượt đó; đưa lại lên = `am task focus <id>` của task đó
+ *     (đường lùi `am start --display 0`).
  *  2. **App nào** — đúng gói ô đang hiện ([checkAdopt] `shownPkg == pkg`), task DUY NHẤT của gói trên display 0, stack chỉ có
  *     task của gói đó (allow-list, không "mọi thứ trừ…").
  *  3. **Loại stack nào** — `mActivityType=standard` bằng CHỮ (như `FloatingOrphanPlan`), chế độ fullscreen/freeform; pinned,
@@ -99,12 +100,60 @@ object SlotEscapePlan {
     }
 
     /**
-     * Đưa task đang được quản lại lên trên màn nhà ([ĐO xe 09/10] §2 mục 6: `am start --display 0 -n <comp>` — đúng khung,
-     * cùng pid). Rào [CameraGuard.onHomeUnlessCamera]: chỉ chạy khi màn nhà Kachi đang hiện trên display 0 và không có màn
-     * camera. Intent MAIN/LAUNCHER = cùng intent gốc mà Kachi (và launcher BYD) dùng mở app ⇒ hệ đưa task cũ lên, không dựng
-     * activity mới. Component lạ (có `$`, khoảng trắng…) ⇒ `null`, không lệnh.
+     * Đưa task [task] đang được quản lại lên trên màn nhà — R10 (owner 09/10 "làm hết"): `am task focus <id>` thay `am start
+     * MAIN/LAUNCHER`. [ĐO máy ảo 09/10, evidence `emu-slot-escape-app-sweep-2026-10-09.md` §2] `am start MAIN/LAUNCHER -n <root>`
+     * lên task có intent gốc KHÁC MAIN/LAUNCHER (task do chính app tự mở) ⇒ `am_create_activity` root MỚI mỗi lần (Messages: Hist
+     * 2 → 8 sau 3 HOME; AOSP Q `ActivityStarter.setTaskFromIntentActivity` `!isSameIntentFilter`), VietMap singleTask nhận
+     * `onNewIntent` thừa mỗi HOME; `am task focus` chỉ `am_resume_activity`, giữ khung, cùng pid (6/6 app). Id lấy từ CHÍNH bản đọc
+     * của lượt đối chiếu ([Step.Keep] — không phải id cũ trong dấu). [ĐO máy ảo] id không tồn tại ⇒ in `Setting focus to task N`,
+     * exit 0, không làm gì (`runTaskFocus` → `setFocusedTask` trả im khi `anyTaskForId == null`) — task mất giữa hai lệnh thì lượt
+     * đối chiếu kế thấy [Step.Gone]. Rào [CameraGuard.onHomeUnlessCamera]: chỉ chạy khi màn nhà Kachi đang hiện trên display 0 và
+     * không có màn camera.
      */
-    fun refrontCmd(comp: String, cameraSig: String?, homeComps: List<String>): String? {
+    fun focusCmd(task: Int, cameraSig: String?, homeComps: List<String>): String? {
+        if (task <= 0 || homeComps.isEmpty()) return null
+        return runCatching { CameraGuard.onHomeUnlessCamera(cameraSig, homeComps, "am task focus $task") }.getOrNull()
+    }
+
+    /** Kết quả [focusCmd]: chạy và in dòng xác nhận · rào không cho chạy (đầu ra rỗng) · lệnh hỏng (ROM cắt lệnh / ngoại lệ). */
+    enum class Focus { OK, SKIPPED, FAILED }
+
+    /** [ĐO máy ảo A10] dòng `runTaskFocus` in TRƯỚC `setFocusedTask` (`ActivityManagerShellCommand.java:2794` theo stack máy ảo). */
+    const val FOCUS_OK = "Setting focus to task "
+
+    fun focusResult(out: String?): Focus = when {
+        out == null -> Focus.FAILED
+        out.isBlank() -> Focus.SKIPPED
+        FOCUS_OK in out && "Exception" !in out && "Error" !in out -> Focus.OK
+        else -> Focus.FAILED
+    }
+
+    /** Đọc intent gốc của task khi [focusCmd] hỏng — chỉ đọc, chỉ chạy ở đường lùi (không phải mỗi HOME). */
+    const val RECENTS_CMD = "dumpsys activity recents"
+
+    /**
+     * Intent GỐC của task [task] là MAIN/LAUNCHER không, từ nguyên văn `dumpsys activity recents` (A10: dòng `* Recent #N:
+     * TaskRecord{… #<id> …}` rồi `intent={act=… cat=[…] …}` trong khối của nó). Không thấy task / không thấy dòng intent ⇒ `false`
+     * (đường lùi KHÔNG bắn `am start` — chồng instance tệ hơn không đưa lên).
+     */
+    fun rootIsLauncher(recents: String, task: Int): Boolean {
+        val head = Regex("TaskRecord\\{\\S+ #$task\\s")
+        var inTask = false
+        for (line in recents.lineSequence()) {
+            if ("TaskRecord{" in line && line.trimStart().startsWith("*")) inTask = head.containsMatchIn(line)
+            else if (inTask && line.trimStart().startsWith("intent={")) {
+                return "act=android.intent.action.MAIN" in line && "cat=[android.intent.category.LAUNCHER" in line
+            }
+        }
+        return false
+    }
+
+    /**
+     * Đường LÙI của [focusCmd] (chỉ khi focus hỏng VÀ [rootIsLauncher]): `am start --display 0 MAIN/LAUNCHER -n <comp>` — [ĐO xe
+     * 09/10] §2 mục 6 đúng khung, cùng pid khi intent gốc là MAIN/LAUNCHER (hệ đưa task cũ lên, không dựng activity mới). Component
+     * lạ (có `$`, khoảng trắng…) ⇒ `null`, không lệnh.
+     */
+    fun launcherFrontCmd(comp: String, cameraSig: String?, homeComps: List<String>): String? {
         if (!comp.matches(SAFE_COMP) || homeComps.isEmpty()) return null
         val start = "am start --display $MAIN_DISPLAY -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n $comp"
         return runCatching { CameraGuard.onHomeUnlessCamera(cameraSig, homeComps, start) }.getOrNull()

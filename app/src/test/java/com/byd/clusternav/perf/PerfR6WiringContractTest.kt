@@ -33,4 +33,16 @@ class PerfR6WiringContractTest {
         assertTrue(cb.contains("val emitKey = \"\$emitIcon|\$emitSeg|\$lastCleanRoad\""))
         assertFalse(cb.contains("val emitKey = \"\$emitIcon|\$emitSeg|\$emitRoad\""))
     }
+
+    /**
+     * Soát hiệu năng 2.98 vs 2.97 [ĐO máy ảo 09/10, docs/diagnostics/perf-298-vs-297-2026-10-09.md]: `setText` cùng chữ mỗi nhịp 10 s
+     * làm màn nhà vẽ lại 31 khung/5 phút, và khi R7 đang che thì 9 cửa sổ gương vẽ lại theo (310 khung/5 phút). Chỉ gán khi đổi.
+     */
+    @Test
+    fun `dong ho thanh tren chi gan khi chu doi`() {
+        val top = code("launcher/KachiTopStrip.kt")
+        assertTrue(top.contains("if (clock.text?.toString() != it) clock.text = it"))
+        assertTrue(top.contains("if (dateText.text?.toString() != it) dateText.text = it"))
+        assertFalse(top.contains("clock.text = SimpleDateFormat("), "gán thẳng mỗi nhịp quay lại ⇒ màn nhà + gương vẽ lại mỗi 10 s")
+    }
 }

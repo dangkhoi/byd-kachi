@@ -97,7 +97,7 @@ class VdAppHost(
     val heldPkg: String? get() = if (released) null else pkg
 
     /** H2: khoá theo dõi ở [SlotLiveProbe] — riêng cho từng chủ×ô để hai màn Kachi không đạp lên nhau. */
-    private val probeKey = "$owner#$slot"
+    private val probeKey = SlotVdLedger.keyOf(owner, slot)   // 2.98 · R14: CÙNG khoá sổ màn ảo ⇒ `SlotVdOwner` gỡ đúng bộ đo khi ô bị lấy
 
     /**
      * ═══ 1.69 · BỘ GOM CỬ CHỈ cho ĐƯỜNG LÙI ═════════════════════════════════════════════════════════════════

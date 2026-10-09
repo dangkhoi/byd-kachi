@@ -57,8 +57,10 @@ class StandbyPerfR18Test {
     fun `repin ghi ban doc cua no ngay sau lenh doc`() {
         val ops = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/modules/clustercast/simplified/SimpleCastCoordinatorOps.kt")
         val read = ops.indexOf("shell.execute(\"am stack list\").let { if (it.success) it.stdout else null }")
-        val rec = ops.indexOf("StackListSnapshot.record(stackOut)")
+        val rec = ops.indexOf("StackListSnapshot.record(stackOut, atMs = readAt)")
         assertTrue(read >= 0 && rec > read, "lượt dò repin phải ghi bản đọc cho nhịp đo ô")
+        // 2.98 · R13: mốc ghi = lúc BẮT ĐẦU đọc (lấy TRƯỚC lệnh) — bản chụp không mới hơn lúc lệnh bắt đầu.
+        assertTrue(ops.indexOf("val readAt = com.byd.clusternav.system.StackListSnapshot.nowMs()") in 0 until read, "mốc lấy trước lệnh đọc")
         val coord = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/modules/clustercast/simplified/SimpleCastCoordinator.kt")
         assertTrue(coord.contains("StandbyCadence.repinMinIntervalMs(interactive)"), "khoảng dò repin theo màn")
     }

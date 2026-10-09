@@ -18,6 +18,8 @@ object UpdateFlow {
         setStatus(Lang.t("đang kiểm tra…", "checking…"), false)
         Thread({
             val r = UpdateChecker.check(activity.applicationContext)
+            // 2.98 · OTA-UPDATE-DOT — mọi lượt dò (tự động + bấm tay) đi qua đây ⇒ chấm *có bản mới* ăn theo, 0 lượt mạng thêm.
+            UpdateDotStore.record(activity.applicationContext, r)
             activity.runOnUiThread {
                 if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
                 when {
@@ -65,7 +67,7 @@ object UpdateFlow {
             ))
             .setPositiveButton(Lang.t("Tải & cài", "Download & install")) { _, _ -> doUpdate(activity, url, setStatus) }
             .setNegativeButton(Lang.t("Để sau", "Later"), null)
-            .show()
+            .show().let(com.byd.clusternav.launcher.escape.SlotEscape::shade)   // 2.98 · R16: hộp thoại nổi trên app freeform
     }
 
     private fun doUpdate(activity: Activity, url: String, setStatus: (String, Boolean) -> Unit) {

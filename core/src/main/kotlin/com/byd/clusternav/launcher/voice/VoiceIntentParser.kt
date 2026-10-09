@@ -80,7 +80,7 @@ object VoiceIntentParser {
         // theo động từ, CÙNG cổng của nhánh MIX dưới đây (mọi mảnh phải hiểu được — không thì giữ nguyên vế).
         val parts = splitOnConnectors(all).let { ps ->
             if (ps.size < 2) ps
-            else ps.flatMap { p -> VoiceControlParse.multiVerbSplit(p)?.takeIf { s -> s.none { seg(it) is VoiceIntent.Unknown } } ?: listOf(p) }
+            else ps.flatMap { p -> VoiceClauseSplit.parts(p, terms, ::seg) ?: listOf(p) }
         }
         if (parts.size > 1) {
             // 2.93 — vế chỉ là TÊN một nút (*"tắt điều hòa và đèn đọc"* · *"… và cốp"*) mượn động từ của vế trước — [VoiceClauseEllipsis].
@@ -91,11 +91,8 @@ object VoiceIntentParser {
             return listOf(whole) + VoiceDroppedNote.droppedNote(parts, each, whole)
         }
         // MIX KHÔNG LIÊN TỪ ("hạ kính lấy gió ngoài tắt máy lạnh" = 3 lệnh, 0 chữ "và/rồi") — chi tiết ở
-        // [VoiceControlParse.multiVerbSplit]. CHỈ nhận khi ≥2 vế + MỌI vế hiểu được (an toàn: tên bài không bị cắt).
-        VoiceControlParse.multiVerbSplit(all)?.let { segs ->
-            val each = segs.map { seg(it) }
-            if (each.size >= 2 && each.none { it is VoiceIntent.Unknown }) return each
-        }
+        // [VoiceControlParse.multiVerbSplit]. CHỈ nhận khi ≥2 vế + MỌI vế hiểu được (an toàn: tên bài không bị cắt); 2.98 R11 cổng ở [VoiceClauseSplit].
+        VoiceClauseSplit.parts(all, terms, ::seg)?.let { segs -> return segs.map { seg(it) } }
         return listOf(fuzzy(parseTokens(all, terms, places, text), all, terms, places, text))
     }
 

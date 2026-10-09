@@ -109,13 +109,15 @@ class SlotParkWiringContractTest {
             "if (sub.onMissing != null && !readable) return@forEach",
             // 2.98 · R3 — ĐỔI GHIM có lý do: "chỗ khác" bỏ màn ảo ô của một màn Kachi KHÁC (`SlotProbeScope.otherHomes`, sổ RAM, 0
             // lệnh) — hai màn chính cùng sống không còn nói "đã rời ô" sai; một màn ⇒ tập rỗng ⇒ như cũ (`SlotProbeScopeTest`).
-            "val away = !alive && SlotPresence.of(out, sub.pkg, sub.displayId,",
-            "SlotProbeScope.otherHomes(held, sub.key, sub.displayId)) == SlotPresence.ELSEWHERE",
+            // 2.98 · R12 — ĐỔI GHIM có lý do: MỘT `presence` cho cả "chỗ khác" lẫn GONE (app sập ngay lượt mở — `SlotLivenessGoneTest`).
+            "val presence = if (alive) SlotPresence.IN_SLOT",
+            "SlotProbeScope.otherHomes(held, sub.key, sub.displayId))", "val away = presence == SlotPresence.ELSEWHERE",
+            "val gone = presence == SlotPresence.GONE",
             // Senior review 2.93 Pass 2 [P3] — ĐỔI GHIM có lý do: (1) màn ảo ô còn app KHÁC ⇒ không tính cho kết luận chưa-từng-thấy-
             // sống (đặt tạm `B_NOT_IN_SLOT`: A còn ở đỉnh — luật ở `SlotLivenessElsewhereTest`); (2) thôi đo ĐÚNG bản vừa kết luận,
             // trên luồng chính, chỉ khi nó còn đăng ký — bản bị thay giữa nhịp không được gỡ nhầm bản mới cùng khoá / báo cho app mới.
             "val othersInSlot = away && SlotLiveness.othersInSlot(out, sub.pkg, sub.displayId)",
-            "if (sub.liveness.observe(alive, away, othersInSlot))",
+            "if (sub.liveness.observe(alive, away, othersInSlot, gone))",
             "val missing = sub.onMissing?.takeIf { sub.liveness.missing }",
             "if (!subs.remove(sub))", "if (missing != null) missing() else sub.onDead(elsewhere)")
         assertFalse("unwatch(sub.key)" in sweep, "luồng nền gỡ theo KHOÁ ⇒ gỡ nhầm bản đăng ký mới cùng khoá (Pass 2)")
@@ -124,7 +126,8 @@ class SlotParkWiringContractTest {
         // PARK-2b: màn ảo nhận lại được đo NGAY (không chờ nhịp đang lùi tới 15 s), vẫn một chuỗi nhịp.
         order(SourceRoots.body(probe, "fun watch("), "subs.add(Sub(key, pkg, displayId, shell, onDead, onMissing))", "start()",
             "if (onMissing != null) kick()")
-        order(SourceRoots.body(probe, "private fun kick()"), "unchangedSweeps = 0", "if (paused) return", "ui.removeCallbacks(tick)",
+        // 2.98 · R13 — ĐỔI GHIM có lý do: lượt nhận lại ghi mốc ⇒ nhịp kick chỉ tin bản đọc chụp SAU lượt nhận (PARK7-FORCESTOP-CLEAR).
+        order(SourceRoots.body(probe, "private fun kick()"), "freshAfter = StackListSnapshot.nowMs()", "unchangedSweeps = 0", "if (paused) return", "ui.removeCallbacks(tick)",
             "ticking = true", "ui.post(tick)")
     }
 

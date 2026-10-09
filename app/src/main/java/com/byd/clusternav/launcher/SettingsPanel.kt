@@ -422,6 +422,7 @@ class SettingsPanel(
             setPadding(0, dpi(context, Sp.XS), 0, 0)
         })
         setOnClickListener { show(group) }
+        if (group == SettingsGroup.SYSTEM) UpdateDotBadge.bind(this)   // 2.98 · OTA-UPDATE-DOT — lối ⚙ → nhóm → hàng "Kiểm tra cập nhật"
     }
 
     /**

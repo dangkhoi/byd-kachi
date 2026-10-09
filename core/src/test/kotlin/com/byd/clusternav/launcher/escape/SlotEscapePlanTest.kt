@@ -102,17 +102,49 @@ class SlotEscapePlanTest {
     }
 
     @Test
-    fun `dua lai len qua rao camera va intent goc MAIN LAUNCHER`() {
-        val cmd = SlotEscapePlan.refrontCmd("com.waze/com.waze.FreeMapAppActivity", "com.byd.avc/", homes)
+    fun `R10 dua lai len bang am task focus qua rao camera`() {
+        val cmd = SlotEscapePlan.focusCmd(301, "com.byd.avc/", homes)
         assertNotNull(cmd)
         cmd!!
-        assertTrue(cmd.contains("am start --display 0 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.waze/com.waze.FreeMapAppActivity"), cmd)
-        assertTrue(cmd.indexOf("com.byd.avc/") < cmd.indexOf("am start --display 0"), "nhánh camera đứng trước: $cmd")
+        assertTrue(cmd.contains("am task focus 301"), cmd)
+        assertFalse(cmd.contains("am start"), "không còn am start ở đường chính: $cmd")
+        assertTrue(cmd.indexOf("com.byd.avc/") < cmd.indexOf("am task focus"), "nhánh camera đứng trước: $cmd")
         assertTrue(cmd.contains("\"${homes[0]} \""), "chỉ chạy khi màn nhà Kachi đang hiện: $cmd")
-        assertFalse(Regex("--display\\s+[1-9]").containsMatchIn(cmd))
-        assertNull(SlotEscapePlan.refrontCmd("com.foo/.Outer\$Inner", null, homes), "\$ trong case là biến ⇒ không lệnh")
-        assertNull(SlotEscapePlan.refrontCmd("com.foo/.Main", null, emptyList()))
-        assertNotNull(SlotEscapePlan.refrontCmd("com.foo/.Main", null, homes), "đời xe chưa biết dấu camera ⇒ chỉ cổng màn nhà")
+        assertNull(SlotEscapePlan.focusCmd(0, null, homes), "id lạ ⇒ không lệnh")
+        assertNull(SlotEscapePlan.focusCmd(301, null, emptyList()))
+        assertNotNull(SlotEscapePlan.focusCmd(301, null, homes), "đời xe chưa biết dấu camera ⇒ chỉ cổng màn nhà")
+    }
+
+    /** [ĐO máy ảo A10 09/10] đầu ra thật của `am task focus` (id có/không tồn tại: CÙNG một dòng, exit 0) và khi thiếu đối số. */
+    @Test
+    fun `R10 doc ket qua focus - rao khong chay, chay, loi`() {
+        assertEquals(SlotEscapePlan.Focus.OK, SlotEscapePlan.focusResult("Setting focus to task 301\n"))
+        assertEquals(SlotEscapePlan.Focus.SKIPPED, SlotEscapePlan.focusResult(""), "rào màn nhà/camera không cho chạy ⇒ không phải lỗi")
+        assertEquals(SlotEscapePlan.Focus.FAILED, SlotEscapePlan.focusResult(null))
+        assertEquals(SlotEscapePlan.Focus.FAILED, SlotEscapePlan.focusResult(
+            "\nException occurred while executing:\njava.lang.IllegalArgumentException: Argument expected after \"focus\"\n" +
+                "\tat android.os.ShellCommand.getNextArgRequired(ShellCommand.java:327)\n"))
+        assertEquals(SlotEscapePlan.Focus.FAILED, SlotEscapePlan.focusResult("Error: Unknown command: focus"), "ROM cắt lệnh")
+    }
+
+    /**
+     * R10 — đường lùi chỉ khi intent GỐC là MAIN/LAUNCHER. Fixture `dumpsys-activity-recents-emulator-2026-10-09-r10` [ĐO máy ảo]:
+     * #383 Messages do `am start -n …ConversationListActivity` (intent `{flg=0x10000000 cmp=…}` — đúng ca evidence §2 Hist 2 → 8),
+     * #381 YouTube do Kachi mở (MAIN/LAUNCHER), #382 màn nhà (HOME), #376 VietMap (MAIN/LAUNCHER, đã mất activity).
+     */
+    @Test
+    fun `R10 intent goc MAIN LAUNCHER doc tu dumpsys activity recents`() {
+        val out = fixture("dumpsys-activity-recents-emulator-2026-10-09-r10")
+        assertFalse(SlotEscapePlan.rootIsLauncher(out, 383), "task do app tự mở ⇒ am start sẽ chồng instance")
+        assertTrue(SlotEscapePlan.rootIsLauncher(out, 381))
+        assertTrue(SlotEscapePlan.rootIsLauncher(out, 376))
+        assertFalse(SlotEscapePlan.rootIsLauncher(out, 382), "HOME không phải LAUNCHER")
+        assertFalse(SlotEscapePlan.rootIsLauncher(out, 38), "không nhầm tiền tố id (#38 ≠ #381/#382/#383)")
+        assertFalse(SlotEscapePlan.rootIsLauncher("", 381))
+        val start = SlotEscapePlan.launcherFrontCmd("com.waze/com.waze.FreeMapAppActivity", "com.byd.avc/", homes)!!
+        assertTrue(start.contains("am start --display 0 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.waze/com.waze.FreeMapAppActivity"), start)
+        assertFalse(Regex("--display\\s+[1-9]").containsMatchIn(start))
+        assertNull(SlotEscapePlan.launcherFrontCmd("com.foo/.Outer\$Inner", null, homes), "\$ trong case là biến ⇒ không lệnh")
     }
 
     @Test

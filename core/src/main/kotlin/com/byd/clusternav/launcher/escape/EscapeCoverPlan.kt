@@ -114,13 +114,22 @@ object EscapeCoverPlan {
             PxRect(task.left - d, task.top, task.left, task.bottom),              // trái
             PxRect(task.right, task.top, task.right + d, task.bottom),            // phải
         ).mapNotNull { clip(it, screen) }
+        val barRects = listOfNotNull(bars.status, bars.nav)
         return listOfNotNull(
             Cover(Kind.CAPTION, above).takeUnless { above.isEmpty },
             Cover(Kind.GAP, gap, slotIndex).takeUnless { gap.isEmpty },
             bars.status?.let { Cover(Kind.STATUS, it) },
             bars.nav?.let { Cover(Kind.NAV, it) },
-        ) + corners + edges.map { Cover(Kind.EDGE, it) }
+        ) + corners + edges.filterNot { e -> barRects.any { contains(it, e) } }.map { Cover(Kind.EDGE, it) }
     }
+
+    /**
+     * [outer] chứa trọn [inner]. 2.98 perf: dải [Kind.EDGE] nằm trọn trong thanh hệ thống đã che ([Kind.STATUS]/[Kind.NAV] — cùng
+     * gương cây Kachi, cùng giao chạm lại) là cửa sổ thừa ([ĐO máy ảo 09/10] `EDGE[0,0][1920,36]` ≡ `STATUS[0,0][1920,36]`): mỗi
+     * cửa sổ thừa = 1 bitmap + 1 lần `decor.draw` phần mềm mỗi lượt làm mới gương.
+     */
+    fun contains(outer: PxRect, inner: PxRect): Boolean =
+        inner.left >= outer.left && inner.top >= outer.top && inner.right <= outer.right && inner.bottom <= outer.bottom
 
     /** Bán kính góc thật cho khung bo [frame] — cùng luật `SlotFrameShape.radius` (kẹp `min(w, h) / 2`), px nguyên. */
     fun frameRadius(frame: PxRect, radiusPx: Int): Int =

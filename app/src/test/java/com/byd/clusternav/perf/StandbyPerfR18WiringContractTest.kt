@@ -28,7 +28,8 @@ class StandbyPerfR18WiringContractTest {
         val fresh = sweep.indexOf("StackListSnapshot.fresh(")
         val shell = sweep.indexOf("shell(\"am stack list\")")
         assertTrue(fresh in 0 until shell, "dùng lại trước, tự chạy sau")
-        assertTrue(sweep.contains("StackListSnapshot.record(it)"))
+        // 2.98 · R13 — ĐỔI GHIM có lý do: ghi kèm mốc LÚC BẮT ĐẦU đọc (nhịp kế không dùng lại chính bản của nhịp trước — PARK7-FORCESTOP-CLEAR).
+        assertTrue(sweep.contains("StackListSnapshot.record(it, atMs = startedAt)"))
     }
 
     @Test

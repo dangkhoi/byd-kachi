@@ -55,5 +55,14 @@ class SlotVdLedger<T> {
     /** Ảnh chụp các màn ảo đang sống (để đếm/ghi nhật ký). */
     fun live(): List<Entry<T>> = synchronized(lock) { entries.values.toList() }
 
-    private fun key(owner: String, slot: Int) = "$owner#$slot"
+    private fun key(owner: String, slot: Int) = keyOf(owner, slot)
+
+    companion object {
+        /**
+         * Khoá (chủ × ô) — DÙNG CHUNG với khoá nhịp đo ô (`VdAppHost.probeKey` → `SlotLiveProbe`): 2.98 · R14 (OQ4,
+         * `SLOT-ADOPT-NOTIFY-OLD-HOST`) màn ảo của chủ cũ bị lấy ([adopt] trả nó trong danh sách giải phóng) thì bộ đo của host cũ
+         * phải thôi theo đúng khoá này.
+         */
+        fun keyOf(owner: String, slot: Int) = "$owner#$slot"
+    }
 }

@@ -262,7 +262,8 @@ ensure_model() {
   [ -n "$MODELDIR" ] || { echo "⚠ mô hình CHƯA có và không truyền --modeldir ⇒ bỏ tầng T2"; return 1; }
   note "nạp mô hình từ $MODELDIR (đường (b): chép thẳng vào filesDir ⇒ VoiceModelStore.isReady() true, không cần UI)"
   local f
-  for f in encoder.int8.onnx decoder.int8.onnx joiner.int8.onnx tokens.txt; do
+  # 2.98 R11 QA: tên tệp theo SherpaModelCatalog.ZIPFORMER_VI_INT8 (decoder KHÔNG có bản int8 — `decoder.onnx`).
+  for f in encoder.int8.onnx decoder.onnx joiner.int8.onnx tokens.txt; do
     [ -f "$MODELDIR/$f" ] || die "thiếu $MODELDIR/$f"
     put_app_file "$MODELDIR/$f" "files/sherpa/$MODEL_ID/$f" || die "chép $f hỏng"
     # DEBT-E2E-SH(b) 2026-09-23: verify sha256 sau chép — hỏng ngầm (chép cụt) biểu hiện thành "model init lỗi"

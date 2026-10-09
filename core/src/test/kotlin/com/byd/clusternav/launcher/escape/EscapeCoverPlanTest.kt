@@ -51,6 +51,22 @@ class EscapeCoverPlanTest {
     }
 
     @Test
+    fun `dai vien nam tron trong thanh he thong khong dung cua so thua`() {
+        // [ĐO máy ảo 09/10, perf 2.98] task Waze [19,36][1901,985] + thanh trạng thái [0,0][1920,36] ⇒ bản cũ dựng 10 cửa sổ, trong đó
+        // EDGE[0,0][1920,36] ≡ STATUS (cùng gương, cùng giao chạm) — mỗi lượt làm mới gương vẽ thừa một lần.
+        val screen = PxRect(0, 0, 1920, 1080)
+        val c = EscapeCoverPlan.covers(PxRect(19, 36, 1901, 985), EscapeCoverPlan.Bars(PxRect(0, 0, 1920, 36), null), 240, screen, PxRect(19, 89, 1901, 985))
+        val edges = c.filter { it.kind == Kind.EDGE }.map { it.rect }
+        assertEquals(listOf(PxRect(0, 985, 1920, 1030), PxRect(0, 36, 19, 985), PxRect(1901, 36, 1920, 985)), edges)
+        assertEquals(1, c.count { it.kind == Kind.STATUS })
+        // Chồng MỘT PHẦN (xe: EDGE dưới [0,985][1920,1030] vs NAV [0,990][1920,1080]) ⇒ giữ nguyên — không hở vùng chạm.
+        val car = EscapeCoverPlan.covers(PxRect(19, 89, 1901, 985), EscapeCoverPlan.Bars(PxRect(0, 0, 1920, 84), PxRect(0, 990, 1920, 1080)), 240, screen)
+        assertEquals(4, car.count { it.kind == Kind.EDGE })
+        assertTrue(EscapeCoverPlan.contains(PxRect(0, 0, 1920, 36), PxRect(0, 0, 1920, 36)))
+        assertFalse(EscapeCoverPlan.contains(PxRect(0, 990, 1920, 1080), PxRect(0, 985, 1920, 1030)))
+    }
+
+    @Test
     fun `vien tay nam doi co phu dung vung cham do tren may ao`() {
         // [ĐO máy ảo 09/10 `dumpsys input`] Waze freeform [19,89][1901,985] ⇒ touchableRegion=[0,44][1920,1030].
         val edges = EscapeCoverPlan.covers(PxRect(19, 89, 1901, 985), EscapeCoverPlan.Bars.NONE, 240, PxRect(0, 0, 1920, 1080))

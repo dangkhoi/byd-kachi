@@ -79,7 +79,7 @@ class SlotEscapeWiringContractTest {
         val req = SourceRoots.body(home, "fun requestReconcile(")
         assertTrue(req.indexOf("if (Looper.myLooper() != Looper.getMainLooper()) { main.post { requestReconcile(refront, why) }; return }") <
             req.indexOf("pendingRefront = pendingRefront || refront"), "nhảy về luồng chính TRƯỚC khi đụng state")
-        assertTrue("if (started && !panelsOpen && r.onTop) showCovers(" in SourceRoots.body(home, "fun tryAdopt("))
+        assertTrue("if (started && !shade.open && r.onTop) showCovers(" in SourceRoots.body(home, "fun tryAdopt("))
         val overlay = code("launcher/escape/EscapeCoverOverlay.kt")
         assertTrue("fun hideIf(owner: Activity, why: String) { if (host === owner) hide(why) }" in overlay)
         val port = code("modules/navaccess/A11yOverlayPort.kt")
@@ -89,7 +89,7 @@ class SlotEscapeWiringContractTest {
         // (e) GO_HOME mở home MẶC ĐỊNH ⇒ mọi bước "Home trước" của R7 chỉ khi Kachi là home mặc định (cài kiểu thường ⇒ không mở launcher BYD).
         assertTrue("fun homeAllowed(ctx: Context): Boolean = DefaultHome.isCurrent(ctx) == true" in escape)
         assertTrue("homeAllowed = homeAllowed(ctx)," in SourceRoots.body(escape, "fun run("))
-        val panels = SourceRoots.body(home, "fun onPanels(")
+        val panels = SourceRoots.body(home, "private fun onShade(")
         assertTrue(panels.indexOf("if (!SlotEscape.homeAllowed(activity)) {") in 0 until panels.indexOf("SlotEscapePlan.homeCmd("), "cổng home mặc định đứng TRƯỚC lệnh Home")
     }
 
@@ -131,5 +131,38 @@ class SlotEscapeWiringContractTest {
         val overlay = code("launcher/escape/EscapeCoverOverlay.kt")
         assertTrue("val touch = if (c.kind == EscapeCoverPlan.Kind.CORNER) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else 0" in overlay)
         assertTrue("heads(c.slot)" in overlay)
+    }
+
+    /**
+     * 2.98 · R12–R16 (owner 09/10 "làm hết") — mắt xích của các vá sau R7: R12 GONE vào luật sống/chết · R13 bản đọc dùng lại mang mốc
+     * BẮT ĐẦU đọc + nhận lại ô 7 chỉ tin bản chụp sau lượt nhận · R15 màn chính hiện lại ⇒ nhịp về 5 s · R14 ô bị lấy ⇒ gỡ bộ đo host
+     * cũ · R16 hộp thoại Kachi qua MỘT móc ở các cửa dựng hộp thoại dùng chung.
+     */
+    @Test
+    fun `R12-R16 - gone, ban doc moi, nhip khi hien lai, go bo do host cu, hop thoai`() {
+        val probe = code("launcher/SlotLiveProbe.kt")
+        val sweep = SourceRoots.body(probe, "private fun sweep()")
+        assertTrue("if (sub.liveness.observe(alive, away, othersInSlot, gone)) {" in sweep, "R12")
+        assertTrue("val gone = presence == SlotPresence.GONE" in sweep, "R12")
+        assertTrue("StackListSnapshot.record(it, atMs = startedAt)" in sweep, "R13: mốc lúc BẮT ĐẦU đọc")
+        assertTrue("val since = maxOf(lastSweepAt, freshAfter)" in sweep, "R13")
+        assertTrue(sweep.indexOf("val startedAt = StackListSnapshot.nowMs()") < sweep.indexOf("shell(\"am stack list\")"))
+        assertTrue("freshAfter = StackListSnapshot.nowMs()" in SourceRoots.body(probe, "private fun kick()"), "R13")
+        val resume = SourceRoots.body(probe, "fun resume()")
+        assertTrue("unchangedSweeps = 0" in resume && "ui.removeCallbacks(tick)" in resume, "R15")
+        val cast = code("modules/clustercast/simplified/SimpleCastCoordinatorOps.kt")
+        assertTrue("StackListSnapshot.record(stackOut, atMs = readAt)" in cast, "R13: lượt dò repin cũng ghi mốc bắt đầu")
+        val owner = code("launcher/SlotVdOwner.kt")
+        assertTrue("SlotLiveProbe.unwatch(SlotVdLedger.keyOf(e.owner, e.slot))" in SourceRoots.body(owner, "private fun taken("), "R14")
+        assertEquals(2, Regex("stale\\.forEach \\{ taken\\(it\\) \\}").findAll(owner).count(), "R14: adopt + move")
+        assertTrue("private val probeKey = SlotVdLedger.keyOf(owner, slot)" in code("launcher/VdAppHost.kt"), "R14: cùng khoá")
+        val hook = ".show().let(com.byd.clusternav.launcher.escape.SlotEscape::shade)"
+        assertEquals(6, code("launcher/SettingsDialogs.kt").split(hook).size - 1, "R16: mọi hộp thoại dùng chung")
+        assertTrue(hook in code("UpdateFlow.kt") && hook in code("launcher/KachiHomeDisclaimer.kt"), "R16")
+        val home = code("launcher/escape/SlotEscapeHome.kt")
+        assertTrue("fun onDialog(shown: Boolean) = onShade(shade.dialog(shown), \"dialog\")" in home, "R16")
+        assertTrue("val refront = pendingRefront && resumed && !shade.open" in home, "R16: không đưa app lên khi hộp thoại còn mở")
+        val escape = code("launcher/escape/SlotEscape.kt")
+        assertTrue("decor.addOnAttachStateChangeListener(" in SourceRoots.body(escape, "fun shade("), "R16: không đè listener của bên gọi")
     }
 }

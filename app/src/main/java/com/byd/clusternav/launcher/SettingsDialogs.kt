@@ -41,7 +41,7 @@ internal object SettingsDialogs {
             .setTitle(title)
             .setItems(labels.toTypedArray()) { _, which -> onPick(which) }
             .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            .show().let(com.byd.clusternav.launcher.escape.SlotEscape::shade)   // 2.98 · R16: hộp thoại nổi trên app freeform
     }
 
     /**
@@ -56,7 +56,7 @@ internal object SettingsDialogs {
             .setTitle(title)
             .setMessage(message)
             .setPositiveButton(android.R.string.ok, null)
-            .show()
+            .show().let(com.byd.clusternav.launcher.escape.SlotEscape::shade)   // 2.98 · R16: hộp thoại nổi trên app freeform
     }
 
     /**
@@ -90,7 +90,7 @@ internal object SettingsDialogs {
             .setMessage(message)
             .setPositiveButton(confirmLabel) { _, _ -> onConfirm() }
             .setNegativeButton(dismissLabel, null)
-            .show()
+            .show().let(com.byd.clusternav.launcher.escape.SlotEscape::shade)   // 2.98 · R16: hộp thoại nổi trên app freeform
     }
 
     /**
@@ -157,7 +157,7 @@ internal object SettingsDialogs {
                     builder.setNeutralButton(context.getString(R.string.kachi_delete)) { _, _ -> del() }
                 }
             }
-            .show()
+            .show().let(com.byd.clusternav.launcher.escape.SlotEscape::shade)   // 2.98 · R16: hộp thoại nổi trên app freeform
     }
 
     /**
@@ -202,7 +202,7 @@ internal object SettingsDialogs {
                 onOk(input.text.toString().trim().ifEmpty { initial })
             }
             .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            .show().let(com.byd.clusternav.launcher.escape.SlotEscape::shade)   // 2.98 · R16: hộp thoại nổi trên app freeform
     }
 
     /**
@@ -220,6 +220,6 @@ internal object SettingsDialogs {
             .setView(input)
             .setPositiveButton(context.getString(R.string.kachi_save)) { _, _ -> onOk(input.text.toString().trim()) }
             .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            .show().let(com.byd.clusternav.launcher.escape.SlotEscape::shade)   // 2.98 · R16: hộp thoại nổi trên app freeform
     }
 }

@@ -158,6 +158,7 @@ class KachiTopStrip(
         refreshVoicePill()
         items[HeaderItem.APPS] = pill("ic-apps", R.string.kachi_pill_apps, false) { onOpenAppList() }   // U3
         items[HeaderItem.SETTINGS] = pill("ic-settings", R.string.kachi_pill_settings, true) { onOpenSettings() }
+            .also { UpdateDotBadge.bind(it); themed { UpdateDotBadge.refresh(it) } }   // 2.98 · OTA-UPDATE-DOT — chấm "có bản mới" (overlay, không đổi bố cục); tô lại khi đổi chủ đề tại chỗ (Pass 10)
         items[HeaderItem.PROFILE] = profileChip()
         place(header())
         refreshChips(CarStatus())
@@ -481,10 +482,10 @@ class KachiTopStrip(
         syncProfilePad()
     }
 
-    /** Cập nhật đồng hồ + ngày (do vòng tick / onResume gọi). */
+    /** Đồng hồ + ngày (tick / onResume). 2.98 perf: chỉ gán khi chữ ĐỔI — setText cùng chữ vẫn vẽ lại màn nhà + gương R7 mỗi 10 s. */
     fun updateClock() {
-        clock.text = SimpleDateFormat("HH:mm", LangHost.locale()).format(Date())
-        dateText.text = SimpleDateFormat(LangHost.datePattern(), LangHost.locale()).format(Date())
+        SimpleDateFormat("HH:mm", LangHost.locale()).format(Date()).let { if (clock.text?.toString() != it) clock.text = it }
+        SimpleDateFormat(LangHost.datePattern(), LangHost.locale()).format(Date()).let { if (dateText.text?.toString() != it) dateText.text = it }
     }
 
     private fun dp(v: Int): Int = (v * activity.resources.displayMetrics.density).toInt()

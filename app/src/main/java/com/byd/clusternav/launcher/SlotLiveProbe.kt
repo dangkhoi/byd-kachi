@@ -86,6 +86,9 @@ object SlotLiveProbe {
     private var lastSweepAt = Long.MIN_VALUE
     @Volatile private var running = false
 
+    /** R13 — mốc ([StackListSnapshot.nowMs]) lượt nhận lại màn ảo ô 7 gần nhất: bản đọc dùng lại phải chụp SAU mốc này. */
+    @Volatile private var freshAfter = Long.MIN_VALUE
+
     /** Màn chính đang khuất ⇒ không nhịp nào chạy. Xem khối ⚠ ở KDoc lớp. */
     @Volatile private var paused = false
 
@@ -106,6 +109,7 @@ object SlotLiveProbe {
      * (gỡ nhịp đang hẹn rồi hẹn lại ngay). Luồng chính. Màn khuất ⇒ không làm gì (`resume` hẹn lại).
      */
     private fun kick() {
+        freshAfter = StackListSnapshot.nowMs()   // R13: bản đọc dùng cho kết luận "trống" phải chụp SAU lượt nhận lại
         unchangedSweeps = 0
         if (paused) return
         ui.removeCallbacks(tick)
@@ -160,7 +164,20 @@ object SlotLiveProbe {
         visible.incrementAndGet()
         if (!paused) return
         paused = false
+        // 2.98 · R15 (OQ5) — màn chính hiện lại là lúc người lái NHÌN ô: nhịp về sàn 5 s, không nối tiếp nhịp đã lùi 15 s. [ĐO máy
+        // ảo] trước R15 câu "đã rời ô" tới ~20 s sau HOME (nhịp lùi 15 s + 5 s) — spec 2.93 hứa ≤ ~10 s. Nhịp đang hẹn (lùi) bị thay
+        // bằng một nhịp sau [SlotLiveness.PROBE_PERIOD_MS]; 0 lệnh thêm, chỉ ≤ 2 nhịp 5 s trước khi lùi lại (K8).
+        unchangedSweeps = 0
+        ui.removeCallbacks(tick)
+        ticking = false
         start()
+    }
+
+    /** R12 — bức tranh vừa đổi ⇒ nhịp đang hẹn (có thể đã lùi tới 15 s) thay bằng một nhịp sau [SlotLiveness.PROBE_PERIOD_MS]. Luồng chính. */
+    private fun rearm() {
+        if (!ticking || subs.isEmpty()) return
+        ui.removeCallbacks(tick)
+        ui.postDelayed(tick, SlotLiveness.PROBE_PERIOD_MS)
     }
 
     private fun start() {
@@ -196,16 +213,26 @@ object SlotLiveProbe {
         io.execute {
             // 2.96 · R18 — lượt dò repin (đang chiếu, 4 s) vừa đọc CÙNG lệnh ⇒ dùng lại bản đọc chụp SAU nhịp đo trước (0 lệnh); không có
             // ⇒ tự chạy như cũ và ghi lại cho bên kia ([StackListSnapshot]; [ĐO log xe 07/10] 15 + ~4 `am stack list`/phút trùng nhau).
-            val since = lastSweepAt
-            lastSweepAt = StackListSnapshot.nowMs()
+            // 2.98 · R13 (PARK7-FORCESTOP-CLEAR, [ĐO máy ảo 09/10]): bản đọc của CHÍNH nhịp này ghi mốc LÚC BẮT ĐẦU đọc (không phải lúc
+            // xong) ⇒ nhịp kế không bao giờ dùng lại bản của nhịp trước (mốc ≤ `since`); và sau [kick] (màn ảo vừa nhận lại từ ô 7) chỉ
+            // nhận bản chụp SAU mốc nhận lại ([freshAfter]). Trước R13: nhịp burst 9 s của ô cũ đọc lúc app đỗ CÒN trên màn ảo, app bị
+            // `force-stop`, nhận lại ⇒ nhịp kick dùng lại bản cũ ⇒ "đã thấy sống" ⇒ 10 s sau `APP_DIED -> Clear` thay vì mở lại (PARK-2b).
+            val since = maxOf(lastSweepAt, freshAfter)
+            val startedAt = StackListSnapshot.nowMs()
+            lastSweepAt = startedAt
             val out = StackListSnapshot.fresh(notBeforeMs = since) ?: runCatching { shell("am stack list") }
                 .onFailure { Log.w(TAG, "đo ô hỏng (am stack list): ${it.javaClass.simpleName}") }
-                .getOrNull()?.also { StackListSnapshot.record(it) }
+                .getOrNull()?.also { StackListSnapshot.record(it, atMs = startedAt) }
             running = false
             if (out.isNullOrBlank()) return@execute            // không đọc được ⇒ KHÔNG kết luận (nhịp này bỏ qua)
             val picture = snapshot.map { it.key to (FreeformLaunch.parseTaskIdOnDisplay(out, it.pkg, it.displayId) != null) }
-            unchangedSweeps = if (picture == lastPicture) unchangedSweeps + 1 else 0
+            // 2.98 · R12 — [ĐO máy ảo 09/10, Maps sập trong ô] (1) lượt đo THÊM sau lượt mở (burst) không tính vào lùi nhịp: 6 mốc burst
+            // đứng yên từng đẩy nhịp thường lên 15 s ngay sau lượt mở; (2) bức tranh ĐỔI (một ô vắng app) ⇒ nhịp kế về 5 s NGAY (nhịp đã
+            // hẹn theo bức tranh cũ — 15 s — bị thay): lần đo kết luận chết đến sau 5 s thay vì 15 s. 0 lệnh thêm khi đứng yên.
+            val changed = picture != lastPicture
+            unchangedSweeps = if (!changed) (if (burst) unchangedSweeps else unchangedSweeps + 1) else 0
             lastPicture = picture
+            if (changed) ui.post(::rearm)
             val readable = "Stack id=" in out                  // ô 7: màn ảo nhận lại chỉ kết luận "trống" trên bản đọc có tiêu đề stack
             // 2.98 · R3 (SLOT-ELSEWHERE-TWO-HOMES, `SlotProbeScope`): sổ chủ màn ảo — đọc RAM, chỉ khi có ô vắng app, một lần mỗi nhịp.
             val held by lazy(LazyThreadSafetyMode.NONE) { SlotVdOwner.held() }
@@ -217,12 +244,15 @@ object SlotLiveProbe {
                 // 2.98 · R3 — màn ảo ô của một màn Kachi KHÁC còn sống không phải "chỗ khác": hai màn chính cùng sống, màn mới nhận ô
                 // (`SlotVdOwner.adopt` nhả màn ảo của màn cũ) rồi mở app vào màn ảo của nó ⇒ bản đo của màn cũ thấy "rời ô" (đã-thấy-sống
                 // ⇒ hoàn ô im lặng như 2.92), không nói "đã rời ô, vẫn mở ngoài ô". Một màn Kachi ⇒ tập rỗng ⇒ như 2.93.
-                val away = !alive && SlotPresence.of(out, sub.pkg, sub.displayId,
-                    SlotProbeScope.otherHomes(held, sub.key, sub.displayId)) == SlotPresence.ELSEWHERE
+                val presence = if (alive) SlotPresence.IN_SLOT
+                    else SlotPresence.of(out, sub.pkg, sub.displayId, SlotProbeScope.otherHomes(held, sub.key, sub.displayId))
+                val away = presence == SlotPresence.ELSEWHERE
+                // 2.98 · R12 (SLOT-APP-CRASH-WHITE) — không còn task ở đâu cả (bản đọc được) ⇒ app chết ngay lượt mở cũng kết luận được.
+                val gone = presence == SlotPresence.GONE
                 // Senior review Pass 2 [P3] — màn ảo ô còn app KHÁC ⇒ ô chưa trống (luật hoàn ô nhả màn ảo ⇒ cờ 256 kết thúc app đó)
                 // ⇒ không tính cho kết luận chưa-từng-thấy-sống (KDoc `SlotLiveness`). Cùng bản đọc, 0 lệnh.
                 val othersInSlot = away && SlotLiveness.othersInSlot(out, sub.pkg, sub.displayId)
-                if (sub.liveness.observe(alive, away, othersInSlot)) {
+                if (sub.liveness.observe(alive, away, othersInSlot, gone)) {
                     val elsewhere = sub.liveness.elsewhere
                     Log.i(TAG, "ô ${sub.key}: ${sub.pkg} không còn task trên display ${sub.displayId} ⇒ ${if (elsewhere) "app RA KHỎI ô, task còn ở display khác" else "app đã đóng"}")
                     val missing = sub.onMissing?.takeIf { sub.liveness.missing }

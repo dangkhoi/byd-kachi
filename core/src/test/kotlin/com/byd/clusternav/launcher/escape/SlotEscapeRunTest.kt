@@ -22,7 +22,14 @@ class SlotEscapeRunTest {
     private val waze = "com.waze"
 
     /** Shell ghi âm: mỗi lần `am stack list` trả bản kế trong [lists] (bản cuối lặp lại); mã 59 trả [bounds]. */
-    private class Rec(private val lists: List<String>, private val bounds: String, private val journal: MutableList<String>) : (String) -> String {
+    private class Rec(
+        private val lists: List<String>,
+        private val bounds: String,
+        private val journal: MutableList<String>,
+        /** R10 — đầu ra lệnh có `am task focus` (đã qua rào: [ĐO máy ảo] in đúng dòng này) · `dumpsys activity recents`. */
+        private val focus: String? = "Setting focus to task 301",
+        private val recents: String = "",
+    ) : (String) -> String {
         val calls = ArrayList<String>()
         private var i = 0
         override fun invoke(c: String): String {
@@ -31,6 +38,8 @@ class SlotEscapeRunTest {
                 c == "am stack list" -> lists[minOf(i++, lists.size - 1)]
                 c.startsWith("service call activity_task 59 ") -> bounds
                 c.startsWith("service call activity_task 89 ") -> "Result: Parcel(00000000    '....')"
+                "am task focus" in c -> focus ?: throw java.io.IOException("kênh rớt")
+                c == SlotEscapePlan.RECENTS_CMD -> recents
                 else -> ""
             }
         }
@@ -41,7 +50,8 @@ class SlotEscapeRunTest {
         override fun write(list: List<EscapeMarker>): Boolean { journal += "write:${list.map { it.pkg }}"; if (ok) this.list = list; return ok }
     }
 
-    private fun run(sh: Rec, store: Store) = SlotEscapeRun(sh, TaskBinderCodes.ANDROID_10_R47, "com.byd.avc/", homes, store)
+    private fun run(sh: Rec, store: Store, tops: SlotEscapeRun.TopMemory = SlotEscapeRun.TopMemory()) =
+        SlotEscapeRun(sh, TaskBinderCodes.ANDROID_10_R47, "com.byd.avc/", homes, store, tops = tops)
 
     @Test
     fun `nhan - dau ghi truoc ma 89, thu ma 59 truoc, doc lai khop`() {
@@ -124,9 +134,10 @@ class SlotEscapeRunTest {
         val sh = Rec(listOf(fixture("am-stack-list-emulator-2026-10-09-r7-freeform-under-home")), "", j)
         val st = Store(listOf(EscapeMarker(waze, 0, 301, slot)), j)
         val moved = PxRect(19, 120, 1901, 985)   // vd bật thanh trên ⇒ ô dời xuống
-        val r = run(sh, st).reconcile({ waze }, { true }, { moved }, refront = true)
+        val r = run(sh, st, SlotEscapeRun.TopMemory().apply { focusWorks = true }).reconcile({ waze }, { true }, { moved }, refront = true)
         assertEquals("am task resize 301 19 120 1901 985", sh.calls[1])
-        assertTrue(sh.calls[2].contains("-n com.waze/com.waze.FreeMapAppActivity"), sh.calls[2])
+        assertTrue(sh.calls[2].contains("am task focus 301"), "R10: focus đúng task của bản đọc: ${sh.calls[2]}")
+        assertEquals(3, sh.calls.size, "focus đã xác nhận trong tiến trình ⇒ không đọc lại: ${sh.calls}")
         assertEquals(listOf(EscapeMarker(waze, 0, 301, moved)), r.onTop)
         assertEquals(moved, st.list.single().rect)
     }
@@ -317,5 +328,57 @@ class SlotEscapeRunTest {
         SlotEscapeRun(sh4, TaskBinderCodes.ANDROID_10_R47, "com.byd.avc/", homes, st2, liftPx = 65, tops = tops2)
             .reconcile({ waze }, { true }, { slot }, refront = false)
         assertEquals(listOf("am stack list"), sh4.calls, "dấu đã = khung muốn ⇒ không resize, không đọc lại")
+    }
+
+    // ── R10 — đưa lại lên bằng `am task focus` (evidence `emu-slot-escape-app-sweep-2026-10-09.md` §2) ─────────────────────────────
+
+    private val under = "am-stack-list-emulator-2026-10-09-r7-freeform-under-home"
+    private val top = "am-stack-list-emulator-2026-10-09-r7-waze-freeform-top"
+
+    @Test
+    fun `R10 focus lan dau doc lai xac nhan dinh, lan sau khong doc them, khong am start`() {
+        val tops = SlotEscapeRun.TopMemory()
+        val st = Store(listOf(EscapeMarker(waze, 0, 301, slot)), ArrayList())
+        val sh = Rec(listOf(fixture(under), fixture(top)), "", ArrayList())
+        val r = run(sh, st, tops).reconcile({ waze }, { true }, { slot }, refront = true)
+        assertEquals(1, r.onTop.size, r.line)
+        assertEquals(true, tops.focusWorks)
+        assertEquals(3, sh.calls.size, sh.calls.toString())
+        assertTrue(sh.calls[1].contains("am task focus 301") && sh.calls[2] == "am stack list", sh.calls.toString())
+        val sh2 = Rec(listOf(fixture(under)), "", ArrayList())
+        run(sh2, st, tops).reconcile({ waze }, { true }, { slot }, refront = true)
+        assertEquals(2, sh2.calls.size, "đã xác nhận ⇒ 1 đọc + 1 focus: ${sh2.calls}")
+        (sh.calls + sh2.calls).forEach { assertFalse(it.contains("am start --display"), "không chồng instance: $it") }
+    }
+
+    @Test
+    fun `R10 focus khong tac dung va intent goc khong MAIN LAUNCHER thi khong dua len`() {
+        val tops = SlotEscapeRun.TopMemory()
+        val st = Store(listOf(EscapeMarker(waze, 0, 301, slot)), ArrayList())
+        // Đọc lại sau focus vẫn thấy task DƯỚI màn nhà ⇒ ROM có lệnh mà không có tác dụng.
+        val sh = Rec(listOf(fixture(under)), "", ArrayList(), recents = "  * Recent #0: TaskRecord{5e7e5b0 #301 A=com.waze U=0 StackId=129 sz=2}\n" +
+            "    intent={flg=0x10000000 cmp=com.waze/com.waze.FreeMapAppActivity}\n")
+        val r = run(sh, st, tops).reconcile({ waze }, { true }, { slot }, refront = true)
+        assertTrue(r.onTop.isEmpty(), "không lên ⇒ không che: ${r.line}")
+        assertEquals(false, tops.focusWorks)
+        assertEquals(SlotEscapePlan.RECENTS_CMD, sh.calls.last())
+        sh.calls.forEach { assertFalse(it.contains("am start --display"), "intent gốc không MAIN/LAUNCHER ⇒ cấm am start: $it") }
+        // Lượt sau: đã biết focus hỏng ⇒ không thử lại focus, đi thẳng đường lùi.
+        val sh2 = Rec(listOf(fixture(under)), "", ArrayList(), recents = fixture("dumpsys-activity-recents-emulator-2026-10-09-r10").replace("#381 ", "#301 "))
+        val r2 = run(sh2, st, tops).reconcile({ waze }, { true }, { slot }, refront = true)
+        assertFalse(sh2.calls.any { "am task focus" in it }, sh2.calls.toString())
+        assertTrue(sh2.calls.last().contains("am start --display 0 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.waze/com.waze.FreeMapAppActivity"), sh2.calls.last())
+        assertEquals(1, r2.onTop.size)
+    }
+
+    @Test
+    fun `R10 rao man nha camera khong cho chay thi khong danh dau hong, khong che`() {
+        val tops = SlotEscapeRun.TopMemory()
+        val st = Store(listOf(EscapeMarker(waze, 0, 301, slot)), ArrayList())
+        val sh = Rec(listOf(fixture(under)), "", ArrayList(), focus = "")
+        val r = run(sh, st, tops).reconcile({ waze }, { true }, { slot }, refront = true)
+        assertTrue(r.onTop.isEmpty())
+        assertNull(tops.focusWorks, "rào không cho chạy không phải bằng chứng lệnh hỏng")
+        assertEquals(2, sh.calls.size, sh.calls.toString())
     }
 }

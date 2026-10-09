@@ -69,6 +69,7 @@ class SlotLiveness(
         private set
     private var misses = 0
     private var aways = 0
+    private var gones = 0
     private var reported = false
 
     /**
@@ -77,11 +78,16 @@ class SlotLiveness(
      * (hoặc, với [adopted], tại nhịp kết luận màn ảo nhận lại không có app — [missing]; hoặc tại nhịp thứ [ELSEWHERE_SWEEPS] liên
      * tiếp thấy app ở chỗ khác mà màn ảo ô không còn app nào khác, khi chưa từng thấy nó trong ô — [elsewhere]).
      */
-    fun observe(alive: Boolean, away: Boolean = false, othersInSlot: Boolean = false): Boolean {
+    fun observe(alive: Boolean, away: Boolean = false, othersInSlot: Boolean = false, gone: Boolean = false): Boolean {
         if (reported) return false
-        if (alive) { seenAlive = true; misses = 0; aways = 0; return false }
+        if (alive) { seenAlive = true; misses = 0; aways = 0; gones = 0; return false }
         aways = if (away && !othersInSlot) aways + 1 else 0
+        gones = if (gone && !away) gones + 1 else 0
         if (!seenAlive && !adopted) {
+            // R12 (SLOT-APP-CRASH-WHITE): không còn task ở ĐÂU CẢ trên [GONE_SWEEPS] bản đọc được liên tiếp ⇒ app đã chết/tự đóng
+            // ngay lượt mở (bằng chứng DƯƠNG như [elsewhere]) — không phải "chưa kịp vào": `am start` dựng task đồng bộ, và lượt đo
+            // chỉ bắt đầu SAU lượt mở (+thử lại 2 s) ⇒ vắng hẳn task là app đã sập/đóng. Trước R12: chờ mãi ⇒ ô trắng/đen.
+            if (gones >= GONE_SWEEPS) { reported = true; return true }
             if (aways < ELSEWHERE_SWEEPS) return false
             reported = true
             elsewhere = true
@@ -107,6 +113,14 @@ class SlotLiveness(
          * độ chắc của luật 2 ([DEFAULT_MISSES] nhịp × 5 s) — một nhịp đơn lẻ có thể rơi giữa lúc hệ dời task.
          */
         const val ELSEWHERE_SWEEPS = 2
+
+        /**
+         * 2.98 · R12 (`SLOT-APP-CRASH-WHITE`) — số nhịp ĐỌC ĐƯỢC liên tiếp thấy app KHÔNG còn task ở display nào (`SlotPresence.GONE`)
+         * để kết luận "đã đóng" khi CHƯA từng thấy nó trong ô. [ĐO máy ảo 09/10] Maps sập liên tục ngay khi mở vào ô (`am crash` lặp)
+         * ⇒ bộ đo không bao giờ thấy sống ⇒ luật 1 cấm kết luận ⇒ ô xám/trắng tới khi tình cờ bắt được một nhịp sống. Cùng độ chắc
+         * [ELSEWHERE_SWEEPS].
+         */
+        const val GONE_SWEEPS = 2
 
         /**
          * Senior review 2.93 Pass 2 [P3] — bản đọc [stackList] (nguyên văn `am stack list`) có task của app KHÁC [pkg] trên màn ảo

@@ -26,7 +26,10 @@ object StackListSnapshot {
 
     fun nowMs(): Long = System.nanoTime() / 1_000_000L
 
-    /** Ghi một bản đọc vừa chạy xong. Bản không đọc được (không có `Stack id=`) bị bỏ. */
+    /**
+     * Ghi một bản đọc vừa chạy xong. [atMs] = mốc LÚC BẮT ĐẦU đọc (2.98 · R13: bản chụp không mới hơn lúc lệnh bắt đầu — mốc lúc xong
+     * làm nhịp đo kế dùng lại chính bản của nhịp trước). Bản không đọc được (không có `Stack id=`) bị bỏ.
+     */
     fun record(out: String?, atMs: Long = nowMs()) {
         if (out == null || !readable(out)) return
         last = Entry(out, atMs)

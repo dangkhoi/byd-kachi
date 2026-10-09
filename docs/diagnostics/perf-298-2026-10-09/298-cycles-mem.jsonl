@@ -1,0 +1,3 @@
+{"at":"before","pid":6937,"pss_kb":74733,"java_kb":8676,"native_kb":42100,"views":73,"viewroots":10,"threads":52,"fds":135,"kachi_slot_lines":10,"cpu_ticks":657}
+{"at":"after","pid":6937,"pss_kb":72012,"java_kb":8896,"native_kb":41064,"views":64,"viewroots":1,"threads":55,"fds":69,"kachi_slot_lines":5,"cpu_ticks":1553}
+{"window_s":546}

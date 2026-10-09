@@ -192,8 +192,9 @@ internal fun SimpleCastCoordinator.doRepinEscapedCastApps() {
     // khi đặt (bất biến R1, xem chỗ gọi `detectClusterDisplay()` bên dưới).
     val probeVd = liveDisplayId.takeIf { it >= 1 } ?: detectClusterDisplay()
     if (probeVd < 1) { log("repin: display cụm chưa xác minh — bỏ lượt"); return }
+    val readAt = com.byd.clusternav.system.StackListSnapshot.nowMs()   // 2.98 R13: mốc = lúc BẮT ĐẦU đọc (bản chụp không mới hơn mốc này)
     val stackOut = shell.execute("am stack list").let { if (it.success) it.stdout else null }
-    com.byd.clusternav.system.StackListSnapshot.record(stackOut)   // 2.96 R18 — nhịp đo ô dùng lại bản đọc này (KDoc ở đó)
+    com.byd.clusternav.system.StackListSnapshot.record(stackOut, atMs = readAt)   // 2.96 R18 — nhịp đo ô dùng lại bản đọc này (KDoc ở đó)
     if (stackOut == null) { log("repin: không đọc được am stack list — bỏ lượt"); return }
     val now = System.currentTimeMillis()
     for (target in expected) {

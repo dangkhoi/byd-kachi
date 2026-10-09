@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
  * | nhịp đo ô (`SlotLiveProbe`) kết luận app RA KHỎI ô ([tryAdopt]) | nhận: freeform + đúng khung ô | 5 (hỏng: +1–2) |
  * | màn nhà hiện (onStart) / nội dung ô đổi (state) | đối chiếu dấu: giữ · trả (ô không còn app) · ô về luật hoàn ô (task mất) | 0 khi không dấu; có dấu 1 đọc (+1–2 mỗi lần trả) |
  * | màn nhà lên trước (onResume) / bảng Kachi đóng | như trên + đưa app đang quản lên trên màn nhà | có dấu: 1 đọc + 0–1 |
- * | bảng Kachi mở (ngăn kéo · Cài đặt · bố cục) khi app đang quản ở trên | gỡ lớp che + Home qua rào camera (app xuống dưới) | 1 |
+ * | bảng Kachi mở (ngăn kéo · Cài đặt · bố cục) · hộp thoại Kachi hiện (R16, [SlotEscape.shade]) khi app đang quản ở trên | gỡ lớp che + Home qua rào camera (app xuống dưới) | 1 |
  * | màn nhà khuất (onStop) | gỡ lớp che | 0 |
  *
  * Lớp che ([EscapeCoverOverlay]) chỉ hiện khi màn nhà đang hiện VÀ bản đọc vừa rồi thấy task đang quản ở trên màn nhà.
@@ -52,7 +52,8 @@ internal class SlotEscapeHome(
     private val main = Handler(Looper.getMainLooper())
     private var started = false
     private var resumed = false
-    private var panelsOpen = false
+    /** 2.98 · R16 — bảng + hộp thoại Kachi đang mở (`EscapeShade`, luồng chính); trước đây chỉ có cờ bảng một nguồn. */
+    private val shade = EscapeShade()
     private var pendingRefront = false
     private var pendingWhy = ""
     private val reconcileRun = Runnable { reconcileNow() }
@@ -74,6 +75,16 @@ internal class SlotEscapeHome(
     }
 
     fun owns(a: Activity): Boolean = a === activity
+
+    /** Ngữ cảnh [c] (hộp thoại dựng bằng màn này — có thể bọc `ContextThemeWrapper`) thuộc màn này không. */
+    fun ownsContext(c: android.content.Context?): Boolean {
+        var x = c
+        while (x != null) {
+            if (x === activity) return true
+            x = (x as? android.content.ContextWrapper)?.baseContext?.takeIf { it !== x }
+        }
+        return false
+    }
 
     override fun onStart(owner: LifecycleOwner) { started = true; SlotEscape.current = this }
     override fun onResume(owner: LifecycleOwner) { resumed = true; requestReconcile(true, "resume") }
@@ -120,7 +131,7 @@ internal class SlotEscapeHome(
                 if (!r.ok || t == null) return@post fallback()
                 // Soát Pass 7: chỉ che khi lệnh nhận đã đưa task lên ĐỈNH (toTop) — một app khác đang ở đỉnh thì task nằm dưới nó,
                 // che lúc đó là đặt gương Kachi lên thanh của app kia; lượt đối chiếu kế (onResume/state) sẽ che đúng lúc.
-                if (started && !panelsOpen && r.onTop) showCovers(listOf(EscapeMarker(pkg, index, t, r.rect ?: rect)), bars) { rect }
+                if (started && !shade.open && r.onTop) showCovers(listOf(EscapeMarker(pkg, index, t, r.rect ?: rect)), bars) { rect }
             }
         }
     }
@@ -139,21 +150,25 @@ internal class SlotEscapeHome(
     }
 
     /** Bảng Kachi mở/đóng (`LauncherWindows`). Mở khi có app đang quản ở trên ⇒ gỡ che + app xuống dưới màn nhà; đóng ⇒ đưa lại lên. */
-    fun onPanels(open: Boolean) {
-        if (open == panelsOpen) return
-        panelsOpen = open
-        if (!open) return requestReconcile(true, "panel-closed")
+    fun onPanels(open: Boolean) = onShade(shade.panels(open), "panel")
+
+    /** 2.98 · R16 — hộp thoại Kachi của màn này hiện/đóng ([SlotEscape.shade]): cùng đường với bảng, chỉ ở CẠNH ([EscapeShade]). */
+    fun onDialog(shown: Boolean) = onShade(shade.dialog(shown), "dialog")
+
+    private fun onShade(edge: EscapeShade.Edge?, why: String) {
+        if (edge == null) return
+        if (edge == EscapeShade.Edge.CLOSED) return requestReconcile(true, "$why-closed")
         if (!EscapeCoverOverlay.isShown) return
-        EscapeCoverOverlay.hide("panel")
+        EscapeCoverOverlay.hide(why)
         val sh = shell() ?: return
         if (!SlotEscape.homeAllowed(activity)) { Log.i(SlotEscape.TAG, "bảng mở: Kachi không là home mặc định ⇒ không Home (app freeform ở trên bảng)"); return }
         // Đẩy app freeform xuống dưới màn nhà (Home qua rào camera, 1 lệnh) để bảng không bị cửa sổ app đè — KDoc `SlotEscapePlan.homeCmd`.
         val cmd = SlotEscapePlan.homeCmd(ClusterProfile.resolveCached(activity).cameraSignature, DefaultHome.shownComponents(activity)) ?: return
-        SlotEscape.submit("panel-home") { sh(cmd); Log.i(SlotEscape.TAG, "bảng mở ⇒ app freeform xuống dưới màn nhà") }
+        SlotEscape.submit("$why-home") { sh(cmd); Log.i(SlotEscape.TAG, "$why mở ⇒ app freeform xuống dưới màn nhà") }
     }
 
     private fun reconcileNow() {
-        val refront = pendingRefront && resumed && !panelsOpen
+        val refront = pendingRefront && resumed && !shade.open
         val why = pendingWhy
         pendingRefront = false; pendingWhy = ""
         if (!started) return
@@ -174,7 +189,7 @@ internal class SlotEscapeHome(
             val bars = if (r.onTop.isNotEmpty()) barsFor(sh) else null
             main.post {
                 r.gone.forEach { m -> onTaskGone(m.slot, m.pkg) }
-                if (started && !panelsOpen && r.onTop.isNotEmpty()) showCovers(r.onTop, bars) { rects.getOrNull(it) }
+                if (started && !shade.open && r.onTop.isNotEmpty()) showCovers(r.onTop, bars) { rects.getOrNull(it) }
                 else if (r.line != NO_READ) EscapeCoverOverlay.hide("reconcile")
             }
         }
