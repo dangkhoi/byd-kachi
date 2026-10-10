@@ -23,7 +23,7 @@
 
 ## Removed before release (test-only — do NOT re-add to a release build)
 - `MockGps` + `MockGpsActivity` + `ACCESS_FINE_LOCATION` (manifest) + `TEST_WIDGET_DUMP` + the VietMap widget debug dump/tracer (`debugDumpBoundViews`/`debugReport`/`dumpTreeOnFailure`) + the wrong `NAME_FALLBACKS`.
-- These were the on-car diagnostic tooling (mock GPS at Vinhomes → VietMap populated its widget → dumped the real widget tree → found the alerts-placeholder bug). Recoverable from this session's history if needed for future indoor nav testing.
+- These were the on-car diagnostic tooling (mock GPS at <home area> → VietMap populated its widget → dumped the real widget tree → found the alerts-placeholder bug). Recoverable from this session's history if needed for future indoor nav testing.
 
 ## Remaining ship steps (in order) — pending owner decision
 1. **WARN-1 decision** (security scan): `RebindReceiver` is `exported=true` with `TEST_ADAS_PROBE/WRITE/READ/MASS/TEST_SPEED_LIMIT` in the **release** manifest → runtime ADAS/instrument-write attack surface. **Pre-existing (from 1.03), documented, NOT a data leak, NOT in this diff.** Options: **(a)** acknowledge + ship (note as pre-release follow-up), or **(b)** move the `TEST_ADAS_*/TEST_SPEED_LIMIT` handlers to `app/src/debug/` (exported off in release) before a true public release. (WARN-2 raw vehicle IPs in `CLAUDE.md:213` + `docs/refactor-car-execution/verdicts.tsv`, WARN-3 `<company-email>` in git reflog — both pre-existing + already on origin/main, don't block this push; redact/rewrite as a separate task.)
@@ -49,7 +49,7 @@
 - **HUD arrow (turns) NOT verified on-car** — needs a GPS route. Off-car proven (960 tests + review); on-car pending.
 - **VietMap speed-limit→cluster RENDER** unproven — extraction proven on-car; the BYD HAL feature that draws the sign is still an open probe (`docs/_handoff/speed-limit-sign-oncar-plan.md`).
 - **WARN-1**: guard the exported ADAS test harness (move to debug source set) before any *true public release APK*.
-- **Mock GPS removed from release** — to test nav indoors on a release build, use real GPS (open sky) OR recover the mock injector (this session's history) into a **debug** build. Proven technique: `adb shell appops set com.byd.clusternav android:mock_location allow` + `MockGps.addTestProvider(GPS)` + `setTestProviderLocation` (drive sim), triggered via `am start` (broadcasts are `ssc_skip`'d on DiLink3). Vinhomes CP ≈ 10.7945, 106.7212. Always `removeTestProvider` (stop) or it blocks the car's real GPS.
+- **Mock GPS removed from release** — to test nav indoors on a release build, use real GPS (open sky) OR recover the mock injector (this session's history) into a **debug** build. Proven technique: `adb shell appops set com.byd.clusternav android:mock_location allow` + `MockGps.addTestProvider(GPS)` + `setTestProviderLocation` (drive sim), triggered via `am start` (broadcasts are `ssc_skip`'d on DiLink3). <home area> ≈ <toạ độ>. Always `removeTestProvider` (stop) or it blocks the car's real GPS.
 
 ## Verify command
 `export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && ./gradlew :core:test :app:testDebugUnitTest :car-integration:test :app:assembleDebug`  → expect **960 tests, 0 failures**.

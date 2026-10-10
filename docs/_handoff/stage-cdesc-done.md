@@ -9,7 +9,7 @@ Live `uiautomator` dump on the car (VietMap navigating home): VietMap's a11y tre
 
 - `Sau đó (122m)\n50m Trần Trọng Kim` — turn dist + road
 - `0\nkm/h\n60` — current speed + limit
-- `18:21\n197m\nNhà (Park 3...)` — ETA + dist + dest
+- `18:21\n197m\nNhà (Khu A...)` — ETA + dist + dest
 
 GMaps by contrast has **text non-empty = 7** (`60 m`, `Trần Trọng Kim`, `3 phút`…). `logEventText` only read `event.text`, which is empty for VietMap → the afternoon drive captured 575 GMaps rows and **0 VietMap/Waze rows**. VietMap is not opaque; we read the wrong attribute.
 
@@ -20,7 +20,7 @@ GMaps by contrast has **text non-empty = 7** (`60 m`, `Trần Trọng Kim`, `3 p
 flatten each newline run (`Regex("\\s*[\\r\\n]+\\s*")`, L24) to a single space, `trim`, drop blanks, keep first occurrence of duplicates in order (`distinct()`), join with `" | "`. Pure/off-Android → unit-tested.
 
 ### 2. NEW `core/src/test/kotlin/com/byd/clusternav/navigation/NavDescJoinTest.kt` (61 LOC, 8 tests)
-Pins: pipe-join order · newline→space flatten · CRLF/repeated-newline collapse · dedupe first-occurrence · flatten-before-dedupe · blank/whitespace drop · empty→"" · the real 3-desc VietMap sample → `Sau đó (122m) 50m Trần Trọng Kim | 0 km/h 60 | 18:21 197m Nhà (Park 3...)`.
+Pins: pipe-join order · newline→space flatten · CRLF/repeated-newline collapse · dedupe first-occurrence · flatten-before-dedupe · blank/whitespace drop · empty→"" · the real 3-desc VietMap sample → `Sau đó (122m) 50m Trần Trọng Kim | 0 km/h 60 | 18:21 197m Nhà (Khu A...)`.
 
 ### 3. EDIT `app/src/main/java/com/byd/clusternav/modules/navaccess/NavAccessibilityService.kt` (230 → 294 LOC; +69 / −8)
 - **L9** — `import com.byd.clusternav.navigation.NavDescJoin`.
