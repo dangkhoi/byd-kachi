@@ -66,7 +66,7 @@ object VoiceIntentParser {
         val terms = VoiceGrammar.plusMisheard(VoiceGrammar.terms(profiles, apps, aliases), all)
 
         // V2 (owner on-car 2026-09-22) — "sưởi/mát CẢ 2 GHẾ [mức N]" ⇒ hai lệnh ghế. Đứng trước
-        // [splitOnConnectors] vì nó SINH ra câu ghép; chi tiết ở [VoiceControlParse.expandBothSeats].
+        // [VoiceClauseSplit.onConnectors] vì nó SINH ra câu ghép; chi tiết ở [VoiceControlParse.expandBothSeats].
         VoiceControlParse.expandBothSeats(all)?.let { (a, b) ->
             val ia = parseTokens(a, terms, places, text)
             val ib = parseTokens(b, terms, places, text)
@@ -75,10 +75,12 @@ object VoiceIntentParser {
 
         // Mỗi vế cũng qua [fuzzy] (chữa phương ngữ) — không thì "tắt máy nạnh" (l=n) trong câu ghép rớt DROPPED_CLAUSE.
         fun seg(p: List<Token>) = fuzzy(parseTokens(p, terms, places, text), p, terms, places, text)
+        // 3.0 R1/R2 — "dẫn đường đến X bằng A, B và C" ⇒ mỗi app một ý định; đứng TRƯỚC phép tách "và" ([VoiceNavProviders]).
+        VoiceNavProviders.expand(all, terms, ::seg)?.let { return it }
 
         // 2.98 R2 — mỗi vế của câu ghép vẫn có thể là câu MIX không liên từ (*"đóng hết kính mở cửa sổ trời xong mở cốp"*) ⇒ tách tiếp
         // theo động từ, CÙNG cổng của nhánh MIX dưới đây (mọi mảnh phải hiểu được — không thì giữ nguyên vế).
-        val parts = splitOnConnectors(all).let { ps ->
+        val parts = VoiceClauseSplit.onConnectors(all).let { ps ->
             if (ps.size < 2) ps
             else ps.flatMap { p -> VoiceClauseSplit.parts(p, terms, ::seg) ?: listOf(p) }
         }
@@ -148,19 +150,6 @@ object VoiceIntentParser {
         val t = VoiceLexicon.tokenize(text)
         val terms = VoiceGrammar.plusMisheard(VoiceGrammar.terms(profiles, apps, aliases), t)
         return fuzzy(parseTokens(t, terms, places, text), t, terms, places, text)
-    }
-
-    private fun splitOnConnectors(t: List<Token>): List<List<Token>> {
-        val out = ArrayList<List<Token>>()
-        var start = 0
-        t.forEachIndexed { i, tok ->
-            if (CONNECTOR_WORDS.matches(tok)) {
-                if (i > start) out.add(t.subList(start, i))
-                start = i + 1
-            }
-        }
-        if (start < t.size) out.add(t.subList(start, t.size))
-        return out
     }
 
     // ── Thân bộ phân tích ────────────────────────────────────────────────────────────────────────

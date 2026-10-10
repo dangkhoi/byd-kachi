@@ -12,19 +12,28 @@ import android.media.AudioManager
  * thêm đệm ≥ 1 s + no-decode-on-silence. Ba hàm tiêu điểm dưới đây là một **vai độc lập**: xin/nhả quyền hạ
  * tiếng nhạc trong lúc micro mở, KHÔNG đụng trạng thái phiên, KHÔNG giữ gì sống lâu hơn một lượt nghe.
  *
- * ## Vì sao chỉ `TRANSIENT_MAY_DUCK`, không dừng nhạc
- * Dừng hẳn nhạc cho một câu 3 giây là cắt ngang thứ người ta đang nghe rồi trả lại ở chỗ khác. Hạ tiếng thì đủ
- * để micro nghe rõ mà bài hát không đứt. Và **không nghe đổi tiêu điểm**: phiên dài tối đa 8 s và tự kết thúc;
- * đăng ký một listener chỉ để bỏ qua mọi sự kiện của nó là thêm một đường sống lâu hơn phiên (§5 CLAUDE.md).
+ * ## 3.0 R4 `VOICE-DUCK-MUSIC` — lượt nghe xin `GAIN_TRANSIENT_EXCLUSIVE` (TẠM DỪNG nhạc), không còn `MAY_DUCK` (hạ tiếng)
+ * Tới 2.99 lượt nghe chỉ xin `TRANSIENT_MAY_DUCK` (*"dừng hẳn nhạc cho một câu 3 giây là cắt ngang"*). [ĐO máy ảo kachi_play 10/10,
+ * `dumpsys audio`] cơ chế ấy CÓ chạy — YouTube nhận `LOSS_TRANSIENT_CAN_DUCK`, khung `ducking player … / unducking` khớp từng lượt mic —
+ * nhưng nền tảng chỉ hạ tiếng (không dừng), và [ĐO xe 10/10, Seal fw 2606, 2.99] YouTube đang phát ⇒ micro vẫn thu lời bài hát
+ * (*"may mắn thuộc về"* · *"yêu thích và"* · *"ừ"* · *"ừm"*) ⇒ nhiều câu rác; owner: *"khi nghe có thể phải giảm âm nhạc lại"*.
+ * `GAIN_TRANSIENT_EXCLUSIVE` là loại tiêu điểm tài liệu Android dành cho nhận dạng tiếng nói: app nhạc nhận `LOSS_TRANSIENT` ⇒ TẠM DỪNG,
+ * và tự phát lại khi lượt nghe nhả tiêu điểm (số đo trước/sau ở `docs/diagnostics/voice-300-r4-duck-2026-10-10.md`).
+ *
+ * Không đổi gì khác: cùng thuộc tính âm thanh (`USAGE_ASSISTANCE_SONIFICATION` + `CONTENT_TYPE_SPEECH` — tuyến âm của xe đã chạy với
+ * nó), cùng vòng đời MỘT lượt nghe (xin sau khi mở micro, nhả ở `closeRecord` trên luồng nền) ⇒ không có đường sống lâu hơn phiên. Tiến
+ * trình chết giữa lượt ⇒ AudioService tự gỡ tiêu điểm theo binder chết của chỗ xin [SUY AOSP `MediaFocusControl` death handler].
+ * Câu trả lời đọc ra vẫn chỉ HẠ tiếng (`AndroidTtsSpeaker`/`SherpaTtsSpeaker` giữ `MAY_DUCK`): giữa hai lượt nghe nhạc phát lại nhỏ.
+ * Lượt chờ từ đánh thức (`VoiceWakeListener`) KHÔNG đi qua đây ⇒ "Hey Kachi" vẫn nghe trong lúc nhạc chạy như cũ.
  */
 internal object VoiceAudioFocus {
 
     private fun audio(ctx: Context): AudioManager? = ctx.getSystemService(AudioManager::class.java)
 
-    /** Xin quyền hạ tiếng nhạc trong lúc nghe. Trả `null` nếu không xin được (khi ấy [abandon] là no-op). */
+    /** Xin quyền TẠM DỪNG nhạc trong lúc nghe (R4). Trả `null` nếu không xin được (khi ấy [abandon] là no-op). */
     fun request(ctx: Context): AudioFocusRequest? {
         val am = audio(ctx) ?: return null
-        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)

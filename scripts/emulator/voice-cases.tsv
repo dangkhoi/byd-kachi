@@ -245,3 +245,10 @@ t135	cop-gop-neg	đóng góp ý kiến	Unknown	-	0	0	-	-
 t136	car1010	đóng kính lái xong bật đèn độc	Control,Control	-	0	0	-	-
 t137	car1010	sưởi ghế phụ động	Control	-	0	0	-	-
 t138	compound-fallback	đóng lái xong bật đèn đọc	Control,Unknown	Đèn đọc	0	0	-	-
+# ── 3.0 R1–R3 · NAV-MULTI-PROVIDER-ALL3 / NAV-BY-PROVIDER-SPLIT / VOICE-TEACH-WAZE (log xe 10/10, Seal 2.99) ───────────────────────
+# Câu nhiều app ⇒ MỖI app một Nav cùng điểm đến sạch (≤ 2.99: MỘT Nav, cả đuôi "bằng … và …" nuốt vào điểm đến). t142 = đối chứng:
+# đuôi có chữ không phải tên app ⇒ giữ đường cũ (một Nav, không đoán). t141 = chuỗi mô hình in cho "Waze" ("way"/"ways").
+t139	nav-multi	dẫn đường đến chợ Bến Thành bằng Google Maps, VietMap, và Waze	Nav,Nav,Nav	VietMap	0	0	-	-
+t140	nav-multi	dẫn đường đến chợ bến thành bằng google map việt map và quây	Nav,Nav,Nav	Waze	0	0	-	-
+t141	nav-by-provider	dẫn đường đến chợ bến thành bằng ways	Nav	Waze	0	0	-	-
+t142	nav-multi-neg	dẫn đường đến bến xe bằng xe máy và waze	Nav	xe máy và waze	0	0	-	-

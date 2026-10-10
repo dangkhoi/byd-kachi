@@ -345,7 +345,8 @@ object VoiceSynonyms {
             "youtube", "yt",
             "du tup", "iu tup", "diu tup", "dut tup", "du tu",
         ),
-        VoiceAppTargets.SPOTIFY to listOf("spotify", "spo ti phai", "so po ti phai", "po ti phai", "spo ti phy"),
+        // 3.0 R3 — `spoty file` · `spotifi`: chuỗi mô hình THẬT in cho *"Spotify"* [ĐO host TTS 17/22]; không phải tiếng Việt ⇒ không cướp câu.
+        VoiceAppTargets.SPOTIFY to listOf("spotify", "spo ti phai", "so po ti phai", "po ti phai", "spo ti phy", "spoty file", "spotifi"),
         VoiceAppTargets.ZING to listOf("zing mp3", "zing", "zing em pe ba", "ding mo pe ba"),
         // [ĐO] `docs/diagnostics/emulator-voice-e2e-2026-09-15.md` §3 L6 (t45): *"mở bản đồ"* → `Unknown` trên
         // máy có nhãn hệ thống tiếng Anh (*"Maps"*). *"bản đồ"* CHÍNH LÀ nhãn tiếng Việt của app này, nên đây
@@ -354,7 +355,10 @@ object VoiceSynonyms {
             "google map", "google maps", "ban do google", "ban do", "google",
             "gu go map", "gu go mep", "gu go", "cai ban do",
         ),
-        VoiceAppTargets.WAZE to listOf("waze", "quay", "guay", "guey"),
+        // 3.0 R3 VOICE-TEACH-WAZE — `way` · `ways`: [ĐO xe 10/10] *"dẫn đường về nhà bằng Waze"* ⇒ sherpa *"… bằng way"* (cả đuôi bị nuốt
+        // vào điểm đến); [ĐO host TTS] giọng Anh ⇒ `WAYS` 10 · `WAY` 1. Không phải tiếng Việt ⇒ không cướp câu (luật 3). KHÔNG thêm `que`
+        // (mô hình in `QUÊ` 6 lượt cho *"quây"*, nhưng *"quê"* là từ thường).
+        VoiceAppTargets.WAZE to listOf("waze", "quay", "guay", "guey", "way", "ways"),
         // [owner 2026-09-19] "vietmap" là tên tự chế, ASR tiếng Việt nghe "hên xui" (việt máp/mép/mốp/mụp/láp…)
         // ⇒ thêm biến thể phiên âm như các app tiếng Anh khác (xem GMAPS "gu go mep"). Toàn 2-từ nên không đụng
         // từ thường; APP_TARGETS chỉ dùng cho đường mở-app/chọn-app-nav nên không rớt vào vựng chung. (Biến thể

@@ -20,8 +20,9 @@ class VoiceWaveView(ctx: Context) : View(ctx) {
 
     /** Mức mục tiêu 0..1 (đã chuẩn hoá từ RMS). Cập nhật từ [setLevel]. */
     @Volatile private var target = 0f
-    private var level = 0f          // mức đang vẽ (nội suy về target)
-    private var listening = true    // false ⇒ mờ dần, không phập phồng
+    @Volatile private var level = 0f   // mức đang vẽ (nội suy về target); đọc ở [setLevel] (luồng nghe) ⇒ volatile
+    // 3.0 soát Pass 1: [setLevel] (luồng nghe) nay đọc cờ này để quyết có hẹn khung hay không ⇒ volatile như `target`/`level`.
+    @Volatile private var listening = true    // false ⇒ mờ dần, không phập phồng
 
     private val core = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = KachiTheme.c(KachiTheme.ACCENT) }
     private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -31,8 +32,10 @@ class VoiceWaveView(ctx: Context) : View(ctx) {
     /** Cấp mức âm (RMS 0..32767) từ luồng nghe. Chuẩn hoá phi tuyến để mức nói thường (200–2000) thấy rõ. */
     fun setLevel(rms: Int) {
         // sqrt-scale: rms nhỏ vẫn nhích vòng; trần ~4000 (nói to) = đầy.
-        target = min(1f, kotlin.math.sqrt((rms.coerceAtLeast(0)).toFloat() / 4000f))
-        postInvalidateOnAnimation()
+        val t = min(1f, kotlin.math.sqrt((rms.coerceAtLeast(0)).toFloat() / 4000f))
+        target = t
+        // 3.0 R5 — mức mới lệch không thấy được so với vòng đang vẽ ⇒ không đánh thức RenderThread ([VoiceWaveMotion]).
+        if (VoiceWaveMotion.moving(level, if (listening) t else 0f)) postInvalidateOnAnimation()
     }
 
     /** LISTENING = phập phồng; false = mờ dần đứng yên (DECODING/nói). */
@@ -41,7 +44,7 @@ class VoiceWaveView(ctx: Context) : View(ctx) {
     override fun onDraw(canvas: Canvas) {
         // Nội suy mượt về target (hoặc về 0 khi không nghe).
         val goal = if (listening) target else 0f
-        level += (goal - level) * 0.25f
+        level = VoiceWaveMotion.step(level, goal)
         val cx = width / 2f; val cy = height / 2f
         val half = min(width, height) / 2f
         val base = half * 0.28f                              // lõi khi im — nhỏ để ripple KHÔNG tràn bounds (đè chữ)
@@ -56,7 +59,9 @@ class VoiceWaveView(ctx: Context) : View(ctx) {
         }
         core.alpha = if (listening) 255 else (level * 255).toInt().coerceIn(0, 160)
         canvas.drawCircle(cx, cy, r, core)
-        // Còn phập phồng hoặc còn nội suy dở ⇒ vẽ tiếp.
-        if (listening || level > 0.01f) postInvalidateOnAnimation()
+        // 3.0 R5 VOICE-OVERLAY-FLICKER-SLOW — chỉ hẹn khung kế khi còn nội suy dở. Bản ≤ 2.99 hẹn VÔ ĐIỀU KIỆN khi đang nghe
+        // (`listening || …`) ⇒ cửa sổ phủ toàn màn vẽ lại 60 khung/giây cả khi mức âm đứng yên — [ĐO máy ảo] RenderThread
+        // 3 780 ms CPU / phiên ~11 s. Mức âm mới đã tự hẹn khung ở [setLevel]. Luật + số đo: KDoc [VoiceWaveMotion].
+        if (VoiceWaveMotion.moving(level, goal)) postInvalidateOnAnimation()
     }
 }

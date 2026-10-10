@@ -98,6 +98,10 @@ put_app_file() {
 # đóng). KHÔNG có đường bật bằng broadcast — có chủ ý, xem KDoc TestBridgeStore. Cửa mở ~58 phút.
 enable_test_mode() {
   local boot up until_ms tmp
+  # 3.0 — force-stop + chờ TRƯỚC khi đọc uptime: Kachi là HOME nên bật lại NGAY sau force-stop; nếu mốc mở cửa sổ (uptime) đọc
+  # TRƯỚC lần bật lại ấy thì tiến trình mới (bật khi máy ảo không cửa sổ coi là "màn tắt" ⇒ `A11yLifecycleHeal.pendingTatMayAt`)
+  # có claim tắt-máy SAU mốc mở ⇒ `TestBridgeWindow.closedByIgnitionOff` đóng cửa ⇒ `test_mode_off` [ĐO emulator-5554 10/10, ×3].
+  adbs shell am force-stop "$PKG"; sleep 3
   boot="$(adbs shell cat /proc/sys/kernel/random/boot_id | tr -d '\r\n')"
   up="$(adbs shell cat /proc/uptime | tr -d '\r' | cut -d' ' -f1)"
   until_ms="$(python3 -c "import sys;print(int(float(sys.argv[1])*1000)+3600000-120000)" "$up")"
@@ -108,9 +112,9 @@ enable_test_mode() {
     <string name="test_bridge_until">$boot:$until_ms</string>
 </map>
 XML
-  # force-stop TRƯỚC khi ghi: SharedPreferences giữ bản trong RAM, ghi đè tệp dưới chân một tiến trình đang chạy thì bản
-  # RAM thắng (và có thể ghi đè ngược lại lúc app thoát) — tức công tắc "đã bật" mà cầu vẫn báo tắt.
-  adbs shell am force-stop "$PKG"
+  # force-stop TRƯỚC khi ghi (đã làm ở đầu hàm): SharedPreferences giữ bản trong RAM, ghi đè tệp dưới chân một tiến trình đã nạp
+  # tệp này thì bản RAM thắng. Tiến trình HOME vừa bật lại chưa hỏi cầu ⇒ chưa nạp `kachi_test_bridge` (nạp lười ở lần hỏi đầu).
+  # KHÔNG force-stop lần hai ở đây: lần bật lại thứ hai nằm SAU mốc mở cửa sổ ⇒ đóng cửa (xem đầu hàm).
   put_app_file "$tmp" "shared_prefs/kachi_test_bridge.xml" || die "ghi prefs hỏng"
   start_home
   sleep 1

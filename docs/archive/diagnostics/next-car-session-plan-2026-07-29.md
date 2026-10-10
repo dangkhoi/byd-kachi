@@ -115,7 +115,7 @@ hiện tại cho tới khi mẫu mới khớp):
 - Tốc độ hiện tại/đơn vị/giới hạn: `"0\nkm/h\n50"` — **đây chính là câu trả lời khả dĩ cho Q2
   của `carexec` SPEED_SIGN (sign-source-vietmap)**, có thể không cần đọc HAL/CAN gì cả nếu mẫu
   mới xác nhận lại đúng field thứ 3 luôn là speed limit.
-- ETA/thời lượng/khoảng cách/đích: `"15:16\n28p\n10.4km\nNhà (Park 3 - Vinhomes Central Park)"`
+- ETA/thời lượng/khoảng cách/đích: `"15:16\n28p\n10.4km\nNhà (<nơi>)"`
 
 ### 3.1 Phát hiện quan trọng khi soát code hôm nay: `NavAccessibilityService` KHÔNG đọc `contentDescription`
 

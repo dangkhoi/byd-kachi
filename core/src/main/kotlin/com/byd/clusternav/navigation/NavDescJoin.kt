@@ -5,7 +5,7 @@ package com.byd.clusternav.navigation
  *
  * GMaps carries its guidance in `event.text`, but VietMap / Waze leave `event.text` EMPTY and render the whole
  * nav (turn dist+road, current speed+limit, ETA+dist+dest) on each view's `contentDescription` instead — e.g.
- * "Sau đó (122m)\n50m Trần Trọng Kim", "0\nkm/h\n60", "18:21\n197m\nNhà". When the :app accessibility service
+ * "Sau đó (122m)\n50m Lê Lợi", "0\nkm/h\n60", "18:21\n197m\nNhà". When the :app accessibility service
  * ([com.byd.clusternav.modules.navaccess.NavAccessibilityService]) finds `event.text` empty it walks the source
  * subtree, collects those content descriptions, and joins them here into one CSV cell.
  *

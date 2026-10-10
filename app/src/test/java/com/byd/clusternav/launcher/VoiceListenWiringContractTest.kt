@@ -346,8 +346,17 @@ class VoiceListenWiringContractTest {
             "câu trả lời có/không phải đọc bằng bảng ở `:core` (kiểm off-car), không bằng một `if` ở tầng vẽ")
         // 1.70 — vai tiêu điểm âm thanh tách khỏi VoiceCapture sang VoiceAudioFocus (trần 500 dòng).
         val audioFocus = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceAudioFocus.kt")
-        assertTrue(audioFocus.contains("AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK"),
-            "chỉ HẠ tiếng nhạc, không dừng hẳn — xem KDoc VoiceAudioFocus")
+        // 3.0 R4 VOICE-DUCK-MUSIC [ĐO xe 10/10]: hạ tiếng (MAY_DUCK) vẫn để micro thu lời bài hát ⇒ lượt nghe TẠM DỪNG nhạc.
+        assertTrue(audioFocus.contains("AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE"),
+            "lượt nghe phải TẠM DỪNG nhạc (EXCLUSIVE) — xem KDoc VoiceAudioFocus")
+        assertFalse(audioFocus.contains("AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK"), "không quay lại chỉ hạ tiếng khi nghe")
+        // Vòng đời một lượt: xin ở đầu lượt, nhả ở closeRecord — không có đường sống lâu hơn phiên.
+        val capture = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceCapture.kt")
+        assertTrue(capture.contains("VoiceAudioFocus.request(ctx)") && capture.contains("VoiceAudioFocus.abandon(ctx, focus)"),
+            "tiêu điểm lượt nghe phải được nhả ở closeRecord")
+        // Lượt chờ từ đánh thức KHÔNG xin tiêu điểm (owner 09-16: nghe lệnh khi đang mở nhạc).
+        val wake = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeListener.kt")
+        assertFalse(wake.contains("requestAudioFocus") || wake.contains("VoiceAudioFocus"), "chờ đánh thức không được dừng nhạc")
     }
 
     /**

@@ -49,12 +49,12 @@ class NavDescJoinTest {
     @Test
     fun `real vietmap subtree descriptions join into one nav telemetry string`() {
         val descs = listOf(
-            "Sau đó (122m)\n50m Trần Trọng Kim",
+            "Sau đó (122m)\n50m Lê Lợi",
             "0\nkm/h\n60",
-            "18:21\n197m\nNhà (Park 3...)",
+            "18:21\n197m\nNhà (Khu A...)",
         )
         assertEquals(
-            "Sau đó (122m) 50m Trần Trọng Kim | 0 km/h 60 | 18:21 197m Nhà (Park 3...)",
+            "Sau đó (122m) 50m Lê Lợi | 0 km/h 60 | 18:21 197m Nhà (Khu A...)",
             NavDescJoin.join(descs),
         )
     }

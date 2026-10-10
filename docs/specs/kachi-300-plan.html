@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 3.0 — kế hoạch</title>
+<!--
+  TEMPLATE spec Kiro-style (consolidated). COPY file này → docs/specs/<slug>.html rồi điền.
+  Thứ tự section CHUẨN (workflow.md): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai (Implementation Log) · Reviewer Log.
+  1 spec = 1 file HTML cho 1 feature/task. 1 approval gate duy nhất (out-of-band, KHÔNG lưu state trong HTML).
+  Diagram = HTML visual (inline SVG hoặc .layers/.flow) — CẤM mermaid/ascii (workflow.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kachi 3.0 — kế hoạch</h1>
+<p class="muted">Slug: <code>kachi-300-plan</code> · Branch <code>feat/key-source-split</code> (từ 81c8357 = 2.99 (202) bản thử, CHƯA OTA) · <span class="pill wait">Trạng thái: R1–R5 mã + test off-car + đo máy ảo/host XONG · bản đăng 3.0 (203) — điều phối bump · chờ soát Fable, quét bảo mật, 🚗</span></p>
+<p class="muted">Tuân thủ <code>CLAUDE.md</code> + <code>.kiro/steering/*</code>. Nhãn bằng chứng: [ĐO] · [SUY] · [ĐOÁN] · [CHƯA BIẾT]. Không thư viện mới ⇒ không cần Context7 (Context7 cũng không nối được phiên này — ENOTFOUND). Riêng tư: chỉ nơi công cộng (chợ Bến Thành, Bitexco); không địa chỉ/toạ độ nhà/công ty owner trong mã, test, tài liệu.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 2 — 2026-10-10</b>: owner chốt tên bản <b>3.0</b> (versionCode 203, không "2.100") và 3.0 nhiều khả năng là bản CUỐI của dự án (<i>"xong chắc done dự án ở đây"</i>) ⇒ đổi slug <code>kachi-2100-plan</code> → <code>kachi-300-plan</code>; thêm bài khoá so phiên bản 3.0 &gt; 2.99/2.98 (§6) và §9b <b>Kết dự án: xong / còn mở</b>.</li>
+<li><b>Pass 1 — 2026-10-10</b>: thêm <b>R5</b> <code>VOICE-OVERLAY-FLICKER-SLOW</code> (owner trên xe 2.99: tấm chữ hiện lên tắt rồi mới nghe, xử lý chậm hơn) — bisect phiên bản 2.85…2.99 trên máy ảo.</li>
+<li><b>Pass 0 — 2026-10-10</b>: Khởi tạo R1–R4 từ buổi xe 10/10 (Seal fw 2606, Kachi 2.99) + test case backlog <code>NAV-MULTI-PROVIDER-ALL3</code>. Owner đã giao việc ⇒ mã + test off-car + đo cùng lượt; KHÔNG bump, KHÔNG commit, KHÔNG xe.</li>
+</ul>
+
+<h2>2. Context</h2>
+<ul>
+<li><b>Câu kiểm (tiêu chí đạt)</b>: <i>"dẫn đường đến chợ Bến Thành bằng Google Maps, VietMap, và Waze"</i> ⇒ CẢ BA app dẫn tới Bến Thành.</li>
+<li>[ĐO xe] <i>"… bằng google maps và vietmap"</i> ⇒ chỉ Google Maps dẫn, VietMap nhận <code>am start -a MAIN -c LAUNCHER -n vn.vietmap.live/.MainActivity</code> (21:24:52). Một app <i>"… bằng vietmap"</i> ⇒ <code>VIEW vietmaplive://companion/navigation?lat=…&amp;lng=…&amp;poiName=…</code> ⇒ dẫn. Waze <code>waze://?ll=…&amp;navigate=yes</code> (adb) ⇒ dẫn.</li>
+<li>[ĐO xe] giọng nói: <i>"… bằng Waze"</i> ⇒ <i>"… bằng way"</i> ⇒ <code>Nav(về nhà bằng way)</code> · <i>"mở Waze vào ô một"</i> ⇒ <i>"mở quay vào ô một"</i> ⇒ <code>OpenApp(quây)</code> · <i>"… bằng vietmap và google"</i> ⇒ <code>Nav(công ty một bằng vietmap và google)</code> · YouTube đang phát ⇒ micro thu lời bài hát. Owner: <i>"khi nghe có thể phải giảm âm nhạc lại"</i>.</li>
+<li>Owner (2.99 trên xe): <i>"cái voice lúc hiện lên nó hơi chập chờn, lúc hiện lên tý tắt, rồi đang nghe, xử lý cũng có vẻ chậm hơn trước"</i>; <i>"không phải từ 2.98 đâu, nên so nhiều version trước nữa"</i>.</li>
+</ul>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1. NAV-MULTI-PROVIDER-ALL3.</b> Câu dẫn đường nêu nhiều app ⇒ MỖI app nhận deep-link điểm đến của chính nó (GMaps <code>google.navigation:q=</code> · VietMap <code>vietmaplive://…lat&amp;lng</code> qua đúng đường tra toạ độ của câu một app · Waze <code>waze://?q=…&amp;navigate=yes</code>), không app nào mở trơn. AC: test parse câu kiểm + biến thể; test dispatch thật (3 handoff, 0 mở trơn, tra toạ độ ĐIỂM ĐẾN SẠCH); [ĐO máy ảo] 3 dòng START.</li>
+<li><b>R2. NAV-BY-PROVIDER-SPLIT.</b> <i>"… bằng &lt;app&gt;[, &lt;app&gt;…][ và/hoặc/với &lt;app&gt;]"</i> là danh sách app (đọc từ bảng đích, không câu mẫu), không phải tên điểm đến; nơi đã lưu cũng vậy. Câu một app / câu có chữ lạ trong đuôi / câu ghép thật giữ nguyên. AC: test log xe 10/10 + đối chứng.</li>
+<li><b>R3. VOICE-TEACH-WAZE (+ VOICE-EN-APPNAME-HOTWORD-MEASURE).</b> Đo host TTS mô hình in gì cho Waze · Google Maps · VietMap · Spotify · Zing; thêm dạng mô hình THẬT in (hotword CHỮ HOA đúng token mô hình; không khôi phục dấu bằng máy) theo số lên/tụt. AC: bảng số đo; 0 tụt trên bộ WAV hồi quy; test parse chuỗi xe <i>"bằng way"</i>; tệp hotword có dòng đã chọn.</li>
+<li><b>R4. VOICE-DUCK-MUSIC.</b> Trong lúc Kachi nghe lệnh, nhạc phải nhỏ/dừng; trả lại sau lượt; không phá "nghe lệnh khi đang mở nhạc" (chờ đánh thức), không phá phát tiếp chuyến; không rò tiêu điểm khi phiên/tiến trình chết. AC: [ĐO máy ảo] trạng thái YouTube trong/sau lượt nghe; <i>"dừng nhạc"</i> trong lúc nghe vẫn dừng; tiến trình chết ⇒ nhạc trả lại.</li>
+<li><b>R5. VOICE-OVERLAY-FLICKER-SLOW.</b> Bisect 2.85…2.99: thời gian bấm/đánh thức → tấm chữ hiện, số lần hiện/ẩn mỗi phiên, hết câu → quyết định, CPU tiến trình giọng. Tìm bản đầu tiên tụt, gốc trong diff, sửa từ gốc. AC: bảng số mọi bản đo; trước/sau.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1 (owner 08/10 — mỗi bản sửa chứng minh không nặng thêm): R1/R2 0 luồng · 0 nhịp · 0 listener · 0 lệnh shell; phân tích thêm một lượt quét cụm đánh dấu mỗi câu. R3 +3 họ dòng hotword (<code>createStream</code> host trung vị 7,5 → 7,7 ms). R4 đổi một hằng. 0 vòng lặp mới.</li>
+<li>R-nf2. Tệp ≤ 500 dòng: <code>VoiceIntentParser.kt</code> 499 → tách <code>splitOnConnectors</code> sang <code>VoiceClauseSplit.onConnectors</code> trước khi thêm ⇒ 488; <code>VoiceNavProviders.kt</code> mới 81.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng R1+R2</h3>
+<div class="flow">
+  <div class="fnode"><b>Câu</b><span>"… chợ Bến Thành bằng<br>Google Maps, VietMap, và Waze"</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>VoiceNavProviders.expand</b><span>đuôi = ≥ 2 tên app NAV<br>(4 tầng của appAfterMarker)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>parse câu một app</b><span>"… bằng Google Maps"<br>⇒ Nav / NavigateSaved</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>nhân theo app</b><span>Nav(q, gmaps) · Nav(q, vietmap)<br>· Nav(q, waze)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>runNav từng vế</b><span>GMaps/Waze: chữ, bắn ngay<br>VietMap: tra toạ độ (nền) rồi bắn</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới</span>
+</div>
+<h3>4.2 Quyết định thiết kế</h3>
+<ul>
+<li><b>R1 gốc</b> [ĐO off-car]: câu ra MỘT <code>Nav(query="chợ Bến Thành bằng Google Maps VietMap và Waze", app=null)</code>. <code>VoiceTailClause.appAfterMarker</code> chỉ nhận MỘT tên chạm cuối câu; tách <i>"và"</i> bị cổng <i>"mọi vế phải hiểu được"</i> bỏ. Trên xe app mặc định tra chuỗi rác ⇒ VietMap rơi nhánh mở trơn của <code>runNav</code> [SUY khớp log]. Tầng thi hành KHÔNG lỗi — câu một app đã dẫn được trên xe.</li>
+<li><b>Sửa ở tầng hiểu, không thêm đường thi hành</b>: <code>VoiceNavProviders.expand</code> chạy TRƯỚC phép tách <i>"và"</i> (cùng chỗ với <code>expandBothSeats</code> — tiền lệ "một câu sinh nhiều ý định"). Ba cổng: phủ trọn đuôi tới hết câu · ≥ 2 tên · câu đầu phải ra <code>Nav</code>/<code>NavigateSaved</code> đúng tên đầu. Từ nối danh sách: <i>và · hoặc · với · cùng · and · or · with</i> (<code>VoiceHomograph.Words</code>, luật dấu như liên từ). Tên app trùng ⇒ một ý định. Nhạc không nhân theo app (hai luồng tiếng).</li>
+<li><b>Thứ tự / app nằm trên</b> [ĐO máy ảo]: bắn theo thứ tự nói; app nhận chữ bắn ngay, VietMap bắn sau khi tra toạ độ (0,75–1,15 s). App nằm trên cùng = app xong chuỗi activity sau cùng (lượt 1: Waze tự mở lại <code>MainActivity</code> +3,2 s). KHÔNG bắn lại để kéo một app lên: bắn lại <code>google.navigation</code> kèm <code>CLEAR_TASK</code> huỷ tuyến vừa dựng [ĐO xe 29/09]; CLAUDE.md §6. Cụm: app chiếu lên cụm vẫn do cài đặt chiếu chọn — không đổi.</li>
+<li><b>Waze</b>: giữ đường CHỮ <code>q=</code> (đã [ĐO] máy ảo, CLAUDE.md §6). Xe mới chứng minh <code>ll=</code>; nếu xe cho thấy <code>q=</code> dừng ở màn kết quả ⇒ đổi sang đường toạ độ (dữ liệu <code>coord</code> có sẵn) — OQ1.</li>
+<li><b>R3</b> [ĐO host, 324 WAV — <a href="../diagnostics/voice-300-r3-appnames-2026-10-10.md"><code>voice-300-r3-appnames</code></a>]: mô hình in <code>WAYS</code>/<code>WAY</code> (Waze giọng Anh) · <code>QUÂY</code>/<code>QUÊ</code> (đọc âm Việt) · <code>GOOGLE MAP</code> · <code>VIETMA</code>/<code>VIETMAP</code> · <code>SPOTY FILE</code>/<code>SPOTIFI</code> · Zing không ổn định. Tệp ship làm hỏng <i>"mở Google Maps"</i> (<code>MỞ GU</code> 5/5). <code>waze</code> · <code>google maps</code> · <code>vietmap</code> rời <code>NO_VI_FORM</code> (bộ sinh có sẵn ra <code>MỞ/ĐƯA/BẬT &lt;TÊN&gt;</code>); <code>vietmap live/lay</code> rời <code>ACCENTED</code> (không thì <code>dropPrefixes</code> xoá <code>MỞ VIETMAP</code>): 16 lên · 0 tụt. Tầng chữ: Waze += <code>way</code>/<code>ways</code>; Spotify += <code>spoty file</code>/<code>spotifi</code> (không phải tiếng Việt ⇒ không cướp câu). KHÔNG thêm <code>que</code> (từ thường).</li>
+<li><b>R4</b> [ĐO máy ảo — <a href="../diagnostics/voice-300-r4-duck-2026-10-10.md"><code>voice-300-r4-duck</code></a>]: ≤ 2.99 lượt nghe đã xin <code>MAY_DUCK</code> và nền tảng CÓ hạ tiếng YouTube — nhưng vẫn phát (hệ số hạ ≈ 0,2 [SUY AOSP]). Đổi <code>VoiceAudioFocus</code> sang <code>GAIN_TRANSIENT_EXCLUSIVE</code> (loại Android dành cho nhận dạng tiếng nói); giữ vòng đời một lượt nghe (xin sau mở mic, nhả ở <code>closeRecord</code>), giữ thuộc tính âm thanh (tuyến xe đã chạy). Câu đọc giữ <code>MAY_DUCK</code>. Chờ đánh thức không xin tiêu điểm. Đánh đổi: phiên có lượt nghe nối ⇒ nhạc phát lại ~2 s giữa hai lượt — OQ2.</li>
+<li><b>R5</b> [ĐO máy ảo <code>emulator-5554</code> — <a href="../diagnostics/voice-300-r5-overlay-bisect-2026-10-10.md"><code>voice-300-r5-overlay-bisect</code></a>]: bisect 7 bản đã đăng (2.85 · 2.88 · 2.92 · 2.95 · 2.96 · 2.98 · 2.99), lối phím + nút mic, 3 lượt/bản ⇒ <b>không bản nào hồi quy</b>: bấm→tấm chữ 10–120 ms, 1 cửa sổ · 2 lần chuyển/phiên (không khe tắt-giữa ở độ phân giải 10 ms), ngắt câu→quyết định 230–246 ms, CPU <code>:wake</code> 4,0–5,4 s/phiên ở MỌI bản. Gốc CPU (có từ 2.16, <code>40ff32fd</code>): <code>VoiceWaveView.onDraw</code> hẹn khung kế VÔ ĐIỀU KIỆN khi đang nghe ⇒ cửa sổ phủ toàn màn vẽ lại 60 khung/giây — <code>RenderThread</code> 4,0–4,6 s/phiên ~11 s, mọi luồng khác 0,3 s. Sửa: <code>VoiceWaveMotion</code> (<code>:core</code>, thuần) — chỉ hẹn khung khi vòng còn nội suy hoặc mức âm mới lệch &gt; 1 % (0,3 px); hình vẽ/độ mượt giữ nguyên. Kết quả: CPU <code>:wake</code>/phiên 4 080 → <b>760 ms</b> (phím) · 5 180 → 850 (nút mic) · có nhạc 6 110–7 830 → 2 370–2 420; độ trễ không đổi. Có nhạc: phiên luôn chạm trần 8 s + nghe lẫn lời hát ở MỌI bản ⇒ phần "xử lý chậm" lớn nhất khi có nhạc là R4. [ĐOÁN] triệu chứng xe = khung giật do CPU trên SoC yếu; [CHƯA BIẾT] "hiện lên tý tắt" — máy ảo không tái hiện.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>Tách <code>splitOnConnectors</code> → <code>VoiceClauseSplit.onConnectors</code> (trần 500)</td><td><code>core/…/voice/VoiceIntentParser.kt</code> · <code>VoiceClauseSplit.kt</code></td><td>✅</td></tr>
+<tr><td>T2</td><td>R1/R2 mã <code>VoiceNavProviders.expand</code> + nối ở <code>parse</code></td><td><code>core/…/voice/VoiceNavProviders.kt</code></td><td>✅</td></tr>
+<tr><td>T3</td><td>R1/R2 test: <code>VoiceNavMultiProviderTest</code> (7) · <code>VoiceNavMultiProviderDispatchTest</code> (1, dispatch thật)</td><td><code>core/src/test/…/voice/</code> · <code>app/src/test/…/launcher/</code></td><td>✅</td></tr>
+<tr><td>T4</td><td>R3 đo host 324 WAV + đổi bảng</td><td><code>SherpaSpokenWords.kt</code> · <code>VoiceSynonyms.kt</code> · <code>docs/diagnostics/voice-300-r3-appnames-2026-10-10.md</code></td><td>✅</td></tr>
+<tr><td>T5</td><td>R3 test <code>VoiceAppNames300Test</code> (4)</td><td><code>core/src/test/…/voice/</code></td><td>✅</td></tr>
+<tr><td>T6</td><td>R4 đo trước/sau máy ảo + đổi tiêu điểm + ghim hợp đồng</td><td><code>app/…/voice/VoiceAudioFocus.kt</code> · <code>VoiceListenWiringContractTest.kt</code></td><td>✅</td></tr>
+<tr><td>T7</td><td>Harness: t139–t142 + w35</td><td><code>scripts/emulator/voice-cases.tsv</code> · <code>voice-wavgen.sh</code></td><td>✅ ca · chạy: §6</td></tr>
+<tr><td>T8</td><td>R5 bisect 7 bản + gốc + sửa <code>VoiceWaveMotion</code> + test <code>VoiceWaveMotionTest</code> (4)</td><td><code>core/…/voice/VoiceWaveMotion.kt</code> · <code>app/…/voice/VoiceWaveView.kt</code></td><td>✅</td></tr>
+<tr><td>T8b</td><td>3.0: bài khoá so phiên bản <code>OtaVersion300Test</code> (3) · <code>UpdateChecker300Test</code> (1); sửa <code>enable_test_mode</code> của harness (mốc mở cửa sổ đọc SAU lần HOME bật lại)</td><td><code>core/src/test/…/core/</code> · <code>app/src/test/…/</code> · <code>scripts/emulator/voice-common.sh</code></td><td>✅</td></tr>
+<tr><td>T9</td><td>Soát Fable (§5) + quét bảo mật (§6) + bump + đăng</td><td>—</td><td>⏳ điều phối</td></tr>
+<tr><td>T10</td><td>🚗 câu kiểm trên xe: 3 app dẫn tới Bến Thành (ghi app nằm trên; Waze <code>q=</code> có dẫn thẳng?) · <i>"… bằng Waze"</i> · nhạc YouTube dừng khi nghe</td><td>—</td><td>🚗</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> [ĐO XML]: core <b>5 108 / 0</b> (soát Pass 1 +1) · app <b>2 280 / 0</b> (1 skip có sẵn) · <code>lintRelease</code> 0 error (612 warning có sẵn) · <code>assembleRelease</code> + <code>:app:assembleVehicleTest</code> xanh.</li>
+<li><b>V-emu R1</b> [ĐO <code>emulator-5556</code> kachi_play, cầu <code>say</code>]: câu kiểm ⇒ <code>Nav ×3</code> ⇒ START <code>google.navigation:q=chợ Bến Thành</code> (40.955) · <code>waze://?q=chợ Bến Thành&amp;navigate=yes</code> (40.968) · <code>vietmaplive://companion/navigation?lat=…&amp;lng=…&amp;poiName=chợ Bến Thành</code> (41.705); 0 <code>MAIN/LAUNCHER</code>. Biến thể chuỗi mô hình <i>"… bằng google map việt map và quây"</i> 3/3. <a href="../diagnostics/nav-300-r1-multi-provider-2026-10-10.md"><code>nav-300-r1-multi-provider</code></a>.</li>
+<li><b>V-emu R4</b> [ĐO]: trước — YouTube 3 (phát, hạ tiếng) suốt lượt nghe; sau — 2 (dừng) 10 ms sau xin, 3 lại 4 ms sau nhả; <i>"dừng nhạc"</i> trong lúc nghe ⇒ 2 sau phiên; <i>"bài tiếp theo"</i> ⇒ 3; tiến trình chết giữa lượt ⇒ 3 + ngăn tiêu điểm sạch.</li>
+<li><b>V-harness</b> [ĐO <code>voice-e2e.sh</code>, <code>emulator-5554</code> clusternav10, locale vi-VN; trước = vehicleTest <code>81c8357</code> (2.99), sau = cây 3.0; báo cáo: <a href="../diagnostics/voice-300-e2e/before-299.md">before-299.md</a> · <a href="../diagnostics/voice-300-e2e/after.md">after.md</a>]:
+<table><tr><th></th><th>Trước (2.99)</th><th>Sau (3.0)</th></tr>
+<tr><td>T1 chữ → ý định (135 ca)</td><td>128/135 — FAIL t139 · t140 · t141 (ca mới) + 4 ca môi trường <i>"app KHÔNG lên màn"</i> (t52 · t54 · t75 · t76: máy ảo thiếu app)</td><td><b>131/135</b> — chỉ còn 4 ca môi trường (y hệt)</td></tr>
+<tr><td>T2 tiếng → nghe (34 WAV)</td><td>26/34 nguyên văn</td><td>26/34 — chuỗi nghe 34/34 KHÔNG đổi; ý định đổi đúng 1 ca: w35 <code>Nav</code> (đuôi nuốt) → <code>Nav,Nav,Nav</code></td></tr></table>
+Ghi chú tooling: <code>enable_test_mode</code> trên máy ảo không cửa sổ luôn trả <code>test_mode_off</code> (×3) — mốc mở cửa sổ đọc TRƯỚC lần HOME bật lại sau <code>force-stop</code> ⇒ <code>closedByIgnitionOff</code>; đã sửa thứ tự trong <code>voice-common.sh</code>.</li>
+<li><b>V-version</b> [ĐO test]: <code>OtaVersion.cmp("3.0","2.99") &gt; 0</code> (khúc [3,0] vs [2,99]); kênh 3.0 mời 2.99 · 2.98 · 2.97 · 2.85 · 2.99-thử1, không mời hạ; chấm cập nhật 2.99 (202) bật, 3.0 (203) tắt; luật ≤ 2.88 (<code>split</code>) cũng thấy 3.0 mới hơn; <code>RE_APK</code> đọc <code>Kachi-3.0-release.apk</code> và chọn nó cao nhất. <code>OtaVersion.kt</code> 2.98 (<code>420f16b</code>) = bản hiện hành (git diff rỗng) ⇒ xe đang chạy 2.98 thấy 3.0.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Waze trên xe với <code>q=&lt;chữ&gt;&amp;navigate=yes</code> có dẫn thẳng không? Nếu không ⇒ Waze đổi sang đường toạ độ (một dòng bảng, tra toạ độ như VietMap). — 🚗</li>
+<li>OQ2. Phiên có lượt nghe nối 5 s: nhạc dừng–phát lại–dừng (≈ 2 s phát nhỏ dưới câu đọc). Chấp nhận, hay giữ tiêu điểm cả phiên (đổi chỗ xin/nhả sang <code>VoiceSession</code>)? — owner sau buổi xe.</li>
+<li>OQ3. App nào nên nằm trên cùng khi dẫn bằng nhiều app? Hôm nay: app xong chuỗi activity sau cùng (không định trước). — owner.</li>
+<li>OQ4 (soát Pass 1). Câu NHIỀU app <em>rồi</em> lệnh khác (<em>"… bằng google maps và vietmap <b>rồi</b> bật điều hòa"</em>) ⇒ [ĐO off-car] một <code>Nav</code> mang cả đuôi (y hệt 2.99 — không hồi quy, nhưng R2 chưa phủ): cổng 1 đòi danh sách app chạm HẾT câu, và phép tách <em>"và"</em> cắt đôi danh sách trước khi tới <em>"rồi"</em>. Câu MỘT app + <em>"rồi"</em> vẫn đúng (test). Nới cổng 1 cho đuôi kết ở từ nối không-phải-danh-sách (<em>rồi/xong/then</em>) là đường mới ⇒ chờ xe/owner có cần không. — owner.</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><a href="../diagnostics/nav-300-r1-multi-provider-2026-10-10.md"><code>diagnostics/nav-300-r1-multi-provider-2026-10-10.md</code></a> · <a href="../diagnostics/voice-300-r3-appnames-2026-10-10.md"><code>voice-300-r3-appnames-2026-10-10.md</code></a> · <a href="../diagnostics/voice-300-r4-duck-2026-10-10.md"><code>voice-300-r4-duck-2026-10-10.md</code></a> · <a href="../diagnostics/voice-300-r5-overlay-bisect-2026-10-10.md"><code>voice-300-r5-overlay-bisect-2026-10-10.md</code></a></li>
+<li>Spec trước: <a href="kachi-299-plan.html"><code>kachi-299-plan.html</code></a> (R5 YouTube hotword — cùng phương pháp đo). Backlog: <code>NAV-MULTI-PROVIDER-ALL3</code> · <code>NAV-BY-PROVIDER-SPLIT</code> · <code>VOICE-TEACH-WAZE</code> · <code>VOICE-EN-APPNAME-HOTWORD-MEASURE</code> · <code>VOICE-DUCK-MUSIC</code> · <code>VOICE-OVERLAY-FLICKER-SLOW</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li>2026-10-10 — R1–R4: mã + test + đo (§6). R5: bisect + sửa (fork, §4.2). Đổi tên bản 3.0 + bài khoá phiên bản. Chưa commit/bump/xe.</li>
+</ul>
+
+<h2>9b. Kết dự án — 3.0: XONG / CÒN MỞ</h2>
+<p class="muted">Owner 10/10: 3.0 nhiều khả năng là bản cuối (<i>"xong chắc done dự án ở đây"</i>). Bảng dưới tách rõ phần 3.0 đã làm (off-car) với phần để ngỏ cho tương lai. Nguồn task DUY NHẤT vẫn là <code>docs/PROJECT-BACKLOG.md</code>.</p>
+<h3>9b.1 XONG trong 3.0 (off-car, chờ một lượt xe xác nhận)</h3>
+<table><tr><th>Mục</th><th>Trạng thái</th></tr>
+<tr><td>R1/R2 dẫn đường nhiều app + tách "bằng A, B và C"</td><td>✅ off-car + máy ảo (3 START) · 🚗 nói câu kiểm</td></tr>
+<tr><td>R3 tên app Anh (Waze way/ways · hotword WAZE/GOOGLE MAPS/VIETMAP)</td><td>✅ host 16 lên/0 tụt · harness 0 tụt · 🚗 giọng owner</td></tr>
+<tr><td>R4 dừng nhạc khi nghe</td><td>✅ máy ảo (YouTube 21.35) · 🚗 app nhạc xe</td></tr>
+<tr><td>R5 CPU tấm chữ giọng nói</td><td>✅ máy ảo −81 % CPU <code>:wake</code> · 🚗 "hiện lên tý tắt" chưa tái hiện</td></tr>
+<tr><td>Các mục 2.99 R1–R10 (gộp vào 3.0 vì 2.99 chưa OTA)</td><td>xem <a href="kachi-299-plan.html"><code>kachi-299-plan.html</code></a> — 🚗 T7/T14/T16/T20</td></tr>
+</table>
+<h3>9b.2 CÒN MỞ — để cho tương lai (không làm trong 3.0)</h3>
+<table><tr><th>Backlog</th><th>Vì sao còn mở</th></tr>
+<tr><td><code>ISA-NATIVE-SIGN</code> · <code>ISA-MAP-SENDARR</code> — giới hạn tốc độ bản đồ vào ô GỐC cụm/HUD</td><td>BLOCKED: [ĐO xe fw 2606] HAL trả <code>ok</code> nhưng cụm/HUD không hiện; cần mã hoá (coding) ECU ADAS — ngoài tầm app. Kachi giữ biển tự vẽ. Công cụ <code>setisa</code> (test-only) còn sẵn cho ai mở lại.</td></tr>
+<tr><td><code>HUD-ROADNAME-OEM-CADENCE</code> — tên đường lên HUD (SL6)</td><td>Kachi đã ghi tên đường theo nhịp OEM (2.98 R9); SL6 HUD chưa từng hiện tên — 🚗 chưa xác nhận, có thể do firmware.</td></tr>
+<tr><td><code>NAV-MULTI-PROVIDER-ALL3</code> OQ1 — Waze <code>q=</code> trên xe</td><td>Nếu xe dừng ở màn kết quả ⇒ một dòng bảng sang đường toạ độ.</td></tr>
+<tr><td>OQ2/OQ3 spec này — giữ tiêu điểm cả phiên · app nằm trên khi nhiều app</td><td>Chờ owner sau buổi xe.</td></tr>
+<tr><td>Các dòng 🚗/BACKLOG khác trong <code>PROJECT-BACKLOG.md</code> (camera, ô, chiếu cụm, voice hotword ngắn…)</td><td>Giữ nguyên trạng thái; không có việc 3.0 nào phụ thuộc.</td></tr>
+</table>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-10-10 (3.0) — Fable 5.1, senior review + patch loop + scope</h3>
+<p>Phạm vi: <code>git diff 81c8357</code> (18 tệp) + 14 tệp/thư mục mới. Build sau vá: <code>:core:test</code> <b>5 108 / 0</b> · <code>:app:testDebugUnitTest</code> <b>2 280 / 0</b> (1 skip có sẵn) · <code>lintRelease</code> 0 error (612 warning có sẵn) · <code>assembleRelease</code> + <code>assembleVehicleTest</code> xanh (đếm từ XML). versionCode vẫn 202 — không bump theo điều phối. Không chạm xe, không chạm máy ảo (5556 đang chạy kachi_play, chỉ đọc <code>adb devices</code>).</p>
+<p><b>Scope</b>: R1 ✅ (expand trước phép tách <em>"và"</em>; 3 cổng; dispatch thật 3 handoff / 0 mở trơn / geocode điểm đến sạch; không bắn lại — <code>CLEAR_TASK</code> huỷ tuyến) · R2 ✅ (NavigateSaved nhân theo app; đối chứng <em>cầu bằng lăng</em> · <em>xe máy và waze</em> · câu ghép một app; Pass 1 thêm 4 ca: <em>"cầu bằng lăng bằng waze và vietmap"</em> · tên điểm đến có <em>"và"</em> · app không-NAV trong đuôi · đuôi kết bằng từ nối) · R3 ✅ (ba tên rời NO_VI_FORM; <code>vietmap live/lay</code> rời ACCENTED có số đo; <code>way/ways/spoty file/spotifi</code> chỉ ở bảng đích — không vào từ vựng chung ⇒ không cướp câu Việt; <em>"mở way"</em> ⇒ Waze [ĐO off-car]; nhãn app Latin không vào hotword nhãn ⇒ không tái tạo tiền tố <code>MỞ VIETMAP LIVE</code>; tên dạy đi qua <code>SherpaTaughtHotwords.killedBy</code>) · R4 ✅ (EXCLUSIVE chỉ ở <code>VoiceAudioFocus.request</code>; xin sau mở mic, nhả trong <code>finally</code>→<code>closeRecord</code> mọi đường thoát; chờ đánh thức không xin tiêu điểm — bài canh ghim cả 3; TTS giữ MAY_DUCK; <code>Builder</code> không listener hợp lệ vì không <code>acceptsDelayedFocusGain</code>/<code>willPauseWhenDucked</code>) · R5 ✅ (chỉ hẹn khung khi còn nội suy; <code>setListening</code> tự hẹn khung nên đổi pha không đóng băng; tới đích = ảnh đứng đúng, không phải treo) · Phiên bản ✅ (<code>RE_APK</code> nhận <code>3.0</code>; <code>cmp</code> từng khúc [3,0] &gt; [2,99]; luật ≤ 2.88 cũng vậy) · Harness ✅ (force-stop + chờ 3 s TRƯỚC mốc uptime, không force-stop lần hai — đúng theo <code>closedByIgnitionOff</code>) · Riêng tư ✅ (grep toạ độ/tên/đường máy: chỉ Bến Thành 10.772/106.698 công cộng; <em>"công ty một"</em> là nhãn chung; test cũ <em>123 Nguyễn Trãi</em> tổng hợp có sẵn) · Trần 500 ✅ (parser 488; mới 81/37) · Call site ✅ (<code>expand</code>/<code>step</code>/<code>moving</code>/<code>onConnectors</code> đều có chỗ gọi ngoài định nghĩa).</p>
+<p><b>Findings + vá</b>:</p>
+<ul>
+<li><b>[P3]</b> <code>VoiceWaveView.listening</code> không <code>@Volatile</code> trong khi R5 làm <code>setLevel</code> (luồng nghe) đọc nó để quyết hẹn khung — cùng loại với <code>target</code>/<code>level</code> đã volatile. Vá: thêm <code>@Volatile</code> + chú thích. (Nếu không: hụt tối đa một lần hẹn khung ở khe đổi pha; <code>setListening</code> tự hẹn nên không đóng băng — vẫn vá cho đúng mô hình luồng.)</li>
+<li><b>[P3]</b> R2 thiếu đối chứng cho chữ <em>"bằng"</em> / <em>"và"</em> nằm TRONG tên điểm đến khi câu CÓ danh sách app, và cho tên app không-NAV trong đuôi. Vá: +1 bài (4 khẳng định) ở <code>VoiceNavMultiProviderTest</code>; hành vi đã đúng sẵn, bài chỉ khoá.</li>
+<li><b>[P3 · ghi, không vá]</b> OQ4 (§7): nhiều app + <em>"rồi"</em> lệnh khác chưa phủ (y hệt 2.99). Nới cổng 1 là đường mới ⇒ chờ owner.</li>
+<li><b>[P3 · ghi, không vá]</b> Nhiều app ⇒ nhiều dòng trả lời gộp một câu đọc (<code>VoiceFeedbackPhrase.merge</code>), dòng VietMap tới muộn đọc riêng — đường có sẵn của câu một app VietMap; không đổi.</li>
+</ul>
+<p><b>Không phải lỗi, đã kiểm</b>: <em>"với"</em> vừa là cụm đánh dấu vừa là từ nối — <code>name()</code> chỉ nhận khớp ở vị trí 0 nên <em>"maps với vietmap"</em> không bị coi là một tên · <code>LONGEST_SPOKEN</code> = 4 = <code>TeachSample.MAX_WORDS</code> ⇒ tầng tên đã dạy quét đủ · trùng tên ⇒ <code>distinct</code> · nhạc không nhân (cổng 3 chỉ nhận Nav/NavigateSaved) · R4 với app dẫn đường đang đọc chỉ dẫn: [SUY AOSP <code>MediaFocusControl</code>] app xin TRANSIENT sau sẽ đứng trên Kachi ⇒ chỉ dẫn vẫn phát trong lúc nghe, nhạc vẫn dừng (chưa đo).</p>
+<p><b>Tech freshness</b>: không thư viện mới, không API mới; <code>AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE</code> + <code>AudioFocusRequest.Builder</code> (API 26+) và <code>postInvalidateOnAnimation</code> là API hiện hành. Context7 không nối được phiên này (ENOTFOUND) — không ảnh hưởng vì không có dependency đổi.</p>
+<p><b>Còn cho xe 🚗</b> (không kết luận được off-car): ROM BYD có cấp <code>GAIN_TRANSIENT_EXCLUSIVE</code> cho <code>USAGE_ASSISTANCE_SONIFICATION</code> không + app nhạc xe có tạm dừng theo <code>LOSS_TRANSIENT</code> không (lệnh chốt ở <code>voice-300-r4-duck</code> §4) · Waze <code>q=</code> dẫn thẳng? (OQ1) · câu kiểm 3 app · giọng owner <em>"Waze"</em> · <em>"hiện lên tý tắt"</em> (R5 §5).</p>
+<p><b>Verdict</b>: <span class="pill ok">APPROVED off-car</span> — 0 [P0]/[P1]/[P2]; 2 [P3] đã vá, 2 [P3] ghi nhận; review loop lần 2 sau vá: không còn finding. Chờ quét bảo mật (§6) + bump 203 + 🚗.</p>
+
+</div></body>
+</html>

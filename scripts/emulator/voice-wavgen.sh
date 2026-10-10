@@ -28,6 +28,9 @@ mkdir -p "$OUT"
 # 2.99 R3–R6 (log xe 10/10): w29–w34 là các câu owner nói trên xe — w29 *"đóng cốp"* [ĐO host] Linh nghe ra ĐÓNG GÓP (canh R4 ở
 #   tầng chữ: cột intent phải ra Cốp sau dù heard lệch) · w31/w34 canh R5 (YOUTUBE; w34 = đọc kiểu Việt, tệp hotword cũ kéo sang
 #   *"MỞ DI"*/*"MỞ ZUBE"*) · w32 = câu R6 (xe rụng *"bật gió tự"*; TTS không tái hiện) · w33 = câu xe đúng (đối chứng).
+# 3.0 R1–R3 (NAV-MULTI-PROVIDER-ALL3): w35 = câu kiểm của backlog, viết theo ÂM VIỆT — [ĐO host, `voice-300-r3-appnames-2026-10-10.md`]
+#   Linh đọc tên Anh *"Google Maps, VietMap, và Waze"* ra *"… MAP MAP VÀ WA"* (rụng VietMap, giọng TTS không phải cách người Việt nói);
+#   dạng âm Việt ra `… BẰNG GOOGLE MAP VIỆT MAP VÀ QUÂY` ở 175/220/250 ⇒ cột intent phải ra Nav ×3.
 CASES=$(cat <<'EOF'
 w01	mở YouTube
 w02	bật đèn đọc
@@ -59,6 +62,7 @@ w31	mở YouTube vào ô số hai
 w32	sưởi ghế phụ bật gió tự động
 w33	đóng kính lái xong bật đèn đọc
 w34	mở diu túp vào ô số hai
+w35	dẫn đường đến chợ Bến Thành bằng gu gồ máp, việt máp, và quây
 EOF
 )
 

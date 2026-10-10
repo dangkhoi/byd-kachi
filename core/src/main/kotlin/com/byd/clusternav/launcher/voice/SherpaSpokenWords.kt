@@ -341,6 +341,13 @@ object SherpaSpokenWords {
         "gu go mep" to "gu gồ mép",
         "gu go" to "gu gồ",
         "cai ban do" to "cái bản đồ",
+        // 3.0 R3 VOICE-TEACH-WAZE · VOICE-EN-APPNAME-HOTWORD-MEASURE — ba tên Anh RỜI `NO_VI_FORM` như "youtube" ở 2.99 R5: [ĐO host
+        // TTS, 324 WAV, `docs/diagnostics/voice-300-r3-appnames-2026-10-10.md` §2] mô hình in đúng token Anh (`WAYS`/`WAZE` · `GOOGLE MAP` ·
+        // `VIETMA`/`VIETMAP`); tệp ship thiếu dòng cho chúng ⇒ *"mở Google Maps"* bị kéo sang `MỞ GU` 5/5, *"mở VietMap"* ra `VIETMA`. Gộp
+        // ba tên: 16 lên · 0 tụt (151 WAV hồi quy 2.99 + 63 label-wavgen). Spotify · Zing: 0/0 ⇒ giữ `NO_VI_FORM`.
+        "waze" to "waze",
+        "google maps" to "google maps",
+        "vietmap" to "vietmap",
         "quay" to "quây",
         "guay" to "guây",
         "guey" to "guêy",
@@ -355,8 +362,6 @@ object SherpaSpokenWords {
         // owner 2026-09-23: dạng "VietMap Live" (việt máp lay/live).
         "viet map lay" to "việt máp lay",
         "viet map live" to "việt máp live",
-        "vietmap live" to "vietmap live",
-        "vietmap lay" to "vietmap lay",
         "map lay" to "máp lay",
         "map live" to "máp live",
     )
@@ -409,13 +414,20 @@ object SherpaSpokenWords {
         // Việt** ở [ACCENTED], không phải bias một chuỗi mà mô hình VN không phát ra được.
         "google",
         "google map",
-        "google maps",
         "spotify",
-        "vietmap",
-        "waze",
         "youtube music",
         "yt",
         "yt music",
+        // 3.0 R3 — `vietmap live/lay` RỜI `ACCENTED`: giữ dòng `MỞ VIETMAP LIVE` thì luật tiền tố ([SherpaHotwords.dropPrefixes]) xoá
+        // `MỞ VIETMAP` vừa thêm [ĐO host]; dạng âm Việt `việt máp lay/live` · `máp lay/live` vẫn ở `ACCENTED`.
+        "vietmap live",
+        "vietmap lay",
+        // 3.0 R3 — chuỗi mô hình in cho tên Anh (tầng CHỮ, [ĐO xe 10/10 *"bằng way"* + host `WAYS` 10 · `SPOTY FILE` 12 · `SPOTIFI` 5]):
+        // bias chúng 0 lên (`WAY` [ĐO host]) ⇒ không vào tệp hotword.
+        "way",
+        "ways",
+        "spoty file",
+        "spotifi",
         "zing",
         "zing mp3",
     )

@@ -25,6 +25,23 @@ import com.byd.clusternav.launcher.voice.VoiceLexicon.Token
  */
 internal object VoiceClauseSplit {
 
+    /**
+     * Cắt câu ở từ nối [VoiceIntentParser.CONNECTOR_WORDS] (*"và"/"rồi"/"xong"*), bỏ vế rỗng. 3.0 — dời từ [VoiceIntentParser]
+     * (trần 500 dòng, CLAUDE.md §4.1) nguyên văn; luật *"mọi vế phải hiểu được"* vẫn ở chỗ gọi.
+     */
+    fun onConnectors(t: List<Token>): List<List<Token>> {
+        val out = ArrayList<List<Token>>()
+        var start = 0
+        t.forEachIndexed { i, tok ->
+            if (VoiceIntentParser.CONNECTOR_WORDS.matches(tok)) {
+                if (i > start) out.add(t.subList(start, i))
+                start = i + 1
+            }
+        }
+        if (start < t.size) out.add(t.subList(start, t.size))
+        return out
+    }
+
     /** Chỉ số các token mở đầu một vế có động từ — xem luật 1 ở KDoc lớp. [terms] rỗng ⇒ chỉ luật dấu. */
     fun starts(t: List<Token>, terms: List<VoiceTerm>): List<Int> {
         val out = ArrayList<Int>()

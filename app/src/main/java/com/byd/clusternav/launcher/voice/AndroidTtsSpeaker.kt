@@ -49,8 +49,8 @@ import java.util.concurrent.atomic.AtomicReference
  * nhận, không có tiếng nào phát ra, không có lỗi nào ghi lại. Đó là lý do ngưỡng nằm ở
  * [VoiceSpeakerSelector.LANG_AVAILABLE] — xem KDoc ở đó.
  *
- * ## Tiêu điểm âm thanh: **cùng một kiểu** với âm báo của micro
- * `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK` + `CONTENT_TYPE_SPEECH`, gương của [VoiceCapture.requestFocus]. Nhạc chỉ
+ * ## Tiêu điểm âm thanh: `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK` + `CONTENT_TYPE_SPEECH`
+ * (3.0 R4: lượt NGHE đã đổi sang `EXCLUSIVE` ở [VoiceAudioFocus] vì micro thu lời bài hát; lượt ĐỌC thì không nghe gì). Nhạc chỉ
  * **nhỏ xuống** chứ không dừng: một câu xác nhận 2 giây mà làm đứt bài nhạc đang nghe là một cái giá không ai
  * chịu trả hai lần — họ sẽ tắt luôn tính năng.
  */
