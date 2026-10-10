@@ -202,8 +202,27 @@ object TripMusicPlan {
         return tpl.replace(VoiceLaunch.SLOT, videoId).takeIf { safeWatchUrl(it) }
     }
 
-    /** Rào cuối trước `playFromUri`: chỉ URL xem YouTube/YT Music với một `video_id` — chuỗi khác không đi đâu cả. */
+    /**
+     * Rào cuối trước `playFromUri` / K4-VIEW: chỉ URL xem YouTube/YT Music với một `video_id`, tuỳ chọn kèm `&list=RD<CÙNG id>`
+     * (Mix của chính bài — 2.99 · R1, [continuousUrl]) — chuỗi khác không đi đâu cả.
+     */
     fun safeWatchUrl(url: String): Boolean = SAFE_WATCH.matches(url)
+
+    /**
+     * 2.99 · R1 — owner 10/10: *"hát đúng 1 bài xong nghỉ, không hát tiếp auto sang bài khác như khi mở youtube bình thường"*.
+     * [url] (đã qua [safeWatchUrl]) ⇒ URL xem LIÊN TỤC theo khuôn DỮ LIỆU của bảng (`VoiceAppTarget.watchContinue`, CLAUDE.md §7),
+     * cùng `video_id`. App không khai khuôn / link không hợp lệ ⇒ trả nguyên [url] (đường cũ). [ĐO máy ảo 10/10, YouTube 21.35]
+     * VIEW `watch?v=` trơn chỉ sang bài kế 6/16 lượt; kèm `&list=RD<id>` 5/5 (KDoc bảng YouTube, `emu-yt-autoplay-2026-10-10.md`).
+     */
+    fun continuousUrl(target: VoiceAppTarget, url: String?): String? {
+        val link = url?.takeIf { safeWatchUrl(it) } ?: return url
+        val tpl = target.watchContinue?.template ?: return link
+        val id = videoIdOf(link) ?: return link
+        return tpl.replace(VoiceLaunch.SLOT, id).takeIf { safeWatchUrl(it) } ?: link
+    }
+
+    /** Link mang hàng chờ (`&list=`) — `playFromUri` của YouTube BỎ hàng chờ ([ĐO máy ảo 10/10] 1/1 dừng sau bài) ⇒ phải đi K4-VIEW. */
+    fun queued(url: String): Boolean = url.contains("&list=")
 
     /** Phát gì, sau khi app đã chắc chắn sống (R3.4 bước 2–4). */
     sealed interface Play {
@@ -216,7 +235,7 @@ object TripMusicPlan {
 
     /**
      * Quyết bằng PHIÊN ĐO ĐƯỢC ([session] của chính app sau khi chờ, `null` = không có), không bằng tên gói (CLAUDE.md §7):
-     *  - có link + phiên nhận URI ⇒ [Play.FromUri] (0 lệnh cửa sổ — [ĐO] T-M3u, e5);
+     *  - có link + phiên nhận URI ⇒ [Play.FromUri] (0 lệnh cửa sổ — [ĐO] T-M3u, e5); trừ link có hàng chờ ([queued], 2.99 · R1);
      *  - có link mà không phiên / phiên không nhận URI ⇒ [Play.View] (L4 · D3(ii): YouTube nguội trên trang chủ không có phiên —
      *    [ĐO máy ảo] e3 `open-only (no session)` — nên đường phiên KHÔNG BAO GIỜ phát được link cho nó);
      *  - không link + có phiên ⇒ [Play.Resume]; không gì cả ⇒ [Play.OpenOnly] (sổ: `NO_SESSION`).
@@ -224,7 +243,7 @@ object TripMusicPlan {
     fun play(url: String?, session: Session?): Play {
         val link = url?.takeIf { safeWatchUrl(it) }
         return when {
-            link != null && session != null && session.acceptsUri -> Play.FromUri(link)
+            link != null && session != null && session.acceptsUri && !queued(link) -> Play.FromUri(link)
             link != null -> Play.View(link)
             session != null -> Play.Resume
             else -> Play.OpenOnly
@@ -283,5 +302,5 @@ object TripMusicPlan {
     }
 
     private val VIDEO_ID = Regex("[A-Za-z0-9_-]{11}")
-    private val SAFE_WATCH = Regex("https://(music|www)\\.youtube\\.com/watch\\?v=[A-Za-z0-9_-]{11}")
+    private val SAFE_WATCH = Regex("https://(music|www)\\.youtube\\.com/watch\\?v=([A-Za-z0-9_-]{11})(&list=RD\\2)?")
 }

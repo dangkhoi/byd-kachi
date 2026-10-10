@@ -461,6 +461,7 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeCommands.EXTRA_DEV,
             TestBridgeCommands.EXTRA_METHOD,
             TestBridgeCommands.EXTRA_HAL_ARGS,
+            TestBridgeCommands.EXTRA_DATA,
             TestBridgeCommands.EXTRA_OP,
             TestBridgeCommands.EXTRA_KEY,
         )

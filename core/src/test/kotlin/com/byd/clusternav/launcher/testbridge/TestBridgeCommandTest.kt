@@ -470,6 +470,60 @@ class TestBridgeCommandTest {
         assertEquals("getid", cmd.op)
     }
 
+    // ══ ISA-MAP-SENDARR · op GHI MẢNG `setarr`/`setisa` ═══════════════════════════════════════════════════
+
+    /** `setarr` mang `--es data` vào trường [TestBridgeCommand.data], tách khỏi [TestBridgeCommand.halArgs]. */
+    @Test
+    fun `hal setarr doc data vao truong rieng, van doi --es m`() {
+        val cmd = ok(
+            TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.HAL,
+            TestBridgeCommands.EXTRA_OP to TestBridgeCommands.OP_SETARR,
+            TestBridgeCommands.EXTRA_DEV to "BYDAutoStatisticDevice",
+            TestBridgeCommands.EXTRA_METHOD to "sendIsaDataToAdas",
+            TestBridgeCommands.EXTRA_DATA to "10,2,2,0,8191,2,31,31,2,255,1,1",
+        )
+        assertEquals(TestBridgeCommands.OP_SETARR, cmd.op)
+        assertEquals("10,2,2,0,8191,2,31,31,2,255,1,1", cmd.data)
+        assertEquals("", cmd.halArgs, "`data` KHÔNG rơi vào `args` (đường scalar)")
+    }
+
+    /** `setarr` KHÔNG được miễn `--es m` (chỉ `setisa` mới có method cố định). */
+    @Test
+    fun `hal setarr thieu m van bao thieu`() {
+        assertEquals(
+            TestBridgeCommands.ERR_MISSING + TestBridgeCommands.EXTRA_METHOD,
+            err(
+                TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.HAL,
+                TestBridgeCommands.EXTRA_OP to TestBridgeCommands.OP_SETARR,
+                TestBridgeCommands.EXTRA_DATA to "1,2,3",
+            ),
+        )
+    }
+
+    /** `setisa` NGỤ Ý method cố định (`sendIsaDataToAdas`) ⇒ KHÔNG đòi `--es m`, chỉ cần `--es data`. */
+    @Test
+    fun `hal setisa khong doi --es m`() {
+        val cmd = ok(
+            TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.HAL,
+            TestBridgeCommands.EXTRA_OP to TestBridgeCommands.OP_SETISA,
+            TestBridgeCommands.EXTRA_DATA to "10,2,2,0,8191,2,31,31,2,255,1,1",
+        )
+        assertEquals(TestBridgeCommands.OP_SETISA, cmd.op)
+        assertEquals("10,2,2,0,8191,2,31,31,2,255,1,1", cmd.data)
+        assertEquals("", cmd.method, "method để tầng thi hành điền hằng ISA_METHOD")
+    }
+
+    /** `--es op SETISA` hạ chữ ⇒ vẫn rẽ đúng nhánh (và vẫn miễn `--es m`). */
+    @Test
+    fun `hal setisa HOA van ha chu va van mien m`() {
+        val cmd = ok(
+            TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.HAL,
+            TestBridgeCommands.EXTRA_OP to "SetIsa",
+            TestBridgeCommands.EXTRA_DATA to "31,2,2,0,8191,0,0,0,0,255,1,0",
+        )
+        assertEquals(TestBridgeCommands.OP_SETISA, cmd.op)
+    }
+
     // ══ H5 · năm núm chỉnh bộ nghe đi qua ĐÚNG cổng `prefs_set` ═══════════════════════════════════════════
 
     /**

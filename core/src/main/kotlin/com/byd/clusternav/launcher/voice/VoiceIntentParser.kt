@@ -88,7 +88,15 @@ object VoiceIntentParser {
             if (each.none { it is VoiceIntent.Unknown }) return each
             VoiceClauseEllipsis.dropBare(parts, each, terms)?.let { return it }
             val whole = fuzzy(parseTokens(all, terms, places, text), all, terms, places, text)
-            return listOf(whole) + VoiceDroppedNote.droppedNote(parts, each, whole)
+            val drops = VoiceDroppedNote.droppedNote(parts, each, whole)
+            // 2.99 VOICE-COMPOUND-FALLBACK-WRONG-VERB — khi cả câu KHÔNG ôm trọn vế bị bỏ (còn [drops]), các vế ĐÃ hiểu là
+            // lệnh thật của riêng chúng ⇒ GIỮ, không đọc lại NGUYÊN câu. Đọc lại cả câu ở ca ấy mượn động từ của một vế DỞ
+            // (*"đóng lái"* thiếu *"kính"* ⇒ `Unknown`) rồi dán nó lên đối tượng của vế sau (*"đèn đọc"*): ra
+            // `Control(readl, 0)` = TẮT đèn đọc khi người ta nói BẬT, và bỏ chính vế đầu. Cả câu chỉ thắng khi nó ÔM TRỌN vế
+            // kia ([drops] rỗng — *"và"/"xong"* nằm trong tên bài hát: [VoiceDroppedNote]), hoặc khi không vế nào hiểu được.
+            val kept = each.filterNot { it is VoiceIntent.Unknown }
+            if (drops.isNotEmpty() && kept.isNotEmpty()) return kept + drops
+            return listOf(whole) + drops
         }
         // MIX KHÔNG LIÊN TỪ ("hạ kính lấy gió ngoài tắt máy lạnh" = 3 lệnh, 0 chữ "và/rồi") — chi tiết ở
         // [VoiceControlParse.multiVerbSplit]. CHỈ nhận khi ≥2 vế + MỌI vế hiểu được (an toàn: tên bài không bị cắt); 2.98 R11 cổng ở [VoiceClauseSplit].
@@ -280,7 +288,9 @@ object VoiceIntentParser {
         // (c') H3 — app ≥2 từ ngay sau động từ thắng nhãn NGẮN giữa câu; lý do + ba cổng ở [VoiceTailClause.appAtHead].
         VoiceTailClause.appAtHead(rest, terms, verb)?.let { return it }
         var firstMiss: VoiceIntent? = null
+        val slot = VoiceTailClause.slotSpan(rest)   // 2.99 R3 — "số" của "ô số N" thuộc về ô, không phải datum (KDoc [VoiceTailClause.slotSpan])
         rest.indices.forEach { i ->
+            if (slot != null && i in slot) return@forEach
             val cands = VoiceGrammar.matchAt(rest, i, terms)
             if (cands.isNotEmpty()) {
                 val term = choose(cands, verb)

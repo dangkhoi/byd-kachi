@@ -118,7 +118,8 @@ fun ClusterNavBridge.glassReal(): Boolean = Prefs.glassReal(app)
 fun ClusterNavBridge.setGlassReal(on: Boolean) = Prefs.setGlassReal(app, on)
 
 /**
- * 2.98 · R18 — công tắc **"Kéo app thoát ô về lại ô (thử nghiệm)"** (`escape_return_enabled`, theo XE, MẶC ĐỊNH TẮT — owner 10/10).
+ * 2.98 · R18 — công tắc **"Kéo app thoát ô về lại ô (thử nghiệm)"** (`escape_return_enabled`, theo XE; 2.98 mặc định TẮT, 2.99 mặc định
+ * BẬT sau xe 10/10 — `EscapeReturnSwitch.DEFAULT_ON`).
  * Đọc trạng thái HIỆU LỰC (công tắc + máy có hỗ trợ + cầu chì bền) từ cùng phép quyết với bảng gửi daemon; ghi ⇒ gửi lại bảng ngay.
  *
  * Soát Pass 14 [P2]: đọc hỏng (dấu bền `kachi_escape_return_trip` sai kiểu trên đĩa · hồ sơ đời xe không phân tích được) ⇒ coi như

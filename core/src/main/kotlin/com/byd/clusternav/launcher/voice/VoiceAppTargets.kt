@@ -2,87 +2,6 @@ package com.byd.clusternav.launcher.voice
 
 import com.byd.clusternav.navigation.NavApps
 
-/**
- * Cách **giao một chuỗi chữ mở** (tên bài / điểm đến) cho một app — mô tả bằng DỮ LIỆU, không phải bằng mã.
- *
- * ## Vì sao là dữ liệu, và vì sao nó nằm ở `:core` (nơi cấm `android.*`)
- * Thứ thật sự khác nhau giữa bảy app đích chỉ là **vài con chữ**: một `action` + tên `extra`, hoặc một khuôn URI.
- * Viết chúng thành bảy nhánh `if` ở `:app` thì (a) không bài kiểm off-car nào chạm tới được, và (b) mỗi lần một
- * phép đo cho kết quả mới lại phải sửa **mã** — đúng thứ CLAUDE.md §7 cấm. Ở dạng dữ liệu thì *"đổi một dòng"*
- * đúng nghĩa đen: một [VoiceLaunch] mới, không sửa một dòng logic nào.
- *
- * `:app` chỉ còn một hàm dịch bảng này thành `android.content.Intent`
- * ([com.byd.clusternav.launcher.VoiceAppIntents]).
- */
-sealed interface VoiceLaunch {
-
-    /**
-     * Ý-định có **action + extra mang chuỗi tìm kiếm**, đã `setPackage(<gói>)`.
-     *
-     * @property action vd `android.media.action.MEDIA_PLAY_FROM_SEARCH` · `android.intent.action.SEARCH`.
-     * @property extra tên extra mang chuỗi (`query` = `SearchManager.QUERY` — khai bằng **chuỗi** vì `:core` không
-     *   được `import android.app.SearchManager`; giá trị hằng của nó là `"query"`, khoá lại bằng test ở `:app`).
-     * @property extras extra CỐ ĐỊNH kèm theo. [ĐO] máy ảo 2026-09-14: YT Music **bắt buộc**
-     *   `android.intent.extra.focus` = kiểu MIME `audio` (kèm dấu sao), thiếu nó thì ý-định chỉ mở màn Home
-     *   của app — tức hỏng **im
-     *   lặng**, đúng loại lỗi không ai phát hiện được nếu không đo.
-     */
-    data class Action(
-        val action: String,
-        val extra: String = QUERY_EXTRA,
-        val extras: Map<String, String> = emptyMap(),
-    ) : VoiceLaunch
-
-    /**
-     * Mở một **URI**; [template] chứa đúng một chỗ trống [SLOT] để thay chuỗi đã mã hoá phần trăm.
-     *
-     * vd `geo:0,0?q={q}` · `waze://?q={q}&navigate=yes`.
-     */
-    data class Uri(val template: String) : VoiceLaunch {
-        init {
-            require(template.contains(SLOT) || template.contains(LAT)) {
-                "khuôn URI phải có ít nhất một chỗ trống ($SLOT hoặc $LAT): $template"
-            }
-        }
-
-        /** Khuôn này cần TOẠ ĐỘ (⇒ phải geocode trước khi bắn). */
-        val needsCoords: Boolean get() = template.contains(LAT) || template.contains(LNG)
-    }
-
-    /**
-     * **Chỉ mở app, không giao gì** — và đó là một kết luận ĐÃ ĐO, không phải một chỗ chưa làm xong.
-     *
-     * [ĐO] máy ảo 2026-09-14, VietMap Live 3.4.0: app **không có cửa nào** nhận điểm đến (không đăng ký `geo:`;
-     * `vietmaplive://` không mang tham số điểm đến; ép `geo:` kèm `-p vn.vietmap.live` ⇒ *unable to resolve
-     * intent*). Chỗ gọi phải **nói ra** điều đó thay vì báo một dấu ✓ (xem [VoiceReply.navOpenedNoHandover]).
-     */
-    data object OpenOnly : VoiceLaunch
-
-    companion object {
-        /** Chỗ trống cho **chuỗi chữ** trong [Uri.template]. */
-        const val SLOT = "{q}"
-
-        /** Chỗ trống cho **vĩ độ / kinh độ** trong [Uri.template] (đường toạ độ — xem [VoiceAppTarget.coord]). */
-        const val LAT = "{lat}"
-        const val LNG = "{lng}"
-
-        /** `SearchManager.QUERY` — hằng của nền tảng, khai bằng chuỗi vì `:core` cấm `android.*`. */
-        const val QUERY_EXTRA = "query"
-
-        /** `MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH`. */
-        const val ACTION_MEDIA_PLAY_FROM_SEARCH = "android.media.action.MEDIA_PLAY_FROM_SEARCH"
-
-        /** `Intent.ACTION_SEARCH`. */
-        const val ACTION_SEARCH = "android.intent.action.SEARCH"
-
-        /** `MediaStore.EXTRA_MEDIA_FOCUS` — xem KDoc [Action.extras] về vì sao YT Music bắt buộc có nó. */
-        const val EXTRA_MEDIA_FOCUS = "android.intent.extra.focus"
-
-        /** Giá trị `EXTRA_MEDIA_FOCUS` cho *"tìm bất kỳ thứ gì nghe được"* — kiểu MIME `audio` kèm dấu sao. */
-        const val FOCUS_ANY_AUDIO = "audio/*"
-    }
-}
-
 /** App đích làm việc gì — quyết định nó được xét cho [VoiceIntent.Media] hay [VoiceIntent.Nav]. */
 enum class VoiceAppKind { MUSIC, NAV }
 
@@ -138,8 +57,17 @@ data class VoiceAppTarget(
      * id rồi mở `watch?v=`). `null` = app không có đường watch-theo-id ⇒ chỉ dùng [launch] (`MEDIA_PLAY_FROM_SEARCH`).
      */
     val watch: VoiceLaunch.Uri? = null,
-    /** 2.96 · R10 — extra BOOLEAN trên VIEW [watch] để mở TOÀN MÀN (`--ez <tên> true`); `null` = chưa đo. Chỉ phát tiếp dùng. */
+    /**
+     * 2.96 · R10 — extra BOOLEAN trên VIEW [watch] để mở TOÀN MÀN (`--ez <tên> true`); `null` = chưa đo / không dùng. Chỉ phát tiếp
+     * dùng. Luật 2.99 · R1: extra nào làm app dừng sau MỘT bài (không tự chuyển bài như mở app thường) thì KHÔNG được đặt ở đây —
+     * YouTube `force_fullscreen` là ca đó ([ĐO máy ảo 10/10]).
+     */
     val watchFullscreenExtra: String? = null,
+    /**
+     * 2.99 · R1 — khuôn URL xem LIÊN TỤC (`{q}` = video_id, có thể lặp): hết bài app tự sang bài kế như mở app thường. Chuyến lên
+     * xe dùng nó thay [watch] (`TripMusicPlan.continuousUrl`); `null` = app tự lo / chưa đo. Phải qua `safeWatchUrl`.
+     */
+    val watchContinue: VoiceLaunch.Uri? = null,
     /**
      * Lệnh BẮT ĐẦU DẪN tới app này phải **dọn task cũ** (`FLAG_ACTIVITY_CLEAR_TASK` kèm `NEW_TASK`) — dữ liệu, không
      * phải nhánh `if (pkg == …)` (CLAUDE.md §7). `:app` dịch cờ này ở đúng một chỗ (`VoiceAppIntents.launchFlags`).
@@ -267,9 +195,15 @@ object VoiceAppTargets {
             evidence = VoiceAppEvidence.AWAITING_CAR,
             // Tự phát: mở URL watch (YouTube tự phát video theo id). Đây là cách Kiki đạt "phát luôn".
             watch = VoiceLaunch.Uri("https://www.youtube.com/watch?v=${VoiceLaunch.SLOT}"),
-            // 2.96 · R10 [ĐO máy ảo 07/10, YouTube 21.35.442] có extra ⇒ toàn màn 4/4 (gồm màn ảo ô của Kachi, task ở lại ô);
-            // không extra ⇒ trang xem 3/3. Xe chưa đo ([SUY] cùng hành vi).
-            watchFullscreenExtra = "force_fullscreen",
+            // 2.99 · R1 — KHÔNG extra toàn màn. 2.96 · R10 đặt `force_fullscreen` (toàn màn 4/4 [ĐO máy ảo 07/10]), nhưng
+            // [ĐO máy ảo 10/10, YouTube 21.35.442 Premium, `emu-yt-autoplay-2026-10-10.md`]: extra đó mở chế độ MỘT VIDEO —
+            // hết bài dừng ở nút phát lại, không tự chuyển bài (0/9), kể cả `playFromUri`/VIEW thường đè lên sau đó (task giữ
+            // chế độ); cùng link kèm `&list=` thì YouTube BỎ QUA extra (trang xem thường). Owner 10/10: *"hát đúng 1 bài xong
+            // nghỉ"*. Không extra nào bật lại tự chuyển bài trong chế độ đó (autonav/autoplay/finish_on_ended=false: 0/3).
+            watchFullscreenExtra = null,
+            // 2.99 · R1 [ĐO máy ảo 10/10] VIEW `watch?v=<id>` từ ngoài app: tự chuyển bài KHÔNG chắc (sang bài kế 6/16 lượt — hàng "kế tiếp",
+            // bit SKIP_TO_NEXT của phiên, hay không tải); thêm `&list=RD<id>` (Mix YouTube tự dựng theo bài) ⇒ sang bài kế 5/5.
+            watchContinue = VoiceLaunch.Uri("https://www.youtube.com/watch?v=${VoiceLaunch.SLOT}&list=RD${VoiceLaunch.SLOT}"),
         ),
         VoiceAppTarget(
             key = SPOTIFY,

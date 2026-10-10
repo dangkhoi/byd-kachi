@@ -21,7 +21,7 @@ internal object ProfileScopeSlotEscape {
         put("kachi_escape_return_trip", "2.98 R18 — cầu chì bền (`EscapeReturnBreaker`); theo XE: lỗi của ROM xe này")
         put(
             EscapeReturnSwitch.PREF_KEY,
-            "2.98 R18 — công tắc 'Kéo app thoát ô về lại ô (thử nghiệm)', mặc định TẮT. Theo XE: nó bật một cơ chế dời stack " +
+            "2.98 R18 — công tắc 'Kéo app thoát ô về lại ô (thử nghiệm)' (2.99: mặc định BẬT, `EscapeReturnSwitch.DEFAULT_ON`). Theo XE: nó bật một cơ chế dời stack " +
                 "của daemon trên ROM của CHIẾC XE này (đo được hay chưa là chuyện của xe, không phải của người lái), và đi cùng " +
                 "phạm vi với cầu chì bền `kachi_escape_return_trip` ngay trên — đổi hồ sơ không được bật lại thứ xe này vừa ngắt",
         )

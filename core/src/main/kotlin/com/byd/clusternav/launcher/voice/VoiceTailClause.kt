@@ -38,6 +38,35 @@ internal object VoiceTailClause {
     }
 
     /**
+     * ═══ 2.99 R3 VOICE-SLOT-NUMBER-CLARIFY — chỉ số của mệnh đề ô *"[vào] ô [số|thứ] N"* trong [t], hoặc `null` ═══
+     *
+     * [ĐO xe 10/10 18:30:19] *"mở YouTube vào ô số 2"* ⇒ sherpa *"mở diếp vào ô số hai"* ⇒ `MISMATCH` ⇒ hỏi lại *"Số nào —
+     * Odo tổng hay Số VIN?"*: tên app không nhận ra, rồi chữ *"số"* của **mệnh đề ô** khớp datum `gear` (nhãn *"Số"*) giữa
+     * câu, và [VoiceClarify] đọc nó là đầu họ `odometer`/`vin`. Chữ *"số"* ở đây **thuộc về ô** — mệnh đề ô chỉ có nghĩa
+     * cho [VoiceIntent.OpenApp]. Hàm này cho hai chỗ gọi biết đúng dải ấy: vòng quét của [VoiceIntentParser] không khớp
+     * từ vựng XE trong dải, và [VoiceClarify] hỏi *"Mở app nào?"* thay cho câu hỏi Odo/VIN.
+     *
+     * Cùng luật đọc với [slotAt] (đầu [VoiceLexicon.SLOT_HEADS] · từ đệm [VoiceLexicon.SLOT_ORDINALS] · con số > 0 thật),
+     * cộng chữ *"vào"* hoặc *"in"* đứng ngay trước. KHÔNG có đường lùi [bareSlot]: một con số trần không có chữ *"ô"* là chứng cứ
+     * quá yếu để tước từ vựng xe khỏi câu (*"đặt nhiệt độ hai"*).
+     */
+    internal fun slotSpan(t: List<Token>): IntRange? {
+        t.indices.forEach { i ->
+            if (t[i].norm !in VoiceLexicon.SLOT_HEADS) return@forEach
+            var j = i + 1
+            while (j < t.size && t[j].norm in VoiceLexicon.SLOT_ORDINALS) j++
+            val n = VoiceLexicon.readNumber(t, j) ?: return@forEach
+            if (n.value == VoiceLexicon.MAX || n.value == VoiceLexicon.MIN || n.value <= 0) return@forEach
+            val start = if (i > 0 && t[i - 1].norm in SLOT_INTO) i - 1 else i
+            return start until j + n.consumed
+        }
+        return null
+    }
+
+    /** Giới từ đứng trước mệnh đề ô (*"**vào** ô 2"* · *"**in** slot 2"*) — phần của [VoiceLexicon.SLOT_WORDS] ngoài đầu/đệm. */
+    private val SLOT_INTO = setOf("vao", "in", "into")
+
+    /**
      * ═══ CHỮ *"Ô"* RỤNG — *"mở vietmap hai"* · *"mở vietmap số hai"* ⇒ ô 2 ═══════════════════════════════════
      *
      * ## Bệnh nó chữa — [ĐO xe 2026-09-27, log `KachiVoiceSession`]

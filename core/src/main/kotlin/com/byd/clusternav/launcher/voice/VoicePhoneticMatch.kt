@@ -165,11 +165,13 @@ internal object VoicePhoneticMatch {
         var bestCost = Double.MAX_VALUE
         var at = -1
         var len = 0
+        // 2.99 R4 — mốc "chạm cuối câu" cho cặp [VoicePhoneticConfusions.Observed.endOnly] (tiếng đệm cuối câu không tính).
+        val end = syls.indexOfLast { it.base !in VoiceLexicon.FILLERS } + 1
         for (i in syls.indices) {
             for (n in 1..MAX_SPAN) {
                 if (i + n > syls.size) break
                 if ((i + n - 1) in busy) break
-                val r = bestOf(syls.subList(i, i + n), cands) ?: continue
+                val r = bestOf(syls.subList(i, i + n), cands, atEnd = i > 0 && i + n >= end) ?: continue
                 if (r.cost > ACCEPT || r.cost >= bestCost) continue
                 best = r
                 bestCost = r.cost
@@ -190,15 +192,15 @@ internal object VoicePhoneticMatch {
      * lại — trong khi đó là việc mà `VoiceIntentParser.choose` đã giải xong từ V1 (loại động từ chọn ứng viên).
      * Cùng CHỮ thì không có gì để hỏi.
      */
-    private fun bestOf(span: List<Syl>, cands: List<Cand>): Scored? {
+    private fun bestOf(span: List<Syl>, cands: List<Cand>, atEnd: Boolean = false): Scored? {
         val core = span.filterNot { it.base in VoiceLexicon.FILLERS }
         if (core.isEmpty()) return null
         val scored = cands.mapNotNull { c ->
             when {
                 c.syls.size != core.size -> null
                 // Cụm MỘT âm tiết: chỉ cặp đã ĐO mới được vào — xem KDoc [VoicePhoneticConfusions.nearMiss].
-                core.size == 1 && !VoicePhoneticConfusions.nearMiss(core[0], c.syls[0]) -> null
-                else -> distance(span, c.syls).let { d ->
+                core.size == 1 && !VoicePhoneticConfusions.nearMiss(core[0], c.syls[0], atEnd) -> null
+                else -> distance(span, c.syls, atEnd).let { d ->
                     if (d >= TOTAL_CAP) null else (d / maxOf(span.size, c.syls.size)) to c.words
                 }
             }
@@ -217,7 +219,7 @@ internal object VoicePhoneticMatch {
      * **một** lỗi, còn *"pin"* so với *"phim"* lệch hai ký tự và cũng là **một** lỗi. Đếm theo ký tự thì hai ca
      * ấy được giá khác nhau mà chẳng vì lý do gì có thật.
      */
-    private fun distance(a: List<Syl>, b: List<Syl>): Double {
+    private fun distance(a: List<Syl>, b: List<Syl>, atEnd: Boolean = false): Double {
         var prev = DoubleArray(b.size + 1)
         for (j in 1..b.size) prev[j] = prev[j - 1] + gap(b[j - 1])
         for (i in 1..a.size) {
@@ -225,7 +227,7 @@ internal object VoicePhoneticMatch {
             cur[0] = prev[0] + gap(a[i - 1])
             for (j in 1..b.size) {
                 cur[j] = minOf(
-                    prev[j - 1] + VoicePhoneticConfusions.cost(a[i - 1], b[j - 1]),
+                    prev[j - 1] + VoicePhoneticConfusions.cost(a[i - 1], b[j - 1], atEnd),
                     prev[j] + gap(a[i - 1]),
                     cur[j - 1] + gap(b[j - 1]),
                 )

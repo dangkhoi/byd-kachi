@@ -145,7 +145,18 @@ internal object VoicePhoneticConfusions {
     /**
      * @property right chữ người ta NÓI · [heard] chữ mô hình IN RA · [seen] chỗ quan sát · [note] câu/mốc cụ thể.
      */
-    data class Observed(val right: String, val heard: String, val seen: Seen, val note: String)
+    data class Observed(
+        val right: String,
+        val heard: String,
+        val seen: Seen,
+        val note: String,
+        /**
+         * 2.99 R4 — cặp mà chữ NGHE NHẦM là một từ ghép thường ngày với động từ đứng trước (*"đóng góp"* = góp tiền/ý).
+         * `true` ⇒ chỉ được dùng khi cụm khớp **đứng sau một tiếng khác và chạm cuối câu** (tham số `atEnd` của [cost] /
+         * [nearMiss]; [VoicePhoneticMatch] tính): *"đóng góp"* · *"đóng góp sau"* ⇒ cốp, *"đóng góp ý kiến"* ⇒ KHÔNG.
+         */
+        val endOnly: Boolean = false,
+    )
 
     /**
      * Các cặp **đã đo**, mỗi dòng kèm chỗ quan sát.
@@ -156,6 +167,12 @@ internal object VoicePhoneticConfusions {
     val OBSERVED: List<Observed> = listOf(
         Observed("cốp", "cấp", Seen.REC, "miennam-a #39 · b #26 — «mở cốp sau»"),
         Observed("cốp", "góc", Seen.REC, "owner #59 — «mở cốp sau» → MỞ GÓC SAU"),
+        // 2.99 R4 VOICE-COP-GOP — [ĐO xe ×3 buổi] «đóng cốp» → *"đóng góp"*: 10/10 18:27:23·:29·:34 (2.98, Seal; owner bỏ cuộc,
+        // đóng bằng phím 18:27:44) · 09-20 10:45:05/08/12 + *"đóng góp sau"* 10:45:23 · 09-17 16:18:42 *"đóng góp xe"*; cùng buổi
+        // 09-20 *"mở cốp"* nghe ĐÚNG ⇒ lệch do tiền nghiệm từ ghép *"đóng góp"*, không do giọng. [ĐO host TTS Linh] 5/5 tốc độ
+        // 175–320 ra ĐÓNG GÓP (150 ⇒ ĐÓNG CỐT) với tệp hotword ship; thêm dòng ĐÓNG CỐP/MỞ CỐP: 0 lên · 2 tụt (*"đóng cốp sau"* → ĐÓNG CỐP SAO)
+        // ⇒ chữa ở tầng CHỮ, có cổng `endOnly` vì *"đóng góp"* là từ thường.
+        Observed("cốp", "góp", Seen.CAR, "xe 10/10 18:27 ×3 · 09-20 10:45 ×4 · 09-17 16:18 — «đóng cốp» → ĐÓNG GÓP", endOnly = true),
         Observed("đọc", "độc", Seen.REC, "miennam-a #10 · c #9 — «bật đèn đọc» (bỏ dấu xong trùng ⇒ giá 0)"),
         Observed("pin", "bên", Seen.REC, "miennam-c #24 — «xem pin» → XEM BÊN"),
         Observed("pin", "biên", Seen.REC, "owner #39 · #57 — «pin còn bao nhiêu» → BIÊN CÒN BAO NHIÊU"),
@@ -203,9 +220,17 @@ internal object VoicePhoneticConfusions {
      *
      * Cặp tự triệt tiêu (`đọc`/`độc` → `doc`/`doc`) không mất gì: chúng đã bằng nhau ⇒ giá 0, rẻ hơn 0,30.
      */
-    private val OBSERVED_PAIRS: Set<Pair<String, String>> = symmetric(
-        OBSERVED.map { VoiceLexicon.deaccent(it.right) to VoiceLexicon.deaccent(it.heard) },
+    private val OBSERVED_PAIRS: Set<Pair<String, String>> = pairsOf(OBSERVED.filterNot { it.endOnly })
+
+    /** Cặp [Observed.endOnly] — chỉ tính khi chỗ gọi báo cụm chạm cuối câu (`atEnd`). */
+    private val END_PAIRS: Set<Pair<String, String>> = pairsOf(OBSERVED.filter { it.endOnly })
+
+    private fun pairsOf(rows: List<Observed>): Set<Pair<String, String>> = symmetric(
+        rows.map { VoiceLexicon.deaccent(it.right) to VoiceLexicon.deaccent(it.heard) },
     ).filterTo(HashSet()) { it.first != it.second }
+
+    private fun observed(a: String, b: String, atEnd: Boolean): Boolean =
+        (a to b) in OBSERVED_PAIRS || (atEnd && (a to b) in END_PAIRS)
 
     // ── GIÁ MỘT PHÉP THAY ────────────────────────────────────────────────────────────────────────
 
@@ -217,14 +242,14 @@ internal object VoicePhoneticConfusions {
      * vào nhánh quy luật và bị tính 1,00 — tức phép đo thua suy luận.
      */
     @Suppress("ReturnCount")
-    fun cost(a: Syl, b: Syl): Double {
+    fun cost(a: Syl, b: Syl, atEnd: Boolean = false): Double {
         if (a.base == b.base) {
             val ta = a.tone
             val tb = b.tone
             if (ta == null || tb == null || ta == tb) return 0.0
             return if ((ta to tb) in TONE_PAIRS) SUB_TONE else SUB_CONFUSED
         }
-        if ((a.base to b.base) in OBSERVED_PAIRS) return SUB_CONFUSED
+        if (observed(a.base, b.base, atEnd)) return SUB_CONFUSED
         val x = parts(a.base)
         val y = parts(b.base)
         var diff = 0
@@ -246,7 +271,7 @@ internal object VoicePhoneticConfusions {
      * cũng cướp được một nút của xe. Đây đúng là luật §3 mà [VoiceSynonyms] đã viết ra cho bí danh một từ,
      * chỉ là áp cho tầng lẫn âm.
      */
-    fun nearMiss(a: Syl, b: Syl): Boolean = a.base == b.base || (a.base to b.base) in OBSERVED_PAIRS
+    fun nearMiss(a: Syl, b: Syl, atEnd: Boolean = false): Boolean = a.base == b.base || observed(a.base, b.base, atEnd)
 
     // ── Tách âm tiết ─────────────────────────────────────────────────────────────────────────────
 

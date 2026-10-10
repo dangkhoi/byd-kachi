@@ -233,3 +233,15 @@ t128	end-neg	đúng rồi	Unknown	-	0	0	-	-
 # 2.98 R11 VOICE-COMPOUND-NO-CONNECTOR [ĐO off-car 09/10] — câu ghép KHÔNG liên từ từng mất vế sau (spec kachi-298-plan.html R11).
 t129	compound-noconn	tắt sưởi ghế phụ tắt gió tự động	Control,Control	Gió tự động	0	0	-	-
 t130	compound-noconn	sưởi ghế phụ bật gió tự động	Control,Control	Gió tự động	0	0	-	-
+# ── 2.99 R3–R6 · LOG XE 10/10 (Seal 2.98) — chuỗi mô hình THẬT in ra (spec kachi-299-plan.html R3–R6) ────────────────
+# R3: mệnh đề ô + tên app không nhận ra ⇒ NO_OBJECT (hỏi "Mở app nào?"), KHÔNG MISMATCH/hỏi Odo-VIN. Cột 5 = câu trả
+#     lời NO_OBJECT ("Không tìm thấy thứ đó…"); bản ≤ 2.98 ra câu MISMATCH ("Việc đó không đi với thứ đó…") ⇒ FAIL.
+# R4: "đóng cốp" nghe ra "đóng góp" (xe ×3 buổi) ⇒ đóng cốp; "đóng góp ý kiến" (từ thường) ⇒ KHÔNG chạm cốp.
+t131	slot-clarify	mở diếp vào ô số hai	Unknown	Không tìm thấy thứ đó	0	0	-	-
+t132	slot-clarify	mở nep leag vào ô số một	Unknown	Không tìm thấy thứ đó	0	0	-	-
+t133	cop-gop	đóng góp	Control	Cốp sau	0	0	-	-
+t134	cop-gop	đóng góp sau	Control	Cốp sau	0	0	-	-
+t135	cop-gop-neg	đóng góp ý kiến	Unknown	-	0	0	-	-
+t136	car1010	đóng kính lái xong bật đèn độc	Control,Control	-	0	0	-	-
+t137	car1010	sưởi ghế phụ động	Control	-	0	0	-	-
+t138	compound-fallback	đóng lái xong bật đèn đọc	Control,Unknown	Đèn đọc	0	0	-	-

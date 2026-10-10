@@ -301,7 +301,7 @@
     <string name="kachi_slot_head_autohide_title">Tự ẩn nút ⇄</string>
     <string name="kachi_slot_head_autohide_sub">Nút đổi app/widget của khung ẩn đi cho thoáng; chạm vào khung (hoặc chỗ trống trên màn) là hiện lại vài giây</string>
     <string name="kachi_escape_return_title">Kéo app thoát ô về lại ô (thử nghiệm)</string>
-    <string name="kachi_escape_return_sub">Có app (vd Waze) đôi khi tự bật ra khỏi ô sang toàn màn hình. Bật thì Kachi đưa app đó về lại đúng ô. Đang thử nghiệm, mặc định tắt — nếu thấy lỗi, tắt đi là về như cũ (app ra khỏi ô thì ô báo và trả lại chỗ trống).</string>
+    <string name="kachi_escape_return_sub">Có app (vd Waze) đôi khi tự bật ra khỏi ô sang toàn màn hình. Bật thì Kachi đưa app đó về lại đúng ô. Đang thử nghiệm, mặc định bật — nếu thấy lỗi, tắt đi là về như cũ (app ra khỏi ô thì ô báo và trả lại chỗ trống).</string>
     <string name="kachi_escape_return_sub_tripped">Đã tự tắt vì lỗi (%1$s) — ô đang chạy như cũ. Bản cập nhật sau sẽ thử lại.</string>
     <string name="kachi_escape_return_sub_unsupported">Đầu xe này chưa hỗ trợ (chỉ đầu xe Android 10) — bật cũng không có tác dụng; ô chạy như cũ.</string>
 

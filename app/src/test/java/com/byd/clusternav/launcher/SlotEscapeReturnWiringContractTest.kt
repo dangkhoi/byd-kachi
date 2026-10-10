@@ -78,11 +78,12 @@ class SlotEscapeReturnWiringContractTest {
     }
 
     /**
-     * Owner 10/10 — OTA 2.98 với R18 TẮT mặc định. TẮT ⇒ bảng gửi là `EscapeReturnConfig.OFF` (daemon không đăng ký bộ nghe ⇒ đường
+     * Owner 10/10 — OTA 2.98 với R18 TẮT mặc định; 2.99 BẬT mặc định (xe 10/10 Waze sạch — `EscapeReturnSwitch.DEFAULT_ON`, mặc định
+     * đọc từ MỘT hằng, không ghi cứng ở `Prefs`). TẮT ⇒ bảng gửi là `EscapeReturnConfig.OFF` (daemon không đăng ký bộ nghe ⇒ đường
      * 2.93); bảng tắt không kéo daemon dậy; đổi công tắc ⇒ gửi lại bảng NGAY (không đợi lượt đổi ô kế); daemon CHỈ đăng ký khi bảng có api.
      */
     @Test
-    fun `cong tac R18 - mac dinh tat, tat la bang OFF, doi la gui lai ngay`() {
+    fun `cong tac R18 - mac dinh doc tu DEFAULT_ON, tat la bang OFF, doi la gui lai ngay`() {
         val prefs = code("Prefs.kt")
         assertTrue("getBoolean(\"escape_return_enabled\", com.byd.clusternav.launcher.escape.EscapeReturnSwitch.DEFAULT_ON)" in prefs)
         val ret = code("launcher/escape/SlotEscapeReturn.kt")

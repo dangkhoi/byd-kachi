@@ -135,6 +135,17 @@ interface HalGateway {
     /** Ghi named-method N int → rc (Long), null nếu off-car/thiếu method/ném. */
     fun namedInt(deviceFqn: String, method: String, args: IntArray): Long?
 
+    /**
+     * Ghi named-method nhận MỘT `int[]` (vd `sendIsaDataToAdas(int[12])`) → rc (Long), null nếu off-car/thiếu
+     * method/ném. Khác [namedInt] (N tham số int RỜI) đúng ở hình dạng tham số: một mảng, một lời gọi binder.
+     *
+     * Mặc định `null` ⇒ mọi gateway giả trong bài test giữ nguyên nghĩa *"không có đường này"* mà không phải dựng
+     * thêm — chỉ [BydHalGateway] thật override. Chỉ dùng bởi cầu kiểm thử (op `setarr`/`setisa` của `KachiTestBridge` — receiver
+     * có trong MỌI bản kể cả release, nhưng mọi lệnh đứng sau công tắc «Chế độ kiểm thử qua adb» + cổng `auto_confirm`; 2.99
+     * KHÔNG thêm receiver/quyền/bề mặt manifest nào).
+     */
+    fun namedIntArray(deviceFqn: String, method: String, data: IntArray): Long? = null
+
     /** Đọc feature-id (`get(int[]{id})`) → chuỗi giá trị (kiểu "int=.. float=.. buf=.."), null nếu không đọc. */
     fun featureGet(deviceFqn: String, id: Int): String?
 

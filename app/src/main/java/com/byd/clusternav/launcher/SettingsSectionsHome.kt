@@ -56,8 +56,8 @@ class SettingsHomeSection(
     }
 
     /**
-     * 2.98 · R18 — **"Kéo app thoát ô về lại ô (thử nghiệm)"** (owner 10/10: OTA 2.98 với R18 TẮT mặc định, owner tự bật trên xe khi
-     * đỗ). Theo XE (`escape_return_enabled`, `Prefs`), đi qua `deps.bridge` như "Kính thật". Dòng mô tả đọc trạng thái HIỆU LỰC từ
+     * 2.98 · R18 — **"Kéo app thoát ô về lại ô (thử nghiệm)"** (2.98 OTA TẮT mặc định; 2.99 BẬT mặc định sau xe 10/10 —
+     * `EscapeReturnSwitch.DEFAULT_ON`). Theo XE (`escape_return_enabled`, `Prefs`), đi qua `deps.bridge` như "Kính thật". Dòng mô tả đọc trạng thái HIỆU LỰC từ
      * cùng phép quyết với bảng gửi daemon ([EscapeReturnSwitch.resolve]): cầu chì bền đã ngắt ⇒ nói lý do; máy chưa hỗ trợ ⇒ nói thẳng.
      */
     private fun escapeReturn(body: LinearLayout) {

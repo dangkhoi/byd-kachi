@@ -35,6 +35,14 @@ class KachiApplication : Application() {
         // VAD: vừa vô ích (một bên chỉ ĐỌC, một bên tự nạp bộ nghe của nó — từ 2026-09-22 `:wake` dùng ASR int8 74 MB làm hotword, `Prefs.wakeEngineAsr`) vừa đúng thứ gây ra chính lỗi
         // đang vá — SIGSEGV của `OfflineTts.generate` là `SEGV_MAPERR` dưới áp lực RAM ([ĐO] xe chạy GMaps +
         // VietMap + cdr). Cô lập tiến trình mà nhân đôi (nay là nhân ba) RAM là cô lập hỏng.
+        // 2.99 R7 KACHILOG-CAPTURE-SILENT-STOP — tệp `usage-*.log` bật ở MỖI lần tiến trình khởi động (tới 2.98 chỉ ở
+        // `KachiHomeActivity.onCreate`), kể cả `:wake` — nơi phiên giọng nói gọi bằng từ đánh thức chạy ([ĐO xe 10/10] pid 7453
+        // khác pid chính 7374). Đứng TRƯỚC cổng tiến trình nền vì `:wake` phải qua được; `:tts` ⇒ `null` ⇒ không chụp. Luồng
+        // nền daemon, idempotent, không I/O trên luồng chính — KDoc [KachiLog.startCapture].
+        KachiLog.captureTag(
+            runCatching { Application.getProcessName() }.getOrNull(), packageName,
+            VoiceWakeService.PROCESS_SUFFIX, PiperTtsService.PROCESS_SUFFIX,
+        )?.let { tag -> runCatching { KachiLog.startCapture(this, tag) } }
         if (isBackgroundVoiceProcess()) return
         // R4(b) — StrictMode CHỈ log, CHỈ build type `debug` (máy ảo). Đặt TRƯỚC `AppContainer.get` để vi phạm lúc
         // dựng đồ thị cũng lộ. Luật bật/tắt ở [StrictModeGate] (thuần, có bài canh). Không `penaltyDeath`.

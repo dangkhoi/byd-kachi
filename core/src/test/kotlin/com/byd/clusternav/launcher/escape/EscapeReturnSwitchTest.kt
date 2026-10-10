@@ -5,13 +5,15 @@ import com.byd.clusternav.launcher.SettingsCatalog
 import com.byd.clusternav.launcher.SettingsGroup
 import com.byd.clusternav.launcher.escape.EscapeReturnSwitch.Status
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 /**
- * 2.98 · R18 — công tắc "Kéo app thoát ô về lại ô (thử nghiệm)". Khoá quyết định owner 10/10: OTA 2.98 với R18 TẮT mặc định;
- * TẮT ⇒ bảng gửi daemon là [EscapeReturnConfig.OFF] (daemon không đăng ký bộ nghe ⇒ đường 2.93); cầu chì bền THẮNG công tắc.
+ * 2.98 · R18 — công tắc "Kéo app thoát ô về lại ô (thử nghiệm)". 2.98 OTA với R18 TẮT mặc định (owner 10/10, chưa đo xe);
+ * 2.99 MẶC ĐỊNH BẬT sau bằng chứng xe 10/10 (Waze `esc moved` ×2, không NPE — `oncar-seal-2026-10-10-r18-sla-can.md` §1).
+ * TẮT ⇒ bảng gửi daemon là [EscapeReturnConfig.OFF] (daemon không đăng ký bộ nghe ⇒ đường 2.93); cầu chì bền THẮNG công tắc
+ * — kể cả khi mặc định bật; máy không hỗ trợ (DiLink 5) ⇒ Unsupported dù mặc định bật.
  */
 class EscapeReturnSwitchTest {
 
@@ -19,8 +21,13 @@ class EscapeReturnSwitchTest {
     private val slots = mapOf(5 to "com.waze")
 
     @Test
-    fun `mac dinh TAT cho 2_98`() {
-        assertFalse(EscapeReturnSwitch.DEFAULT_ON, "owner 10/10: OTA với R18 tắt mặc định — đổi ở bản sau khi xe đã chứng minh")
+    fun `mac dinh BAT tu 2_99 - sau bang chung xe 10-10, van la cong tac sau cau chi va cong may ho tro`() {
+        assertTrue(EscapeReturnSwitch.DEFAULT_ON, "2.99: Waze xe 10/10 sạch ⇒ bật mặc định (oncar-seal-2026-10-10 §1)")
+        // Mặc định bật KHÔNG qua mặt cầu chì bền và cổng máy-hỗ-trợ: cùng `resolve`, cùng kết luận OFF cho daemon.
+        val stored = EscapeReturnBreaker.persistValue(202, "NullPointerException:createTaskSnapshot")
+        assertEquals(EscapeReturnConfig.OFF, EscapeReturnSwitch.config(EscapeReturnSwitch.resolve(EscapeReturnSwitch.DEFAULT_ON, api, 29, stored, 202), slots))
+        assertEquals(Status.Unsupported, EscapeReturnSwitch.resolve(EscapeReturnSwitch.DEFAULT_ON, null, 31, null, 202), "DiLink 5 vẫn tắt")
+        assertEquals(Status.On(api), EscapeReturnSwitch.resolve(EscapeReturnSwitch.DEFAULT_ON, api, 29, null, 202))
     }
 
     @Test

@@ -227,7 +227,7 @@
     <string name="kachi_slot_head_autohide_title">Sembunyi butang ⇄ secara automatik</string>
     <string name="kachi_slot_head_autohide_sub">Butang tukar apl/widget pada bingkai disembunyikan supaya skrin lebih kemas; ketik bingkai (atau ruang kosong pada skrin) untuk memaparkannya seketika</string>
     <string name="kachi_escape_return_title">Tarik semula apl yang keluar dari bingkai (percubaan)</string>
-    <string name="kachi_escape_return_sub">Sesetengah apl (cth. Waze) kadangkala terkeluar dari bingkainya menjadi skrin penuh. Hidupkan ini dan Kachi meletakkan apl itu kembali ke bingkainya. Percubaan, mati secara lalai — jika ada masalah, matikan untuk kembali seperti biasa (bingkai memberitahu apl telah keluar dan dikosongkan).</string>
+    <string name="kachi_escape_return_sub">Sesetengah apl (cth. Waze) kadangkala terkeluar dari bingkainya menjadi skrin penuh. Hidupkan ini dan Kachi meletakkan apl itu kembali ke bingkainya. Percubaan, hidup secara lalai — jika ada masalah, matikan untuk kembali seperti biasa (bingkai memberitahu apl telah keluar dan dikosongkan).</string>
     <string name="kachi_escape_return_sub_tripped">Dimatikan sendiri selepas ralat (%1$s) — bingkai berfungsi seperti biasa. Kemas kini seterusnya akan cuba lagi.</string>
     <string name="kachi_escape_return_sub_unsupported">Tidak disokong pada unit kepala ini (unit Android 10 sahaja) — menghidupkannya tiada kesan; bingkai berfungsi seperti biasa.</string>
     <string name="kachi_drawer_section_appwidgets">Widget daripada apl lain</string>

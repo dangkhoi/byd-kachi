@@ -86,6 +86,48 @@ internal object TestBridgeHal {
      */
     const val OP_GETID = "getid"
 
+    /**
+     * `--es op setarr` — ghi một method HAL nhận MỘT `int[]` qua reflection, generic (không cứng vào một method).
+     *
+     * ## Vì sao cần op thứ năm, khi đã có `set`/`setev`
+     * `set` gọi named-method với N tham số int RỜI ([BydHal.callNamedInt]); `setev` ghi MỘT feature-id qua
+     * `AbsBYDAutoDevice.set(int[]{id}, EventValue)`. Cả hai **không** gọi được một method nhận `int[]`. Đường
+     * "giới hạn tốc độ THEO BẢN ĐỒ" chính thức của BYD là `BYDAutoStatisticDevice.sendIsaDataToAdas(int[12])` —
+     * **12 ô gửi một lần một lời gọi** ([ĐO] RE `re-map-speedlimit-2606-2026-10-10.md` §1.2). Các lượt test
+     * 08/10 ghi từng ô rời + mã km/h THÔ (sai khuôn, RE doc §5) nên **chưa chứng minh** được đường này đóng hay mở.
+     *
+     * Cú pháp: `--es op setarr --es dev <Device> --es m <method> --es data "a,b,c"`. Lượt GHI ⇒ qua cổng
+     * `--ez auto_confirm true` như mọi lượt `set`/`setev` (ghi ADAS chạm an toàn). Phân tích `data` thuần ở
+     * [IsaMapArray.parseArray] (`:core`, off-car test). KHÔNG hardcode `sendIsaDataToAdas` — op này gọi method NÀO.
+     */
+    const val OP_SETARR = TestBridgeCommands.OP_SETARR
+
+    /**
+     * `--es op setisa` — tiện ích cho đúng đường map-ISA chính thức: `BYDAutoStatisticDevice.sendIsaDataToAdas(int[12])`.
+     *
+     * Khác [OP_SETARR] đúng hai điểm, cả hai là tiện ích cho buổi xe (không mở cơ chế mới): device mặc định
+     * [ISA_DEVICE] và method cố định [ISA_METHOD] (khỏi gõ `--es dev`/`--es m`), và `data` đi qua [IsaMapArray.parseIsa]
+     * — KIỂM đúng 12 ô, mỗi ô vừa độ rộng bit (RE doc §1.2) ⇒ bắt ngay lỗi "gửi 50 thô vào ô 5-bit" của 08/10.
+     *
+     * ## Thứ tự 12 ô (RE doc §1.2 — `sendIsaDataToAdas(int[12])`)
+     * `[0] current_road_speed_limit` (mã 5-bit = km/h÷5: 50→10, 30=no-limit, 31=invalid) ·
+     * `[1] time_conditional` · `[2] current_road_time_conditional` · `[3] whether_front_fork_ramp` ·
+     * `[4] front_ramp_distance` (m; 8191=invalid) · `[5] current_road_speed_limit_type` ·
+     * `[6] rainy_condition_speed_limit` (km/h÷5) · `[7] snow_condition_speed_limit` (km/h÷5) ·
+     * `[8] road_type` · `[9] country_code` (bảng Telenav; 255=invalid; KHÔNG có VN) ·
+     * `[10] road_speed_limit_unit` (1 km/h · 2 mph) · `[11] map_status` (1 active · 0 invalid).
+     *
+     * Cú pháp: `--es op setisa --es data "10,2,2,0,8191,2,31,31,2,255,1,1"` (tải thử T1 = 50 km/h, bản đồ active).
+     * Mảng TRẢ (xoá): `"31,2,2,0,8191,0,0,0,0,255,1,0"` ([IsaMapArray.RESTORE]). Lượt GHI ⇒ cổng `auto_confirm`.
+     */
+    const val OP_SETISA = TestBridgeCommands.OP_SETISA
+
+    /** Device mặc định của [OP_SETISA]: ECU-ADAS input qua thống kê (`BYDAutoStatisticDevice`, device 1014). */
+    const val ISA_DEVICE = "BYDAutoStatisticDevice"
+
+    /** Method map-ISA chính thức (RE doc §1 · framework `BYDAutoStatisticDevice.java:610-617`). */
+    const val ISA_METHOD = "sendIsaDataToAdas"
+
     /** `--es m` của `setev`/`getid` không phải số và cũng không phải tên hằng có trên xe. */
     const val ERR_BAD_FEATURE = "bad_feature:"
 
@@ -94,6 +136,8 @@ internal object TestBridgeHal {
         val fqn = HalBindingTable.deviceFqn(simpleDev)
         if (cmd.op == OP_SETEV) { runSetEv(app, cmd, simpleDev, fqn, reply); return }
         if (cmd.op == OP_GETID) { runGetId(app, cmd, simpleDev, fqn, reply); return }
+        if (cmd.op == OP_SETARR) { runSetArr(app, cmd, reply); return }
+        if (cmd.op == OP_SETISA) { runSetIsa(app, cmd, reply); return }
         val isGet = when (cmd.op) {
             "get" -> true
             "set" -> false
@@ -252,6 +296,81 @@ internal object TestBridgeHal {
                     sentinel -> "unavailable: sentinel ($raw) — " +
                         (HalBindingTable.sentinelMeaning(HalBindingTable.coerceInt(raw)?.toLong()) ?: "sentinel")
                     else -> "ok: read"
+                },
+            ),
+        )
+    }
+
+    /**
+     * Lượt `setarr` — xem KDoc [OP_SETARR]. GENERIC: gọi method NÀO người đo nói, với `int[]` từ `--es data`.
+     * Device mặc định [DEFAULT_DEVICE] (như mọi lệnh `hal`); `--es m` bắt buộc. Cùng cổng CONFIRM + probe HAL.
+     */
+    private fun runSetArr(app: Context, cmd: TestBridgeCommand, reply: TestBridgeReply) {
+        val simpleDev = cmd.dev.ifBlank { DEFAULT_DEVICE }
+        if (cmd.method.isBlank()) {
+            reply.fail(TestBridgeCommands.ERR_MISSING + TestBridgeCommands.EXTRA_METHOD)
+            return
+        }
+        val arr = when (val p = IsaMapArray.parseArray(cmd.data)) {
+            is IsaMapArray.Parsed.Err -> { reply.fail(p.code); return }
+            is IsaMapArray.Parsed.Ok -> p.values
+        }
+        arrayWrite(app, OP_SETARR, simpleDev, cmd.method, arr, cmd.autoConfirm, reply)
+    }
+
+    /**
+     * Lượt `setisa` — xem KDoc [OP_SETISA]. Device + method cố định (map-ISA chính thức), `data` KIỂM 12 ô.
+     * `--es dev` tuỳ chọn (ghi đè [ISA_DEVICE] nếu buổi RE cần device khác); không đòi `--es m` (đã miễn ở parse).
+     */
+    private fun runSetIsa(app: Context, cmd: TestBridgeCommand, reply: TestBridgeReply) {
+        val simpleDev = cmd.dev.ifBlank { ISA_DEVICE }
+        val arr = when (val p = IsaMapArray.parseIsa(cmd.data)) {
+            is IsaMapArray.Parsed.Err -> { reply.fail(p.code); return }
+            is IsaMapArray.Parsed.Ok -> p.values
+        }
+        arrayWrite(app, OP_SETISA, simpleDev, ISA_METHOD, arr, cmd.autoConfirm, reply)
+    }
+
+    /**
+     * Thân chung của `setarr`/`setisa`: cổng CONFIRM (lượt GHI ADAS) → ghi `int[]` qua [BydHalGateway.namedIntArray]
+     * → đọc trộm câu chữ HAL ([HalWriteProbe]) → lời đáp JSON mang `rc` + mảng đã gửi. MỘT thân, không hai bản sao.
+     */
+    private fun arrayWrite(
+        app: Context,
+        op: String,
+        simpleDev: String,
+        method: String,
+        arr: IntArray,
+        autoConfirm: Boolean,
+        reply: TestBridgeReply,
+    ) {
+        val fqn = HalBindingTable.deviceFqn(simpleDev)
+        val dataCsv = arr.joinToString(",")
+        if (!autoConfirm) {
+            reply.fail(ERR_NEEDS_CONFIRM, "dev" to simpleDev, "method" to method, "data" to dataCsv, "hint" to NOTE_CONFIRM)
+            return
+        }
+        Log.i(TestBridgeReply.TAG, "AUTO-CONFIRM: hal $op $simpleDev.$method([$dataCsv])")
+        val mark = HalWriteProbe.mark()
+        HalWriteProbe.clear()
+        val rc = BydHalGateway(app).namedIntArray(fqn, method, arr)
+        val outcome = HalWriteProbe.last
+        val halLine = if (outcome != null && outcome.seq > mark) outcome.raw else TestBridgeCtl.HAL_UNMAPPED
+        reply.ok(
+            listOf(
+                "op" to op,
+                "dev" to simpleDev,
+                "fqn" to fqn,
+                "method" to method,
+                "data" to dataCsv,
+                "sent" to TestBridgeJson.Raw(TestBridgeJson.arr(arr.toList())),
+                "rc" to (rc?.toString() ?: ""),
+                "hal_line" to halLine,
+                "reply" to when {
+                    halLine.contains("permission", ignoreCase = true) -> "denied: no permission / wrong device"
+                    halLine == "off_car" -> "unavailable: off-car/emulator"
+                    rc != null -> "ok: HAL accepted (rc valid) — owner phai NHIN cum/HUD co bien khong"
+                    else -> "rejected: $halLine"
                 },
             ),
         )

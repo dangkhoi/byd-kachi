@@ -1,0 +1,153 @@
+# [ĐO máy ảo kachi_play 2026-10-10] YouTube 21.35.442 (Premium, đăng nhập), A10. Nguồn: adb dumpsys media_session (nguyên văn),
+# seekTo qua MediaController.TransportControls (app thăm dò có quyền nghe thông báo). Mỗi khối: force-stop YouTube -> lệnh -> phát -> tua gần cuối.
+# Spec docs/specs/kachi-299-plan.html R1 · docs/diagnostics/emu-yt-autoplay-2026-10-10.md
+# plain-early: am start -a android.intent.action.VIEW -d https://www.youtube.com/watch?v=<id> -p com.google.android.youtube 
+# seekTo 884000 (MediaController.TransportControls, dur=890000)
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61197035, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61197035, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61203236, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61203236, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61203236, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61203236, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61203236, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61203236, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+# force_fullscreen-early: am start -a android.intent.action.VIEW -d https://www.youtube.com/watch?v=<id> -p com.google.android.youtube --ez force_fullscreen true
+# seekTo 884000 (MediaController.TransportControls, dur=890000)
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61226565, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61226565, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61232758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61232758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61232758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61232758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61232758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61232758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+# plain-r1: am start -a android.intent.action.VIEW -d https://www.youtube.com/watch?v=<id> -p com.google.android.youtube 
+# before seek (after 15s): state=3 pos=17135 actions=0x21a7
+# seekTo 884000 (MediaController.TransportControls, dur=890000)
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61290900, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61290900, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61297127, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=8, position=0, buffered position=0, speed=1.0, updated=61300240, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=VIRAL CLIP - MỘT NĂM MỚI BÌNH AN | SƠN TÙNG M-TP, null, null
+state=PlaybackState {state=3, position=1933, buffered position=0, speed=1.0, updated=61303118, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=VIRAL CLIP - MỘT NĂM MỚI BÌNH AN | SƠN TÙNG M-TP, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=1933, buffered position=0, speed=1.0, updated=61303118, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=VIRAL CLIP - MỘT NĂM MỚI BÌNH AN | SƠN TÙNG M-TP, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=1933, buffered position=0, speed=1.0, updated=61303118, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=VIRAL CLIP - MỘT NĂM MỚI BÌNH AN | SƠN TÙNG M-TP, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=1933, buffered position=0, speed=1.0, updated=61303118, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=VIRAL CLIP - MỘT NĂM MỚI BÌNH AN | SƠN TÙNG M-TP, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+# force_fullscreen-r1: am start -a android.intent.action.VIEW -d https://www.youtube.com/watch?v=<id> -p com.google.android.youtube --ez force_fullscreen true
+# before seek (after 15s): state=3 pos=19014 actions=0x2187
+# seekTo 884000 (MediaController.TransportControls, dur=890000)
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61337519, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61337519, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61343758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61343758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61343758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61343758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61343758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61343758, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+# plain-r2: am start -a android.intent.action.VIEW -d https://www.youtube.com/watch?v=<id> -p com.google.android.youtube 
+# before seek (after 15s): state=3 pos=18784 actions=0x21a7
+# seekTo 884000 (MediaController.TransportControls, dur=890000)
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61384750, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61384750, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61390996, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=907, buffered position=0, speed=1.0, updated=61396282, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=[SKETCH A ROSE - SAIGON] 999 ĐÓA HỒNG| HÀ ANH TUẤN FT LAM TRƯỜNG, null, null
+state=PlaybackState {state=3, position=907, buffered position=0, speed=1.0, updated=61396282, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=[SKETCH A ROSE - SAIGON] 999 ĐÓA HỒNG| HÀ ANH TUẤN FT LAM TRƯỜNG, Hà Anh Tuấn, Hà Anh Tuấn
+state=PlaybackState {state=3, position=907, buffered position=0, speed=1.0, updated=61396282, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=[SKETCH A ROSE - SAIGON] 999 ĐÓA HỒNG| HÀ ANH TUẤN FT LAM TRƯỜNG, Hà Anh Tuấn, Hà Anh Tuấn
+state=PlaybackState {state=3, position=907, buffered position=0, speed=1.0, updated=61396282, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=[SKETCH A ROSE - SAIGON] 999 ĐÓA HỒNG| HÀ ANH TUẤN FT LAM TRƯỜNG, Hà Anh Tuấn, Hà Anh Tuấn
+state=PlaybackState {state=3, position=907, buffered position=0, speed=1.0, updated=61396282, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=[SKETCH A ROSE - SAIGON] 999 ĐÓA HỒNG| HÀ ANH TUẤN FT LAM TRƯỜNG, Hà Anh Tuấn, Hà Anh Tuấn
+# force_fullscreen-r2: am start -a android.intent.action.VIEW -d https://www.youtube.com/watch?v=<id> -p com.google.android.youtube --ez force_fullscreen true
+# before seek (after 15s): state=3 pos=19060 actions=0x21a7
+# seekTo 884000 (MediaController.TransportControls, dur=890000)
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61431422, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=61431422, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61437690, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61437690, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61437690, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61437690, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61437690, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=1, position=890090, buffered position=0, speed=1.0, updated=61437690, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+# mix-r1: am start -a android.intent.action.VIEW -d https://www.youtube.com/watch?v=<id>&list=RD<id> -p com.google.android.youtube 
+# before seek (after 0s): state=3 pos=2747 actions=0x21a7
+# seekTo 884000 (MediaController.TransportControls, dur=890000)
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=63279692, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=63279692, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=8, position=0, buffered position=0, speed=1.0, updated=63285994, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, null, null
+state=PlaybackState {state=3, position=2007, buffered position=0, speed=1.0, updated=63289081, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=2007, buffered position=0, speed=1.0, updated=63289081, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=2007, buffered position=0, speed=1.0, updated=63289081, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=2007, buffered position=0, speed=1.0, updated=63289081, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=2007, buffered position=0, speed=1.0, updated=63289081, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+# mix-r2: am start -a android.intent.action.VIEW -d https://www.youtube.com/watch?v=<id>&list=RD<id> -p com.google.android.youtube 
+# before seek (after 0s): state=3 pos=2109 actions=0x21a7
+# seekTo 884000 (MediaController.TransportControls, dur=890000)
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=63309199, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=884000, buffered position=0, speed=1.0, updated=63309199, actions=8615, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | CHÚNG TA CỦA HIỆN TẠI | OFFICIAL MUSIC VIDEO, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=8, position=0, buffered position=0, speed=1.0, updated=63315465, actions=8583, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, null, null
+state=PlaybackState {state=3, position=1994, buffered position=0, speed=1.0, updated=63318299, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=1994, buffered position=0, speed=1.0, updated=63318299, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=1994, buffered position=0, speed=1.0, updated=63318299, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=1994, buffered position=0, speed=1.0, updated=63318299, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official
+state=PlaybackState {state=3, position=1994, buffered position=0, speed=1.0, updated=63318299, actions=8631, custom actions=[], active item id=-1, error=null}
+metadata: size=6, description=SƠN TÙNG M-TP | SKY DECADE | Lời Tri Ân, Sơn Tùng M-TP Official, Sơn Tùng M-TP Official

@@ -118,6 +118,57 @@ class TestBridgeSafetyContractTest {
         }
     }
 
+    /**
+     * ISA-MAP-SENDARR — hai op GHI MẢNG `setarr`/`setisa` đều: (1) được điều phối trong `run()`; (2) đi qua
+     * [BydHalGateway.namedIntArray] (đường ghi `int[]` DUY NHẤT, nơi [HalWriteProbe] đọc trộm câu chữ HAL) qua
+     * thân chung `arrayWrite`; (3) nằm sau cổng `auto_confirm` + để dấu `AUTO-CONFIRM` (ghi ADAS chạm an toàn).
+     *
+     * ⚠ CLAUDE.md §8: op mới phải CÓ chỗ gọi. Bài này đi từ điều phối → thân → gateway → đúng method ISA, vì
+     * `setisa` ghi vào ECU-ADAS input — một op "compile xanh mà không nối dây" sẽ trả `unmapped` MÃI trên xe.
+     */
+    @Test
+    fun `hal setarr va setisa route qua namedIntArray sau cong auto_confirm`() {
+        val src = code("TestBridgeHal.kt")
+        // (1) điều phối trong run()
+        assertTrue(src.contains("if (cmd.op == OP_SETARR) { runSetArr("), "`run()` phải điều phối `setarr`")
+        assertTrue(src.contains("if (cmd.op == OP_SETISA) { runSetIsa("), "`run()` phải điều phối `setisa`")
+        // (2) đi qua gateway array-write; KHÔNG tự mở reflection thứ hai
+        assertTrue(
+            src.contains("BydHalGateway(app).namedIntArray("),
+            "ghi mảng phải qua `BydHalGateway.namedIntArray` — cùng gateway với `ctl`/`set`, để HalWriteProbe đọc được",
+        )
+        assertTrue(!src.contains("Class.forName"), "TestBridgeHal KHÔNG được tự `Class.forName` (một gateway duy nhất)")
+        // (3) cổng CONFIRM + dấu AUTO-CONFIRM trong thân chung `arrayWrite`
+        val at = src.indexOf("private fun arrayWrite(")
+        assertTrue(at > 0, "không còn `arrayWrite` — đổi tên thì sửa bài canh CÓ CHỦ Ý")
+        val body = src.substring(at)
+        val gate = body.indexOf("!autoConfirm")
+        val log = body.indexOf("AUTO-CONFIRM: hal \$op")
+        assertTrue(gate > 0, "ghi mảng ADAS phải qua cổng `!autoConfirm`")
+        assertTrue(log > gate, "dấu `AUTO-CONFIRM` phải đứng SAU cổng")
+        assertTrue(body.substring(gate, log).contains("ERR_NEEDS_CONFIRM"), "thiếu lối từ chối `ERR_NEEDS_CONFIRM`")
+        // HalWriteProbe đọc trộm (cùng giao thức `ctl`)
+        assertTrue(body.contains("HalWriteProbe.clear()") && body.contains("HalWriteProbe.last"), "phải đọc câu chữ HAL trong tiến trình")
+    }
+
+    /**
+     * `setisa` phải khoá đúng đường map-ISA chính thức (RE `re-map-speedlimit-2606-2026-10-10.md` §1.2): method
+     * cố định `sendIsaDataToAdas`, device `BYDAutoStatisticDevice`, và `data` đi qua [IsaMapArray.parseIsa] (KIỂM 12
+     * ô). `setarr` thì GENERIC — gọi method theo `--es m`, `data` qua `parseArray` (không kiểm dải). Không trộn hai.
+     */
+    @Test
+    fun `setisa khoa dung method ISA chinh thuc, setarr generic`() {
+        val src = code("TestBridgeHal.kt")
+        assertTrue(src.contains("const val ISA_METHOD = \"sendIsaDataToAdas\""), "method map-ISA chính thức phải là hằng")
+        assertTrue(src.contains("const val ISA_DEVICE = \"BYDAutoStatisticDevice\""), "device map-ISA phải là hằng")
+        val isa = src.substring(src.indexOf("private fun runSetIsa("))
+        assertTrue(isa.contains("IsaMapArray.parseIsa(cmd.data)"), "`setisa` phải KIỂM 12 ô qua `parseIsa`")
+        assertTrue(isa.contains("ISA_METHOD"), "`setisa` phải gọi đúng method cố định")
+        val arr = src.substring(src.indexOf("private fun runSetArr("), src.indexOf("private fun runSetIsa("))
+        assertTrue(arr.contains("IsaMapArray.parseArray(cmd.data)"), "`setarr` generic ⇒ `parseArray` (không kiểm dải)")
+        assertTrue(arr.contains("cmd.method"), "`setarr` phải gọi method NGƯỜI ĐO nói, không hardcode")
+    }
+
     /** Không có đường BẬT nào ngoài màn Cài đặt: không lệnh `enable`, và receiver không gọi `TestBridgeStore.enable`. */
     @Test
     fun `khong co duong bat che do kiem thu tu xa`() {

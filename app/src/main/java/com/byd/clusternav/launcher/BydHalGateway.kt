@@ -118,6 +118,19 @@ class BydHalGateway(context: Context) : HalGateway {
     }.getOrElse { warnOnce(deviceFqn, method, it); null }
 
     /**
+     * Ghi method nhận `int[]` (cầu kiểm thử op `setarr`/`setisa` — xem [BydHal.callNamedIntArray]) + **ghi trộm**
+     * câu chữ THẬT vào [HalWriteProbe] y như [namedInt]. Cùng đường, cùng giao thức đọc rc; chỉ khác hình dạng
+     * tham số (một mảng). Off-car (`device()` null) ghi `"off_car"`.
+     */
+    override fun namedIntArray(deviceFqn: String, method: String, data: IntArray): Long? = runCatching {
+        val dev = device(deviceFqn) ?: run { HalWriteProbe.record(deviceFqn, method, OFF_CAR); return null }
+        val raw = BydHal.callNamedIntArray(dev, method, data)
+        HalWriteProbe.record(deviceFqn, method, raw)
+        warnOnceRaw(deviceFqn, method, raw)
+        parseRc(raw)
+    }.getOrElse { warnOnce(deviceFqn, method, it); null }
+
+    /**
      * Đọc feature-id qua `get(int[], Class)` 2-arg [ĐO `AbsBYDAutoDevice.java:84`; OpenBYD `CarControlImpl.java:239-240`]
      * — toàn bộ cơ chế (dò method, sentinel `INVAILD_INT`, rút `int=/float=`) nằm ở [BydHal.readFeature] để test
      * off-car; đây chỉ resolve device. null = off-car / device không có get / HAL từ chối / giá trị sentinel.

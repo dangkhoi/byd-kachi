@@ -128,7 +128,11 @@ class A11yLogBridgeWiringContractTest {
         assertTrue(end > at, "khối <service> của VoiceKeyKeepAliveService không đóng — bài đang quét vùng không tồn tại")
         assertFalse(manifest.substring(at, end).contains("android:process"), "watchdog ghi nhật ký phải ở tiến trình chính")
         val log = code("src/main/java/com/byd/clusternav/launcher/KachiLog.kt")
-        assertTrue(log.contains("\"--pid=\${Process.myPid()}\""), "usage log chụp theo pid tiến trình chính")
+        // 2.99 R7: lệnh logcat dựng ở `captureCommand(pid, mốc)` (lượt nối lại thêm `-T`) — pid vẫn là `Process.myPid()`.
+        assertTrue(
+            log.contains("captureCommand(Process.myPid(), c.lastStamp)") && log.contains("\"--pid=\$pid\""),
+            "usage log chụp theo pid tiến trình chính",
+        )
         val home = code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt")
         assertTrue(home.contains("KachiLog.startCapture(this)"), "không ai bật usage log thì đường đọc (2) không tồn tại")
     }

@@ -40,8 +40,10 @@ object VoiceClarify {
      * @property question chữ hiện trên tấm chữ (và đọc lên, nếu máy có giọng).
      * @property carry các từ ĐÃ hiểu của lượt trước, theo đúng thứ tự người ta nói. [combine] dán câu trả lời vào
      *   sau chúng. Rỗng ⇒ câu trả lời đứng một mình.
+     * @property tail 2.99 R3 — mệnh đề ô người ta đã nói (*"vào ô số hai"*) mà câu hỏi *"Mở app nào?"* không hỏi lại:
+     *   [combine] dán nó vào SAU câu trả lời (trừ khi câu trả lời đã tự nêu ô). Rỗng ở mọi câu hỏi khác.
      */
-    data class Ask(val question: String, val carry: List<String>)
+    data class Ask(val question: String, val carry: List<String>, val tail: List<String> = emptyList())
 
     /**
      * Câu hỏi cho một ý định không hiểu, hoặc `null` khi **không nên hỏi**.
@@ -85,6 +87,13 @@ object VoiceClarify {
         // carry rỗng ⇒ trả lời *"cửa sổ trời"* ra một lệnh ghi.
         val asking = VoiceQuestion.isQuestion(raw)
         val asked = VoiceQuestion.looksAsked(raw)
+        // 2.99 R3 VOICE-SLOT-NUMBER-CLARIFY — [ĐO xe 10/10] *"mở diếp vào ô số hai"* từng hỏi *"Số nào — Odo tổng hay Số VIN?"*:
+        // chữ *"số"* của mệnh đề ô bị [ambiguity] đọc là đầu họ `odometer`/`vin`. Mệnh đề ô chỉ có nghĩa cho MỞ APP ⇒ câu có
+        // động từ mở + mệnh đề ô mà không hiểu là thiếu đúng TÊN APP ⇒ hỏi *"Mở app nào?"* và giữ ô cho lượt sau
+        // ([Ask.tail]). Mọi phép dò dưới (hồ sơ · họ nhãn · *"… gì?"*) chạy trên câu ĐÃ BỎ mệnh đề ô ([VoiceTailClause.slotSpan]).
+        val slot = VoiceTailClause.slotSpan(tokens)
+        val body = if (slot == null) tokens else tokens.filterIndexed { i, _ -> i !in slot }
+        if (slot != null && !asking) appAsk(body, tokens.slice(slot).map { it.raw }, lang)?.let { return it }
 
         // VOICE-PROFILE-NAME-PHONETIC (2026-09-26) — câu nêu *"hồ sơ"* mà **không có cái tên**.
         //
@@ -96,25 +105,37 @@ object VoiceClarify {
         //
         // Đứng TRƯỚC [ambiguity] vì cụm đánh dấu *"hồ sơ"* hẹp hơn hẳn phép dò họ nhãn: [ĐO] chữ *"số"* (nhãn datum
         // `gear`) khớp giữa chính câu này, nên để [ambiguity] chạy trước là hỏi lại về một cái nút số.
-        VoiceProfileNames.missingName(tokens, terms)?.let { names ->
-            return Ask(question(Strings.t("hồ sơ", "profile", lang), names, lang), tokens.map { it.raw })
+        VoiceProfileNames.missingName(body, terms)?.let { names ->
+            return Ask(question(Strings.t("hồ sơ", "profile", lang), names, lang), body.map { it.raw })
         }
 
-        ambiguity(tokens, terms, asking, asked, lang)?.let { return it }
+        ambiguity(body, terms, asking, asked, lang)?.let { return it }
 
         // *"&lt;động từ&gt; gì?"* chỉ đúng khi đầu câu THẬT LÀ một động từ. [ĐO xe 2026-09-18] *"hev đi được bao
         // nhiêu"* trước đây ra *"Hev gì?"* — máy lấy một danh từ làm động từ rồi hỏi một câu vô nghĩa; nay câu ấy
         // rơi về [vague] (*"Chưa rõ — nói lại giúp"*). Câu HỎI cũng không đi đường này: nó không có động từ nào để
         // mang theo. Lấy **cả cụm** động từ (*"kiểm tra"*, không phải *"kiểm"*) vì đó là chữ sẽ được ghép lại ở
         // lượt sau — cắt còn một từ là ghép ra một câu không phân tích được.
-        val verb = if (asking) null else leadVerb(tokens)
+        val verb = if (asking) null else leadVerb(body)
         if (verb != null && unknown.reason == VoiceUnknownReason.NO_OBJECT) {
             return Ask(
                 Strings.fIn(lang, "{0} gì?", "{0} what?", capitalize(verb)),
                 listOf(verb),
             )
         }
-        return Ask(vague(lang), carryFor(tokens, asking, asked))
+        return Ask(vague(lang), carryFor(body, asking, asked))
+    }
+
+    /**
+     * 2.99 R3 — *"&lt;động từ mở&gt; app nào?"* cho câu có mệnh đề ô ([slotWords]) — `null` khi đầu [body] không phải một
+     * động từ MỞ/BẬT (động từ đóng ⇒ [VoiceUnknownReason.APP_CLOSE] đã có đường riêng; không động từ ⇒ đường cũ).
+     * Cùng khuôn *"{0} gì?"* của nhánh thiếu đối tượng, chỉ nói rõ thứ thiếu là một APP.
+     */
+    private fun appAsk(body: List<VoiceLexicon.Token>, slotWords: List<String>, lang: Lang): Ask? {
+        val hit = VoiceGrammar.VERBS.firstOrNull { VoiceLexicon.phraseAt(body, 0, it.first) } ?: return null
+        if (!VoiceGrammar.isAction(hit.second) || VoiceTailClause.closesApp(hit.second)) return null
+        val verb = leadVerb(body) ?: return null
+        return Ask(Strings.fIn(lang, "{0} app nào?", "{0} which app?", capitalize(verb)), listOf(verb), slotWords)
     }
 
     /*
@@ -167,7 +188,15 @@ object VoiceClarify {
      * 2.93 — [carry] là một TÊN bộ phận chuyển động (câu hỏi *"Mở hay đóng …?"*) thì động từ trả lời đứng TRƯỚC nó:
      * [VoiceBareCover.verbFirst]. Mọi [carry] khác (động từ · [READ_VERB] · vế hồ sơ) đi đúng đường cũ.
      */
-    fun combine(carry: List<String>, answer: String): String {
+    fun combine(carry: List<String>, answer: String, tail: List<String> = emptyList()): String {
+        val joined = joinCarry(carry, answer)
+        if (tail.isEmpty() || answer.isBlank()) return joined
+        // 2.99 R3 — câu trả lời đã tự nêu ô (*"YouTube vào ô ba"*) thì ô MỚI thắng, không dán ô cũ vào sau.
+        if (VoiceTailClause.slotSpan(VoiceLexicon.tokenize(joined)) != null) return joined
+        return (listOf(joined) + tail).joinToString(" ")
+    }
+
+    private fun joinCarry(carry: List<String>, answer: String): String {
         val a = answer.trim()
         if (a.isEmpty()) return carry.joinToString(" ")
         if (carry.isEmpty()) return a

@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.launcher.voice.VoiceLexicon.Token
+
 /**
  * owner 2026-09-24 — câu KẾT THÚC phiên voice ("bye / tạm biệt / xong rồi / thôi / cảm ơn"): trong lượt nghe NỐI
  * (hội thoại), nói mấy câu này ⇒ đóng voice ngay, thay vì để tấm chữ "đứng hoài không biết làm sao".
@@ -56,8 +58,22 @@ object VoiceEndWords {
         listOf("kachi"), listOf("ban"), listOf("em"),
     ).sortedByDescending { it.size }
 
-    /** Cụm kết thúc đã bỏ dấu + bỏ từ đệm (cùng phép chuẩn hoá với câu vào — xem [core]). */
-    private val PHRASES: Set<List<String>> = SPOKEN.map { core(norm(it)) }.filter { it.isNotEmpty() }.toSet()
+    /** Một từ của cụm kết thúc: bản bỏ dấu + cách viết CÓ DẤU (chữ thường, NFC — [VoiceHomograph.spelling]). */
+    private data class PWord(val norm: String, val spelled: String)
+
+    /**
+     * Cụm kết thúc đã bỏ tên gọi + từ đệm ([coreTokens]), mỗi từ mang theo cách viết có dấu.
+     *
+     * 2.99 VOICE-COMPOUND-FALLBACK-WRONG-VERB — luật đồng hình ([VoiceHomograph]): *"đóng lại"* (kết thúc phiên) bỏ dấu
+     * ra `dong lai`, TRÙNG *"đóng lái"* (= đóng kính lái, người ta nói thiếu chữ *"kính"*). Khi câu vào MANG dấu, chỉ
+     * *"đóng lại"* (thanh nặng) là câu kết thúc; *"đóng lái"* (thanh sắc) đi tiếp để bộ phân tích hỏi lại *"Đóng gì?"*.
+     * Chữ KHÔNG dấu (gõ · nhật ký) không có dữ liệu để tách ⇒ hành vi cũ từng byte ([VoiceHomograph.spelledOk]).
+     */
+    private val PHRASES: Set<List<PWord>> = SPOKEN
+        .map { coreTokens(VoiceLexicon.tokenize(it)) }
+        .filter { it.isNotEmpty() }
+        .map { toks -> toks.map { PWord(it.norm, VoiceHomograph.spelling(it.raw)) } }
+        .toSet()
 
     /** Cụm không mang dấu nhưng là âm tiết tiếng Việt thật (*"bai bai"*) — vẫn đáng bias. */
     private val LATIN_VI_SOUNDING: Set<String> = setOf("bai bai", "bay bay")
@@ -79,33 +95,39 @@ object VoiceEndWords {
 
     /** Câu [text] (thô) có phải câu KẾT THÚC phiên không. */
     fun isEnd(text: String): Boolean {
-        val words = VoiceLexicon.stripCourtesy(VoiceLexicon.tokenize(text)).map { it.norm }.filter { it.isNotEmpty() }
+        val words = VoiceLexicon.stripCourtesy(VoiceLexicon.tokenize(text)).filter { it.norm.isNotEmpty() }
         if (words.isEmpty()) return false
-        val c = core(words)
+        val c = coreTokens(words)
         if (c.isEmpty()) return false
         return segments(c)
     }
 
-    private fun norm(s: String): List<String> = VoiceLexicon.tokenize(s).map { it.norm }
-
-    /** Bỏ tên gọi ([ADDRESS]) rồi bỏ từ đệm ([FILLER]). */
-    private fun core(words: List<String>): List<String> {
-        val out = ArrayList<String>(words.size)
+    /** Bỏ tên gọi ([ADDRESS]) rồi bỏ từ đệm ([FILLER]) — so theo bản bỏ dấu, GIỮ token (còn dấu, cho [segments]). */
+    private fun coreTokens(words: List<Token>): List<Token> {
+        val out = ArrayList<Token>(words.size)
         var i = 0
         while (i < words.size) {
-            val a = ADDRESS.firstOrNull { p -> i + p.size <= words.size && words.subList(i, i + p.size) == p }
+            val a = ADDRESS.firstOrNull { p -> i + p.size <= words.size && words.subList(i, i + p.size).map { it.norm } == p }
             if (a != null) { i += a.size; continue }
-            if (words[i] !in FILLER) out.add(words[i])
+            if (words[i].norm !in FILLER) out.add(words[i])
             i++
         }
         return out
     }
 
-    /** [words] chia trọn được thành các cụm của [PHRASES] (*"xong cam on"* = `xong` + `cam on`)? */
-    private fun segments(words: List<String>): Boolean {
+    /**
+     * [words] chia trọn được thành các cụm của [PHRASES] (*"xong cam on"* = `xong` + `cam on`)? Mỗi từ phải khớp bản bỏ
+     * dấu VÀ — khi câu vào mang dấu — đúng cách viết có dấu của cụm ([VoiceHomograph.spelledOk]).
+     */
+    private fun segments(words: List<Token>): Boolean {
         val ok = BooleanArray(words.size + 1).also { it[0] = true }
         for (end in 1..words.size) {
-            ok[end] = PHRASES.any { p -> p.size <= end && ok[end - p.size] && words.subList(end - p.size, end) == p }
+            ok[end] = PHRASES.any { p ->
+                p.size <= end && ok[end - p.size] && p.indices.all { k ->
+                    val tok = words[end - p.size + k]
+                    tok.norm == p[k].norm && VoiceHomograph.spelledOk(tok, p[k].spelled)
+                }
+            }
         }
         return ok[words.size]
     }

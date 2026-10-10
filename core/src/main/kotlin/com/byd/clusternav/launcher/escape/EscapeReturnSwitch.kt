@@ -5,8 +5,13 @@ package com.byd.clusternav.launcher.escape
  *
  * Owner 10/10 (*"OTA để lên xe test"*, chọn phương án OTA với R18 TẮT mặc định): R18 chưa có phép đo trên xe (vụ NPE
  * `createTaskSnapshot` 08-01 trên DiLink3) ⇒ bản 2.98 đi ra với công tắc *Cài đặt › Màn hình chính* MẶC ĐỊNH TẮT. TẮT ⇒ Kachi gửi
- * bảng [EscapeReturnConfig.OFF] (không api, không ô) ⇒ daemon không đăng ký bộ nghe, không dời gì ⇒ ô đi đúng đường 2.93. Owner tự
- * bật trên xe mình khi đỗ; bản sau đổi mặc định khi xe đã chứng minh.
+ * bảng [EscapeReturnConfig.OFF] (không api, không ô) ⇒ daemon không đăng ký bộ nghe, không dời gì ⇒ ô đi đúng đường 2.93.
+ *
+ * 2.99 — MẶC ĐỊNH BẬT ([DEFAULT_ON]). Bằng chứng xe 10/10 (`docs/diagnostics/oncar-seal-2026-10-10-r18-sla-can.md` §1, Seal DiLink3
+ * fw 2606, 2.98 OTA, owner bật tay): Waze thoát ô 2 lần ⇒ `esc moved` ×2, KHÔNG `NullPointerException`/`createTaskSnapshot`, KHÔNG
+ * cầu chì; owner *"waze OK"* — [ĐO 2 lượt · 1 app · 1 xe]; app khác với R18 [CHƯA BIẾT] (`_handoff/oncar-plan-2.99.md` §2). Vẫn là
+ * CÔNG TẮC (tắt được một chạm) và vẫn đứng SAU cầu chì bền + cổng máy-hỗ-trợ ([resolve]): DiLink 5 / đời API lạ ⇒ [Status.Unsupported]
+ * dù mặc định bật; daemon ném ⇒ [Status.Tripped] thắng mặc định. Giá trị đã lưu của người dùng (owner đã bật tay) không bị đổi.
  *
  * Một nơi quyết [Status] cho cả hai chỗ đọc (bảng gửi daemon · dòng mô tả trên màn Cài đặt) — để chữ trên màn không bao giờ nói
  * "đang bật" trong lúc bảng gửi đi là TẮT. Thứ tự xét: máy không hỗ trợ → cầu chì bền (THẮNG công tắc) → công tắc → bật.
@@ -16,8 +21,8 @@ object EscapeReturnSwitch {
     /** Khoá công tắc — tệp `clusternav_prefs` (`Prefs`), theo XE (`ProfileScopeSlotEscape.DEVICE_KEYS`). */
     const val PREF_KEY = "escape_return_enabled"
 
-    /** Mặc định TẮT cho 2.98 (owner 10/10) — đổi ở bản sau khi đã đo trên xe. */
-    const val DEFAULT_ON = false
+    /** 2.98: TẮT (chưa đo xe). 2.99: BẬT — sau bằng chứng xe 10/10 (KDoc lớp); đổi lại là một hằng. */
+    const val DEFAULT_ON = true
 
     sealed interface Status {
         /** Đầu xe này không có bảng tên hàm cho đời API đang chạy (DiLink 5 / Android 12 chưa đo) — công tắc không có tác dụng. */
@@ -26,7 +31,7 @@ object EscapeReturnSwitch {
         /** Cầu chì bền đã ngắt cho bản cài này ([why] = lý do daemon báo) — thắng công tắc; bản cài sau thử lại. */
         data class Tripped(val why: String) : Status
 
-        /** Người dùng để TẮT (mặc định) ⇒ đường 2.93. */
+        /** Người dùng để TẮT ⇒ đường 2.93. */
         data object Off : Status
 
         /** Bật và dùng được — bảng gửi daemon mang [api]. */

@@ -172,6 +172,21 @@ object BydHal {
         "rc=${m.invoke(dev, *boxed)}"
     }.getOrElse { root(it) }
 
+    /**
+     * Gọi method [method] nhận MỘT `int[]` qua reflection (`getMethod(method, int[]).invoke(dev, arr)`). Trả
+     * `"rc=<giá trị trả về>"` khi gọi được (kể cả rc lỗi / method void → `"rc=null"`), hoặc chuỗi lỗi rút gọn
+     * [root] khi ROM thiếu method / HAL ném. **Degrade-safe: KHÔNG BAO GIỜ ném.**
+     *
+     * Khác [callNamedInt] đúng ở hình dạng tham số: đây là MỘT mảng (`sendIsaDataToAdas(int[12])` — đường
+     * giới-hạn-theo-bản-đồ chính thức của BYD, RE `re-map-speedlimit-2606-2026-10-10.md` §1.2). CHỈ dùng bởi cầu
+     * kiểm thử (op `setarr`/`setisa` — `KachiTestBridge` có trong release nhưng sau công tắc test-mode + `auto_confirm`; soát 2.99
+     * Pass 15 sửa chữ "vehicleTest-only" sai) — không có call site nào trên đường dùng thường của app.
+     */
+    fun callNamedIntArray(dev: Any, method: String, data: IntArray): String = runCatching {
+        val m = dev.javaClass.getMethod(method, IntArray::class.java)
+        "rc=${m.invoke(dev, data)}"
+    }.getOrElse { root(it) }
+
     // ── ĐỌC qua reflection (getter theo tên · feature-id đồng bộ) — thân ở [BydHalRead], tách theo VAI (DEBT-500) ──
     // Mặt tiền giữ nguyên chữ ký cho mọi call site cũ; mỗi dòng chỉ uỷ quyền.
     fun callGetter(dev: Any, name: String, arg: Int? = null, onError: ((Throwable) -> Unit)? = null): String? =

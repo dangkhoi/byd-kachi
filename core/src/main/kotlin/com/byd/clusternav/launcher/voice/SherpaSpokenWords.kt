@@ -317,6 +317,14 @@ object SherpaSpokenWords {
         "du tup miu dich" to "du túp miu dích",
         "nhac du tup" to "nhạc du túp",
         "du tup" to "du túp",
+        // 2.99 R5 VOICE-YOUTUBE-ASR — tên Anh *"youtube"* RỜI `NO_VI_FORM`: luật *"mô hình VN không phát ra token ấy"* SAI với
+        // tên này. [ĐO host TTS Linh, sherpa 1.13.8 + int8 ship] mô hình in **YOUTUBE** cho CẢ giọng đọc kiểu Anh lẫn kiểu Việt
+        // (*"mở diu túp vào ô số hai"* ⇒ `MỞ YOUTUBE VÀO Ô SỐ HAI` khi không hotword), không bao giờ in *"DU/DIU TÚP"*. Tệp ship
+        // không có dòng nào cho chữ ấy ⇒ 3/12 câu *"mở … vào ô số hai"* bị đẩy sang *"MỞ DI"* / *"MỞ ZUBE"* (cùng dạng [ĐO xe
+        // 10/10 18:30:19] *"mở diếp vào ô số hai"*); thêm MỞ/ĐƯA/BẬT YOUTUBE ⇒ 3/3 về YOUTUBE, 0 tụt trên 151 WAV
+        // (`docs/diagnostics/voice-299-r3-r7-2026-10-10.md` §R5). Chỉ tên này: tên Anh khác CHƯA đo ⇒ vẫn ở `NO_VI_FORM`.
+        // ⚠ *"youtube music"* KHÔNG theo: dòng MỞ YOUTUBE MUSIC làm MỞ YOUTUBE thành tiền tố (rụng) và [ĐO] cắt mất *"vào ô"*.
+        "youtube" to "youtube",
         "iu tup" to "iu túp",
         "diu tup" to "diu túp",
         "dut tup" to "dút túp",
@@ -405,7 +413,6 @@ object SherpaSpokenWords {
         "spotify",
         "vietmap",
         "waze",
-        "youtube",
         "youtube music",
         "yt",
         "yt music",

@@ -143,7 +143,8 @@ class TripWiringContractTest {
             "start(pkg, id, slot0, deadlineAt, progress)", "awaitSession(pkg)", "TripMusicPlan.recheck(pkg, bridge.sessions())",
             "return play(id, pkg, target, resume, url0, session, base, slot, deadlineAt, progress)")
         // 2.97 · R2c — ĐỔI GHIM có lý do: thân giao link tách ra `play(…)` (dùng chung đường thường + đường hoãn tới cuối chuyến).
-        order(SourceRoots.body(music, "private fun play("), "TripMusicPlan.play(url, session)", "bridge.playFromUri(pkg, p.url)",
+        // 2.99 · R1 — ĐỔI GHIM có lý do [ĐO máy ảo 10/10]: link đi khuôn LIÊN TỤC của bảng TRƯỚC khi quyết đường (hết bài sang bài kế).
+        order(SourceRoots.body(music, "private fun play("), "val link = TripMusicPlan.continuousUrl(target, url)", "TripMusicPlan.play(link, session)", "bridge.playFromUri(pkg, p.url)",
             // 2.96 · R9 — ĐỔI GHIM có lý do (log xe 07/10 21:05:14 `view:SLOT_NOT_READY` ⇒ NOOP): giao link + mã qua
             // `TripMusicPlace.viewWhenReady` (`:core`, test `TripMusicViewWaitTest`) — ô chưa sẵn ⇒ chờ ô sống lại rồi giao lại.
             "viewWhenReady(pkg, p.url, slot, deadlineAt, progress, resume.ready, target.watchFullscreenExtra)", "v.code.result == TripStepCode.Result.NOOP")

@@ -227,7 +227,7 @@
     <string name="kachi_slot_head_autohide_title">自动隐藏⇄按钮</string>
     <string name="kachi_slot_head_autohide_sub">框上的应用/小组件切换按钮自动隐藏，画面更清爽；点按该框（或屏幕空白处）即可显示几秒</string>
     <string name="kachi_escape_return_title">将跳出框的应用拉回框内（实验性）</string>
-    <string name="kachi_escape_return_sub">部分应用（如 Waze）有时会从框中跳出变成全屏。开启后 Kachi 会把该应用放回原来的框。实验功能，默认关闭——如有异常，关闭即可恢复原有行为（应用离开框时，框会提示并空出）。</string>
+    <string name="kachi_escape_return_sub">部分应用（如 Waze）有时会从框中跳出变成全屏。开启后 Kachi 会把该应用放回原来的框。实验功能，默认开启——如有异常，关闭即可恢复原有行为（应用离开框时，框会提示并空出）。</string>
     <string name="kachi_escape_return_sub_tripped">因出错已自动关闭（%1$s）——框按原方式运行。下个更新版本会再次尝试。</string>
     <string name="kachi_escape_return_sub_unsupported">此车机暂不支持（仅 Android 10 车机）——开启也无效；框按原方式运行。</string>
     <string name="kachi_drawer_section_appwidgets">其他应用的小组件</string>

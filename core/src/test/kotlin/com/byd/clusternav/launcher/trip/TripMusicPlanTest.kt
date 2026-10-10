@@ -165,7 +165,9 @@ class TripMusicPlanTest {
         assertEquals(TripMusicPlan.viewCmd(283, url, pkg), TripMusicPlan.viewCmd(283, url, pkg, null), "không extra = byte cũ")
         assertThrows(IllegalArgumentException::class.java) { TripMusicPlan.viewCmd(283, url, pkg, "x true; reboot") }
         assertThrows(IllegalArgumentException::class.java) { TripMusicPlan.viewCmd(283, url, pkg, "") }
-        assertEquals("force_fullscreen", VoiceAppTargets.byKey(VoiceAppTargets.YOUTUBE)?.watchFullscreenExtra)
+        // 2.99 · R1 — ĐỔI GHIM có lý do [ĐO máy ảo 10/10]: `force_fullscreen` = chế độ MỘT VIDEO (hết bài dừng, 0/9) ⇒ bảng bỏ
+        // extra; cơ chế giữ (lệnh không đổi khi `null`). Khoá ở `YoutubeContinueTest`.
+        assertNull(VoiceAppTargets.byKey(VoiceAppTargets.YOUTUBE)?.watchFullscreenExtra)
         assertNull(VoiceAppTargets.byKey(VoiceAppTargets.YT_MUSIC)?.watchFullscreenExtra, "YT Music chưa đo ⇒ không gửi")
     }
 

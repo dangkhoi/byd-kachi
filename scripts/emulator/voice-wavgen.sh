@@ -25,6 +25,9 @@ mkdir -p "$OUT"
 #   nghe ra *"chế độ lái"*, làm T2 tụt **24/28 → 23/28**. Con số ấy trông như mô hình kém đi, trong khi thật ra là
 #   bộ ca hỏi một khả năng KHÔNG CÒN TỒN TẠI. Tổng ca T2: 28 → **27**. Id KHÔNG đánh số lại (id là khoá tra ngược
 #   về các lượt đo cũ — cùng luật đã ghi ở `voice-cases.tsv`).
+# 2.99 R3–R6 (log xe 10/10): w29–w34 là các câu owner nói trên xe — w29 *"đóng cốp"* [ĐO host] Linh nghe ra ĐÓNG GÓP (canh R4 ở
+#   tầng chữ: cột intent phải ra Cốp sau dù heard lệch) · w31/w34 canh R5 (YOUTUBE; w34 = đọc kiểu Việt, tệp hotword cũ kéo sang
+#   *"MỞ DI"*/*"MỞ ZUBE"*) · w32 = câu R6 (xe rụng *"bật gió tự"*; TTS không tái hiện) · w33 = câu xe đúng (đối chứng).
 CASES=$(cat <<'EOF'
 w01	mở YouTube
 w02	bật đèn đọc
@@ -50,6 +53,12 @@ w22	pin còn bao nhiêu
 w23	bật lọc bụi và tắt đèn đọc
 w24	dẫn đường tới chợ Bến Thành bằng Waze
 w25	đổi sang hồ sơ Chính
+w29	đóng cốp
+w30	đóng cốp sau
+w31	mở YouTube vào ô số hai
+w32	sưởi ghế phụ bật gió tự động
+w33	đóng kính lái xong bật đèn đọc
+w34	mở diu túp vào ô số hai
 EOF
 )
 

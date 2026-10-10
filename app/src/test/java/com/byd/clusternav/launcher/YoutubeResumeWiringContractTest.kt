@@ -81,7 +81,8 @@ class YoutubeResumeWiringContractTest {
             "return play(id, pkg, target, resume, resume.ready?.url ?: url0, session, base, slot, deadlineAt, progress)",
             "} finally {", "resumer.close(resume)")
         assertTrue(fn.contains("otherAtStart = over.isNotEmpty()"), "phần hoãn phải biết nguồn khác đã phát từ đầu chuyến hay chưa")
-        order(SourceRoots.body(music, "private fun play("), "TripMusicPlan.play(url, session)", "bridge.playFromUri(pkg, p.url)", "resume.ready)",
+        // 2.99 · R1 — ĐỔI GHIM có lý do [ĐO máy ảo 10/10]: link đi khuôn LIÊN TỤC của bảng TRƯỚC khi quyết đường (hết bài sang bài kế).
+        order(SourceRoots.body(music, "private fun play("), "val link = TripMusicPlan.continuousUrl(target, url)", "TripMusicPlan.play(link, session)", "bridge.playFromUri(pkg, p.url)", "resume.ready)",
             // 2.96 · R9 — ĐỔI GHIM có lý do: K4-VIEW đi qua `viewWhenReady` (chờ ô sống lại khi ô chưa sẵn — log xe 07/10 21:05:14).
             "viewWhenReady(pkg, p.url, slot, deadlineAt, progress, resume.ready, target.watchFullscreenExtra)", "resume.ready)")
         // Bên chạy chuyến: phần hoãn chạy SAU vòng bước, trong hạn chuyến; hết hạn ⇒ drop (nhả cờ giữ).

@@ -125,9 +125,9 @@ class KachiTopStrip(
         clock = TextView(activity).apply {
             themed { setTextColor(c(KachiTheme.INK)) }; KachiType.apply(this, KachiType.SECTION, bold = true); letterSpacing = 0.02f
         }
-        dateText = TextView(activity).apply { themed { setTextColor(c(KachiTheme.MUT)) }; KachiType.apply(this, KachiType.CAPTION); setPadding(dp(Sp.M), 0, 0, 0) }
+        dateText = TextView(activity).apply { themed { setTextColor(c(chipInk(ChipTone.NEUTRAL))) }; KachiType.apply(this, KachiType.BODY); setPadding(dp(Sp.M), 0, 0, 0) }
         // WP4 — đồng hồ + ngày là MỘT vật ([HeaderItem.CLOCK], xem KDoc ở đó): chúng đọc liền nhau, tách ra chỉ
-        // mời người dùng dựng những thứ tự không ai muốn.
+        // mời người dùng dựng những thứ tự không ai muốn. 2.99 · R2: ngày = mực + cỡ chip trung tính (MUT cũ chìm — owner 10/10).
         items[HeaderItem.CLOCK] = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             addView(clock); addView(dateText)

@@ -53,47 +53,140 @@ object KachiLog {
     }.onFailure { Log.w(TAG, "save report failed: ${it.message}") }.getOrNull()
 
     /**
-     * Bắt đầu ghi logcat CỦA CHÍNH app ra thẻ (idempotent — gọi nhiều lần chỉ chạy một luồng). Gọi lúc mở app.
+     * Bắt đầu ghi logcat CỦA CHÍNH tiến trình ra thẻ (idempotent — gọi nhiều lần chỉ chạy một luồng mỗi tiến trình).
      *
      * `--pid` = pid của mình: Android 10 cho app đọc log của CHÍNH nó mà KHÔNG cần `READ_LOGS` (chỉ log app khác
-     * mới cần quyền đó). Đọc từng dòng, flush ngay để log sống sót cả khi app chết (đúng thứ cần khi "patch nếu lỗi").
+     * mới cần quyền đó). Đọc từng dòng, flush theo [mustFlushNow] để log sống sót cả khi app chết.
+     *
+     * ═══ 2.99 R7 KACHILOG-CAPTURE-SILENT-STOP ═══════════════════════════════════════════════════════════════════
+     * [ĐO xe 10/10, Seal 2.98] tiến trình chính pid 7374 còn sống (dòng `KachiCtl( 7374)` lúc 18:27:44 trong logcat) mà
+     * `usage-1791618956803.log` dừng ở 17:44:13 — hai lượt `adb pull` (17:49 · 18:27) cùng 62 201 byte. Đúng phút xe vừa
+     * thức (`A11yJournal … sleep=11942s note=mo-xe` 17:44:08). Bản ≤ 2.98 có hai lỗ, cả hai đã [ĐO]/[SUY] từ source:
+     *  1. tiến trình `logcat` con kết thúc (EOF / IOException) ⇒ vòng đọc thoát **im lặng** (không một dòng log), cờ về
+     *     `false`, và chỉ `KachiHomeActivity.onCreate` dựng lại — tiến trình sống tiếp mà không ai ghi. Nay: hết dòng mà
+     *     chưa chạm trần ⇒ in một dòng W rồi **nối lại** ([shouldResume], lùi dần [resumeDelayMs], trần [MAX_RESUMES]) từ
+     *     mốc của dòng cuối đã ghi (`-T`, [captureCommand]) để không chép lại cả bộ đệm, cùng tệp, cùng trần [USAGE_CAP_BYTES].
+     *  2. phiên giọng nói gọi bằng từ đánh thức chạy ở tiến trình `:wake` (pid 7453 ở log 10/10) — tiến trình ấy chưa bao
+     *     giờ có tệp usage, nên dòng `KachiVoiceSession` chỉ còn trong bộ đệm logcat 256 KiB của xe (trôi sau vài phút).
+     *     Nay `KachiApplication` gọi hàm này ở MỌI tiến trình trừ `:tts` ([captureTag]), tệp riêng `usage-wake-<ts>.log`.
+     *
+     * Chi phí thêm: tiến trình chính — 0 lúc bình thường (chỉ khác khi `logcat` chết); `:wake` — +1 luồng daemon + 1 tiến
+     * trình `logcat --pid` (cùng cái tiến trình chính đã có từ 1.6x), ghi chỉ dòng của chính `:wake`, qua cùng bộ tiết chế.
+     *
+     * @param tag hậu tố tên tệp của tiến trình phụ ([captureTag]); rỗng = tiến trình chính (tên tệp cũ, công cụ cũ đọc được).
      */
-    fun startCapture(ctx: Context) {
+    fun startCapture(ctx: Context, tag: String = "") {
         if (capturing) return
-        val d = dir(ctx) ?: return
         capturing = true
+        val app = ctx.applicationContext
         Thread({
             runCatching {
-                val out = File(d, "usage-${System.currentTimeMillis()}.log")
-                val proc = Runtime.getRuntime().exec(arrayOf("logcat", "-v", "time", "--pid=${Process.myPid()}"))
-                var written = 0L
-                val throttle = LogLineThrottle()
-                proc.inputStream.bufferedReader().use { r ->
-                    out.bufferedWriter().use { w ->
-                        var line = r.readLine()
-                        var lastFlush = System.currentTimeMillis()
-                        while (line != null) {
-                            val src = line
-                            val now = System.currentTimeMillis()
-                            val toWrite = throttled(src, now, throttle)
-                            if (toWrite != null) {
-                                w.write(toWrite); w.newLine()
-                                written += toWrite.length + 1
-                                KachiPerf.add(KachiPerf.Counter.LOG_BYTES, (toWrite.length + 1).toLong())
-                            }
-                            // Nhịp xả tính trên dòng GỐC: một dòng bị tiết chế vẫn là một dòng vừa trôi qua, nên
-                            // cửa sổ mất-mát-tối-đa của H3 không được giãn ra vì ta bỏ bớt dòng.
-                            if (mustFlushNow(src, now - lastFlush)) { w.flush(); lastFlush = now }
-                            if (written >= USAGE_CAP_BYTES) { runCatching { proc.destroy() }; break }
-                            line = r.readLine()
+                // `getExternalFilesDir` + `mkdirs` là I/O đĩa ⇒ trên luồng nền (2.99: chỗ gọi mới là `Application.onCreate`).
+                val d = dir(app) ?: return@runCatching
+                File(d, usageFileName(System.currentTimeMillis(), tag)).bufferedWriter().use { w ->
+                    val c = Capture()
+                    while (true) {
+                        val capped = pumpOnce(w, c)
+                        if (!shouldResume(capped, c.resumes)) {
+                            Log.w(TAG, "usage capture kết thúc (trần=$capped, đã nối lại ${c.resumes} lần, ${c.written} byte)")
+                            break
                         }
-                        runCatching { w.flush() }
+                        c.resumes++
+                        Log.w(TAG, "usage capture: logcat hết dòng — nối lại lần ${c.resumes} từ ${c.lastStamp ?: "đầu bộ đệm"}")
+                        Thread.sleep(resumeDelayMs(c.resumes))
                     }
                 }
             }.onFailure { Log.w(TAG, "usage capture stopped: ${it.message}") }
             capturing = false
         }, "KachiLogCapture").apply { isDaemon = true }.start()
     }
+
+    /** Trạng thái một luồng chụp — sống qua các lượt nối lại (trần byte là của CẢ tiến trình, không của từng lượt). */
+    private class Capture {
+        var written = 0L
+        var resumes = 0
+        var lastStamp: String? = null
+        val throttle = LogLineThrottle()
+    }
+
+    /** Một lượt `logcat` tới khi hết dòng. Trả `true` khi dừng vì chạm [USAGE_CAP_BYTES] (không được nối lại). */
+    private fun pumpOnce(w: java.io.BufferedWriter, c: Capture): Boolean {
+        val proc = Runtime.getRuntime().exec(captureCommand(Process.myPid(), c.lastStamp))
+        try {
+            proc.inputStream.bufferedReader().use { r ->
+                var line = r.readLine()
+                var lastFlush = System.currentTimeMillis()
+                while (line != null) {
+                    val src = line
+                    val now = System.currentTimeMillis()
+                    val toWrite = throttled(src, now, c.throttle)
+                    if (toWrite != null) {
+                        w.write(toWrite); w.newLine()
+                        c.written += toWrite.length + 1
+                        KachiPerf.add(KachiPerf.Counter.LOG_BYTES, (toWrite.length + 1).toLong())
+                    }
+                    stampOf(src)?.let { c.lastStamp = it }
+                    // Nhịp xả tính trên dòng GỐC: một dòng bị tiết chế vẫn là một dòng vừa trôi qua, nên
+                    // cửa sổ mất-mát-tối-đa của H3 không được giãn ra vì ta bỏ bớt dòng.
+                    if (mustFlushNow(src, now - lastFlush)) { w.flush(); lastFlush = now }
+                    if (c.written >= USAGE_CAP_BYTES) return true
+                    line = r.readLine()
+                }
+            }
+        } catch (e: java.io.IOException) {
+            // `logcat` con bị giết giữa lúc đọc ⇒ ống gãy: cùng nghĩa với hết dòng (nối lại), không phải lỗi của tệp.
+            Log.w(TAG, "usage capture: ống logcat gãy — ${e.message}")
+        } finally {
+            runCatching { w.flush() }
+            runCatching { proc.destroy() }
+        }
+        return false
+    }
+
+    /**
+     * Lệnh `logcat` của một lượt chụp. Lượt đầu ([resumeFrom] `null`) giữ y lệnh ≤ 2.98; lượt NỐI LẠI thêm `-T <mốc>` (in
+     * từ mốc đó, KHÔNG thoát — khác `-t`) để không chép lại cả bộ đệm của pid vào tệp. Thuần ⇒ `KachiLogResumeTest`.
+     */
+    internal fun captureCommand(pid: Int, resumeFrom: String?): Array<String> =
+        if (resumeFrom == null) arrayOf("logcat", "-v", "time", "--pid=$pid")
+        else arrayOf("logcat", "-v", "time", "-T", resumeFrom, "--pid=$pid")
+
+    /** Mốc `MM-DD hh:mm:ss.mmm` của một dòng ĐẦU bản ghi `logcat -v time`; dòng phụ / dòng mốc ⇒ `null`. */
+    internal fun stampOf(line: String): String? =
+        if (isRecordHead(line) && line[STAMP_LEN] == ' ') line.substring(0, STAMP_LEN) else null
+
+    /** Hết dòng mà chưa chạm trần ⇒ nối lại, tối đa [MAX_RESUMES] lần mỗi tiến trình (logd hỏng hẳn thì không quay mãi). */
+    internal fun shouldResume(capped: Boolean, resumes: Int): Boolean = !capped && resumes < MAX_RESUMES
+
+    /** Lùi dần 2 s · 4 s · 8 s … trần [RESUME_MAX_MS] (lần thứ [resumes], ≥ 1). */
+    internal fun resumeDelayMs(resumes: Int): Long =
+        minOf(RESUME_BASE_MS shl (resumes - 1).coerceIn(0, 10), RESUME_MAX_MS)
+
+    /** `usage-<ts>.log` (tiến trình chính — tên ≤ 2.98) · `usage-<tag>-<ts>.log` (tiến trình phụ). */
+    internal fun usageFileName(nowMs: Long, tag: String): String =
+        if (tag.isEmpty()) "usage-$nowMs.log" else "usage-$tag-$nowMs.log"
+
+    /**
+     * Hậu tố tệp usage cho tiến trình tên [processName]: `""` = tiến trình chính · `"wake"` = `:wake` (phiên giọng nói gọi
+     * bằng từ đánh thức) · `null` = KHÔNG chụp (`:tts` chỉ đọc câu, không có lệnh/ý định nào; tên không đọc được ⇒ không
+     * đoán). [ĐO] `KachiApplication` chạy ở cả ba tiến trình (KDoc của nó).
+     */
+    internal fun captureTag(processName: String?, packageName: String, wakeSuffix: String, ttsSuffix: String): String? =
+        when {
+            processName == null -> null
+            processName == packageName -> ""
+            processName.endsWith(wakeSuffix) -> wakeSuffix.trimStart(':')
+            processName.endsWith(ttsSuffix) -> null
+            else -> null
+        }
+
+    /** Số lần nối lại tối đa mỗi tiến trình. */
+    internal const val MAX_RESUMES = 20
+    private const val RESUME_BASE_MS = 2_000L
+    private const val RESUME_MAX_MS = 60_000L
+
+    /** Độ dài mốc `MM-DD hh:mm:ss.mmm` ở đầu dòng `logcat -v time` (= [SEVERITY_COL] − 1). */
+    private const val STAMP_LEN = 18
 
     /**
      * ═══ LOG-41KB — dòng nào thật sự phải xuống thẻ ═══════════════════════════════════════════════════════════

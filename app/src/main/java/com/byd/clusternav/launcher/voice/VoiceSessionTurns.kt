@@ -134,7 +134,7 @@ private fun VoiceSession.listenAgain(ask: VoiceClarify.Ask, my: Int) {
         )
         post {
             if (cancelled.get() || stale(my)) { closeIfMine(my); return@post }
-            val joined = VoiceClarify.combine(ask.carry, heard)
+            val joined = VoiceClarify.combine(ask.carry, heard, ask.tail)   // 2.99 R3 — giữ mệnh đề ô của câu hỏi "Mở app nào?"
             // [P0-1b] Rỗng **hoặc chỉ toàn từ đệm** ⇒ coi như không có câu trả lời. Xem KDoc [endsConversation].
             if (endsConversation(heard)) {
                 overlay?.render(R.string.kachi_voice_heard, VoiceClarify.giveUp(voiceLang()))

@@ -190,8 +190,11 @@ internal class TripMusicRun(
         id: String, pkg: String, target: VoiceAppTarget, resume: TripMusicResume.Prep, url: String?, session: TripMusicPlan.Session?,
         base0: String, slot: Int?, deadlineAt: Long, progress: (TripWaitMark?) -> Unit,
     ): Done {
-        val base = base0 + if (resume.note.isEmpty()) "" else "${resume.note}:"
-        return when (val p = TripMusicPlan.play(url, session)) {
+        // 2.99 · R1 — link nào (phát tiếp / ô "Phát gì") cũng đi khuôn LIÊN TỤC của bảng: hết bài app tự sang bài kế như mở thường.
+        // Sổ ghi `cont:` khi link đã đổi (để đọc trên xe đường nào chạy — không ghi link, không nội dung người dùng nghe).
+        val link = TripMusicPlan.continuousUrl(target, url)
+        val base = base0 + (if (resume.note.isEmpty()) "" else "${resume.note}:") + if (link != url) "cont:" else ""
+        return when (val p = TripMusicPlan.play(link, session)) {
             is TripMusicPlan.Play.FromUri -> verified(id, pkg, base + "uri=${bridge.playFromUri(pkg, p.url)}", VERIFY_TRIES, slot, resume.ready)
             TripMusicPlan.Play.Resume -> verified(id, pkg, base + "resume=${bridge.playPackage(pkg)}", VERIFY_TRIES, slot)
             // Review 287 [P2]: không dùng ảnh chụp ô ĐẦU chuyến — cổng đọc lại lúc giao. Không lệnh nào đi ⇒ mã NOOP, không "đã gửi".

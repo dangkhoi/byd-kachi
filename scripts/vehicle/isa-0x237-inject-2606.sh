@@ -9,8 +9,13 @@
 #       v ∈ 2..25 ⇒ hiện, km/h = 5·v − 5 (v=11 ⇒ 50) · v ∈ 26..29 ⇒ 10·v − 130 · v = 30 ⇒ 82 (mã đặc biệt)
 #       còn lại (0, 1, ≥ 31) hoặc online ≠ 1 ⇒ ẩn (item 587 = 2, item 588 = 0)
 #     Chỉ ghi data-item 587/588 trong RAM của tiến trình cụm (không SetConfig/saveConfigXML) ⇒ không bền.
-#   - [CHƯA BIẾT] TEST_SIMULATE_DOWN đi tới đâu sau HAL (MCU: chỉ luồng SPI của cụm, hay phát RA BUS CAN?) và
-#     khuôn byte của nó. Script dùng khuôn cộng đồng [ĐOÁN] `[featureId BE 4][len 1][data]` = 23 70 00 2E 01 <v>.
+#   - [ĐO xe 10/10] khuôn `[featureId BE 4][len 1][data]` = `2370002E010B` (HEX LIỀN, KHÔNG dấu phẩy — bản có dấu phẩy
+#     ném NumberFormatException trong navopen, không ghi gì) ⇒ cụm hiện biển XÁM "50" ở ô gốc; HUD KHÔNG hiện.
+#     Biển xám = ô "đèn dự báo giới hạn tốc độ" (QML WarinLightLayout.qml speedLimitStatus, ảnh speed_limit_forecast.png),
+#     KHÁC biển viền đỏ TSR (khung 0x2B4). TEST_SIMULATE_DOWN chỉ nuôi datasource cụm, không ra CAN ⇒ HUD không thấy [SUY].
+#     Chi tiết: docs/diagnostics/oncar-seal-2026-10-10-r18-sla-can.md §2.
+#   - Khung online `0x23700000` gốc = 1 [ĐO 10/10]. Một khung thiếu byte (`2370000001`) đã làm biển tắt; `237000000101`
+#     khôi phục ⇒ script kiểm độ dài mọi khung (đúng 12 ký tự hex) trước khi gửi; ONLINE_FIX=1 gửi lại online = 1.
 #   - Khung 0x237 THẬT đang online [ĐO xe 08/10] ⇒ khung thật kế tiếp ghi đè giá trị bơm [SUY] ⇒ phải lặp HOLD lần.
 #
 # HAI PHA (CLAUDE.md §4 phạm vi tường minh + đường trả; §14 lệnh thô trên xe trước):
@@ -28,6 +33,11 @@
 #   VEH=<vehicle-ip>:5555 ./scripts/vehicle/isa-0x237-inject-2606.sh                      # chỉ đọc
 #   VEH=<vehicle-ip>:5555 DOORA=1 ./scripts/vehicle/isa-0x237-inject-2606.sh              # + đọc bố cục bit
 #   VEH=<vehicle-ip>:5555 PHASE=inject CODE=11 ./scripts/vehicle/isa-0x237-inject-2606.sh # bơm 50 km/h
+#   VEH=<vehicle-ip>:5555 PHASE=inject ONLINE_FIX=1 ./scripts/vehicle/isa-0x237-inject-2606.sh # chỉ gửi online=1 (237000000101)
+#
+# Cổng đỗ (getCurrentGear trả null trên xe 10/10): đọc được số ⇒ phải = P. KHÔNG đọc được số ⇒ mặc định DỪNG (đóng an toàn);
+#   đường thay thế tường minh: tốc độ ĐỌC ĐƯỢC và = 0 **và** owner gõ `PARKED-NO-GEAR` xác nhận xe đang ở P (ghi vào log).
+#   Tốc độ không đọc được ⇒ luôn DỪNG, không có đường thay thế.
 # Kết quả: logs/oncar-isa237-<ngày-giờ>/ (logs/ không vào git).
 set -uo pipefail
 
@@ -37,6 +47,7 @@ PHASE="${PHASE:-check}"
 CODE="${CODE:-11}"          # mã 0x2370002E; 11 ⇒ 50 km/h
 HOLD="${HOLD:-5}"           # số lần bơm (cách 0,4 s) để thắng khung thật
 DOORA="${DOORA:-0}"
+ONLINE_FIX="${ONLINE_FIX:-0}"  # 1 ⇒ chỉ gửi khung online 0x23700000 = 1 (khôi phục sau khung hỏng)
 # Senior review Pass 10 [P3]: CODE/HOLD phải là số nguyên trong dải u8 / hợp lý — chuỗi lạ làm `printf %02X` hỏng và frame rỗng.
 case "$CODE" in ''|*[!0-9]*) echo "CODE phải là số nguyên 0..255 (đang: '$CODE')"; exit 2 ;; esac
 [ "$CODE" -le 255 ] || { echo "CODE=$CODE vượt u8 (0x2370002E là u8)"; exit 2; }
@@ -95,17 +106,25 @@ preflight() {
   echo "$probe" | grep -q "test_mode_off" && die "Chế độ kiểm thử Kachi đang TẮT — bật «Chế độ kiểm thử qua adb» rồi chạy lại."
 }
 
-# Cổng đỗ: số P + tốc độ 0. Không đọc được bất kỳ mục nào ⇒ DỪNG (CLAUDE.md §4: không ghi khi không chắc đang đỗ).
+# Cổng đỗ: tốc độ 0 (bắt buộc đọc được) + số P. Số không đọc được ⇒ đóng an toàn, trừ khi owner xác nhận tường minh
+# (CLAUDE.md §4: không ghi khi không chắc đang đỗ). 10/10: getCurrentGear trả null trên Seal fw 2606 [ĐO].
+# Tham số $1 = "write" ⇒ được hỏi owner khi số null; khác ⇒ chỉ báo (pha check không ghi gì).
 park_guard() {
-  local gj gear spj speed
-  gj="$(hal --es op get --es dev BYDAutoGearboxDevice --es m getCurrentGear)"; say "  gear raw: $gj"
-  gear="$(echo "$gj" | field value)"
-  [ -n "$gear" ] || die "không đọc được số (getCurrentGear rỗng) — KHÔNG ghi."
-  [ "$gear" = "$GEAR_P" ] || die "xe KHÔNG ở số P (gear=$gear, cần $GEAR_P) — KHÔNG ghi."
+  local mode="${1:-read}" gj gear spj speed a
   spj="$(hal --es op get --es dev BYDAutoSpeedDevice --es m getCurrentSpeed)"; say "  speed raw: $spj"
   speed="$(echo "$spj" | field value)"
-  [ -n "$speed" ] || die "không đọc được tốc độ (getCurrentSpeed rỗng) — KHÔNG ghi."
+  [ -n "$speed" ] || die "không đọc được tốc độ (getCurrentSpeed rỗng) — KHÔNG ghi (không có đường thay thế)."
   case "$speed" in 0|0.0|0.00) ;; *) die "tốc độ ≠ 0 (speed=$speed) — KHÔNG ghi." ;; esac
+  gj="$(hal --es op get --es dev BYDAutoGearboxDevice --es m getCurrentGear)"; say "  gear raw: $gj"
+  gear="$(echo "$gj" | field value)"
+  case "$gear" in ''|null|None)
+    if [ "$mode" != "write" ]; then say "  [?] không đọc được số (getCurrentGear=$gear) — pha ghi sẽ đòi owner xác nhận PARKED-NO-GEAR."; return 0; fi
+    say "  ⚠ không đọc được số (getCurrentGear=$gear). Tốc độ = 0 đọc được."
+    read -r -p "  Owner nhìn cần số: xe ĐANG Ở P? Gõ PARKED-NO-GEAR để tiếp, khác ⇒ dừng: " a
+    [ "$a" = "PARKED-NO-GEAR" ] || die "owner không xác nhận P khi số không đọc được — KHÔNG ghi."
+    say "  [OK] đỗ: tốc độ=0 + owner xác nhận P (số không đọc được) — $(date '+%T')"; return 0 ;;
+  esac
+  [ "$gear" = "$GEAR_P" ] || die "xe KHÔNG ở số P (gear=$gear, cần $GEAR_P) — KHÔNG ghi."
   say "  [OK] đỗ: gear=P tốc độ=0"
 }
 
@@ -125,24 +144,33 @@ door_a() {
     | grep -iE "0237|2370|speed|limit|sla" | head -40
 }
 
-# Bơm một mã qua TestDevice 0xAA00020F (khuôn [featureId BE4][len1][data]) — xem cảnh báo [ĐOÁN] ở đầu tệp.
-# Trả 0 khi MỌI lượt setbytes in `rc=` (HAL nhận); ≠ 0 khi navopen báo `device null` / `FAILED` / không in gì — Senior review
-# Pass 10 [P2]: bản trước nuốt đầu ra (>/dev/null) ⇒ "bơm 5×" in ra kể cả khi TestDevice null, người nhìn cụm chờ một thứ chưa gửi.
-inject_code() {
-  local v="$1" hexv frame out ok=0 bad=0
-  hexv="$(printf '%02X' "$v")"
-  frame="23,70,00,2E,01,$hexv"
-  say "  bơm 0x2370002E = $v ($(code_meaning "$v")) · wholeFrame=$frame · ${HOLD}×"
+# Gửi MỘT khung hex liền (đúng 12 ký tự = featureId 4 + len 1 + data 1) qua TestDevice, HOLD lần. Khung sai độ dài /
+# có ký tự lạ ⇒ từ chối (khung thiếu byte 10/10 đã làm tắt biển). Trả 0 khi mọi lượt in `rc=`.
+send_frame() {
+  local frame="$1" out ok=0 bad=0
+  case "$frame" in *[!0-9A-Fa-f]*|'') say "  khung '$frame' có ký tự không phải hex — không gửi."; return 1 ;; esac
+  [ "${#frame}" -eq 12 ] || { say "  khung '$frame' dài ${#frame} ≠ 12 ký tự hex — không gửi."; return 1; }
   [ -f "$NAVOPEN_JAR" ] || { say "  cần navopen để bơm (đặt NAVOPEN_JAR) — không bơm."; return 1; }
   "$ADB" -s "$VEH" push "$NAVOPEN_JAR" /data/local/tmp/navopen.jar >/dev/null 2>&1
   local i; for i in $(seq 1 "$HOLD"); do
     out="$("$ADB" -s "$VEH" shell "$NAVCP setbytes test AA00020F $frame" 2>&1)"; echo "$out" >> "$LOG"
-    if echo "$out" | grep -q "rc="; then ok=$((ok + 1)); else bad=$((bad + 1)); say "  ⚠ lượt $i: $(echo "$out" | grep -m1 'setbytes\|device null\|FAILED\|ERROR' | tr -d '\r')"; fi
+    if echo "$out" | grep -q "rc=" && ! echo "$out" | grep -q "NumberFormatException"; then ok=$((ok + 1)); else bad=$((bad + 1)); say "  ⚠ lượt $i: $(echo "$out" | grep -m1 'setbytes\|device null\|FAILED\|ERROR\|Exception' | tr -d '\r')"; fi
     sleep 0.4
   done
-  say "  setbytes: $ok nhận (rc=) · $bad hỏng"
+  say "  setbytes $frame: $ok nhận (rc=) · $bad hỏng"
   [ "$bad" -eq 0 ] && [ "$ok" -gt 0 ]
 }
+
+# Bơm một mã qua TestDevice 0xAA00020F (khuôn [featureId BE4][len1][data], hex liền — [ĐO xe 10/10]).
+# Trả 0 khi MỌI lượt setbytes in `rc=` (HAL nhận); ≠ 0 khi navopen báo `device null` / `FAILED` / không in gì — Senior review
+# Pass 10 [P2]: bản trước nuốt đầu ra (>/dev/null) ⇒ "bơm 5×" in ra kể cả khi TestDevice null, người nhìn cụm chờ một thứ chưa gửi.
+inject_code() {
+  local v="$1" frame
+  frame="2370002E01$(printf '%02X' "$v")"
+  say "  bơm 0x2370002E = $v ($(code_meaning "$v")) · wholeFrame=$frame · ${HOLD}×"
+  send_frame "$frame"
+}
+FRAME_ONLINE_1="237000000101"   # 0x23700000 = 1 (giá trị gốc đọc 10/10)
 
 ask() { local a; read -r -p "  ▶ $1 (ghi: y/n/mô tả): " a; say "  OBS: $1 → $a"; }
 
@@ -168,7 +196,13 @@ case "$PHASE" in
   inject)
     preflight
     say "== PHA GHI THỬ (đỗ + owner đồng ý)"
-    park_guard
+    park_guard write
+    if [ "$ONLINE_FIX" = "1" ]; then
+      read -r -p "Gửi khung online $FRAME_ONLINE_1 (0x23700000 = 1)? Gõ ISA237 để gửi: " ok
+      [ "$ok" = "ISA237" ] || { say "Huỷ (không gửi gì)."; exit 0; }
+      send_frame "$FRAME_ONLINE_1" || die "TestDevice không nhận khung online."
+      ask "Cụm: biển đã lên lại / trạng thái như trước chưa?"; say "Log: $LOG"; exit 0
+    fi
     say "-- trạng thái TRƯỚC --"; read_set
     on="$(getid BYDAutoBodyworkDevice "$FID_237_ON" | field value)"
     [ "$on" = "1" ] || say "  ⚠ 0x237 online=$on ≠ 1 — cụm có thể bỏ qua giá trị bơm (vẫn thử theo yêu cầu)."
