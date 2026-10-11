@@ -115,6 +115,23 @@ vehicleTest + run-as) · `voice-teach-e2e.sh` · `voice-wake-e2e.sh` · `perf-sn
 
 ---
 
+## 3b. Hai mục tiêu chờ firmware mới — dẫn đường lên HUD · giới hạn tốc độ lên cụm + HUD
+
+Owner 11/10: giữ hai mục tiêu này để **mỗi lần BYD đẩy firmware mới** thì kiểm lại xem firmware đó có mở đường phần mềm không.
+Trạng thái ở fw 2606 (OTA V2.0.4): cả hai **chưa mở được bằng phần mềm** — chi tiết đo/RE và phần coding đã ghi ở các tệp dưới, không chép lại ở đây.
+
+| Mục tiêu | Trạng thái fw 2606 | Tệp tham chiếu |
+|---|---|---|
+| **1. Dẫn đường (mũi tên · khoảng cách · tên đường) lên HUD kính lái Seal** | HUD Seal không hiện dẫn đường; SL6 (cùng fw) hiện mũi tên + khoảng cách, chưa có tên đường. Khoá nằm ở cấu hình xe/HUD, đầu xe không ghi được [ĐO + SUY, xem tệp] | `docs/diagnostics/hud-coding-recipe-2026-08-19.md` · `hud-provisioning-compare-2026-08-19.md` · `factory-hud-nav-RE-avenues-2026-08-19.md` · `docs/decisions/0002-hud-nav-coding-locked.md` · `oncar-seal-2026-10-09-hud-isa-power.md` (đọc kèm phần đính chính 138/162 = mã dòng xe) |
+| **2. Giới hạn tốc độ theo bản đồ lên cụm + HUD** | Ghi cấu hình từ đầu xe bị ECU từ chối; gói ISA đúng khuôn không hiện [ĐO xe 10/10]. HUD không có đường IVI nào nhận biển [ĐO nguồn] | `docs/diagnostics/re-map-speedlimit-2606-2026-10-10.md` (§1–§11) · `oncar-seal-2026-10-10-r18-sla-can.md` · `oncar-prep-2026-10-09-isa-can-odo.md` · backlog `ISA-NATIVE-SIGN` · `ISA-MAP-SENDARR` |
+
+**Khi có firmware mới — kiểm theo thứ tự (chỉ đọc trước, đo xe sau, đúng CLAUDE.md §14):**
+1. Lấy firmware mới vào `../firmware/fw-<số>/`, so với fw 2606 bằng cách đã dùng trong `re-map-speedlimit-2606-2026-10-10.md` (so chuỗi framework/dex, thư viện cụm, DiCarServer, CarSetting).
+2. Tìm thứ **mới xuất hiện**: hàm/khoá ghi cho cấu hình bản đồ của ADAS · dịch vụ HUD có nhận dữ liệu dẫn đường hoặc biển tốc độ · trang Cài đặt mới bật hai tính năng · ghi chú phát hành nhắc HUD/ISA.
+3. Có thứ mới ⇒ đo trên xe theo quy trình cũ (đọc trước; ghi chỉ khi đỗ P + owner duyệt + có đường trả). Công cụ test sẵn trong app: cầu kiểm thử `setisa`/`setarr`/`getid` (sau công tắc Chế độ kiểm thử).
+4. Không có gì mới ⇒ ghi một dòng vào backlog "fw <số>: chưa mở" và dừng.
+5. Đường ngoài app (đại lý/đồ nghề chẩn đoán chính hãng) là quyết định của owner, không làm trong repo.
+
 ## 4. Luật đứng (giữ khi mở lại)
 
 - **Spec trước, code sau** (`docs/specs/<slug>.html`, template `_template.html`); mỗi khẳng định gắn nhãn bằng chứng; tính năng mới đi 4 tầng
