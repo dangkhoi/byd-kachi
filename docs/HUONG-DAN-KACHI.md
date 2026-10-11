@@ -10,6 +10,8 @@
 > - **Lịch dẫn đường theo hồ sơ** lần đầu lên kênh (lịch cũ được chép sang mọi hồ sơ, không mất).
 > - Nhật ký phím vô-lăng đọc được trên bản phát hành bằng lệnh cầu kiểm thử `a11ylog` (người có adb) — người lái chỉ cần gửi ảnh chụp + giờ (mục 10). Package `com.byd.launcher` · **Mục đích**: hướng dẫn **dùng + cấu hình** Kachi cho anh em — cài/OTA · HOME · màn hình chính · hồ sơ · **từng nhóm Cài đặt theo đúng đường dẫn menu** · **bảng lệnh giọng nói theo nhóm** · ảnh/hình nền · automation · lấy log · FAQ. VI trước, EN sau.
 > Tên nhóm và tên hàng lấy **đúng nguyên văn** từ app (`SettingsCatalogGroups.kt` · `strings_kachi.xml`). Đời ClusterNav 1.x xem `HUONG-DAN.md` (Historical). Danh mục **mọi** chức năng + status trên xe: `kachi-feature-catalog.html`. Kỹ thuật/việc còn mở: `PROJECT-BACKLOG.md`, `CLOSEOUT-2026-09-25.md`.
+> **Rà theo 3.0 (204) — 11/10/2026**: các mục đổi hành vi ở 2.98 → 3.0 đã cập nhật ngay trong bài (đánh dấu *(2.98)* · *(2.99)* · *(3.0)*): **kéo app thoát ô về lại ô** (§3, bật sẵn) · **chấm đỏ có bản mới** (§1) · **nhạc hạ còn 20 % lúc Kachi nghe** (§5.2) · **dẫn đường bằng nhiều app một câu**, câu ghép có *"xong"* / không chữ nối, *"hả"* ≠ *"hạ"*, tên YouTube · Waze · Google Maps (§6) · **YouTube phát tiếp tự sang bài kế** (§8). Ảnh chụp trong hướng dẫn có hình chưa chụp lại.
+>
 > Ký hiệu: **🚗** = code xong, **chưa đo trên xe thật** — đừng coi là đã chạy được.
 
 ---
@@ -22,7 +24,7 @@
 |---|---|
 | **Cài lần đầu** | Tải tệp `apk/Kachi-<bản>-release.apk` mới nhất trên nhánh `main` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`) → cài bằng **adb**: `adb install -r Kachi-<bản>-release.apk`. ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (Kachi là launcher) — cài bằng adb thì qua. |
 | **Cập nhật về sau** | *Cài đặt › Hệ thống & quyền › **Kiểm tra cập nhật*** — app tự tải bản mới từ `apk/` trên `main` rồi cài đè qua dadb loopback, **không cần laptop**. |
-| **Tự dò bản mới** | Công tắc *Tự động cập nhật* (cùng mục): mở Kachi thì tự dò; có bản mới sẽ **hỏi trước** khi tải; không có thì im lặng. |
+| **Tự dò bản mới** | Công tắc *Tự động cập nhật* (cùng mục): mở Kachi thì tự dò; có bản mới sẽ **hỏi trước** khi tải; không có thì im lặng. Có bản mới (khi bật *Tự động cập nhật*, hoặc bấm kiểm tra tay rồi chọn *Để sau*) ⇒ **chấm đỏ nhỏ** trên nút ⚙ và ở hàng *Kiểm tra cập nhật* (2.98). |
 | **Bản rất cũ** | Bản cài trước 1.41 (khoá ký cũ) phải gỡ (`pm uninstall com.byd.launcher`) rồi cài tay một lần. |
 
 ### 2. Đặt Kachi làm màn hình chính
@@ -38,7 +40,8 @@
 | **Đổi bố cục** | *Cài đặt › Màn hình chính › **Bố cục sẵn***: 1 ô · 2 cột · 2 hàng · 3 ô · 4 ô. Đổi bố cục thì nội dung ô nào giữ nguyên ô đó. |
 | **Vẽ bố cục riêng** | *Cài đặt › Màn hình chính › **Bố cục tự vẽ*** rồi **Vẽ bố cục riêng…** — lưới **12 cột × 6 dòng**: kéo giữa khung để dời, kéo góc dưới-phải để đổi cỡ. Khung đè nhau tô **ĐỎ** và nút **Lưu** bị chặn. |
 | **Đặt widget vào ô** | Chạm ô trống → chọn thẻ dựng tay (Tổng hợp · Xe · pin · đồng hồ · trình chiếu ảnh…) hoặc widget Android của app khác. |
-| **Kéo app vào ô** | Chạm ô trống → **Mở ứng dụng** → chọn app: app chạy **thật** trong ô (màn ảo). App tự đóng thì ô hiện *"App đã đóng — chạm để mở lại"*. Bằng giọng: *"mở YouTube vào ô số 2"*. |
+| **Kéo app vào ô** | Chạm ô trống → **Mở ứng dụng** → chọn app: app chạy **thật** trong ô (màn ảo). App tự đóng thì ô hiện *"App đã đóng — chạm để mở lại"*. Bằng giọng: *"mở YouTube vào ô số 2"*. App sập ngay lúc vào ô ⇒ ô tự trả về như trước (trong suốt hoặc widget đã lưu), không còn ô trắng (2.98). |
+| **App tự bật ra khỏi ô** | *Cài đặt › Màn hình chính › **Kéo app thoát ô về lại ô (thử nghiệm)*** — **bật sẵn** từ 2.99 (2.98 tắt sẵn). Một số app (hay gặp nhất là **Waze**) thỉnh thoảng tự bật ra toàn màn; Kachi đưa app về lại đúng ô, app vẫn chạy tiếp (không mở lại). Lưu **theo xe**, không theo hồ sơ. Gặp lỗi thì Kachi tự tắt và ghi *"Đã tự tắt vì lỗi …"* ngay dưới công tắc. Chỉ có tác dụng trên đầu xe **Android 10** (đầu xe khác: công tắc ghi *"chưa hỗ trợ"*). Tắt công tắc ⇒ như 2.97: app ra khỏi ô thì ô báo *"đã rời ô"* (2.98: báo nhanh hơn, không báo nhầm) và trả chỗ trống. Đã chạy trên xe với Waze (Seal); app khác 🚗 |
 | **Chip thanh trên** | *Cài đặt › Thanh trạng thái & thanh nút › **Chip thanh trạng thái***; **Hiện nhãn trên thanh trên** (tắt = chỉ icon + số, đỡ chật); **Vị trí trên thanh trên** để sắp lại thứ tự. |
 | **Thanh nút xe** | Cùng nhóm: **Hiện thanh nút xe** · **Viền đặt thanh nút** (4 viền) · **Nút trên thanh nút xe** (chọn từ danh mục nút) · **Vị trí trên thanh nút xe**. |
 | **Sáng/tối · đơn vị · ngôn ngữ** | *Cài đặt › Hiển thị & đơn vị*: **Đơn vị hiển thị** · **Giao diện sáng/tối** · **Màu sắc** · **Ngôn ngữ** (Theo xe / VI / EN) · **Kính thật (làm mờ nền)**. |
@@ -89,6 +92,7 @@ xe** và không còn hàng nào để chỉnh; giá trị bạn đã đặt trư
 | **Micro** | **Nguồn micro** | *Tự chọn* thử MIC trước rồi tới nguồn có khử ồn. Đổi khi micro nghe kém. |
 | **Khác** | **App nhạc mặc định** | Dùng cho *"phát nhạc"* khi bạn không nói tên app. |
 | **Lối gọi** | ô *Nói với xe* · **nút mic trên thanh trạng thái** · phím vô-lăng | Phím vô-lăng gán ở *Cài đặt › Phím vô-lăng*, đích **Kachi nghe (tại máy)**. |
+| **Nhạc lúc nghe** (3.0) | — (không có công tắc) | Trong lúc Kachi **nghe lệnh**, âm lượng nhạc **hạ còn 20 %** mức đang để (không tạm dừng, không hiện thanh âm lượng); nghe xong ⇒ **trả về mức cũ**. Bạn vặn núm giữa chừng ⇒ giữ mức bạn chọn. Kachi bị tắt giữa lượt ⇒ lần mở sau trả mức cũ. Chỉ hạ trong lúc nghe, không cả phiên — câu trả lời của Kachi đi chung núm âm lượng với nhạc nên vẫn đọc ở mức bình thường. 🚗 |
 
 > Không có núm VAD / độ nhạy trên UI — trần im lặng nới từ 800 lên **1 200 ms** ở 2.73, nhưng **mặc định giữ 600 ms**; muốn đổi thì qua cầu kiểm thử (`voice_vad_min_silence_ms`), không phải màn Cài đặt.
 
@@ -126,7 +130,9 @@ xe** và không còn hàng nào để chỉnh; giá trị bạn đã đặt trư
 **Cách nói** (đọc trước khi thử):
 - Nói **liền một hơi** — ngừng để nghĩ quá ~0,8 s là Kachi coi như hết câu và cắt (mặc định).
 - **Huỷ lượt nghe**: **chạm ra ngoài tấm chữ**, hoặc chờ trần **8 s**. Từ **2.73 nút Back KHÔNG huỷ nữa** (nó đi tới app phía sau) — đổi có chủ ý để thanh điều hướng của xe không trồi lên lúc Kachi đọc phản hồi. Đây **không phải lỗi**.
-- Ghép được hai việc bằng ***và*** hoặc ***rồi***.
+- Ghép được hai việc bằng ***và***, ***rồi***, ***xong*** — hoặc nói liền không chữ nối (*"tắt sưởi ghế phụ tắt gió tự động"*, 2.98). Một vế nghe không rõ thì Kachi bỏ vế đó (*"đã bỏ qua …"*) mà vẫn làm đúng vế kia (2.99).
+- *"hả …"* (hỏi lại) **không** phải lệnh — chỉ *"hạ …"* mới hạ kính (2.98).
+- Lúc Kachi nghe, nhạc tự hạ còn 20 % rồi trả lại (3.0, §5.2) — không cần tắt nhạc trước khi nói.
 - Số nói bằng chữ hay bằng số đều được (*"hai mươi bốn"* = *"24"*).
 
 > **Danh sách ĐẦY ĐỦ nằm trong app** (2.74): *Cài đặt › Giọng nói › **Câu lệnh nói được*** — các nhóm gập/mở, hiện
@@ -146,19 +152,20 @@ xe** và không còn hàng nào để chỉnh; giá trị bạn đã đặt trư
 | Nhóm | Ví dụ nói được | Kachi làm gì |
 |---|---|---|
 | **Bật / tắt nút xe** | *"bật đèn đọc"* · *"tắt đèn nóc"* · *"bật lọc bụi"* · *"bật gió tự động"* · *"bật sấy kính trước"* · *"bật sạc không dây"* | Bật/tắt đúng nút, đọc lại *"đã bật …"* |
-| **Kính · cốp · cửa sổ trời** | *"mở kính lái"* · *"đóng kính trước trái"* · *"mở kính bên lái"* · *"hạ bốn kính"* · *"mở cốp"* · *"mở cửa sổ trời"* · *"mở rèm che nắng"* | Mở/đóng (có mức 50%). Một số việc **hỏi lại** nếu bạn đã tích trong *Hỏi xác nhận trước khi chạy* |
+| **Kính · cốp · cửa sổ trời** | *"mở kính lái"* · *"đóng kính trước trái"* · *"mở kính bên lái"* · *"hạ bốn kính"* · *"mở cốp"* · *"đóng cốp"* · *"mở cửa sổ trời"* · *"mở rèm che nắng"* | Mở/đóng (có mức 50%). Một số việc **hỏi lại** nếu bạn đã tích trong *Hỏi xác nhận trước khi chạy*. *"đóng cốp"* bị nghe thành *"đóng góp"* vẫn đóng cốp (2.99) |
 | **Gói lệnh** | *"mở hết kính"* · *"đóng hết kính"* | Chạy tuần tự nhiều bước |
 | **Điều hoà · ghế** | *"đặt nhiệt độ 24 độ"* · *"nhiệt độ hai mươi bốn độ"* · *"tăng nhiệt độ"* · *"tăng gió"* · *"giảm gió"* · *"bật sưởi ghế"* · *"mở quạt ghế"* · *"lọc ngay"* | Đặt/tăng/giảm mức; ghế có 3 mức (tắt · mức 1 · mức 2) |
 | **Hỏi thông tin xe** | *"xem pin"* · *"pin còn bao nhiêu"* · *"nhiệt độ ngoài trời bao nhiêu"* · *"đọc tầm hoạt động"* | Đọc **giá trị hiện tại** (**64** loại thông tin đăng ký: pin · lốp · nhiệt độ · quãng đường · giờ…). Đọc được cái gì, xem `kachi-feature-catalog.html` |
-| **Mở / đóng app** | *"mở YouTube"* · *"mở bản đồ"* · *"mở ứng dụng YouTube"* · *"đóng YouTube"* | Mở/đóng app; tên nghe lệch nhẹ (*"du túp"*, *"gu gồ máp"*, *"youtubex"*) vẫn khớp |
-| **Mở app vào ô** | *"mở YouTube vào ô số 9"* · *"đưa YouTube vào ô hai"* · *"mở vietmap vào ô số 2"* | App chạy trong đúng ô đó. Nói **liền một hơi** — vế *"vào ô số N"* rất dễ bị cắt nếu ngừng giữa câu (2.73 làm chắc hơn, 🚗 chưa chốt bằng giọng thật) |
+| **Mở / đóng app** | *"mở YouTube"* · *"mở Waze"* · *"mở Google Maps"* · *"mở bản đồ"* · *"mở ứng dụng YouTube"* · *"đóng YouTube"* | Mở/đóng app; tên nghe lệch nhẹ (*"du túp"*, *"gu gồ máp"*, *"youtubex"*, *"way"*) vẫn khớp — nghe đúng tên YouTube · Waze · Google Maps hơn từ 2.99/3.0 |
+| **Mở app vào ô** | *"mở YouTube vào ô số 9"* · *"đưa YouTube vào ô hai"* · *"mở vietmap vào ô số 2"* | App chạy trong đúng ô đó. Nói **liền một hơi** — vế *"vào ô số N"* rất dễ bị cắt nếu ngừng giữa câu (2.73 làm chắc hơn, 🚗 chưa chốt bằng giọng thật). Tên app nghe không ra ⇒ Kachi hỏi *"Mở app nào?"* và giữ số ô cho câu trả lời (2.99 — không còn hỏi nhầm *"Odo hay VIN"*) |
 | **Nhạc / YouTube** | *"phát nhạc"* · *"dừng nhạc"* · *"bài tiếp theo"* · *"bài trước"* · *"đang phát bài gì"* · *"phát bài Diễm Xưa"* · *"mở bài Diễm Xưa trên YouTube Music"* | Điều khiển nhạc; tên bài nhận bằng **lượt nghe thứ hai** trên chính khúc tiếng vừa thu |
 | **Dẫn đường** | *"dẫn đường đến Bitexco"* · *"dẫn đường tới chợ Bến Thành bằng Waze"* · *"chỉ đường đến sân bay bằng google map"* | Giao cho đúng app. **Không hỏi xác nhận** — dẫn thẳng |
+| **Dẫn đường nhiều app** (3.0) | *"dẫn đường đến chợ Bến Thành bằng Google Maps, VietMap và Waze"* · *"về nhà bằng vietmap và google maps"* | **Mỗi app** nhận đúng điểm đến và dẫn đường (không app nào chỉ mở trơn). Nối tên app bằng dấu phẩy, *"và"*, *"hoặc"*, *"với"*. Các app được mở theo thứ tự nói; VietMap phải tra toạ độ nên lên chậm hơn ~1 giây. App nào nằm trên cùng màn tuỳ app mở xong sau cùng. 🚗 |
 | **Địa chỉ đã lưu** | *"về nhà"* · *"đến công ty"* · *"đi làm"* | Dẫn tới mục trong **Sổ địa chỉ** của hồ sơ đang dùng |
 | **Hồ sơ** | *"chuyển sang hồ sơ Test"* · *"đổi sang hồ sơ Chính"* | Đổi hồ sơ. Tên tiếng Anh vẫn được; **nói thiếu tên** thì Kachi hỏi lại *"Hồ sơ nào — A hay B?"* |
 | **Bố cục** | *"bố cục hai ô"* · *"đổi bố cục 4 ô"* · *"về bố cục 2 hàng"* · *"bố cục hai cột"* | Đổi bố cục màn chính của hồ sơ đang dùng |
 | **Launcher** | *"mở cài đặt"* · *"mở ứng dụng"* · *"nói với xe"* | Mở màn tương ứng |
-| **Câu ghép** | *"bật đèn đọc và tắt lọc bụi"* · *"mở cốp rồi bật đèn đọc"* | Chạy từng vế theo thứ tự; vế nào không hiểu thì bỏ qua vế đó |
+| **Câu ghép** | *"bật đèn đọc và tắt lọc bụi"* · *"mở cốp rồi bật đèn đọc"* · *"đóng kính lái xong bật đèn đọc"* · *"tắt sưởi ghế phụ tắt gió tự động"* | Chạy từng vế theo thứ tự; vế nào không hiểu thì bỏ qua vế đó, vế còn lại giữ đúng động từ của nó (2.99) |
 
 **Khi Kachi không hiểu** nó nói rõ *lý do*, không im lặng: chưa rõ cần làm gì (*"hôm nay trời đẹp quá"*) · thiếu đối tượng (*"bật cái đó"*) · việc không đi với thứ đó (*"tăng đèn đọc"*) · hoặc *"… đã bỏ khỏi Kachi — dùng màn hình của xe"* với những thứ đã gỡ (khoá xe · âm lượng · độ sáng màn · mở khoá cửa · đèn viền).
 
@@ -179,6 +186,7 @@ Mỗi hàng trong *Cài đặt › Màn hình chính* có nút **Sao chép đư�
 | **Mưa thì tự bật sấy kính** | *Cài đặt › Tiện nghi xe › Tự sấy kính khi mưa* | 🚗 chưa gặp buổi mưa thật |
 | **Tự dẫn đường theo lịch** | *Cài đặt › Dẫn đường & cụm đồng hồ › Tự dẫn đường theo lịch* | 🚗 chưa chạy một khung giờ thật |
 | **Tự lấy gió trong khi nổ máy** | *Cài đặt › Tiện nghi xe › Lấy gió trong* | ✅ dùng hằng ngày |
+| **Tự mở nhạc khi lên xe · YouTube phát tiếp** | *Cài đặt › Hệ thống & quyền › Mở app khi nổ máy › Tự mở nhạc khi lên xe* (ô *Phát gì* để trống = phát tiếp) | Mở lại đúng bài, đúng giây; từ **2.99** hết bài YouTube **tự sang bài kế** như mở app thường (trước chỉ hát một bài rồi dừng). Bạn đã tự phát bài khác thì Kachi không đè. 🚗 tự sang bài trên xe |
 | **Ghế mát/sưởi tự động** · **Tự lọc bụi mịn** | *Cài đặt › Tiện nghi xe* | 🟢 đã xác nhận trên xe |
 | **Tự mở Kachi / chạy nền / giữ HOME khi nổ máy** | *Cài đặt › Hệ thống & quyền › Khởi động* | ✅ |
 
@@ -239,7 +247,7 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 |---|---|
 | **First install** | Download the newest `apk/Kachi-<ver>-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb**: `adb install -r Kachi-<bản>-release.apk`. Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate. |
 | **Updates** | *Settings › System & permissions › **Check for updates*** — the app fetches the newer `apk/` build and installs it over the dadb loopback; **no laptop**. |
-| **Auto check** | The *Auto update* toggle (same place): checks when you open Kachi, **asks first** before downloading, stays silent when there is nothing new. |
+| **Auto check** | The *Auto update* toggle (same place): checks when you open Kachi, **asks first** before downloading, stays silent when there is nothing new. When a new build is available (with *Auto update* on, or after a manual check where you chose *Later*) a **small red dot** shows on the ⚙ button and on the *Check for updates* row (2.98). |
 | **Very old builds** | Builds installed before 1.41 (old signing key) must be uninstalled once (`pm uninstall com.byd.launcher`). |
 
 ### 2. Set Kachi as home
@@ -253,7 +261,8 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 | **Change layout** | *Settings › Home screen › **Preset layout***: 1 slot · 2 columns · 2 rows · 3 slots · 4 slots. Slot contents stay in their slot. |
 | **Draw your own** | *Settings › Home screen › **Custom layout*** then **Draw your own layout…** — a **12 × 6 grid**: drag the middle to move, the bottom-right corner to resize. Overlapping frames turn **RED** and **Save** is blocked. |
 | **Put a widget in a slot** | Tap an empty slot → pick a hand-built card (Board · Car · battery · clock · photo slideshow…) or another app's Android widget. |
-| **Put an app in a slot** | Tap an empty slot → **Open app** → pick one: it runs **for real** in the slot (virtual display). When it closes the slot reads *"App closed — tap to reopen"*. By voice: *"mở YouTube vào ô số 2"*. |
+| **Put an app in a slot** | Tap an empty slot → **Open app** → pick one: it runs **for real** in the slot (virtual display). When it closes the slot reads *"App closed — tap to reopen"*. By voice: *"mở YouTube vào ô số 2"*. An app that crashes right as it enters a slot now hands the slot back as it was (transparent or the saved widget) instead of leaving it blank (2.98). |
+| **An app pops out of its slot** | *Settings › Home screen › **Pull apps that leave a frame back in (experimental)*** — **on by default** since 2.99 (off by default in 2.98). Some apps (most often **Waze**) occasionally pop out to full screen; Kachi puts the app back into the same slot and it keeps running (no restart). Saved **per car**, not per profile. If it runs into an error, Kachi turns it off and shows *"Turned itself off after an error …"* under the switch. Works only on **Android 10** head units (others show *"Not supported on this head unit"* under the switch). Switch it off ⇒ same as 2.97: the slot tells you the app left (2.98: sooner, no false alarms) and frees up. Run on a car with Waze (Seal); other apps 🚗 |
 | **Top-bar chips** | *Settings › Status bar & button bar › **Status-bar chips***; **Show chip labels** (off = icon + value only); **Status-bar item order**. |
 | **Car button bar** | Same group: **Show the car bar** · **Button bar edge** (4 edges) · **Buttons on the car bar** · **Car-bar item order**. |
 | **Theme · units · language** | *Settings › Display & units*: **Display units** · **Light / dark theme** · **Colours** · **Language** (By-car / VI / EN) · **Real glass (blur the backdrop)**. |
@@ -305,6 +314,7 @@ tune; values you set earlier **survive the upgrade**. To probe them again, use `
 | **Microphone** | **Microphone source** | *Auto* tries MIC first, then a noise-cancelling source. Change it if the mic hears poorly. |
 | **Other** | **Default music app** | Used for *"phát nhạc"* when you name no app. |
 | **Ways in** | the *Talk to the car* tile · the **mic button** in the status bar · a steering-wheel key | Bind the key under *Settings › Steering-wheel keys*, target **Kachi listens (on-device)**. |
+| **Music while listening** (3.0) | — (no switch) | While Kachi is **listening**, music volume **drops to 20 %** of its current level (no pause, no volume bar); when it stops listening ⇒ **back to the previous level**. Turn the knob in the meantime ⇒ your level is kept. If Kachi is killed mid-turn, the next start restores the old level. It is lowered only while listening, not for the whole session — Kachi's spoken reply shares the music volume, so it still plays at the normal level. 🚗 |
 
 > There is no VAD / sensitivity knob in the UI — the silence ceiling was raised from 800 to **1,200 ms** in 2.73 but the **default stays 600 ms**; changing it goes through the test bridge (`voice_vad_min_silence_ms`), not Settings.
 
@@ -342,7 +352,9 @@ tune; values you set earlier **survive the upgrade**. To probe them again, use `
 **How to speak**:
 - Say it **in one breath** — a thinking pause over ~0.8 s ends the turn (default).
 - **Cancel a turn**: **tap outside the card**, or wait out the **8 s** ceiling. Since **2.73 Back no longer cancels** (it goes to the app behind) — deliberate, so the car's navigation bar stops popping up while Kachi speaks. This is **not a bug**.
-- Chain two actions with ***và*** or ***rồi***.
+- Chain two actions with ***và***, ***rồi*** or ***xong*** (and / then) — or just say them back to back (*"tắt sưởi ghế phụ tắt gió tự động"*, 2.98). If one part is misheard, Kachi skips that part (*"đã bỏ qua …"*) and still does the other one correctly (2.99).
+- *"hả …"* ("huh?") is **not** a command — only *"hạ …"* lowers a window (2.98).
+- While Kachi listens, music drops to 20 % and comes back afterwards (3.0, §5.2) — no need to stop the music before speaking.
 - Numbers work spoken or as digits (*"hai mươi bốn"* = *"24"*).
 
 > **The COMPLETE list lives in the app** (2.74): *Settings › Voice › **Spoken commands*** — collapsible groups with a
@@ -364,19 +376,20 @@ tune; values you set earlier **survive the upgrade**. To probe them again, use `
 | Group | Example (Vietnamese, as spoken) | What Kachi does |
 |---|---|---|
 | **Car toggles** | *"bật đèn đọc"* · *"tắt đèn nóc"* · *"bật lọc bụi"* · *"bật gió tự động"* · *"bật sấy kính trước"* · *"bật sạc không dây"* | Toggles the button and reads back *"đã bật …"* |
-| **Windows · trunk · sunroof** | *"mở kính lái"* · *"đóng kính trước trái"* · *"hạ bốn kính"* · *"mở cốp"* · *"mở cửa sổ trời"* · *"mở rèm che nắng"* | Open/close (with a 50 % step). Some actions **ask first** if you ticked them under *Ask before running* |
+| **Windows · trunk · sunroof** | *"mở kính lái"* · *"đóng kính trước trái"* · *"hạ bốn kính"* · *"mở cốp"* · *"mở cửa sổ trời"* · *"mở rèm che nắng"* | Open/close (with a 50 % step). Some actions **ask first** if you ticked them under *Ask before running*. *"đóng cốp"* (close the trunk) misheard as *"đóng góp"* still closes the trunk (2.99) |
 | **Macros** | *"mở hết kính"* · *"đóng hết kính"* | Runs several steps in order |
 | **AC · seats** | *"đặt nhiệt độ 24 độ"* · *"tăng nhiệt độ"* · *"tăng gió"* · *"giảm gió"* · *"bật sưởi ghế"* · *"mở quạt ghế"* · *"lọc ngay"* | Sets / steps a level; seats have 3 levels (off · 1 · 2) |
 | **Ask about the car** | *"xem pin"* · *"pin còn bao nhiêu"* · *"nhiệt độ ngoài trời bao nhiêu"* · *"đọc tầm hoạt động"* | Reads the **current value** (**64** registered data points: battery · tyres · temperature · range · time…). See `kachi-feature-catalog.html` for the full list |
-| **Open / close an app** | *"mở YouTube"* · *"mở bản đồ"* · *"đóng YouTube"* | Slightly misheard names (*"du túp"*, *"gu gồ máp"*, *"youtubex"*) still resolve |
-| **App into a slot** | *"mở YouTube vào ô số 9"* · *"đưa YouTube vào ô hai"* | The app runs in that slot. Say it **in one breath** — the *"vào ô số N"* clause is easy to drop if you pause (2.73 makes it sturdier, 🚗 not yet confirmed by live speech) |
+| **Open / close an app** | *"mở YouTube"* · *"mở Waze"* · *"mở Google Maps"* · *"mở bản đồ"* · *"đóng YouTube"* | Slightly misheard names (*"du túp"*, *"gu gồ máp"*, *"youtubex"*, *"way"*) still resolve — YouTube · Waze · Google Maps are heard better since 2.99/3.0 |
+| **App into a slot** | *"mở YouTube vào ô số 9"* · *"đưa YouTube vào ô hai"* | The app runs in that slot. Say it **in one breath** — the *"vào ô số N"* clause is easy to drop if you pause (2.73 makes it sturdier, 🚗 not yet confirmed by live speech). If the app name is not understood, Kachi asks *"Mở app nào?"* (which app?) and keeps the slot number for your answer (2.99 — no more stray *"odometer or VIN?"* question) |
 | **Music / YouTube** | *"phát nhạc"* · *"dừng nhạc"* · *"bài tiếp theo"* · *"đang phát bài gì"* · *"phát bài Diễm Xưa"* | Media control; the track name is captured by a **second recognition pass** over the same audio |
 | **Navigation** | *"dẫn đường đến Bitexco"* · *"dẫn đường tới chợ Bến Thành bằng Waze"* | Hands off to the right app. **No confirmation** — it navigates straight away |
+| **Several navigation apps** (3.0) | *"dẫn đường đến chợ Bến Thành bằng Google Maps, VietMap và Waze"* · *"về nhà bằng vietmap và google maps"* | **Every app** gets the destination and starts guidance (none just opens to its home screen). Join app names with commas, *"và"*, *"hoặc"*, *"với"* (and / or / with). Apps are opened in the order spoken; VietMap has to look up coordinates so it comes up ~1 s later. Whichever app finishes opening last ends up on top. 🚗 |
 | **Saved places** | *"về nhà"* · *"đến công ty"* · *"đi làm"* | Navigates to an **Address book** entry of the active profile |
 | **Profiles** | *"chuyển sang hồ sơ Test"* · *"đổi sang hồ sơ Chính"* | English names work; **a missing name** makes Kachi ask *"Hồ sơ nào — A hay B?"* |
 | **Layouts** | *"bố cục hai ô"* · *"đổi bố cục 4 ô"* · *"về bố cục 2 hàng"* | Changes the active profile's home layout |
 | **Launcher** | *"mở cài đặt"* · *"mở ứng dụng"* · *"nói với xe"* | Opens that screen |
-| **Compound** | *"bật đèn đọc và tắt lọc bụi"* · *"mở cốp rồi bật đèn đọc"* | Runs each clause in order; an unparsed clause is skipped |
+| **Compound** | *"bật đèn đọc và tắt lọc bụi"* · *"mở cốp rồi bật đèn đọc"* · *"đóng kính lái xong bật đèn đọc"* · *"tắt sưởi ghế phụ tắt gió tự động"* | Runs each clause in order; an unparsed clause is skipped and the other clause keeps its own verb (2.99) |
 
 **When Kachi does not understand** it says *why* rather than going silent: unclear intent · missing object · action does not fit that object · or *"… đã bỏ khỏi Kachi — dùng màn hình của xe"* for features that were removed (car lock · volume · screen brightness · door unlock · ambient light).
 
@@ -397,6 +410,7 @@ Every row in *Settings › Home screen* has a **Copy folder path** button — pa
 | **Auto-defrost when it rains** | *Settings › Car comfort › Auto-defrost when it rains* | 🚗 never seen real rain |
 | **Scheduled navigation** | *Settings › Navigation & cluster › Scheduled navigation* | 🚗 never ran a real window |
 | **Recirculation on engine start** | *Settings › Car comfort › Recirculation* | ✅ in daily use |
+| **Play music when you get in · YouTube resume** | *Settings › System & permissions › Open apps at ignition › Play music when you get in* (empty *What to play* = resume) | Reopens the same track at the same second; since **2.99** YouTube **moves on to the next song** when it ends, like the app normally does (before, it stopped after one song). If you already started something else, Kachi doesn't override it. 🚗 auto-next on a car |
 | **Seat cool/heat · PM2.5 auto-filter** | *Settings › Car comfort* | 🟢 confirmed on a car |
 | **Auto-start / background service / keep HOME on engine start** | *Settings › System & permissions › Startup* | ✅ |
 

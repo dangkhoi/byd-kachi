@@ -311,6 +311,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
   <div class="wrap">
     <a class="brand" href="#top"><img src="images/site/kachi-icon.svg" alt="" width="28" height="28">Kachi<span class="sr"><span lang="vi"> — về đầu trang</span><span lang="en"> — back to top</span></span></a>
     <nav aria-label="Mục lục" data-label-vi="Mục lục" data-label-en="Contents">
+      <a class="opt" href="#moi"><span lang="vi">Mới 3.0</span><span lang="en">New in 3.0</span></a>
       <a href="#tinh-nang"><span lang="vi">Tính năng</span><span lang="en">Features</span></a>
       <a href="#kien-truc"><span lang="vi">Kiến trúc</span><span lang="en">Architecture</span></a>
       <a href="#cai-dat"><span lang="vi">Cài đặt</span><span lang="en">Install</span></a>
@@ -329,14 +330,14 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
 <div id="top" class="hero">
   <div class="wrap">
     <img class="app-icon" src="images/site/kachi-icon.svg" alt="" width="112" height="112">
-    <div lang="vi"><span class="eyebrow"><span class="dot" aria-hidden="true"></span>Bản mới nhất 2.97 · mã 200 · 08/10/2026</span></div>
-    <div lang="en"><span class="eyebrow"><span class="dot" aria-hidden="true"></span>Latest release 2.97 · build 200 · 8 Oct 2026</span></div>
+    <div lang="vi"><span class="eyebrow"><span class="dot" aria-hidden="true"></span>Bản mới nhất 3.0 · mã 204 · 11/10/2026</span></div>
+    <div lang="en"><span class="eyebrow"><span class="dot" aria-hidden="true"></span>Latest release 3.0 · build 204 · 11 Oct 2026</span></div>
     <h1>Kachi</h1>
 
     <div lang="vi">
       <p class="lead">Màn hình chính (launcher) cho đầu xe <strong>BYD DiLink</strong>, do cộng đồng làm. Chạy app thật trong từng ô, chiếu bản đồ lên cụm đồng hồ, nói lệnh tiếng Việt không cần mạng, gán phím vô-lăng, mở camera, điều khiển tiện nghi xe — và tự cập nhật qua mạng.</p>
       <div class="cta">
-        <a class="btn primary" href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk"><svg aria-hidden="true"><use href="#i-down"/></svg>Tải Kachi 2.97 (APK, ~47 MB)</a>
+        <a class="btn primary" href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-3.0-release.apk"><svg aria-hidden="true"><use href="#i-down"/></svg>Tải Kachi 3.0 (APK, ~47 MB)</a>
         <a class="btn" href="#cai-dat"><svg aria-hidden="true"><use href="#i-book"/></svg>Cách cài</a>
         <a class="btn" href="guide/HUONG-DAN-CO-HINH.html"><svg aria-hidden="true"><use href="#i-photo"/></svg>Hướng dẫn có hình</a>
         <a class="btn" href="https://github.com/dangkhoi/byd-kachi"><svg aria-hidden="true"><use href="#i-gh"/></svg>Mã nguồn</a>
@@ -346,7 +347,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
     <div lang="en">
       <p class="lead">A community-built home screen (launcher) for <strong>BYD DiLink</strong> head units. It runs real apps inside home-screen slots, casts maps to the instrument cluster, takes Vietnamese voice commands without a network, remaps steering-wheel keys, opens the cameras, controls the car’s comfort features — and updates itself over the air.</p>
       <div class="cta">
-        <a class="btn primary" href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk"><svg aria-hidden="true"><use href="#i-down"/></svg>Download Kachi 2.97 (APK, ~47 MB)</a>
+        <a class="btn primary" href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-3.0-release.apk"><svg aria-hidden="true"><use href="#i-down"/></svg>Download Kachi 3.0 (APK, ~47 MB)</a>
         <a class="btn" href="#cai-dat"><svg aria-hidden="true"><use href="#i-book"/></svg>How to install</a>
         <a class="btn" href="guide/HUONG-DAN-CO-HINH.html?lang=en"><svg aria-hidden="true"><use href="#i-photo"/></svg>Illustrated guide</a>
         <a class="btn" href="https://github.com/dangkhoi/byd-kachi"><svg aria-hidden="true"><use href="#i-gh"/></svg>Source code</a>
@@ -421,6 +422,121 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
   </div>
 </div>
 
+<!-- ============ NEW IN 3.0 ============ -->
+<section id="moi" class="alt">
+  <div class="wrap">
+  <div lang="vi">
+    <p class="kicker">Mới trong 3.0</p>
+    <h2>Những gì đổi từ 2.97 tới 3.0</h2>
+    <p class="sub">Gom ba bản 2.98 · 2.99 · 3.0. Phần lớn đã kiểm trên máy ảo; mục nào đã chạy trên xe thật thì có ghi rõ.</p>
+    <div class="grid">
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-grid"/></svg></div>
+        <h3>Ô màn hình chính</h3>
+        <ul>
+          <li><strong>Kéo app thoát ô về lại ô</strong>: app tự bật ra toàn màn (hay gặp nhất là Waze) được đưa về đúng ô, app vẫn chạy tiếp. <strong>Bật sẵn</strong> từ 2.99; tắt ở <span class="path">Cài đặt › Màn hình chính</span>. Chỉ có tác dụng trên đầu xe Android 10. Gặp lỗi thì Kachi tự tắt và ghi lý do dưới công tắc.</li>
+          <li>App sập ngay lúc vào ô không còn để lại ô trắng; câu báo “đã rời ô” hiện nhanh hơn và không báo nhầm.</li>
+          <li>App đỗ ở ô ẩn bị dừng thì được mở lại khi đặt vào ô; thanh lối tắt nhớ chỗ đã cuộn.</li>
+          <li>Ngày trên thanh trên dùng cùng màu chữ, cùng cỡ với các chip — không còn chìm vào hình nền.</li>
+        </ul>
+        <div class="tags"><span class="tag t-ok">Kéo về ô: Waze trên Seal</span><span class="tag t-new">App khác</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-nav"/></svg></div>
+        <h3>Dẫn đường bằng nhiều app một lúc</h3>
+        <ul>
+          <li>Nói <em>“dẫn đường đến chợ Bến Thành bằng Google Maps, VietMap và Waze”</em> ⇒ <strong>mỗi app</strong> đều nhận đúng điểm đến và dẫn đường, không app nào chỉ mở trơn.</li>
+          <li>Nối tên app bằng dấu phẩy, <em>“và”</em>, <em>“hoặc”</em>, <em>“với”</em>; nơi đã lưu (<em>“về nhà bằng …”</em>) cũng được.</li>
+          <li><strong>HUD / cụm (SL6)</strong>: Kachi gửi thêm <strong>tên đường</strong> lên HUD kính lái theo đúng nhịp của bản đồ gốc BYD — trước chỉ có mũi tên và cự ly.</li>
+        </ul>
+        <div class="tags"><span class="tag t-new">Nhiều app (3.0)</span><span class="tag t-new">Tên đường lên HUD</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-mic"/></svg></div>
+        <h3>Giọng nói</h3>
+        <ul>
+          <li>Lúc Kachi đang nghe, <strong>nhạc hạ còn 20 %</strong> mức hiện tại rồi trả về mức cũ khi nghe xong (không tạm dừng). Bạn vặn núm giữa chừng thì giữ mức bạn chọn.</li>
+          <li>Câu ghép không cần chữ <em>“và”</em>: <em>“tắt sưởi ghế phụ tắt gió tự động”</em>; câu có <em>“xong”</em> (<em>“đóng kính lái xong bật đèn đọc”</em>) cũng ra đủ hai việc. Một vế nghe không rõ không còn làm hỏng vế kia.</li>
+          <li><em>“hả …”</em> (hỏi lại) không còn bị hiểu thành <em>“hạ …”</em>; <em>“đóng cốp”</em> nghe nhầm thành <em>“đóng góp”</em> vẫn đóng cốp.</li>
+          <li>Nghe đúng hơn tên <strong>YouTube</strong>, <strong>Waze</strong>, <strong>Google Maps</strong>; <em>“mở … vào ô số 2”</em> không còn bị hỏi lại “Odo hay VIN”.</li>
+          <li>Tấm chữ khi nghe nhẹ hơn hẳn: tiến trình giọng nói tốn ít CPU hơn khoảng 5 lần mỗi lượt khi không mở nhạc, khoảng 3 lần khi có nhạc (đo trên máy ảo).</li>
+        </ul>
+        <div class="tags"><span class="tag t-new">2.98 → 3.0</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-play"/></svg></div>
+        <h3>Nhạc, cập nhật &amp; độ nhẹ</h3>
+        <ul>
+          <li><strong>YouTube</strong> phát tiếp lúc lên xe giờ <strong>tự sang bài kế</strong> như khi mở app bình thường, không dừng sau một bài.</li>
+          <li>Có bản mới thì hiện <strong>chấm đỏ nhỏ</strong> trên nút ⚙ và ở hàng <span class="path">Kiểm tra cập nhật</span>.</li>
+          <li>Màn tắt thì màn chính thôi đọc dữ liệu xe; bớt ghi nhật ký thừa; tự xoá tệp cập nhật đã cài và dữ liệu khung của app đã gỡ ⇒ đầu xe đỡ đầy bộ nhớ khi dùng lâu.</li>
+        </ul>
+        <div class="tags"><span class="tag t-new">2.98 → 3.0</span></div>
+      </article>
+    </div>
+    <p class="meta" style="margin-top:22px">Nguồn: ghi chú phát hành 2.98 và kế hoạch 2.99 · 3.0 trong <a href="https://github.com/dangkhoi/byd-kachi/tree/main/docs/specs"><code>docs/specs/</code></a>. Gặp lỗi ở bản mới — gửi log (mục <a href="#ho-tro">Gửi log</a>).</p>
+  </div>
+
+  <div lang="en">
+    <p class="kicker">New in 3.0</p>
+    <h2>What changed from 2.97 to 3.0</h2>
+    <p class="sub">Covers three builds: 2.98 · 2.99 · 3.0. Most of it is checked on the emulator; anything already run on a real car says so.</p>
+    <div class="grid">
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-grid"/></svg></div>
+        <h3>Home-screen slots</h3>
+        <ul>
+          <li><strong>Pull apps that leave a frame back in</strong>: an app that pops out of its slot to full screen (most often Waze) is put back into the same slot and keeps running. <strong>On by default</strong> since 2.99; switch it off under <span class="path">Settings › Home screen</span>. Works on Android 10 head units only. If it runs into an error, Kachi turns it off and writes the reason under the switch.</li>
+          <li>An app that crashes right as it enters a slot no longer leaves a blank slot; the “left its slot” notice shows up faster and no longer fires by mistake.</li>
+          <li>An app parked in a hidden slot that got stopped is reopened when placed back in a slot; the shortcut bar remembers where you scrolled.</li>
+          <li>The date on the top bar now uses the same text colour and size as the chips — it no longer disappears into the wallpaper.</li>
+        </ul>
+        <div class="tags"><span class="tag t-ok">Pull back: Waze on a Seal</span><span class="tag t-new">Other apps</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-nav"/></svg></div>
+        <h3>Navigate with several apps at once</h3>
+        <ul>
+          <li>Say <em class="say" lang="vi">“dẫn đường đến chợ Bến Thành bằng Google Maps, VietMap và Waze”</em> (“navigate to Ben Thanh market with Google Maps, VietMap and Waze”) ⇒ <strong>every app</strong> gets the destination and starts guidance — none of them just opens to its home screen.</li>
+          <li>Join app names with commas, <em class="say" lang="vi">“và”</em>, <em class="say" lang="vi">“hoặc”</em> or <em class="say" lang="vi">“với”</em> (“and”, “or”, “with”); saved places (<em class="say" lang="vi">“về nhà bằng …”</em> — “go home with …”) work too.</li>
+          <li><strong>HUD / cluster (SL6)</strong>: Kachi also sends the <strong>street name</strong> to the windscreen HUD, at the same pace as BYD’s own map — before, it was only the arrow and distance.</li>
+        </ul>
+        <div class="tags"><span class="tag t-new">Several apps (3.0)</span><span class="tag t-new">Street name on HUD</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-mic"/></svg></div>
+        <h3>Voice</h3>
+        <ul>
+          <li>While Kachi is listening, <strong>music drops to 20 %</strong> of its current volume and returns to the previous level when it’s done (no pause). Turn the knob in the meantime and your level is kept.</li>
+          <li>Two commands in one sentence without <em class="say" lang="vi">“và”</em> (“and”): <em class="say" lang="vi">“tắt sưởi ghế phụ tắt gió tự động”</em>; sentences with <em class="say" lang="vi">“xong”</em> (“then”), such as <em class="say" lang="vi">“đóng kính lái xong bật đèn đọc”</em>, also give both actions. A half-heard part no longer spoils the other one.</li>
+          <li><em class="say" lang="vi">“hả …”</em> (“huh?”) is no longer taken as <em class="say" lang="vi">“hạ …”</em> (“lower”); <em class="say" lang="vi">“đóng cốp”</em> (“close the trunk”) misheard as <em class="say" lang="vi">“đóng góp”</em> still closes the trunk.</li>
+          <li>Better at hearing <strong>YouTube</strong>, <strong>Waze</strong> and <strong>Google Maps</strong>; <em class="say" lang="vi">“mở … vào ô số 2”</em> (“open … in slot 2”) no longer gets the “odometer or VIN?” question.</li>
+          <li>A lighter listening overlay: the voice process uses about 5× less CPU per turn without music, about 3× less with music playing (measured on the emulator).</li>
+        </ul>
+        <div class="tags"><span class="tag t-new">2.98 → 3.0</span></div>
+      </article>
+
+      <article class="card">
+        <div class="ic"><svg aria-hidden="true"><use href="#i-play"/></svg></div>
+        <h3>Music, updates &amp; a lighter footprint</h3>
+        <ul>
+          <li><strong>YouTube</strong> resumed on start-up now <strong>moves on to the next song</strong> like the app normally does, instead of stopping after one.</li>
+          <li>A <strong>small red dot</strong> on the ⚙ button and on the <span class="path">Check for updates</span> row when a new build is available.</li>
+          <li>With the screen off, the home screen stops reading car data; less log noise; installed update files and frame data of uninstalled apps are cleaned up ⇒ storage stays free over long-term use.</li>
+        </ul>
+        <div class="tags"><span class="tag t-new">2.98 → 3.0</span></div>
+      </article>
+    </div>
+    <p class="meta" style="margin-top:22px">Sources: the 2.98 release notes and the 2.99 · 3.0 plans in <a href="https://github.com/dangkhoi/byd-kachi/tree/main/docs/specs"><code>docs/specs/</code></a>. Hit a bug in the new build? Send logs (see <a href="#ho-tro">Send logs</a>).</p>
+  </div>
+  </div>
+</section>
+
 <!-- ============ FEATURES ============ -->
 <section id="tinh-nang">
   <div class="wrap">
@@ -443,6 +559,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
           <li>App chạy <strong>thật</strong> trong ô (màn ảo) — vd bản đồ bên trái, nhạc bên phải.</li>
           <li>Widget dựng sẵn: tổng hợp, xe, năng lượng, đồng hồ, trình chiếu ảnh, lối tắt ứng dụng — hoặc widget Android của app khác.</li>
           <li>Thanh trạng thái (chip pin, nhiệt độ, ghế…) và thanh nút xe tuỳ chỉnh được; hình nền, sáng/tối.</li>
+          <li>App tự bật ra khỏi ô được kéo về lại đúng ô (bật sẵn từ 2.99, tắt được trong Cài đặt).</li>
         </ul>
       </article>
 
@@ -479,6 +596,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
           <li><strong>VietMap</strong>: tốc độ, biển giới hạn, cảnh báo camera; hướng rẽ cần app đang hiện.</li>
           <li><strong>Waze</strong>: cần app đang hiện trên màn.</li>
           <li>Sổ địa chỉ theo hồ sơ (<em>“về nhà”</em>), tự dẫn đường theo lịch.</li>
+          <li>Một câu dẫn đường bằng nhiều app: <em>“… bằng Google Maps, VietMap và Waze”</em> (3.0).</li>
         </ul>
         <div class="tags"><span class="tag t-ok">Google Maps → cụm</span><span class="tag t-new">Lịch dẫn đường</span></div>
       </article>
@@ -489,7 +607,8 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
         <p>Nhận dạng tiếng Việt <strong>ngay trên đầu xe</strong> — tiếng nói không gửi ra mạng.</p>
         <ul>
           <li>Mô hình tải một lần trong app (~74 MB) hoặc chép qua USB khi xe không có mạng.</li>
-          <li>Điều khiển xe, mở app (cả <em>“vào ô số 2”</em>), nhạc, dẫn đường, đổi hồ sơ, bố cục; ghép hai việc bằng <em>“và”</em> / <em>“rồi”</em>.</li>
+          <li>Điều khiển xe, mở app (cả <em>“vào ô số 2”</em>), nhạc, dẫn đường, đổi hồ sơ, bố cục; ghép hai việc bằng <em>“và”</em> / <em>“rồi”</em> / <em>“xong”</em> hoặc nói liền.</li>
+          <li>Lúc nghe lệnh, nhạc tự hạ còn 20 % rồi trả mức cũ (3.0).</li>
           <li>Đọc phản hồi bằng giọng offline; tự dạy Kachi tên app khó đọc.</li>
           <li>Gọi bằng phím vô-lăng, nút mic, hoặc “Hey Kachi” (mặc định tắt).</li>
         </ul>
@@ -537,10 +656,10 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
         <h3>Nhạc &amp; YouTube phát tiếp</h3>
         <ul>
           <li>Tự mở app nhạc đã chọn khi lên xe.</li>
-          <li>YouTube: nhớ bài đang nghe, nổ máy là phát tiếp <strong>đúng bài, đúng giây</strong>, toàn màn hình.</li>
+          <li>YouTube: nhớ bài đang nghe, nổ máy là phát tiếp <strong>đúng bài, đúng giây</strong>, toàn màn hình — hết bài thì tự sang bài kế (2.99).</li>
           <li>Mạng chưa có lúc nổ máy thì thử lại tới 1 phút mà không chặn app khác; bạn đã bật nhạc khác thì không phát đè.</li>
         </ul>
-        <div class="tags"><span class="tag t-new">2.94 → 2.97</span></div>
+        <div class="tags"><span class="tag t-new">2.94 → 3.0</span></div>
       </article>
 
       <article class="card">
@@ -556,7 +675,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
         <p>Giao diện Tiếng Việt, English, 中文, ไทย, Bahasa Melayu — hoặc theo ngôn ngữ của xe. Giọng nói hiện chỉ tiếng Việt.</p>
       </article>
     </div>
-    <p class="meta" style="margin-top:22px">Nguồn trạng thái: <a href="kachi-feature-catalog.html">danh mục chức năng</a> (sinh bằng máy từ mã nguồn) và ghi chú phát hành 2.90–2.97. Lần đếm gần nhất ghi trong README: <strong>141/165</strong> chức năng đã đo trên xe (đo ở bản 2.79; tính năng từ 2.81 trở đi chưa tính).</p>
+    <p class="meta" style="margin-top:22px">Nguồn trạng thái: <a href="kachi-feature-catalog.html">danh mục chức năng</a> (sinh bằng máy từ mã nguồn) và ghi chú phát hành 2.90–3.0. Lần đếm gần nhất ghi trong README: <strong>141/165</strong> chức năng đã đo trên xe (đo ở bản 2.79; tính năng từ 2.81 trở đi chưa tính).</p>
   </div>
 
   <div lang="en">
@@ -578,6 +697,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
           <li>Apps run <strong>for real</strong> inside a slot (virtual display) — e.g. a map on the left, music on the right.</li>
           <li>Built-in widgets: board, car, energy, clock, photo slideshow, app shortcuts — or another app’s Android widget.</li>
           <li>A customisable status bar (battery, temperature, seat chips…) and car button bar; wallpaper, light/dark theme.</li>
+          <li>An app that pops out of its slot is pulled back into the same slot (on by default since 2.99, can be switched off in Settings).</li>
         </ul>
       </article>
 
@@ -614,6 +734,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
           <li><strong>VietMap</strong>: speed, limit sign, speed-camera alerts; turn guidance needs the app on screen.</li>
           <li><strong>Waze</strong>: needs the app on screen.</li>
           <li>Address book per profile (<em class="say" lang="vi">“về nhà”</em> — “go home”) and scheduled navigation.</li>
+          <li>One sentence, several navigation apps: <em class="say" lang="vi">“… bằng Google Maps, VietMap và Waze”</em> (“… with Google Maps, VietMap and Waze”, 3.0).</li>
         </ul>
         <div class="tags"><span class="tag t-ok">Google Maps → cluster</span><span class="tag t-new">Scheduled navigation</span></div>
       </article>
@@ -624,7 +745,8 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
         <p>Vietnamese speech recognition <strong>right on the head unit</strong> — your voice never leaves the car.</p>
         <ul>
           <li>The model downloads once inside the app (~74 MB), or copy it over USB when the car has no network.</li>
-          <li>Control the car, open apps (even <em class="say" lang="vi">“vào ô số 2”</em> — “into slot 2”), music, navigation, profiles and layouts; chain two actions with <em class="say" lang="vi">“và”</em> / <em class="say" lang="vi">“rồi”</em> (“and” / “then”).</li>
+          <li>Control the car, open apps (even <em class="say" lang="vi">“vào ô số 2”</em> — “into slot 2”), music, navigation, profiles and layouts; chain two actions with <em class="say" lang="vi">“và”</em> / <em class="say" lang="vi">“rồi”</em> / <em class="say" lang="vi">“xong”</em> (“and” / “then”) or just say them back to back.</li>
+          <li>While it listens, music drops to 20 % and then returns to its previous level (3.0).</li>
           <li>Speaks its replies in an offline voice; teach Kachi app names that are hard to say.</li>
           <li>Start it with a steering-wheel key, the mic button, or “Hey Kachi” (off by default).</li>
         </ul>
@@ -672,10 +794,10 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
         <h3>Music &amp; YouTube resume</h3>
         <ul>
           <li>Opens your chosen music app when you get in.</li>
-          <li>YouTube: remembers what you were playing and, on engine start, resumes <strong>the same track at the same second</strong>, full screen.</li>
+          <li>YouTube: remembers what you were playing and, on engine start, resumes <strong>the same track at the same second</strong>, full screen — and moves on to the next song when it ends (2.99).</li>
           <li>If the network isn’t up yet at start-up, it retries for up to a minute without blocking other apps; if you’ve already started other music, it won’t play over it.</li>
         </ul>
-        <div class="tags"><span class="tag t-new">2.94 → 2.97</span></div>
+        <div class="tags"><span class="tag t-new">2.94 → 3.0</span></div>
       </article>
 
       <article class="card">
@@ -691,7 +813,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
         <p>Interface in Tiếng Việt, English, 中文, ไทย, Bahasa Melayu — or follow the car’s language. Voice control is Vietnamese only for now.</p>
       </article>
     </div>
-    <p class="meta" style="margin-top:22px">Status sources: the <a href="kachi-feature-catalog.html">feature catalogue</a> (machine-generated from the source code) and the 2.90–2.97 release notes. Latest count recorded in the README: <strong>141/165</strong> functions measured on a car (counted at 2.79; features from 2.81 onwards not included).</p>
+    <p class="meta" style="margin-top:22px">Status sources: the <a href="kachi-feature-catalog.html">feature catalogue</a> (machine-generated from the source code) and the 2.90–3.0 release notes. Latest count recorded in the README: <strong>141/165</strong> functions measured on a car (counted at 2.79; features from 2.81 onwards not included).</p>
   </div>
   </div>
 </section>
@@ -900,12 +1022,12 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
     <ol class="steps">
       <li><div>
         <h3>Tải APK</h3>
-        <p>Tải <a href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk"><code>Kachi-2.97-release.apk</code></a> từ thư mục <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk"><code>apk/</code></a> trên nhánh <code>main</code>. Thư mục chỉ giữ một bản — luôn là bản mới nhất.</p>
+        <p>Tải <a href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-3.0-release.apk"><code>Kachi-3.0-release.apk</code></a> từ thư mục <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk"><code>apk/</code></a> trên nhánh <code>main</code>. Thư mục chỉ giữ một bản — luôn là bản mới nhất.</p>
       </div></li>
       <li><div>
         <h3>Cài bằng adb</h3>
         <p>Từ máy tính đã kết nối adb tới đầu xe:</p>
-        <pre><code>adb install -r Kachi-2.97-release.apk</code></pre>
+        <pre><code>adb install -r Kachi-3.0-release.apk</code></pre>
         <p>Chép APK vào xe rồi chạm để cài có thể bị ROM DiLink báo <em>“Fail in installation of desktop apps”</em> (vì Kachi là launcher) — cài bằng adb thì qua.</p>
       </div></li>
       <li><div>
@@ -932,7 +1054,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
       </div></li>
       <li><div>
         <h3>Kiểm tra phiên bản</h3>
-        <p><span class="path">Cài đặt › Giới thiệu</span> phải hiện <strong>Phiên bản 2.97 (mã 200)</strong>.</p>
+        <p><span class="path">Cài đặt › Giới thiệu</span> phải hiện <strong>Phiên bản 3.0 (mã 204)</strong>.</p>
       </div></li>
     </ol>
     <div class="callout warn"><b>Bản rất cũ:</b> bản Kachi cài trước 1.41 ký bằng khoá khác — phải gỡ (<code>pm uninstall com.byd.launcher</code>) rồi cài tay một lần, sau đó cập nhật tự động bình thường.</div>
@@ -952,12 +1074,12 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
     <ol class="steps">
       <li><div>
         <h3>Download the APK</h3>
-        <p>Download <a href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-2.97-release.apk"><code>Kachi-2.97-release.apk</code></a> from the <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk"><code>apk/</code></a> folder on the <code>main</code> branch. The folder holds a single build — always the latest one.</p>
+        <p>Download <a href="https://github.com/dangkhoi/byd-kachi/raw/main/apk/Kachi-3.0-release.apk"><code>Kachi-3.0-release.apk</code></a> from the <a href="https://github.com/dangkhoi/byd-kachi/tree/main/apk"><code>apk/</code></a> folder on the <code>main</code> branch. The folder holds a single build — always the latest one.</p>
       </div></li>
       <li><div>
         <h3>Install with adb</h3>
         <p>From a computer connected to the head unit over adb:</p>
-        <pre><code>adb install -r Kachi-2.97-release.apk</code></pre>
+        <pre><code>adb install -r Kachi-3.0-release.apk</code></pre>
         <p>If you copy the APK to the car and tap it, the DiLink ROM may refuse with <em>“Fail in installation of desktop apps”</em> (because Kachi is a launcher) — installing with adb gets past that.</p>
       </div></li>
       <li><div>
@@ -984,7 +1106,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
       </div></li>
       <li><div>
         <h3>Check the version</h3>
-        <p><span class="path">Settings › About</span> should show <strong>Version 2.97 (build 200)</strong>.</p>
+        <p><span class="path">Settings › About</span> should show <strong>Version 3.0 (build 204)</strong>.</p>
       </div></li>
     </ol>
     <div class="callout warn"><b>Very old builds:</b> Kachi builds installed before 1.41 were signed with a different key — uninstall them (<code>pm uninstall com.byd.launcher</code>) and install by hand once; after that, automatic updates work normally.</div>
@@ -1005,7 +1127,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
       </div>
       <div class="card">
         <h3>Tự dò bản mới</h3>
-        <p>Bật <span class="path">Tự động cập nhật</span> (cùng mục): mỗi lần mở Kachi sẽ tự dò; có bản mới thì <strong>hỏi trước</strong> khi tải, không có thì im lặng. Xe phải có mạng lúc dò.</p>
+        <p>Bật <span class="path">Tự động cập nhật</span> (cùng mục): mỗi lần mở Kachi sẽ tự dò; có bản mới thì <strong>hỏi trước</strong> khi tải, không có thì im lặng. Xe phải có mạng lúc dò. Có bản mới thì nút ⚙ hiện một chấm đỏ nhỏ.</p>
       </div>
     </div>
     <div class="callout info" style="margin-top:16px"><b>Không lùi bản được.</b> Cập nhật tự động chỉ đi lên. Gặp lỗi ở một bản thì lỗi được gom sửa ở bản sau — hãy gửi log (mục dưới).</div>
@@ -1021,7 +1143,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
       </div>
       <div class="card">
         <h3>Check automatically</h3>
-        <p>Turn on <span class="path">Auto update</span> (same group): Kachi checks every time it opens; if there is a new build it <strong>asks first</strong> before downloading, otherwise it stays quiet. The car needs a network while checking.</p>
+        <p>Turn on <span class="path">Auto update</span> (same group): Kachi checks every time it opens; if there is a new build it <strong>asks first</strong> before downloading, otherwise it stays quiet. The car needs a network while checking. A small red dot on the ⚙ button means a new build is available.</p>
       </div>
     </div>
     <div class="callout info" style="margin-top:16px"><b>No downgrades.</b> Automatic updates only go forward. A bug in one build gets fixed in the next — please send logs (see below).</div>
@@ -1170,6 +1292,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
       <div class="credit"><h3><a href="https://github.com/k2-fsa/sherpa-onnx">sherpa-onnx</a></h3><p>Bộ nhận dạng và tổng hợp giọng nói chạy tại máy. Đóng kèm thư viện native ONNX Runtime (Microsoft, giấy phép MIT).</p><span class="lic">Apache-2.0</span></div>
       <div class="credit"><h3>Mô hình Zipformer tiếng Việt (int8)</h3><p>Mô hình nghe, tải về khi bạn bấm Tải trong app, không đóng trong APK. Gói sherpa-onnx đóng gói từ mô hình gốc huấn luyện tiếng Việt.</p><span class="lic">Apache-2.0</span></div>
       <div class="credit"><h3>Mô hình “Hey Kachi”</h3><p>Bộ dò từ khoá <code>sherpa-onnx-kws-zipformer-gigaspeech-3.3M</code> (k2-fsa).</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3><a href="https://github.com/snakers4/silero-vad">Silero VAD</a></h3><p>Mô hình phát hiện tiếng nói <code>silero_vad.onnx</code> — biết lúc nào người lái bắt đầu/ngừng nói để cắt câu. Đóng trong APK.</p><span class="lic">MIT</span></div>
       <div class="credit"><h3>Giọng đọc Piper — VAIS-1000</h3><p>Gói giọng đọc tiếng Việt, tải riêng. Ghi công: VAIS-1000 Vietnamese speech synthesis corpus · Piper · sherpa-onnx.</p><span class="lic">CC-BY-4.0</span></div>
       <div class="credit"><h3>espeak-ng (dữ liệu phát âm)</h3><p>Piper dùng một phần dữ liệu espeak-ng cho tiếng Việt, đi kèm gói giọng đọc, nguyên trạng. Mã nguồn: github.com/espeak-ng/espeak-ng.</p><span class="lic">GPL-3.0-or-later</span></div>
       <div class="credit"><h3><a href="https://github.com/square/okio">okio</a> · <a href="https://github.com/JetBrains/kotlin">Kotlin stdlib</a></h3><p>Thư viện I/O và runtime Kotlin, đóng gói gián tiếp.</p><span class="lic">Apache-2.0</span></div>
@@ -1187,6 +1310,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
       <div class="credit"><h3><a href="https://github.com/k2-fsa/sherpa-onnx">sherpa-onnx</a></h3><p>On-device speech recognition and speech synthesis. Ships with the ONNX Runtime native library (Microsoft, MIT licence).</p><span class="lic">Apache-2.0</span></div>
       <div class="credit"><h3>Vietnamese Zipformer model (int8)</h3><p>The listening model, downloaded when you press Download in the app — not bundled in the APK. A sherpa-onnx package built from the original model trained for Vietnamese.</p><span class="lic">Apache-2.0</span></div>
       <div class="credit"><h3>“Hey Kachi” model</h3><p>The keyword spotter <code>sherpa-onnx-kws-zipformer-gigaspeech-3.3M</code> (k2-fsa).</p><span class="lic">Apache-2.0</span></div>
+      <div class="credit"><h3><a href="https://github.com/snakers4/silero-vad">Silero VAD</a></h3><p>The voice-activity model <code>silero_vad.onnx</code> — detects when the driver starts and stops speaking, to cut each sentence. Bundled in the APK.</p><span class="lic">MIT</span></div>
       <div class="credit"><h3>Piper voice — VAIS-1000</h3><p>Vietnamese voice pack, downloaded separately. Attribution: VAIS-1000 Vietnamese speech synthesis corpus · Piper · sherpa-onnx.</p><span class="lic">CC-BY-4.0</span></div>
       <div class="credit"><h3>espeak-ng (pronunciation data)</h3><p>Piper uses part of espeak-ng’s data for Vietnamese, shipped unmodified with the voice pack. Source code: github.com/espeak-ng/espeak-ng.</p><span class="lic">GPL-3.0-or-later</span></div>
       <div class="credit"><h3><a href="https://github.com/square/okio">okio</a> · <a href="https://github.com/JetBrains/kotlin">Kotlin stdlib</a></h3><p>I/O library and the Kotlin runtime, bundled indirectly.</p><span class="lic">Apache-2.0</span></div>
@@ -1229,7 +1353,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
   <div class="wrap">
     <div class="row" lang="vi">
       <div>
-        <p><strong style="color:var(--text)">Kachi</strong> · phiên bản 2.97 (mã 200) · cập nhật 08/10/2026</p>
+        <p><strong style="color:var(--text)">Kachi</strong> · phiên bản 3.0 (mã 204) · cập nhật 11/10/2026</p>
         <p>Dự án cộng đồng của <a href="https://github.com/dangkhoi">dangkhoi</a> · giấy phép MIT · không chính thức.</p>
       </div>
       <div>
@@ -1238,7 +1362,7 @@ html:not(.js):has(#en:target,#english:target) .lang a[data-set-lang="vi"]{backgr
     </div>
     <div class="row" lang="en">
       <div>
-        <p><strong style="color:var(--text)">Kachi</strong> · version 2.97 (build 200) · updated 8 Oct 2026</p>
+        <p><strong style="color:var(--text)">Kachi</strong> · version 3.0 (build 204) · updated 11 Oct 2026</p>
         <p>A community project by <a href="https://github.com/dangkhoi">dangkhoi</a> · MIT licence · unofficial.</p>
       </div>
       <div>
