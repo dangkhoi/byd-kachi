@@ -344,19 +344,59 @@ class VoiceListenWiringContractTest {
             "nghe không ra `đồng ý` ⇒ KHÔNG. Im lặng không bao giờ được hiểu là đồng ý.")
         assertTrue(turns.contains("VoiceLexicon.confirmAnswer("),
             "câu trả lời có/không phải đọc bằng bảng ở `:core` (kiểm off-car), không bằng một `if` ở tầng vẽ")
-        // 1.70 — vai tiêu điểm âm thanh tách khỏi VoiceCapture sang VoiceAudioFocus (trần 500 dòng).
-        val audioFocus = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceAudioFocus.kt")
-        // 3.0 R4 VOICE-DUCK-MUSIC [ĐO xe 10/10]: hạ tiếng (MAY_DUCK) vẫn để micro thu lời bài hát ⇒ lượt nghe TẠM DỪNG nhạc.
-        assertTrue(audioFocus.contains("AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE"),
-            "lượt nghe phải TẠM DỪNG nhạc (EXCLUSIVE) — xem KDoc VoiceAudioFocus")
-        assertFalse(audioFocus.contains("AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK"), "không quay lại chỉ hạ tiếng khi nghe")
-        // Vòng đời một lượt: xin ở đầu lượt, nhả ở closeRecord — không có đường sống lâu hơn phiên.
+        // 3.0 R4 VOICE-DUCK-MUSIC (owner 11/10 chốt): lượt nghe HẠ âm lượng nhạc 20 %, trả mức cũ — KHÔNG dừng nhạc
+        // (`EXCLUSIVE` 10/10 bỏ), KHÔNG xin tiêu điểm nào khi nghe (MAY_DUCK chồng lên ⇒ hạ hai lần).
+        assertFalse(SourceRoots.exists("src/main/java/com/byd/clusternav/launcher/voice/VoiceAudioFocus.kt"),
+            "lớp xin tiêu điểm lượt nghe đã bỏ (R4 11/10)")
         val capture = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceCapture.kt")
-        assertTrue(capture.contains("VoiceAudioFocus.request(ctx)") && capture.contains("VoiceAudioFocus.abandon(ctx, focus)"),
-            "tiêu điểm lượt nghe phải được nhả ở closeRecord")
-        // Lượt chờ từ đánh thức KHÔNG xin tiêu điểm (owner 09-16: nghe lệnh khi đang mở nhạc).
+        assertFalse(capture.contains("requestAudioFocus") || capture.contains("AUDIOFOCUS_GAIN"),
+            "lượt nghe không xin tiêu điểm (không dừng nhạc, không hạ chồng)")
+        val duck = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceMusicDuck.kt")
+        assertFalse(duck.contains("AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE") || duck.contains("requestAudioFocus"),
+            "hạ nhạc = đổi chỉ số STREAM_MUSIC, không xin tiêu điểm")
+        assertTrue(duck.contains("setStreamVolume(AudioManager.STREAM_MUSIC, tgt, 0)"), "hạ không hiện thanh âm lượng (flags = 0)")
+        assertTrue(duck.contains("VoiceMusicDuckPolicy.target(") && duck.contains("VoiceMusicDuckPolicy.decide("),
+            "mức hạ + quyết định trả lại đi qua chính sách thuần ở :core (kiểm off-car)")
+        // Dấu bền ghi TRƯỚC khi hạ (CLAUDE.md §5): `write(…)` đứng trước `setStreamVolume(… tgt …)` trong lowerLocked.
+        assertTrue(duck.indexOf("if (!write(ctx, marker))") in 0 until duck.indexOf("setStreamVolume(AudioManager.STREAM_MUSIC, tgt, 0)"),
+            "dấu bền phải ghi TRƯỚC khi hạ — không dấu thì không hạ")
+        // Soát Fable 11/10 (R4): sau khi dấu đã ghi, lỗi AudioService là MƠ HỒ (đã hạ hay chưa) ⇒ không được xoá dấu —
+        // xoá là mất đường trả lại duy nhất khi `setStreamVolume` đã ăn mà đọc lại ném. `lowered = true` đứng trước lệnh hạ.
+        val lowerBody = duck.substring(duck.indexOf("private fun lowerLocked("), duck.indexOf("private fun recoverLocked("))
+        assertTrue(lowerBody.indexOf("lowered = true") in 0 until lowerBody.indexOf("am.setStreamVolume(AudioManager.STREAM_MUSIC, tgt, 0)"),
+            "đánh `lowered` TRƯỚC khi hạ ⇒ release trả theo mức thật dù hạ ném giữa chừng")
+        lowerBody.substring(lowerBody.indexOf("} catch (e: SecurityException)")).let { catches ->
+            assertFalse(catches.contains("clear(ctx)"), "lỗi sau khi ghi dấu ⇒ GIỮ dấu, không xoá")
+        }
+        // Trả lại mà AudioService ném ⇒ giữ dấu (settle trả false), và không hạ chồng lên dấu chưa trả được.
+        val settleBody = duck.substring(duck.indexOf("private fun settle("), duck.indexOf("private fun ownerAlive("))
+        assertTrue(settleBody.contains("): Boolean") && settleBody.contains("clear(ctx); true") && !settleBody.contains("finally"),
+            "settle chỉ xoá dấu khi đã quyết theo mức thật; ném ⇒ giữ dấu")
+        assertTrue(duck.contains("return settle(ctx, m, \"orphan"), "dấu sót chưa trả được ⇒ recoverLocked trả false ⇒ không hạ chồng")
+        // acquire/release/recoverAtStartup không ném ra ngoài (rò AudioRecord · giết tiến trình lúc khởi động).
+        assertEquals(3, Regex("""catch \(e: RuntimeException\) \{\s*\n\s*Log\.w\(TAG, "(hạ nhạc lỗi ngoài|trả nhạc lỗi ngoài|khôi phục dấu)""").findAll(duck).count(),
+            "acquire · release · recoverAtStartup đều phải bọc RuntimeException")
+        // Hạ khi mic mở, trả ở closeRecord — `finally` của listenGranted ⇒ mọi đường thoát (xong · hết giờ · lỗi · huỷ).
+        val acq = capture.indexOf("VoiceMusicDuck.acquire(ctx)")
+        val tryAt = capture.indexOf("try {", acq)
+        assertTrue(acq > 0 && tryAt > acq && capture.substring(acq, tryAt).lines().size <= 2,
+            "acquire phải đứng NGAY trước `try` có finally gọi closeRecord — không khe ném giữa hạ và finally")
+        val fin = capture.indexOf("} finally {", acq)
+        assertTrue(fin > 0 && capture.indexOf("closeRecord(record, tailBeep = beep)", fin) in fin until fin + 120,
+            "finally của lượt nghe phải gọi closeRecord")
+        val close = capture.substring(capture.indexOf("private fun closeRecord("))
+        val rel = close.indexOf("VoiceMusicDuck.release(ctx)")
+        assertTrue(rel in 0 until close.indexOf("Thread({"),
+            "trả nhạc ĐỒNG BỘ trong closeRecord (trước khi câu đi thi hành/đọc), không trên luồng nền")
+        // Tiến trình chết giữa lượt ⇒ khởi động sau trả lại.
+        val application = code("src/main/java/com/byd/clusternav/KachiApplication.kt")
+        assertTrue(application.contains("VoiceMusicDuck.recoverAtStartup(this)") &&
+            application.indexOf("VoiceMusicDuck.recoverAtStartup(this)") < application.indexOf("if (isBackgroundVoiceProcess()) return"),
+            "khôi phục dấu phải chạy cả ở `:wake` (đứng TRƯỚC cổng tiến trình nền)")
+        // Lượt chờ từ đánh thức KHÔNG hạ nhạc, KHÔNG xin tiêu điểm (owner 09-16: "Hey Kachi" khi đang mở nhạc).
         val wake = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeListener.kt")
-        assertFalse(wake.contains("requestAudioFocus") || wake.contains("VoiceAudioFocus"), "chờ đánh thức không được dừng nhạc")
+        assertFalse(wake.contains("requestAudioFocus") || wake.contains("VoiceMusicDuck") || wake.contains("setStreamVolume"),
+            "chờ đánh thức không được hạ/dừng nhạc")
     }
 
     /**

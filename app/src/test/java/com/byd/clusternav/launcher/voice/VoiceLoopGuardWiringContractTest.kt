@@ -203,7 +203,7 @@ class VoiceLoopGuardWiringContractTest {
         assertTrue(capture.contains("tailBeep: Boolean"), "đường đóng mic phải biết có được bíp cuối hay không")
         assertTrue(capture.contains("if (tailBeep) tone("), "và phải thật sự gác tiếng bíp ấy")
         assertTrue(
-            capture.contains("closeRecord(record, focus, tailBeep = beep)"),
+            capture.contains("closeRecord(record, tailBeep = beep)"),
             "lượt nào không bíp đầu thì cũng không bíp cuối — lượt nối mở micro chỉ ~50 ms sau khi đóng, " +
                 "mà [ĐO] tiếng bíp cuối mất tới 4955 ms để phát xong",
         )

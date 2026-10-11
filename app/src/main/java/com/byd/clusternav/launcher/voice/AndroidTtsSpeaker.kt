@@ -50,7 +50,8 @@ import java.util.concurrent.atomic.AtomicReference
  * [VoiceSpeakerSelector.LANG_AVAILABLE] — xem KDoc ở đó.
  *
  * ## Tiêu điểm âm thanh: `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK` + `CONTENT_TYPE_SPEECH`
- * (3.0 R4: lượt NGHE đã đổi sang `EXCLUSIVE` ở [VoiceAudioFocus] vì micro thu lời bài hát; lượt ĐỌC thì không nghe gì). Nhạc chỉ
+ * (3.0 R4: lượt NGHE không xin tiêu điểm nữa mà hạ âm lượng nhạc 20 % ở [VoiceMusicDuck] — trả lại TRƯỚC khi đọc, vì câu đọc
+ * `USAGE_ASSISTANT` chung núm `STREAM_MUSIC`; lượt ĐỌC thì không nghe gì nên giữ `MAY_DUCK`). Nhạc chỉ
  * **nhỏ xuống** chứ không dừng: một câu xác nhận 2 giây mà làm đứt bài nhạc đang nghe là một cái giá không ai
  * chịu trả hai lần — họ sẽ tắt luôn tính năng.
  */

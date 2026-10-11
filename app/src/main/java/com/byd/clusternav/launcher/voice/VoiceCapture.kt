@@ -3,7 +3,6 @@ package com.byd.clusternav.launcher.voice
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.media.AudioFocusRequest
 import android.media.AudioRecord
 import android.media.ToneGenerator
 import android.util.Log
@@ -29,8 +28,9 @@ import android.util.Log
  *     bỏ qua AGC/khử ồn nên sạch hơn cho mô hình"* đúng về cơ chế nhưng **bị [ĐO xe] bác về quy kết**: trên ROM
  *     này nguồn 6 cho tiếng gần câm 3/4 lượt. Thứ tự + lý do đầy đủ ở [VoiceMicSource]; ROM vẫn có thể dựng ra
  *     `AudioRecord` `STATE_UNINITIALIZED` **mà không ném**, nên vẫn phải kiểm trạng thái rồi mới lùi nguồn sau.
- *  2. **KHÔNG tắt nhạc — chỉ xin `TRANSIENT_MAY_DUCK`.** Dừng hẳn nhạc cho một câu 3 giây là cắt ngang thứ
- *     người ta đang nghe rồi trả lại ở chỗ khác. Hạ tiếng thì đủ để micro nghe rõ mà bài hát không đứt.
+ *  2. **KHÔNG tắt nhạc — hạ âm lượng nhạc xuống 20 % trong lúc mic mở** (3.0 R4, owner 11/10; [VoiceMusicDuck]). Dừng
+ *     hẳn nhạc cho một câu 3 giây là cắt ngang thứ người ta đang nghe; `MAY_DUCK` (≤ 2.99) thì [ĐO xe 10/10] vẫn để micro
+ *     thu lời bài hát. Hạ chỉ số `STREAM_MUSIC` rồi trả đúng mức cũ khi mic đóng.
  *  3. **Âm báo, không phải giọng nói.** Tiếng "bíp" đầu/cuối trả lời đúng câu hỏi duy nhất người lái có lúc ấy
  *     (*"nó bắt đầu/kết thúc nghe chưa"*) trong 80 ms, không cần nhìn màn hình, và **không cần TTS** — thứ còn
  *     [CHƯA BIẾT] trên xe này.
@@ -205,11 +205,13 @@ internal class VoiceCapture(private val ctx: Context) {
         if (beep) VoiceChime.start()   // #1 (owner 2026-09-24) — earcon READY TRƯỚC khi mở mic: kêu ngay + không nhiễm nền.
         val opened = VoiceCaptureDevice.open(ctx) ?: return Heard("", kept, keptN)
         val record = opened.record
-        val focus = VoiceAudioFocus.request(ctx)
         // Bộ ngắt câu của lượt này: Silero VAD nếu dựng được, lùi về bộ RMS (xem [VoiceTurnEndpoint]). Dựng SAU
         // khi micro đã mở: nó tốn vài chục–vài trăm ms nạp ONNX, và trả cái giá ấy trước khi biết có mở được
         // micro hay không là trả cho một lượt có thể không bao giờ chạy.
         val ep = VoiceTurnEndpoint.open(ctx, endpointer)
+        // 3.0 R4 (owner 11/10): hạ nhạc 20 % trong lúc mic mở, KHÔNG xin tiêu điểm — trả lại ở [closeRecord] (`finally`
+        // ngay dưới ⇒ mọi đường thoát: xong · hết giờ · lỗi · huỷ). Dấu bền + vì sao theo lượt: KDoc [VoiceMusicDuck].
+        VoiceMusicDuck.acquire(ctx)
         try {
             runCatching { record.startRecording() }.onFailure {
                 Log.w(TAG, "startRecording hỏng", it); return Heard("", kept, keptN)
@@ -340,7 +342,7 @@ internal class VoiceCapture(private val ctx: Context) {
             )
         } finally {
             ep.close()
-            closeRecord(record, focus, tailBeep = beep)
+            closeRecord(record, tailBeep = beep)
         }
     }
 
@@ -361,15 +363,18 @@ internal class VoiceCapture(private val ctx: Context) {
      *     liên quan tới câu họ vừa nói. `stop`/`release` thì **ở lại** đúng chỗ: chúng phải xong trước khi phiên
      *     sau mở `AudioRecord` thứ hai (hazard đã ghi ở KDoc `VoiceSession.cancel`).
      */
-    private fun closeRecord(record: AudioRecord, focus: AudioFocusRequest?, tailBeep: Boolean) {
+    private fun closeRecord(record: AudioRecord, tailBeep: Boolean) {
         val t0 = System.currentTimeMillis()
         runCatching { record.stop() }
         val tStop = System.currentTimeMillis()
         runCatching { record.release() }
         val tRelease = System.currentTimeMillis()
+        // 3.0 R4 — trả nhạc ĐỒNG BỘ, trước khi câu đi thi hành/đọc trả lời: giọng đọc (`USAGE_ASSISTANT`) chung núm
+        // `STREAM_MUSIC` với nhạc, và lệnh đổi âm lượng bằng giọng phải chạy SAU khi mức gốc đã về (KDoc [VoiceMusicDuck]).
+        VoiceMusicDuck.release(ctx)
         Log.i(
             VoiceEngine.TIMING_TAG,
-            "đóng mic: stop ${tStop - t0} ms · release ${tRelease - tStop} ms (bíp + nhả tiêu điểm chạy nền)",
+            "đóng mic: stop ${tStop - t0} ms · release ${tRelease - tStop} ms · trả nhạc ${System.currentTimeMillis() - tRelease} ms (bíp chạy nền)",
         )
         Thread({
             val t1 = System.currentTimeMillis()
@@ -383,11 +388,9 @@ internal class VoiceCapture(private val ctx: Context) {
             // một tiếng bíp sau mỗi câu trả lời vốn đã là thứ làm người ta tắt tính năng (KDoc tham số `beep`).
             // 1.70: [tone] không chặn nữa ⇒ số "bíp … ms" ở dòng dưới đo lượt XẾP HÀNG, không đo lượt phát.
             if (tailBeep) tone(ToneGenerator.TONE_PROP_ACK, TONE_END_MS)
-            val t2 = System.currentTimeMillis()
-            VoiceAudioFocus.abandon(ctx, focus)
             Log.i(
                 VoiceEngine.TIMING_TAG,
-                "nền: bíp ${t2 - t1} ms · nhả tiêu điểm ${System.currentTimeMillis() - t2} ms" +
+                "nền: bíp ${System.currentTimeMillis() - t1} ms" +
                     if (VoiceChime.disabled()) " · âm báo ĐÃ TẮT (cầu chì)" else "",
             )
         }, "KachiMicTail").apply { isDaemon = true }.start()

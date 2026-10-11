@@ -43,6 +43,10 @@ class KachiApplication : Application() {
             runCatching { Application.getProcessName() }.getOrNull(), packageName,
             VoiceWakeService.PROCESS_SUFFIX, PiperTtsService.PROCESS_SUFFIX,
         )?.let { tag -> runCatching { KachiLog.startCapture(this, tag) } }
+        // 3.0 R4 VOICE-DUCK-MUSIC — tiến trình nghe (main · `:wake`) chết giữa lượt nghe (BYD giết Kachi lúc tắt máy) ⇒ nhạc
+        // kẹt ở 20 %. Dấu bền của pid đã chết ⇒ trả mức cũ (chỉ khi người dùng chưa vặn núm). Luồng nền; không dấu ⇒ một
+        // `File.exists`. `:tts` không bao giờ hạ ⇒ bỏ qua. KDoc [com.byd.clusternav.launcher.voice.VoiceMusicDuck].
+        if (!isTtsProcess()) com.byd.clusternav.launcher.voice.VoiceMusicDuck.recoverAtStartup(this)
         if (isBackgroundVoiceProcess()) return
         // R4(b) — StrictMode CHỈ log, CHỈ build type `debug` (máy ảo). Đặt TRƯỚC `AppContainer.get` để vi phạm lúc
         // dựng đồ thị cũng lộ. Luật bật/tắt ở [StrictModeGate] (thuần, có bài canh). Không `penaltyDeath`.
@@ -107,6 +111,10 @@ class KachiApplication : Application() {
         val name = runCatching { Application.getProcessName() }.getOrNull() ?: return true
         return name.endsWith(PiperTtsService.PROCESS_SUFFIX) || name.endsWith(VoiceWakeService.PROCESS_SUFFIX)
     }
+
+    /** Tiến trình `:tts` (chỉ đọc) — không chạy phiên nghe. Không đọc được tên ⇒ `false` (cứ chạy khôi phục: nó tự an toàn). */
+    private fun isTtsProcess(): Boolean =
+        runCatching { Application.getProcessName() }.getOrNull()?.endsWith(PiperTtsService.PROCESS_SUFFIX) == true
 
     /**
      * `StrictMode` chỉ-log cho máy ảo (R4(b)): `ThreadPolicy` bắt disk/network/slow-call trên luồng chính,
