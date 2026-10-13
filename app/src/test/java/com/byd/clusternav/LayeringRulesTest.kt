@@ -148,6 +148,9 @@ class LayeringRulesTest {
         // Bridge extension W-WAKE: gọi VoiceWakeService (FGS Android) + Prefs(Context) qua lời gọi; "thuần" chỉ
         // vì phép đo soi `import android.*` + vài tên lớp, không soi phụ thuộc bắc cầu. Thực thuộc :app.
         "ClusterNavBridgeWake.kt" to "cầu Settings gọi VoiceWakeService/Prefs — không chuyển được sang :core",
+        // 3.1 R6 (kachi-301): extension của `ClusterNavBridge` (:app) cho "Dịch nội dung" — mọi lời gọi đi qua
+        // `coordinator`/`castState()` của cầu; logic thuần đã ở :core (`CastContentShift*`). Cùng lẽ ClusterNavBridgeWake.
+        "ClusterNavBridgeContentShift.kt" to "cầu Settings gọi coordinator của ClusterNavBridge — logic thuần đã ở :core",
         // 1.85 — cùng ca `ClusterNavBridgeWake.kt`: hàm mở rộng của một lớp `:app` (`ClusterNavBridge`), gọi
         // `AutomationService` (FGS Android) + `Prefs(Context)` + `ScheduledNavApplier` qua lời gọi. Nó "thuần" chỉ
         // vì phép đo soi `import android.*` + vài tên lớp, không soi phụ thuộc bắc cầu. `:core` không thể chứa nó

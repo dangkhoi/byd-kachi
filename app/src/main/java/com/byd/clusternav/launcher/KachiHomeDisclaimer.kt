@@ -1,7 +1,6 @@
 package com.byd.clusternav.launcher
 
 import android.app.Activity
-import android.app.AlertDialog
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
 
@@ -25,9 +24,14 @@ import com.byd.clusternav.R
 internal fun Activity.maybeShowDisclaimer() {
     if (isFinishing || isDestroyed || Prefs.disclaimerShown(this)) return
     Prefs.setDisclaimerShown(this, true)
-    AlertDialog.Builder(this)
-        .setTitle(getString(R.string.kachi_disclaimer_title))
-        .setMessage(getString(R.string.kachi_disclaimer_body))
-        .setPositiveButton(getString(R.string.kachi_disclaimer_ok), null)
+    // KACHI-301 R13 · #20 — khuôn THÔNG BÁO dựng trực tiếp trên [KachiDialog] (không qua [KachiDialogs.notice]) chỉ để giữ
+    // nhãn nút riêng `kachi_disclaimer_ok` ("Đã hiểu") thay cho "OK" chung. Đóng được bằng Back/chạm ngoài như hộp cũ
+    // (AlertDialog mặc định cancelable) — cờ đã đặt TRƯỚC nên đóng kiểu nào cũng không hiện lại.
+    KachiDialog(this)
+        .title(getString(R.string.kachi_disclaimer_title))
+        .icon(R.drawable.ic_alert)
+        .message(getString(R.string.kachi_disclaimer_body))
+        .noCancel()
+        .primary(getString(R.string.kachi_disclaimer_ok)) {}
         .show()
 }

@@ -197,8 +197,9 @@ class CastApplyPinnedTest {
     fun `khung vuot khung do duoc bi kep, uu tien Override`() {
         val shell = Shell("Physical size: 1920x720\nOverride size: 1280x480")
         CastGeometryController(shell, FakePrefs(), { 2 }) {}
-            .applyPinned("vn.vietmap.live", DisplayConfig("1920x720", "0,0,0,0", "reset", CastBounds(100, 0, 1920, 720)))
-        assertTrue(shell.history.contains("am task resize 100 100 0 1280 480"), "kẹp theo 1280×480: ${shell.history}")
+            .applyPinned("vn.vietmap.live", DisplayConfig("1920x720", "0,0,0,0", "reset", CastBounds(1500, 0, 4000, 2000)))
+        // 3.1 · R7: mép phải/dưới được TRÀN tới +50 % khung ĐO ĐƯỢC (1280×480 ⇒ 1920×720), mép trái vẫn chừa MIN_SPAN trong khung.
+        assertTrue(shell.history.contains("am task resize 100 1200 0 1920 720"), "kẹp theo 1280×480 (+50 % tràn): ${shell.history}")
         assertTrue(shell.history.none { it.startsWith("wm density") }, "density reset ⇒ không chạm DPI")
     }
 

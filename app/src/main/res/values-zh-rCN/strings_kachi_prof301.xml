@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R10 — chữ của bộ chọn hồ sơ + hộp Xoá hồ sơ (ProfileChip / SettingsSectionsProfiles). Tệp riêng, tiền tố
+     kprof_ (KHÔNG phải kachi_: bài khoá mồ côi của LauncherI18nContractTest chỉ đọc values/strings_kachi.xml); cùng tập
+     khoá ở cả 5 thư mục (ProfileDialog301ContractTest canh). -->
+<resources>
+    <string name="kprof_pick_subtitle">切换将应用布局、仪表、按键和外观</string>
+    <string name="kprof_delete_title">删除档案“%1$s”？</string>
+    <string name="kprof_delete_message">此档案保存的一切都将丢失：布局和格子、按钮栏、外观、地址簿、方向盘按键、仪表投屏（每个应用的框架/DPI）、摄像头、导航计划。无法撤销——如需保留，请先导出档案。</string>
+    <string name="kprof_delete_confirm">删除档案</string>
+</resources>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- HÉ TẤT CẢ KÍNH 50% (chân widget Kính, 3.01 POLISH; POLISH2 owner 13/10 "vẽ thanh mảnh") — cùng khung cửa sổ bên nét MẢNH 1.25 như mở/đóng tất cả, kính hạ NỬA (mép kính ngang giữa khung, phần kính còn lại tô nhạt), mũi ĐƠN xuống nhỏ gọn = đi nửa hành trình; một tông để tint mực/nhấn. -->
+  <style>:root{--ink:#ffffff;--main:#eaf0f8;--light:#ffffff;--deep:#b9c4d4}</style>
+  <path d="M4.6,18.2 L4.6,13.8 L10.4,6.2 L17.2,6.2 A2.4,2.4 0 0 1 19.6,8.6 L19.6,18.2 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M6.4,16.6 L6.4,13.6 L7.6,12 L18,12 L18,16.6 Z" data-layer="bg" fill="var(--main)" stroke="none" opacity="0.16"/>
+  <path d="M7.6,12 L18,12" data-layer="sub" fill="none" stroke="var(--main)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M11.2,8 L13,9.8 L14.8,8" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

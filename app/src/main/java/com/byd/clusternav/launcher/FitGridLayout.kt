@@ -491,6 +491,7 @@ internal class FitGridLayout private constructor(
         fun selfFitting(v: View): Boolean = when (v) {
             is RingView, is TyreBoardView, is PhotoWidgetView, is CarMiniView, is DoorBoardView,
             is ShortcutIconsView, is ShortcutGridLayout, is GroupTileView, is FitGridLayout, is MediaFitLayout -> true
+            is Car3dWidgetView -> true   // 3.01 R28: tự lấp khung; FitScale phóng nút 72→104 px ⇒ chân hết chỗ [ĐO máy ảo 13/10]
             is ViewGroup -> (0 until v.childCount).any { selfFitting(v.getChildAt(it)) }
             else -> false
         }

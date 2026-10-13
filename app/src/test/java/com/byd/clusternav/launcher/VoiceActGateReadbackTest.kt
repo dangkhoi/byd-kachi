@@ -48,7 +48,10 @@ class VoiceActGateReadbackTest {
         }
     }
 
-    private class Rig(reads: Map<String, List<Int?>> = emptyMap(), private val speedKmh: Int? = null) {
+    private class Rig(
+        reads: Map<String, List<Int?>> = emptyMap(), private val speedKmh: Int? = null, private val gear: String? = null,
+    ) {
+        val motionReads = ArrayList<String>()
         val port = Port(reads.mapValues { it.value.toMutableList() }.toMutableMap())
         val said = ArrayList<String>()
 
@@ -58,7 +61,7 @@ class VoiceActGateReadbackTest {
             state = {
                 HomeUiState(
                     profiles = listOf("Mặc định"),
-                    carStatus = CarStatus(drivetrain = CarStatus.Drivetrain(speedKmh = speedKmh)),
+                    carStatus = CarStatus(drivetrain = CarStatus.Drivetrain(speedKmh = speedKmh, gear = gear)),
                 )
             },
             media = { error("bài này không chạm tới nhạc") },
@@ -77,8 +80,9 @@ class VoiceActGateReadbackTest {
             // Lượt đọc lại chạy trên luồng NỀN; bài cần kết quả tất định nên chạy thẳng.
             background = { it() },
             freshCar = { id ->
+                motionReads += id
                 if (!fresh) null
-                else CarStatus(drivetrain = CarStatus.Drivetrain(speedKmh = speedKmh)).takeIf { id == "speed" }
+                else CarStatus(drivetrain = CarStatus.Drivetrain(speedKmh = speedKmh, gear = gear)).takeIf { id == "speed" || id == "gear" }
             },
         )
 
@@ -94,7 +98,7 @@ class VoiceActGateReadbackTest {
         r.run("trunk", 1)
         assertEquals(emptyList<String>(), r.port.fired, "xe đang chạy mà vẫn bắn lệnh mở cốp là đúng thứ C chặn")
         assertEquals(listOf(VoiceReply.notWhileMoving(VoiceIntent.Control("trunk", 1))), r.said)
-        assertTrue(r.said.single().contains("dừng"), "câu trả lời phải nói ĐIỀU KIỆN mở được: ${r.said}")
+        assertEquals(listOf("Dừng xe để mở cốp"), r.said, "owner 13/10: giọng nói nói ĐÚNG câu của cổng chạm (kctl_stop_to_open_trunk)")
     }
 
     /**
@@ -136,17 +140,37 @@ class VoiceActGateReadbackTest {
     }
 
     /**
-     * Không đọc được tốc độ (`null` ở cả đường tươi lẫn ảnh chụp) ⇒ **CHO PHÉP** (fail-open).
-     *
-     * Có chủ ý: [ĐO] `speed` ở mức PROVEN nên trên xe thật gate có số để chạy; `null` gần như chỉ xảy ra off-car /
-     * máy ảo, nơi chẳng có cốp nào để bung. Chọn fail-closed thì mỗi lần đọc hụt trên một chiếc xe đang **đỗ** sẽ
-     * thành một lời từ chối cho việc hoàn toàn an toàn — tức cổng an toàn tự biến thành lỗi.
+     * ═══ 3.01 · owner 13/10 *"vậy làm theo luật mới hết đi cho chắc ăn"* — thay bài fail-open cũ ═══════════════════════
+     * Tới 3.01 bài này khoá *"không đọc được tốc độ ⇒ CHO mở"* (fail-open, lý lẽ: `speed` PROVEN nên `null` hiếm). Owner
+     * chọn CÙNG luật với cú chạm: không tốc độ ⇒ hỏi SỐ; chỉ P (chữ hoặc mã thô HAL 3) mới mở; R/N/D hay không đọc được số
+     * ⇒ chặn, câu = câu của cổng chạm. Xe đỗ mất tốc độ vẫn mở được nhờ số P — giá fail-safe chỉ còn ở ca mất CẢ HAI.
      */
     @Test
-    fun `khong doc duoc toc do thi van cho mo`() {
-        val r = Rig(speedKmh = null)
-        r.run("trunk", 1)
-        assertEquals(listOf("cover:trunk:true"), r.port.fired, "null ≠ đang chạy — không được từ chối")
+    fun `khong doc duoc toc do thi chi so P moi cho mo`() {
+        Rig(speedKmh = null, gear = "P").also {
+            it.run("trunk", 1)
+            assertEquals(listOf("cover:trunk:true"), it.port.fired, "không tốc độ + số P ⇒ mở")
+            assertEquals(listOf("speed", "gear"), it.motionReads, "số chỉ đọc khi không có tốc độ")
+        }
+        Rig(speedKmh = null, gear = "3").also { it.run("trunk", 1); assertEquals(listOf("cover:trunk:true"), it.port.fired) }
+        for (g in listOf("D", "R", "N", "255", null)) {
+            Rig(speedKmh = null, gear = g).also {
+                it.run("trunk", 1)
+                assertEquals(emptyList<String>(), it.port.fired, "không tốc độ + số '$g' ⇒ CHẶN (fail-safe)")
+                assertEquals(listOf(VoiceReply.notWhileMoving(VoiceIntent.Control("trunk", 1))), it.said)
+            }
+        }
+    }
+
+    /** Tốc độ đọc được thắng số: 5 km/h mà số còn báo P (đọc trễ) vẫn là đang chạy; 0 km/h số D vẫn mở. */
+    @Test
+    fun `toc do doc duoc thang so`() {
+        Rig(speedKmh = 5, gear = "P").also { it.run("trunk", 1); assertEquals(emptyList<String>(), it.port.fired) }
+        Rig(speedKmh = 0, gear = "D").also {
+            it.run("trunk", 1)
+            assertEquals(listOf("cover:trunk:true"), it.port.fired)
+            assertEquals(listOf("speed"), it.motionReads, "có tốc độ ⇒ không tốn lượt đọc số")
+        }
     }
 
     /** Đường đọc TƯƠI hụt ⇒ lùi về ảnh chụp [HomeUiState], và ảnh chụp nói đang chạy thì vẫn phải chặn. */

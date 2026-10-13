@@ -82,7 +82,33 @@ object CarDataDemand {
         "w_media" to emptySet(),
         "w_photos" to emptySet(),
         "w_apps" to emptySet(),   // F1 R1.3 — icon lối tắt, không đọc xe
+        // 3.01 R25 — xe 3D đọc ĐỦ ba nhóm của [Car3dCatalog.GROUPS] (chấm kính · cửa mở ⇒ cánh cửa mở · đèn sáng ⇒ bản sáng).
+        // Bản chép tay của `CapabilityGroups.{WINDOWS,DOORS,LIGHTS}.reads`; `CarDataDemandTest` đo hai bên khớp.
+        "w_car3d" to setOf(
+            "window_lf", "window_rf", "window_lr", "window_rr",
+            "door_lf", "door_rf", "door_lr", "door_rr", "sunroof_state", "sunshade_pct",
+            "light_low_beam", "light_high_beam", "light_front_fog", "light_rear_fog",
+            "light_left_turn", "light_right_turn", "light_side", "light_drl", "headlight_feedback",
+            // 3.01 R28 (xe 3D là hero) — mức sưởi/mát hai ghế (cùng cặp chip ghế — có chip thì hợp tập, 0 lượt đọc thêm).
+            "seat_heat_state", "seat_vent_state", "seat_heat_state_r", "seat_vent_state_r",
+        ),
     )
+
+    /**
+     * 3.01 R28 — số lốp dưới từng bánh của xe 3D (cùng tập `w_tire`; 13 mã phán màu đi theo [COMPANION]). CHỈ khi công tắc "Hiện thông
+     * số lốp" của hồ sơ BẬT ([ColorChoice.carTyres]) — TẮT thì không đọc (tiết kiệm [ĐO off-car `Car3dHeroTest`] 72 lượt/phút).
+     */
+    val CAR3D_TYRES: Set<String> = setOf(
+        "tyre_p_fl", "tyre_p_fr", "tyre_p_rl", "tyre_p_rr",
+        "tyre_t_fl", "tyre_t_fr", "tyre_t_rl", "tyre_t_rr",
+    )
+
+    /**
+     * 3.01 R28 — Ô NÚT mà một widget dựng tay MANG (ẩn, ghi qua `ControlTileFactory`) và cần số THẬT để hiện: hàng chân xe 3D bày
+     * nhiệt · gió (+ gió tự động qua [ControlDef.autoId]) · lấy gió trong/ngoài. Vào [controlsOf] như ô nút đặt trên màn (một lượt
+     * `readState` mỗi nút ở nhịp CHẬM, chỉ khi widget có trên màn). Ghế đọc bằng DATUM ở [CURATED] (không đọc lần hai).
+     */
+    val HOSTED: Map<String, List<String>> = mapOf("w_car3d" to listOf("temp", "fan", "recirc"))
 
     /**
      * Datum của ba chip TỔNG HỢP dựng sẵn ([TopStripChips]) — chúng KHÔNG phải một datum nên không tra được qua
@@ -145,6 +171,7 @@ object CarDataDemand {
         state.workspace.slots.forEach { slot ->
             if (slot is SlotContent.Widget) slot.ids.forEach { if (!expand(it, out)) return null }
         }
+        if (state.colorChoice.carTyres && state.workspace.slots.any { it is SlotContent.Widget && "w_car3d" in it.ids }) out += CAR3D_TYRES
         val companions = out.flatMap { COMPANION[it].orEmpty() }   // sau khi gom XONG — xem ⚠ ở KDoc [COMPANION]
         out += companions
         return out
@@ -178,7 +205,7 @@ object CarDataDemand {
         }
         state.dock.enabled.forEach(::scan)
         state.workspace.slots.forEach { slot ->
-            if (slot is SlotContent.Widget) slot.ids.forEach(::scan)
+            if (slot is SlotContent.Widget) slot.ids.forEach { id -> scan(id); HOSTED[id]?.forEach(::scan) }
         }
         return out
     }
@@ -226,8 +253,11 @@ object CarDataDemand {
      *
      * Mặc định `null` = **đọc hết**: lượt poll đầu tiên (trước khi state đầu tiên về) làm tươi mọi datum một lần,
      * đúng thứ ta muốn khi vừa mở màn.
+     *
+     * 3.01 LAMPLIVE — [onScreen] nghe ĐÚNG hai lời công bố của màn chính ([set] mỗi lượt state · [clear] lúc `onStop`) để
+     * `LampSignalDemand.Watch` biết bảng Đèn/xe 3D có đang bày đèn không — không đường thứ hai suy "đang hiện gì".
      */
-    class Holder {
+    class Holder(private val onScreen: (Set<String>?) -> Unit = {}) {
         @Volatile private var value: Set<String>? = null
 
         /**
@@ -248,7 +278,7 @@ object CarDataDemand {
          */
         @Volatile private var controls: Set<String> = emptySet()
 
-        fun set(v: Set<String>?) { value = v }
+        fun set(v: Set<String>?) { value = v; onScreen(v) }
 
         /** Đặt tập nút đang hiện (từ [controlsOf]). Màn rời tiền cảnh ⇒ [clear] xoá về rỗng = không đọc control nào. */
         fun setControls(ids: Set<String>) { controls = ids }
@@ -298,7 +328,7 @@ object CarDataDemand {
         }
 
         /** Màn chính rời tiền cảnh ⇒ quên nhu cầu; lần mở sau bắt đầu lại bằng một lượt đọc đủ. */
-        fun clear() { value = null; extra = emptySet(); controls = emptySet() }
+        fun clear() { value = null; extra = emptySet(); controls = emptySet(); onScreen(null) }
     }
 
     /**

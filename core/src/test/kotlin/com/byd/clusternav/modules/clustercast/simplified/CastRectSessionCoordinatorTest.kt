@@ -184,7 +184,8 @@ class CastRectSessionCoordinatorTest {
         coordinator.dispatch(SimpleCastIntent.CastSlot(app, ClusterSlotSide.LEFT))
         awaitState<SimpleCastState.CastingSplit>()
         awaitTrue { resizesTo("0 0 960 720", mark) >= 1 }
-        assertTrue(wmSizes(mark).all { it == "wm size 1920x720 -d 1" }, "chỉ wm size 1:1: ${wmSizes(mark)}")
+        // 3.1 · R26: resize ăn ⇒ `wm size reset` (về kích vật lý = 1:1) là hợp lệ; cấm mọi kích khác.
+        assertTrue(wmSizes(mark).all { it == "wm size 1920x720 -d 1" || it == "wm size reset -d 1" }, "chỉ wm size 1:1: ${wmSizes(mark)}")
         val st = coordinator.state as SimpleCastState.CastingSplit
         assertEquals(DisplayConfig.NORMAL_DEFAULT.wmSize, st.left!!.displayConfig.wmSize, "ô mang cấu hình 1:1: ${st.left?.displayConfig}")
         assertEquals(DisplayConfig.NORMAL_DEFAULT.overscan, st.left!!.displayConfig.overscan)

@@ -1,0 +1,31 @@
+[before-ui-base #1 base] trước: vol=10 yt=state:started
+[before-ui-base #1] +1,5 s đang nghe: vol=2 yt=state:started
+[before-ui-base #1] sau lượt: vol=10 yt=state:started
+[before-ui-base #2 base] trước: vol=10 yt=state:started
+[before-ui-base #2] +1,5 s đang nghe: vol=2 yt=state:started
+[before-ui-base #2] sau lượt: vol=10 yt=state:started
+[before-ui-base #3 base] trước: vol=10 yt=state:started
+[before-ui-base #3] +1,5 s đang nghe: vol=2 yt=state:started
+[before-ui-base #3] sau lượt: vol=10 yt=state:started
+[before-ui-base #4 base] trước: vol=10 yt=state:started
+[before-ui-base #4] +1,5 s đang nghe: vol=2 yt=state:started
+[before-ui-base #4] sau lượt: vol=10 yt=state:started
+[before-ui-base #5 base] trước: vol=10 yt=state:started
+[before-ui-base #5] +1,5 s đang nghe: vol=2 yt=state:started
+[before-ui-base #5] sau lượt: vol=10 yt=state:started
+[before-ui-base #6 base] trước: vol=10 yt=state:started
+[before-ui-base #6] +1,5 s đang nghe: vol=2 yt=state:started
+[before-ui-base #6] sau lượt: vol=10 yt=state:started
+[before-ui-kill #1 kill] trước: vol=10 yt=state:started
+[before-ui-kill #1] +1,5 s đang nghe: vol=2 yt=state:started
+[before-ui-kill #1] force-stop +2 s: vol=10 yt=state:started
+[before-ui-kill #1] khởi động lại +4 s: vol=10 yt=state:started
+[before-ui-kill #1] sau lượt: vol=10 yt=state:started
+[before-ui-knob #1 knob] trước: vol=10 yt=state:started
+[before-ui-knob #1] +1,5 s đang nghe: vol=2 yt=state:started
+[before-ui-knob #1] vặn núm → 6: vol=6
+[before-ui-knob #1] sau lượt: vol=6 yt=state:started
+[before-ui-knob #2 knob] trước: vol=10 yt=state:started
+[before-ui-knob #2] +1,5 s đang nghe: vol=2 yt=state:started
+[before-ui-knob #2] vặn núm → 6: vol=6
+[before-ui-knob #2] sau lượt: vol=6 yt=state:started

@@ -5,11 +5,12 @@ import org.junit.jupiter.api.Test
 
 class WidgetRegistryTest {
 
-    @Test fun `co 10 widget id duy nhat`() {
+    @Test fun `co 11 widget id duy nhat`() {
         // Chốt số lượng để ai thêm widget phải nghĩ. 8 cái đầu = bộ prototype owner đã duyệt; cái thứ 9
         // (trình chiếu ảnh) thêm ở U4 theo yêu cầu owner — xem spec kachi-wallpaper.html; cái thứ 10 (lưới lối tắt
-        // ứng dụng `w_apps`) theo owner 01/10 — spec kachi-launcher-shortcuts-autostart.html R1.3.
-        assertEquals(10, WidgetRegistry.ALL.size)
+        // ứng dụng `w_apps`) theo owner 01/10 — spec kachi-launcher-shortcuts-autostart.html R1.3; cái thứ 11 (xe 3D
+        // `w_car3d`, chỉ ô lớn) theo owner 13/10 — spec kachi-301-cast-steps-dialog-ia.html R25.
+        assertEquals(11, WidgetRegistry.ALL.size)
         val ids = WidgetRegistry.ALL.map { it.id }
         assertEquals(ids.size, ids.toSet().size)
     }

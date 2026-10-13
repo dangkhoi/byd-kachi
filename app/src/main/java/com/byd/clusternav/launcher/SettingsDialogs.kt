@@ -1,12 +1,11 @@
 package com.byd.clusternav.launcher
 
-import android.app.AlertDialog
 import android.content.Context
 import android.text.InputType
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.byd.clusternav.R
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * BA HỘP THOẠI dùng chung của màn Cài đặt: **chọn một mục** · **hỏi lại trước khi làm** · **hỏi một cái tên**.
@@ -25,6 +24,10 @@ import com.byd.clusternav.R
  * [pick] với danh sách rỗng mà `show()` một hộp trắng thì người dùng bấm nút xong thấy… không có gì. Mọi ca rỗng
  * ở đây đều là ca THẬT (máy chưa cài app nào chiếu được; chưa học nút nào), nên nó hiện [emptyText] — cùng luật
  * *"cú bấm không có tác dụng thì phải NÓI lý do"* mà `TopStripPicker.toggle` và nút bố cục sẵn ở P9 đã lập ra.
+ *
+ * ## KACHI-301 R8 — khung nay là [KachiDialog], không còn `AlertDialog`
+ * Chữ ký mọi hàm GIỮ NGUYÊN (0 chỗ gọi đổi); chỉ ruột đổi sang bốn khuôn [KachiDialogs] ⇒ nền/bo/chữ/nút theo bảng
+ * Kachi Sáng/Tối thay vì khung BYD. `KachiDialogContractTest` đỏ nếu `AlertDialog.Builder` quay lại tệp này.
  */
 internal object SettingsDialogs {
 
@@ -33,15 +36,7 @@ internal object SettingsDialogs {
      * nhãn có thể trùng nhau (hai app cùng tên) còn chỉ số thì không.
      */
     fun pick(context: Context, title: String, labels: List<String>, emptyText: String, onPick: (Int) -> Unit) {
-        if (labels.isEmpty()) {
-            notice(context, title, emptyText)
-            return
-        }
-        AlertDialog.Builder(context)
-            .setTitle(title)
-            .setItems(labels.toTypedArray()) { _, which -> onPick(which) }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        KachiDialogs.pick(context, title, labels.map { PickItem(it) }, emptyText = emptyText, onPick = onPick)
     }
 
     /**
@@ -52,11 +47,7 @@ internal object SettingsDialogs {
      * thông báo là mở lại đúng cánh cửa mà KDoc lớp này đóng.
      */
     fun notice(context: Context, title: String, message: String) {
-        AlertDialog.Builder(context)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton(android.R.string.ok, null)
-            .show()
+        KachiDialogs.notice(context, title, message)
     }
 
     /**
@@ -71,7 +62,9 @@ internal object SettingsDialogs {
         message: String,
         confirmLabel: String,
         onConfirm: () -> Unit,
-    ) = offer(context, title, message, confirmLabel, context.getString(android.R.string.cancel), onConfirm)
+    ) {
+        KachiDialogs.confirm(context, title, message, confirmLabel, onConfirm = onConfirm)
+    }
 
     /**
      * Như [confirm] nhưng nút từ chối cũng mang nhãn của chỗ gọi — FIX286 · PI3: sau khi nhập hồ sơ thì việc đã XONG,
@@ -85,12 +78,7 @@ internal object SettingsDialogs {
         dismissLabel: String,
         onConfirm: () -> Unit,
     ) {
-        AlertDialog.Builder(context)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton(confirmLabel) { _, _ -> onConfirm() }
-            .setNegativeButton(dismissLabel, null)
-            .show()
+        KachiDialogs.confirm(context, title, message, confirmLabel, cancelLabel = dismissLabel, onConfirm = onConfirm)
     }
 
     /**
@@ -101,10 +89,8 @@ internal object SettingsDialogs {
      * phím) phải giống mọi hộp khác. [askName] không dùng lại được vì nó chỉ có **một** ô — mà một mục địa chỉ
      * thiếu bất kỳ trường nào trong hai trường đầu thì vừa không gọi được bằng giọng, vừa không dẫn đi đâu.
      *
-     * ## Vì sao toạ độ là MỘT ô *"lat, lng"*, không phải hai ô
-     * Đó đúng dạng người ta **dán** từ app bản đồ (`10.7769, 106.7009`). Bắt tách tay là bắt người dùng làm một
-     * việc máy làm được, trên bàn phím ảo, trong xe. Phép tách + kiểm dải nằm ở `:core` ([SavedPlaces.parseCoords])
-     * nên nó kiểm được off-car; hộp này **không** kiểm gì, chỉ chuyển ba chuỗi đi (ô hỏng ⇒ mục không toạ độ).
+     * KACHI-301 R11 — ruột nay ở [SettingsPlaceDialog] (chip nhãn nhanh · toạ độ gập "Nâng cao" · kiểm tại chỗ qua
+     * `PlaceForm`); hàm này giữ chữ ký để 0 chỗ gọi đổi.
      *
      * @param initial mục đang sửa, `null` = thêm mới (ba ô trống).
      * @param onDelete đường XOÁ mục đang sửa (`null` khi thêm mới ⇒ không có nút xoá).
@@ -119,45 +105,7 @@ internal object SettingsDialogs {
         onDelete: (() -> Unit)? = null,
         onOk: (label: String, address: String, coords: String) -> Unit,
     ) {
-        fun field(value: String, hintRes: Int, capWords: Boolean) = EditText(context).apply {
-            setText(value)
-            hint = context.getString(hintRes)
-            inputType = InputType.TYPE_CLASS_TEXT or
-                (if (capWords) InputType.TYPE_TEXT_FLAG_CAP_WORDS else InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS)
-        }
-        val label = field(initial?.name.orEmpty(), R.string.kachi_places_hint_label, capWords = true)
-        val address = field(initial?.query.orEmpty(), R.string.kachi_places_hint_address, capWords = false)
-        val coords = field(
-            initial?.let { SavedPlaces.formatCoords(it) }.orEmpty(),
-            R.string.kachi_places_hint_coords,
-            capWords = false,
-        )
-        val pad = KachiTheme.dpi(context, KachiSpace.M)
-        val body = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad, pad, 0)
-            addView(label)
-            addView(address)
-            addView(coords)
-            addView(TextView(context).apply {
-                text = context.getString(R.string.kachi_places_coords_note)
-                setTextColor(KachiTheme.c(KachiTheme.MUT))
-                KachiType.apply(this, KachiType.CAPTION)
-            })
-        }
-        AlertDialog.Builder(context)
-            .setTitle(title)
-            .setView(body)
-            .setPositiveButton(context.getString(R.string.kachi_save)) { _, _ ->
-                onOk(label.text.toString(), address.text.toString(), coords.text.toString())
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .also { builder ->
-                onDelete?.let { del ->
-                    builder.setNeutralButton(context.getString(R.string.kachi_delete)) { _, _ -> del() }
-                }
-            }
-            .show()
+        SettingsPlaceDialog.ask(context, title, initial, onDelete, onOk)
     }
 
     /**
@@ -166,43 +114,43 @@ internal object SettingsDialogs {
      * gọi CHÍNH hàm này (`ProfileBar.addDialog()` — bản dựng `AlertDialog` thứ hai — đã xoá cùng `ProfileBar`).
      *
      * Tên trắng ⇒ lùi về [initial] chứ không từ chối im lặng: người dùng vừa bấm một nút vật lý xong, bỏ công đó
-     * đi vì một ô trống là mất cả phiên học.
+     * đi vì một ô trống là mất cả phiên học. (QA-301 P3 ghi "ô rỗng vẫn Lưu được" — GIỮ: đây là hành vi cố ý của
+     * askName cũ, nút Lưu không khoá.)
+     *
+     * @param showKeyboard `true` khi người dùng VỪA chọn gõ (nút *"Gõ tên…"*) ⇒ bàn phím lên ngay; mặc định `false` (đặt
+     * tên nút vừa học / hồ sơ: tên điền sẵn thường dùng luôn, bàn phím che màn là thừa).
      */
     fun askName(
         context: Context,
         title: String,
         initial: String,
         detail: ((TextView) -> Unit)? = null,
+        showKeyboard: Boolean = false,
         onOk: (String) -> Unit,
     ) {
-        val input = EditText(context).apply {
-            setText(initial)
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
-            setSelection(0, initial.length)
-        }
+        val name = KachiDialogs.field(
+            context,
+            label = null,
+            value = initial,
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS,
+            selectAll = true,
+        )
+        val input = name.view
         // L7 — dòng CHI TIẾT dưới ô tên (học phím: mã · scan · thiết bị · nguồn) để anh em chụp màn hình gửi về.
         // [detail] tự điền/làm mới TextView; không có ⇒ hộp y nguyên như cũ (chỉ một ô nhập).
-        val view = if (detail == null) input else {
-            val pad = KachiTheme.dpi(context, KachiSpace.M)
-            LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(pad, pad, pad, 0)
-                addView(input)
-                addView(TextView(context).apply {
-                    setTextColor(KachiTheme.c(KachiTheme.MUT))
-                    KachiType.apply(this, KachiType.CAPTION)
-                    detail(this)
-                })
-            }
+        val view = if (detail == null) input else LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(input)
+            addView(KachiDialogs.caption(context, "").apply { detail(this) }, KachiDialog.stackLp(context, top = Sp.XS))
         }
-        AlertDialog.Builder(context)
-            .setTitle(title)
-            .setView(view)
-            .setPositiveButton(context.getString(R.string.kachi_save)) { _, _ ->
-                onOk(input.text.toString().trim().ifEmpty { initial })
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        KachiDialogs.form(
+            context,
+            title = title,
+            body = listOf(view),
+            primaryLabel = context.getString(R.string.kachi_save),
+            focus = name.edit,
+            showKeyboard = showKeyboard,
+        ) { onOk(name.text.trim().ifEmpty { initial }) }
     }
 
     /**
@@ -210,16 +158,13 @@ internal object SettingsDialogs {
      * một chỗ: ô trống là một câu trả lời hợp lệ, không lùi về [initial] — ở đây xoá chữ chính là lựa chọn của người dùng.
      */
     fun askText(context: Context, title: String, initial: String, onOk: (String) -> Unit) {
-        val input = EditText(context).apply {
-            setText(initial)
-            inputType = InputType.TYPE_CLASS_TEXT
-            setSelection(0, initial.length)
-        }
-        AlertDialog.Builder(context)
-            .setTitle(title)
-            .setView(input)
-            .setPositiveButton(context.getString(R.string.kachi_save)) { _, _ -> onOk(input.text.toString().trim()) }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        val input = KachiDialogs.field(context, label = null, value = initial, selectAll = true)
+        KachiDialogs.form(
+            context,
+            title = title,
+            body = listOf(input.view),
+            primaryLabel = context.getString(R.string.kachi_save),
+            focus = input.edit,
+        ) { onOk(input.text.trim()) }
     }
 }

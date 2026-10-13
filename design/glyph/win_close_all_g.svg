@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- ĐÓNG TẤT CẢ KÍNH (chân widget Kính, R22·C; POLISH2 owner 13/10 "vẽ thanh mảnh") — khung cửa sổ bên nét MẢNH 1.25, kính kéo kín tô nhạt lùi khỏi khung một khe, mũi đôi LÊN nhỏ gọn = tự động hết hành trình; một tông để tint mực/nhấn. -->
+  <style>:root{--ink:#ffffff;--main:#eaf0f8;--light:#ffffff;--deep:#b9c4d4}</style>
+  <path d="M4.6,18.2 L4.6,13.8 L10.4,6.2 L17.2,6.2 A2.4,2.4 0 0 1 19.6,8.6 L19.6,18.2 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M6.4,16.6 L6.4,14.4 L11.3,7.8 L17.2,7.8 A0.8,0.8 0 0 1 18,8.6 L18,16.6 Z" data-layer="bg" fill="var(--main)" stroke="none" opacity="0.16"/>
+  <path d="M11.2,12.4 L13,10.6 L14.8,12.4 M11.2,15.2 L13,13.4 L14.8,15.2" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

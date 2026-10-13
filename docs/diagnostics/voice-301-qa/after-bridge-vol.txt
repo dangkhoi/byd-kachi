@@ -1,0 +1,21 @@
+# vol.sh CASE=base
+10:10:00.886 before: STREAM_MUSIC=10 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10:10:02.610 during: STREAM_MUSIC=6 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10:10:08.703 +6 s (giữa lượt nối): STREAM_MUSIC=6 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10:10:24.912 after: STREAM_MUSIC=10 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10-13 10:10:01.657 11437 12740 I KachiVoiceDuck: hạ nhạc khi nghe: 10 → 6 (đích 6)
+10-13 10:10:01.657 11437 12740 I KachiVoiceTiming: hạ nhạc 27 ms (luồng nền)
+10-13 10:10:09.707 11437 12740 I KachiVoiceDuck: trả nhạc (release): 6 → 10
+10-13 10:10:09.707 11437 12689 I KachiVoiceTiming: trả nhạc 13 ms
+# vol.sh CASE=say CMD='dừng nhạc'
+10:11:27.985 before: STREAM_MUSIC=10 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10:11:29.786 during: STREAM_MUSIC=6 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10:11:31.010 say «dừng nhạc»: STREAM_MUSIC=6 · YouTube state=2 · focus: pack: com.google.android.youtube 
+10:11:37.135 +6 s (giữa lượt nối): STREAM_MUSIC=10 · YouTube state=2 · focus: pack: com.google.android.youtube pack: com.byd.launcher 
+10:11:53.271 after: STREAM_MUSIC=10 · YouTube state=2 · focus: pack: com.google.android.youtube 
+10-13 10:10:09.707 11437 12740 I KachiVoiceDuck: trả nhạc (release): 6 → 10
+10-13 10:10:09.707 11437 12689 I KachiVoiceTiming: trả nhạc 13 ms
+10-13 10:11:28.216 11437 15220 I KachiVoiceDuck: hạ nhạc khi nghe: 10 → 6 (đích 6)
+10-13 10:11:28.216 11437 15220 I KachiVoiceTiming: hạ nhạc 32 ms (luồng nền)
+10-13 10:11:36.361 11437 15220 I KachiVoiceDuck: trả nhạc (release): 6 → 10
+10-13 10:11:36.361 11437 15200 I KachiVoiceTiming: trả nhạc 7 ms

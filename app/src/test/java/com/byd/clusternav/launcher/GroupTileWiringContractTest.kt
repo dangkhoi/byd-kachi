@@ -88,10 +88,29 @@ class GroupTileWiringContractTest {
             "ControlDockView.kt" to "thanh nút: chỉ hỏi tóm tắt — đã quét riêng trong GroupPickerWiringContractTest",
             // 2.87 · L5 WIDGET-FIT-ALL (2026-10-03): khung khớp lưới widget chỉ NHẬN DIỆN ô nhóm (`is GroupTileView`)
             // để coi nó là ô TỰ lấp khung (không co bằng FitScale — co hai lần) — không dựng, không đọc GroupBoard.
+            // 3.01 R22: bảng vật × việc (hình xe / danh sách gọn) — gọi `GroupTileView.text/tintOf` (khuôn chữ + luật màu
+            // chung) nhưng KHÔNG đọc GroupBoard; quét riêng ở `ActionMatrixWiringContractTest` (không mã thành viên/hex/tên
+            // nhóm). Không vào `tileFiles` vì nó có bộ dựng nút riêng (cùng lớp `ControlTileFactory`) ⇒ phép đếm "một cổng"
+            // của tệp ô nhóm vẫn đúng nghĩa.
+            "ActionMatrixView.kt" to "bảng vật × việc R22 — quét riêng ở ActionMatrixWiringContractTest",
+            "ActionMatrixCompact.kt" to "hình xe gọn R22·B — quét riêng ở ActionMatrixWiringContractTest",
+            "IconBoardView.kt" to "bảng icon R22·B — quét riêng ở ActionMatrixWiringContractTest",
+            "GroupBodies.kt" to "chọn thân hình R22·B (hình xe / bảng icon) — quét riêng ở ActionMatrixWiringContractTest",
+            "CarLevelsLayer.kt" to "lớp mức kính của hình xe R22 — quét riêng ở ActionMatrixWiringContractTest",
+            // 3.01 R24 (owner 13/10 "cái widget đèn cũng làm vậy luôn, có hình xe…"): nhận GroupBoardModel cho `refresh` như
+            // IconBoardView, không đọc GroupBoard; quét riêng ở ActionMatrixWiringContractTest + LightCarBoardContractTest.
+            "CarIconBoardView.kt" to "bảng icon trên hình xe R24 — quét riêng ở LightCarBoardContractTest",
             "FitGridLayout.kt" to "chỉ nhận diện GroupTileView là ô tự lấp khung (selfFitting) — không dựng ô nhóm",
             // 2.93 GROUPBOARD-1ROW: khung chọn dạng (bảng đầy đủ / tóm tắt) theo phép đo tràn — nhận GroupTileView ĐÃ dựng
             // từ GroupTiles.build, không dựng nội dung nhóm, không đọc GroupBoard.
             "GroupFitFrame.kt" to "chỉ đo bảng nhóm đã dựng rồi chọn hiện bảng đầy đủ hay ô tóm tắt — không dựng ô nhóm",
+            // 3.01 R20: lưới bố trí (cột/dạng theo bề rộng đo được) — nhận ô con / nút ĐÃ dựng từ GroupTileView/actionsRow,
+            // không đọc GroupBoard/GroupCell, không dựng nội dung nhóm. Bài `o chen cho trong…` quét riêng tệp này.
+            "GroupCellGrid.kt" to "chỉ bố trí ô con / nút đã dựng theo kế hoạch GroupCellFit — không dựng ô nhóm",
+            // 3.01 R25: widget xe 3D — đọc GroupBoard.of để `Car3dHotspots.resolve` chọn ô nút/ô xem SẴN CÓ cho từng điểm chạm và
+            // lùi bảng 2D qua GroupTiles.build; không tự dựng ô nhóm. Bảng ràng buộc quét riêng ở Car3dBindingTest/Car3dSealTest.
+            "Car3dWidgetView.kt" to "widget xe 3D R25 — chỉ gọi GroupTiles.build để lùi 2D; quét riêng ở Car3dBindingTest",
+            "Car3dTaps.kt" to "điểm chạm xe 3D R25 — GroupBoard.of → Car3dHotspots (ô nút sẵn có); quét riêng ở Car3dBindingTest",
         )
         val builders = java.nio.file.Files.list(dir).use { s ->
             s.map { it.fileName.toString() }
@@ -292,7 +311,9 @@ class GroupTileWiringContractTest {
         assertTrue(door.contains("GroupBoard.doorPlan("), "bảng cửa phải HỎI :core bộ phận nào đang mở")
         // WP3-v5 — bảng cửa nay nối enum bộ phận sang VỊ TRÍ chấm qua `CarLayout.part(s.part)` (trên ảnh xe), thay
         // vì tra path vector theo mã. Vẫn là "nối bằng enum bộ phận, không bằng mã datum".
-        assertTrue(door.contains("CarLayout.part("), "và nối bộ phận → vị trí bằng CarLayout (enum), không bằng mã datum")
+        // 3.01 R23: neo nay theo ẢNH đang vẽ (`car.art.part(s.part)` — ảnh BYD đã đo; ảnh khác lùi `CarLayout.part`) — vẫn
+        // là tra theo enum bộ phận, không theo mã datum.
+        assertTrue(door.contains("art.part(s.part)"), "và nối bộ phận → vị trí bằng neo của ảnh (enum), không bằng mã datum")
     }
 
     @Test
@@ -441,7 +462,8 @@ class GroupTileWiringContractTest {
             g.id to GroupTileView.rowsOf(g.writes, 6).map { it.size }
         }
         assertEquals(
-            mapOf("g_windows" to listOf(6, 5), "g_doors" to listOf(3), "g_lights" to listOf(3)),
+            // ⚠ 3.01 R22·C (owner 13/10 "thêm cả cốp vào đó luôn"): nhóm Kính thêm nút `trunk` có sẵn ⇒ 11 → 12 nút, [6,5] → [6,6].
+            mapOf("g_windows" to listOf(6, 6), "g_doors" to listOf(3), "g_lights" to listOf(3)),
             actions,
             "hàng nút (trần 6) đổi hình dạng — nhóm Đèn còn 3 nút sau [SOÁT P1-1] (bỏ `headl` vì trùng byte với " +
                 "`headlight_mode`), nhóm Cửa & khoang còn 5 nút sau (V) FEATURE-FILTER 2026-09-17 (bỏ " +
@@ -464,21 +486,13 @@ class GroupTileWiringContractTest {
      */
     @Test
     fun `o chen cho trong khong duoc khai WRAP - bay getDefaultSize`() {
-        listOf("private fun gridRows(", "internal fun actionsRow(").forEach { sig ->
-            val fn = SourceRoots.body(tiles, sig)
-            val fillers = fn.lines().filter { it.contains("repeat(cols") }
-            assertTrue(fillers.isNotEmpty(), "$sig: phải có chỗ chèn ô trống (hàng phải đều nhau)")
-            fillers.forEach { line ->
-                assertTrue(
-                    line.contains("View(context)"),
-                    "$sig: ô chèn phải là một View trơ, không phải một ô con thật: $line",
-                )
-                assertFalse(
-                    line.contains("WRAP"),
-                    "$sig: ô chèn khai WRAP ⇒ View.getDefaultSize giãn nó hết chỗ còn lại và thân ô cao 0 " +
-                        "(lỗi đã đo trên máy ảo: thân 0px / hàng nút 648px). Dùng 0 hoặc MATCH: $line",
-                )
-            }
-        }
+        // 3.01 R20: lưới ô con và hàng nút KHÔNG còn hàng `LinearLayout` + ô chèn trống — hai lưới tự đặt vị trí
+        // ([GroupCellGrid]/[GroupActionGrid], hàng ngắn bám trái) nên bẫy `getDefaultSize` không còn chỗ mọc lại. Bài canh
+        // đổi theo: hai bộ dựng PHẢI đi qua hai lưới đó, và tệp lưới KHÔNG được dựng `View` trơ làm ô chèn.
+        assertTrue(SourceRoots.body(tiles, "private fun gridRows(").contains("GroupCellGrid("), "lưới ô con đi qua GroupCellGrid")
+        assertTrue(SourceRoots.body(tiles, "internal fun actionsRow(").contains("GroupActionGrid("), "hàng nút đi qua GroupActionGrid")
+        val grid = code("src/main/java/com/byd/clusternav/launcher/GroupCellGrid.kt")
+        assertFalse(grid.contains("View(context)"), "lưới tự đặt vị trí ⇒ không có ô chèn trống (bẫy WRAP + getDefaultSize)")
+        assertFalse(grid.contains("repeat(cols"), "không chèn ô trống theo số cột")
     }
 }

@@ -1,0 +1,30 @@
+### 2026-10-13 09:35:13 am task resize bounds tests on freeform task 75 (Maps, display 1)
+$ am task resize 75 0 0 1920 800
+rc=0
+taskId=75: com.google.android.apps.maps/com.google.android.maps.MapsActivity bounds=[0,0][1920,800]
+    Frames: containing=[0,0][1920,800] parent=[0,0][1920,720]
+    mFrame=[0,0][1920,800] last=[0,0][1920,800]
+$ am task resize 75 0 0 2000 760
+rc=0
+taskId=75: com.google.android.apps.maps/com.google.android.maps.MapsActivity bounds=[0,0][2000,760]
+    Frames: containing=[0,0][2000,760] parent=[0,0][1920,720]
+    mFrame=[0,0][2000,760] last=[0,0][2000,760]
+$ am task resize 75 0 -40 1920 720
+Error: bad top arg: -40
+Error: invalid input bounds
+rc=0
+taskId=75: com.google.android.apps.maps/com.google.android.maps.MapsActivity bounds=[0,0][2000,760]
+    Frames: containing=[0,0][2000,760] parent=[0,0][1920,720]
+    mFrame=[0,0][2000,760] last=[0,0][2000,760]
+$ am task resize 75 -20 0 1920 720
+Error: bad left arg: -20
+Error: invalid input bounds
+rc=0
+taskId=75: com.google.android.apps.maps/com.google.android.maps.MapsActivity bounds=[0,0][2000,760]
+    Frames: containing=[0,0][2000,760] parent=[0,0][1920,720]
+    mFrame=[0,0][2000,760] last=[0,0][2000,760]
+$ am task resize 75 0 0 1920 720
+rc=0
+taskId=75: com.google.android.apps.maps/com.google.android.maps.MapsActivity bounds=[0,0][1920,720]
+    Frames: containing=[0,0][1920,720] parent=[0,0][1920,720]
+    mFrame=[0,0][1920,720] last=[0,0][1920,720]

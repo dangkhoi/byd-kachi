@@ -10,6 +10,9 @@ import com.byd.clusternav.launcher.HomeUiState
 import com.byd.clusternav.launcher.KeyCtlTargets
 import com.byd.clusternav.launcher.KeyCtlThrottle
 import com.byd.clusternav.launcher.VoiceControlDispatch
+import com.byd.clusternav.launcher.Lang
+import com.byd.clusternav.launcher.voice.VoiceIntent
+import com.byd.clusternav.launcher.voice.VoiceReply
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -42,16 +45,21 @@ class KeyCtlSafetyTest {
         override fun partAbsentOnThisCar(id: String): Boolean = absentPart
     }
 
-    private class Rig(reads: Map<String, Int?> = emptyMap(), speedKmh: Int? = null) {
+    /**
+     * [speedKmh]/[gear] = số đọc TƯƠI của xe. Mặc định = xe đỗ (0 km/h, P): owner 13/10 *"làm theo luật mới hết đi"* ⇒ không
+     * biết chuyển động = CHẶN MỞ cốp, nên bài không nói về cổng phải nói rõ xe đứng yên (tới 3.01 mặc định `null` = cho mở).
+     */
+    private class Rig(reads: Map<String, Int?> = emptyMap(), speedKmh: Int? = 0, gear: String? = "P") {
         val port = Port(reads)
         val said = ArrayList<String>()
-        private val car = CarStatus(drivetrain = CarStatus.Drivetrain(speedKmh = speedKmh))
+        val motionReads = ArrayList<String>()
+        private val car = CarStatus(drivetrain = CarStatus.Drivetrain(speedKmh = speedKmh, gear = gear))
         val runner = KeyCtlRunner(
             controls = VoiceControlDispatch(
                 control = { port },
                 state = { HomeUiState() },
                 say = { said += it },
-                freshCar = { id -> if (id == "speed") car else null },
+                freshCar = { id -> motionReads += id; if (id == "speed" || id == "gear") car else null },
                 onUi = { it() },
                 background = { it() },
             ),
@@ -70,7 +78,41 @@ class KeyCtlSafetyTest {
         val r = Rig(speedKmh = 30)
         r.press("ctl:trunk:open")
         assertEquals(emptyList<String>(), r.port.fired, "phím bấm nhầm lúc chạy KHÔNG được bung cốp")
-        assertTrue(r.said.single().contains("chỉ mở được khi xe đang dừng"), "${r.said}")
+        assertEquals(listOf(STOP_TO_OPEN), r.said, "phím nói ĐÚNG câu của cổng chạm (owner 13/10)")
+    }
+
+    /**
+     * ═══ 3.01 · owner 13/10 *"vậy làm theo luật mới hết đi cho chắc ăn"* — phím dùng CÙNG phép fail-safe với cú chạm ═══
+     * Tới 3.01 phím (qua `VoiceControlDispatch.run`) fail-OPEN: không đọc được tốc độ ⇒ bung cốp. Nay: không tốc độ ⇒ hỏi số;
+     * chỉ P mới mở; số R/N/D hay không đọc được ⇒ chặn, không lệnh nào đi, câu = câu của cổng chạm.
+     */
+    @Test
+    fun `mo cop bang phim khi khong doc duoc toc do thi chi P moi mo`() {
+        Rig(speedKmh = null, gear = "P").also {
+            it.press("ctl:trunk:open")
+            assertEquals(listOf("cover:trunk:true"), it.port.fired, "không tốc độ + số P ⇒ mở")
+            assertEquals(listOf("speed", "gear"), it.motionReads, "số chỉ đọc khi không có tốc độ — cùng phép đọc với cổng chạm")
+        }
+        Rig(speedKmh = null, gear = "3").also { it.press("ctl:trunk:open"); assertEquals(listOf("cover:trunk:true"), it.port.fired, "mã thô HAL P=3") }
+        for (g in listOf("D", "R", "N", "2", "255", null)) {
+            Rig(speedKmh = null, gear = g).also {
+                it.press("ctl:trunk:open")
+                assertEquals(emptyList<String>(), it.port.fired, "không tốc độ + số '$g' ⇒ CHẶN (fail-safe)")
+                assertEquals(listOf(STOP_TO_OPEN), it.said)
+            }
+        }
+        Rig(speedKmh = null, gear = null).also {
+            it.press("ctl:trunk:close")
+            assertEquals(listOf("cover:trunk:false"), it.port.fired, "ĐÓNG không bao giờ bị chặn")
+            assertEquals(emptyList<String>(), it.motionReads, "ĐÓNG không tốn lượt đọc chuyển động")
+        }
+    }
+
+    /** Đảo cốp từ TRÍ NHỚ khi không biết chuyển động ⇒ hướng an toàn (ĐÓNG), cùng phép — không kẹt MỞ-bị-chặn. */
+    @Test
+    fun `dao cop tu tri nho khi khong biet chuyen dong thi DONG`() {
+        Rig(speedKmh = null, gear = null).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:false"), it.port.fired) }
+        Rig(speedKmh = null, gear = "P").also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:true"), it.port.fired) }
     }
 
     @Test
@@ -112,6 +154,9 @@ class KeyCtlSafetyTest {
 
     /** Bảng THẬT của tiến trình (`ControlLastSent.shared`) — mỗi bài bắt đầu và kết thúc ở trạng thái "vừa bật". */
     private val sent = ControlLastSent.shared
+
+    /** Câu từ chối của cổng chạm (`kctl_stop_to_open_trunk`) — giọng nói/phím nói đúng câu này (owner 13/10). */
+    private val STOP_TO_OPEN = VoiceReply.notWhileMoving(VoiceIntent.Control("trunk", 1), Lang.VI)
 
     private fun freshProcessMemory() = ControlRegistry.ALL.forEach { sent.record(it.id, ControlLastSent.startIndex(it.id)) }
 
@@ -174,7 +219,7 @@ class KeyCtlSafetyTest {
         assertEquals(0, sent.index("trunk"), "trí nhớ CŨ: tiến trình nói 'đóng' (cốp thật đang mở bằng chìa)")
         r.press("ctl:trunk:flip")
         assertEquals(listOf("cover:trunk:false"), r.port.fired, "Đảo lúc chạy ⇒ ĐÓNG — hướng duy nhất cổng cho phép")
-        assertFalse(r.said.single().contains("chỉ mở được khi xe đang dừng"), "không còn lời từ chối MỞ: ${r.said}")
+        assertFalse(r.said.contains(STOP_TO_OPEN), "không còn lời từ chối MỞ: ${r.said}")
         assertEquals(0, sent.index("trunk"), "đóng thành công ⇒ bảng ghi 'đóng'")
         r.press("ctl:trunk:flip")
         assertEquals(listOf("cover:trunk:false", "cover:trunk:false"), r.port.fired, "vẫn chạy ⇒ vẫn ĐÓNG, không bao giờ MỞ")

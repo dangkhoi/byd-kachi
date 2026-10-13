@@ -37,7 +37,6 @@
     <string name="kachi_photos_hint">ใส่รูปภาพในโฟลเดอร์รูปภาพของ Kachi</string>
     <string name="kachi_profile_chip_desc">โปรไฟล์ปัจจุบัน: %1$s แตะเพื่อสลับโปรไฟล์</string>
     <string name="kachi_profile_pick_title">สลับโปรไฟล์ผู้ขับขี่</string>
-    <string name="kachi_profile_pick_active">%1$s · ใช้งานอยู่</string>
     <string name="kachi_profile_manage">จัดการโปรไฟล์…</string>
     <string name="kachi_profile_none">ยังไม่มีโปรไฟล์ — เปิด การตั้งค่า → โปรไฟล์ผู้ขับขี่ เพื่อเพิ่มโปรไฟล์</string>
     <string name="kachi_profile_switched">โปรไฟล์: %1$s</string>
@@ -329,7 +328,7 @@
     <string name="kachi_nav_auto_gps_on">รอ GPS</string>
     <string name="kachi_nav_auto_gps_off">ไม่ต้องใช้ GPS</string>
     <string name="kachi_nav_auto_enabled">เปิดใช้กำหนดการนี้</string>
-    <string name="kachi_nav_auto_window">ช่วงเวลา (HH:mm)</string>
+    <string name="kachi_nav_auto_window">ช่วงเวลา</string>
     <string name="kachi_nav_auto_days">วันในสัปดาห์</string>
     <string name="kachi_nav_auto_gps">นำทางเมื่อมี GPS แล้วเท่านั้น (รอจนออกจากที่จอดรถ)</string>
     <string name="kachi_nav_auto_place">นำทางไปยัง</string>
@@ -488,11 +487,11 @@
     <string name="kachi_sub_keys_bindings">การกำหนดปุ่ม</string>
     <string name="kachi_keys_no_bindings">ยังไม่ได้กำหนดปุ่ม แตะ “เพิ่มการกำหนดปุ่ม…” เพื่อเชื่อมปุ่มกายภาพเข้ากับแอปหรือการควบคุมรถ</string>
     <string name="kachi_keys_add">เพิ่มการกำหนดปุ่ม…</string>
-    <string name="kachi_keys_pick_button">ขั้นที่ 1 — เลือกปุ่ม</string>
-    <string name="kachi_keys_pick_target">ขั้นที่ 3 — เลือกแอป / ผู้ช่วย</string>
-    <string name="kachi_keys_pick_kind">ขั้นที่ 2 — ปุ่มนี้ทำอะไร</string>
+    <string name="kachi_keys_pick_button">เลือกปุ่ม</string>
+    <string name="kachi_keys_pick_target">เลือกแอป / ผู้ช่วย</string>
+    <string name="kachi_keys_pick_kind">ปุ่มนี้ทำอะไร</string>
     <string name="kachi_keys_kind_apps">เปิดแอป · ผู้ช่วย</string>
-    <string name="kachi_keys_pick_action">ขั้นที่ 3 — %1$s: เลือกการทำงาน</string>
+    <string name="kachi_keys_pick_action">%1$s: เลือกการทำงาน</string>
     <string name="kachi_keys_no_buttons">ยังไม่มีปุ่มให้กำหนด</string>
     <string name="kachi_keys_no_targets">ยังไม่มีแอปในเครื่องนี้ที่เปิดจากปุ่มได้</string>
     <string name="kachi_sub_keys_custom">ปุ่มที่เรียนรู้เอง</string>
@@ -914,9 +913,13 @@
     <string name="kachi_camera_rot_own_row">หมุน</string>
     <string name="kachi_camera_mirror_own_title">กลับด้านวิดีโอ</string>
     <string name="kachi_keys_kind_camera">กล้องตามสั่ง</string>
-    <string name="kachi_keys_pick_camera">ขั้นที่ 3 — กล้องตัวไหน</string>
+    <string name="kachi_keys_pick_camera">กล้องตัวไหน</string>
     <string name="kachi_key_cam_toggle">%1$s — เปิด/ปิด</string>
     <string name="kachi_key_cam_off">ปิดกล้อง</string>
     <!-- 2.97 · R3 — đổi hồ sơ tắt dẫn đường lên cụm -->
     <string name="kachi_profile_nav_off">โปรไฟล์ «%1$s» ปิดการนำทางบนหน้าปัด/HUD อยู่ เปิดอีกครั้งได้ที่ การตั้งค่า › การนำทาง + HUD</string>
+    <!-- 3.1 · kachi-301 R2/R4/R7 — bước khung chiếu cụm -->
+    <string name="kachi_cast_frame_step">ระยะขั้น</string>
+    <string name="kachi_cast_geom_resize_failed">ใช้กรอบกับหน้าปัดไม่ได้ — ตัวเลขกลับเป็นกรอบจริงแล้ว</string>
+    <string name="kachi_cast_geom_overflow_note" formatted="false">ขอบขวา/ล่างเลยหน้าปัดได้ (สูงสุด +50 %) เพื่อซ่อนแถบล่างของแอป ขอบซ้าย/บนติดลบไม่ได้ (Android บล็อก)</string>
 </resources>

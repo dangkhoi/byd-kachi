@@ -1,6 +1,5 @@
 package com.byd.clusternav.launcher
 
-import android.app.AlertDialog
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -65,7 +64,8 @@ internal class SettingsVoiceNamesDialog(
     private val prompt = TextView(context)
     private val status = TextView(context)
     private var speak: TextView? = null
-    private var dialog: AlertDialog? = null
+    /** Tay cầm hộp dạy ĐANG HIỆN (R13 · #15) — bật/khoá nút Lưu qua [KachiDialog.Handle.setPrimaryEnabled]. */
+    private var dialog: KachiDialog.Handle? = null
     private val relay = VoiceTeachRelay(context, local = { localSession })
     private val localSession by lazy {
         VoiceTeachSession(
@@ -77,10 +77,8 @@ internal class SettingsVoiceNamesDialog(
     }
 
     fun open() {
-        val root = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            val p = dpi(context, Sp.L); setPadding(p, dpi(context, Sp.S), p, 0)
-        }
+        // Lề ngang do thân [KachiDialog] lo (Sp.XL) — cột không tự đệm thêm.
+        val root = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
         val rows = SettingsRows(context)
         root.addView(rows.note(context.getString(R.string.kachi_vn_dialog_hint, label)))
         prompt.apply { setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY) }
@@ -97,19 +95,20 @@ internal class SettingsVoiceNamesDialog(
         // 2.93: chỉ đọc ⇒ 🎤 tắt HẲN (alpha = DISABLED): `repaint` bật lại nút theo `alpha` — bản trước chỉ đặt `isEnabled`
         // nên 🎤 sống lại ngay lượt vẽ đầu (lưu vẫn bị chặn, nhưng hộp mời nói cho một lượt không lưu được).
         if (port.readOnly()) { speak?.isEnabled = false; speak?.alpha = DISABLED; status.text = context.getString(R.string.kachi_vn_readonly) }
-        val d = AlertDialog.Builder(context)
-            .setTitle(context.getString(R.string.kachi_vn_dialog_title, label))
-            .setView(android.widget.ScrollView(context).apply { addView(root) })
-            .setPositiveButton(context.getString(R.string.kachi_save), null)
-            .setNegativeButton(android.R.string.cancel, null)
-            .create()
-        d.setOnDismissListener { relay.cancel(); onClosed(changed) }
-        d.setOnShowListener {
-            d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { save() }
-            repaint()
-        }
-        dialog = d
-        d.show()
+        // KACHI-301 R13 · #15 — khuôn BIỂU MẪU dựng trên [KachiDialog]: thân cuộn sẵn (không bọc ScrollView riêng). Lưu
+        // `autoDismiss = false` = y như nút dương cũ gắn lại click trong `setOnShowListener`: lưu KHÔNG đóng hộp (kết quả hiện
+        // ở dòng trạng thái, dạy tiếp được). Đóng bằng bất kỳ đường nào (Huỷ · Back · chạm ngoài) ⇒ `onDismiss` huỷ lượt nghe
+        // đang mở + báo trang — cùng một đường như `setOnDismissListener` cũ.
+        dialog = KachiDialog(context)
+            .title(context.getString(R.string.kachi_vn_dialog_title, label))
+            .icon(R.drawable.ic_mic)
+            .body(root)
+            .form()   // QA-301: biểu mẫu — chạm ngoài không bỏ dở các lượt đã nói (Back/Huỷ vẫn đóng)
+            .cancel()
+            .primary(context.getString(R.string.kachi_save), autoDismiss = false) { save() }
+            .onDismiss { relay.cancel(); onClosed(changed) }
+            .show() ?: return   // không mở được (Activity đã đóng) ⇒ không điền sẵn, không lượt nghe nào để treo
+        repaint()   // bản cũ gọi trong `setOnShowListener` — nay ngay sau khi hộp hiện
         // Lối (c): mẫu đang chờ LÀ một lượt nói thật của người dùng (chữ mô hình in ở câu "mở …" không hiểu) ⇒ tính là lượt 1.
         // `paintPrompt` ngay: lượt KẾ là lượt câu có ô — không chờ phán quyết nền của mẫu chờ (senior review 2.93 Pass 1 · [P3]).
         prefill?.let { speechTakes = 1; addSample(it, TaughtSource.SPEECH); paintPrompt() }
@@ -119,12 +118,17 @@ internal class SettingsVoiceNamesDialog(
     fun tryOnce() {
         val view = TextView(context).apply {
             text = context.getString(R.string.kachi_vn_listening); setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY)
-            val p = dpi(context, Sp.L); setPadding(p, p, p, p)
         }
-        val d = AlertDialog.Builder(context).setTitle(context.getString(R.string.kachi_vn_try_title, label)).setView(view)
-            .setPositiveButton(android.R.string.ok, null).create()
-        d.setOnDismissListener { relay.cancel() }
-        d.show()
+        // KACHI-301 R13 · #16 — khuôn THÔNG BÁO (một nút OK) dựng trực tiếp trên [KachiDialog] vì cần `onDismiss`: đóng hộp
+        // ⇒ huỷ lượt nghe (như `setOnDismissListener` cũ). Hộp không mở được ⇒ KHÔNG bắt đầu nghe (không ai đóng để huỷ nó).
+        KachiDialog(context)
+            .title(context.getString(R.string.kachi_vn_try_title, label))
+            .icon(R.drawable.ic_mic)
+            .body(view)
+            .noCancel()
+            .primary(context.getString(R.string.kdlg_ok)) {}
+            .onDismiss { relay.cancel() }
+            .show() ?: return
         val ok = relay.listen(object : VoiceTeachSession.Listener {
             override fun onState(state: VoiceTeachSession.State) { view.text = stateText(state) }
             override fun onResult(result: VoiceTeachSession.Result) {
@@ -170,7 +174,8 @@ internal class SettingsVoiceNamesDialog(
 
     private fun typeName() {
         if (port.readOnly()) return
-        SettingsDialogs.askName(context, context.getString(R.string.kachi_vn_type_title, label), "") { typed ->
+        // QA-301: người dùng VỪA bấm "Gõ tên…" ⇒ bàn phím lên ngay (bản trước chỉ focus, phải chạm ô lần nữa).
+        SettingsDialogs.askName(context, context.getString(R.string.kachi_vn_type_title, label), "", showKeyboard = true) { typed ->
             when (val s = TeachSample.shape(typed)) {
                 is TeachSample.Sample -> addSample(s.accented, TaughtSource.TYPED)
                 is TeachSample.Rejected -> status.text = context.getString(R.string.kachi_vn_r_shape)
@@ -226,7 +231,7 @@ internal class SettingsVoiceNamesDialog(
         speak?.let { it.isEnabled = speechTakes < MAX_TAKES && it.alpha != DISABLED }
         paintPrompt()
         val canSave = (speechTakes >= MIN_TAKES || samples.any { it.source == TaughtSource.TYPED }) && savable().isNotEmpty()
-        dialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = canSave && !port.readOnly()
+        dialog?.setPrimaryEnabled(canSave && !port.readOnly())
         val needTwo = context.getString(R.string.kachi_vn_need_two)
         if (!canSave && samples.isNotEmpty() && status.text.isNullOrEmpty()) status.text = needTwo
         if (canSave && status.text?.toString() == needTwo) status.text = ""
@@ -264,7 +269,7 @@ internal class SettingsVoiceNamesDialog(
      * sơ đang dùng vẫn là hồ sơ lúc mở hộp.
      */
     private fun commit(picks: List<Sample>) {
-        dialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = false
+        dialog?.setPrimaryEnabled(false)
         Thread({
             var list = port.names()
             var ctx = page.teachContext(list)
@@ -303,7 +308,7 @@ internal class SettingsVoiceNamesDialog(
             }
             ok = added > 0 && port.save(cur)
         }
-        if (ok) changed = true
+        if (ok) { changed = true; dialog?.setCancelLabel(context.getString(R.string.kdlg_close)) }   // QA-301: đã lưu ⇒ "Đóng"
         samples.clear(); speechTakes = 0
         val head = if (ok) context.getString(R.string.kachi_vn_saved_ok, added, label) else ""
         status.text = (listOf(head) + notes.map { context.getString(R.string.kachi_vn_not_saved, it) }).filter { it.isNotBlank() }.joinToString(NL)

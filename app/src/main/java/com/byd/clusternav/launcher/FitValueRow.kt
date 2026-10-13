@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.text.TextPaint
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityNodeInfo
@@ -64,6 +65,26 @@ internal class FitValueRow private constructor(
     }
 
     fun owns(v: View): Boolean = v === value || captions.any { it === v }
+
+    /** Canh chữ gốc (bộ dựng đặt) của giá trị + các chú thích — trả lại khi hàng về dạng DỌC. */
+    private val baseGravity = (listOf(value) + captions).map { it.gravity }
+
+    /**
+     * 3.01 R20 — hàng NGANG: giá trị canh PHẢI trong ô của nó, chú thích canh TRÁI ⇒ cặp `45678 km` dính nhau và (vì
+     * [FitValues.share] chia đôi phần dư) tâm cặp nằm đúng giữa phần co giãn. [ĐO máy ảo 13/10, số giả] bản trước canh giữa
+     * cả hai trong hai ô riêng: `412` ở giữa ô 185 px, `km` trôi giữa ô 142 px — owner: *"chỉ số… nằm chơi vơi"*. Hàng
+     * DỌC ⇒ trả canh gốc. Trả `true` khi đổi.
+     */
+    fun align(v: View, rot: Boolean): Boolean {
+        val i = (listOf(value) + captions).indexOfFirst { it === v }
+        if (i < 0) return false
+        val tv = v as TextView
+        val side = if (i == 0) Gravity.END else Gravity.START
+        val want = if (rot) side or Gravity.CENTER_VERTICAL else baseGravity[i]
+        if (tv.gravity == want) return false
+        tv.gravity = want
+        return true
+    }
 
     /** Chú thích đang nhường thì không tính là đang hiện (phép kiểm cắt chữ, chữ tên, sàn `k`). */
     fun hides(v: View): Boolean = yielded && captions.any { it === v }

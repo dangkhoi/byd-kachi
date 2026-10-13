@@ -138,7 +138,8 @@ class ClusterProfileSwitchWiringContractTest {
         assertTrue(SourceRoots.body(geo, "private fun ClusterNavBridge.boundsOf(target: CastGeometryTarget, config: DisplayConfig?): CastBounds")
             .contains("config?.bounds ?: editFrame(target)"))
         assertTrue(SourceRoots.body(geo, "private fun ClusterNavBridge.clampToBand(target: CastGeometryTarget, bounds: CastBounds): CastBounds {")
-            .contains("CastGeometryGuard.clampBounds(bounds, f.left, f.right, f.top, f.bottom)"))
+            // 3.1 · R7: cùng khung gốc của PHIÊN, thêm trần tràn phải/dưới (spec kachi-301 §2.2) — vẫn kẹp theo `f`, không theo cả cụm.
+            .contains("CastGeometryGuard.clampBounds(bounds, f.left, f.right, f.top, f.bottom, maxRight, "))
         val diff = SourceRoots.body(geo, "fun ClusterNavBridge.geometryProfileDiffers(target: CastGeometryTarget): CastGeometryProfileValue?")
         assertTrue(diff.contains("if (frameStyle() == CastStyle.RECT) ClusterRectLayout.pin(savedConfig(target), editFrame(target))"), diff)
         assertFalse(Regex("""CastBounds\(bandMin, 0, bandMax""").containsMatchIn(geo), "không còn khung gõ theo cả cụm")

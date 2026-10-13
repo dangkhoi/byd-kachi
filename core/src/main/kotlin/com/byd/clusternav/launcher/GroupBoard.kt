@@ -90,6 +90,7 @@ object GroupBoard {
             shape = g.shape,
             cells = g.reads.map { cell(it, status, units, tyres) },
             actions = g.writes.mapNotNull { action(it) },
+            layout = g.layout,
         )
     }
 
@@ -247,7 +248,7 @@ object GroupBoard {
      */
     private fun action(id: String): GroupActionCell? {
         ControlRegistry.byId(id)?.let {
-            return GroupActionCell(it.id, it.displayShortLabel, it.icon, it.tier.needsBadge)
+            return GroupActionCell(it.id, it.displayShortLabel, it.icon, it.tier.needsBadge, it.displayVerb, it.readKey, it.verbLevel)
         }
         ActionMacros.byId(id)?.let {
             return GroupActionCell(it.id, it.displayLabel, it.icon, it.needsBadge())

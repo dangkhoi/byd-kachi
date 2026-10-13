@@ -191,7 +191,7 @@ internal class FitScale(private val root: View) {
                 if (b.minW > 0 && b.v.minimumWidth != sc(b.minW, k)) { b.v.minimumWidth = sc(b.minW, k); changed = true }
                 if (b.minH > 0 && b.v.minimumHeight != sc(b.minH, k)) { b.v.minimumHeight = sc(b.minH, k); changed = true }
             } else {
-                changed = text(b.v as TextView, b, b.text, k, if (b.isLabel) n else 0, dropLabels) or changed
+                changed = (text(b.v as TextView, b, b.text, k, if (b.isLabel) n else 0, dropLabels) or (row?.align(b.v, rot) == true)) or changed
             }
         }
         main?.let {

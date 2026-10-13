@@ -46,12 +46,16 @@ class DrawerController(
     fun open(index: Int) {
         if (drawer != null) return
         val current = currentWidgets(index)
+        // 3.01 R25 — widget chỉ-ô-lớn (xe 3D) chỉ bày khi khung ĐO được của ô đủ lớn ([WidgetRegistry.offered]).
+        val frame = slotFrame(index); val dens = activity.resources.displayMetrics.density
+        val offered = WidgetRegistry.offered(frame?.first?.let { (it / dens).toInt() }, frame?.second?.let { (it / dens).toInt() })
         show(
             AppDrawer(
-                activity, WidgetRegistry.ALL, current,
+                activity, offered, current,
                 onPickApp = { pkg -> onPickApp(index, pkg) },
                 onPickWidgets = { ids -> onPickWidgets(index, ids) },
                 onClose = { close() },
+                recentApps = recentApps(),   // R27 (kachi-301): hàng "Gần đây" trên cùng bộ chọn của Ô
                 appWidgetPicks = appWidgetPicks(index),
                 fitOf = slotFrame(index)?.let { (w, h) -> { ids: List<String> -> WidgetCapacity.of(activity, ids, w, h) } },
             ),

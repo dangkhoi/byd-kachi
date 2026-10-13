@@ -285,7 +285,7 @@ Dẫn đường tới 	Navigate to 	Navigasi ke
 Mở ứng dụng 	Open app 	Buka apl 
 Bố cục 	Layout 	Susun atur 
 Tạm biệt, hẹn gặp lại	Bye, see you	Selamat tinggal, jumpa lagi
-chỉ mở được khi xe đang dừng	only while the car is stopped	hanya semasa kereta berhenti
+Dừng xe để mở cốp	Stop the car to open the boot	Hentikan kereta untuk membuka but
 Đã gửi {0} {1} — xe báo {2}	Sent {0} {1} — the car reports {2}	Dihantar {0} {1} — kereta melaporkan {2}
 chưa kiểm trên xe	not yet checked on this car	belum disemak pada kereta ini
 xe không nhận lệnh	the car refused	kereta menolak
@@ -638,7 +638,7 @@ Mức 2	Level 2	Tahap 2
 Đóng	Close	Tutup
 Nửa	Half	Separuh
 áp suất + nhiệt độ từng bánh	pressure and temperature of each wheel	tekanan dan suhu setiap roda
-mở/đóng và mở nửa từng kính · đóng cả cụm	open/close and half-open each window · close all	buka/tutup dan buka separuh setiap tingkap · tutup semua
+từng kính: hé, mở hẳn, đóng · cốp sau · mở/đóng tất cả	each window: half, full, close · tailgate · open/close all	setiap tingkap: separuh, penuh, tutup · pintu but · buka/tutup semua
 cửa, nóc, rèm	doors, sunroof, sunshade	pintu, bumbung matahari, teduh matahari
 đèn ngoài, đèn pha, đèn đọc trong xe	exterior lights, headlights, interior reading light	lampu luaran, lampu hadapan, lampu bacaan dalaman
 nhiệt trong/ngoài, điều hoà, bụi mịn	inside/outside temperature, air conditioning, fine dust	suhu dalam/luar, penghawa dingin, habuk halus
@@ -849,3 +849,6 @@ Chạm để bật/tắt camera đó; mở camera khác thì thay camera đang m
 Không có camera nào đang mở	No camera is open	Tiada kamera yang dibuka
 {0} đang không mở	{0} is not open	{0} tidak dibuka
 chưa liên lạc được màn hình chính	couldn't reach the home screen	tidak dapat menghubungi skrin utama
+Mở hẳn	Full	Penuh
+Hé	Vent	Renggang
+Xe 3D	3D car	Kereta 3D

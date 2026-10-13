@@ -111,9 +111,14 @@ object VoiceReply {
      * hoàn toàn hợp lệ, thứ chặn nó là một điều kiện họ **giải được trong mười giây** (đạp phanh, về P). Câu
      * *"xe không nhận lệnh"* ở đây sẽ làm họ nói lại lần hai, lần ba giữa lúc đang chạy — đúng thứ gate này sinh
      * ra để tránh.
+     *
+     * 3.01 · owner 13/10 *"làm theo luật mới hết đi"* — giọng nói + phím nói ĐÚNG câu của cổng chạm (`kctl_stop_to_open_trunk`
+     * ở `:app` res, 5 ngôn ngữ; bản zh/th/ms ở bảng `i18n` (zh · th · ms .tsv) phải trùng chữ — khoá bằng `TrunkTapGateContractTest`).
+     * [REQUIRES_STATIONARY][com.byd.clusternav.launcher.CtlSafetyPolicy.REQUIRES_STATIONARY] hôm nay = `{trunk}` nên câu nói
+     * thẳng *"cốp"*; [i] giữ trong chữ ký để ngày tập có mã thứ hai thì chỗ gọi không phải đổi.
      */
-    fun notWhileMoving(i: VoiceIntent, lang: Lang = Strings.current): String =
-        "✗ " + preview(i, lang) + " — " + Strings.t("chỉ mở được khi xe đang dừng", "only while the car is stopped", lang)
+    fun notWhileMoving(@Suppress("UNUSED_PARAMETER") i: VoiceIntent, lang: Lang = Strings.current): String =
+        Strings.t("Dừng xe để mở cốp", "Stop the car to open the boot", lang)
 
     /**
      * ═══ R5 · CÂU TRẢ LỜI ĐỌC LẠI **GIÁ TRỊ THẬT** MÀ XE BÁO ═══════════════════════════════════════════════

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R22·C — chữ ĐỌC TO (contentDescription) của ô Kính hình xe gọn: hai nút chân mở/đóng tất cả và bước kế
+     của chạm chấm (vòng đóng → 50 % → mở hẳn → đóng · cốp mở/đóng). Không chữ nào hiện trên màn. Cùng tập khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kwin_open_all">เปิดกระจกทั้งหมด</string>
+    <string name="kwin_half_all">เปิดกระจกทั้งหมดครึ่งหนึ่ง</string>
+    <string name="kwin_close_all">ปิดกระจกทั้งหมด</string>
+    <string name="kwin_tap_open_pct">แตะ: เปิด %1$d%%</string>
+    <string name="kwin_tap_open_full">แตะ: เปิดสุด</string>
+    <string name="kwin_tap_close">แตะ: ปิด</string>
+    <string name="kwin_tap_open">แตะ: เปิด</string>
+</resources>

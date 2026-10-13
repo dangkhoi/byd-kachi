@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R6 — hàng "Dịch nội dung" (SettingsCastShiftRow). Tệp riêng, tiền tố kshift_ — cùng tập khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kshift_label">เลื่อนเนื้อหา (ติดลบ = ขึ้น)</string>
+    <string name="kshift_a11y">เลื่อนเนื้อหาแผนที่บนหน้าปัดขึ้นหรือลง หน่วยพิกเซล ค่าติดลบดึงขึ้น</string>
+    <string name="kshift_note">ดึงแผนที่ขึ้นเมื่อแอปเว้นแถบว่างด้านบนหน้าปัด Kachi วัดผลเอง: ถ้าแอปไม่ตอบสนองจะคืนค่าทันที</string>
+    <string name="kshift_ineffective">แอปนี้ไม่รับการเลื่อนเนื้อหาบนรถคันนี้ — คืนค่าเดิมแล้ว</string>
+    <string name="kshift_failed">วัดการเลื่อนเนื้อหาไม่ได้ — ยังไม่มีอะไรเปลี่ยน</string>
+</resources>

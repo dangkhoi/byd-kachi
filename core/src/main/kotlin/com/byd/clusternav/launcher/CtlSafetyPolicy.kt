@@ -70,23 +70,58 @@ object CtlSafetyPolicy {
     /** Control [id] chỉ được MỞ khi xe đang dừng (0 km/h) không — xem [REQUIRES_STATIONARY]. */
     fun requiresStationary(id: String): Boolean = id in REQUIRES_STATIONARY
 
-    /**
-     * ═══ 2.87 · SOÁT vòng 1 · P1 — MỘT phép cho câu *"lệnh [arg] của nút [id] có bị cổng vận tốc CHẶN ngay lúc này?"* ═══
-     *
-     * Hai chỗ hỏi, cùng một phép ⇒ không thể lệch nhau:
-     *  1. **cổng thi hành** (`VoiceControlDispatch.run`) — chặn, nói *"chỉ mở được khi xe đang dừng"*;
-     *  2. **Đảo / Kế tiếp giải từ TRÍ NHỚ** ([KeyCtlPlan], [KeyCtlPlan.Basis.MEMORY]) — trí nhớ có thể CŨ (cốp mở bằng chìa,
-     *     công tắc cốp, app BYD, phiên giọng nói `:wake`, hay Kachi vừa dựng lại khi cốp đang mở) ⇒ hành động nó giải ra
-     *     mà bị chặn thì đổi sang [STATIONARY_SAFE_ARG] thay vì kẹt MỞ-bị-chặn mãi tới khi xe dừng.
-     *
-     * [kmh] gọi LƯỜI: chỉ đọc vận tốc khi nút thuộc [REQUIRES_STATIONARY] **và** lệnh là MỞ (`arg > 0`) — mọi nút khác không
-     * tốn một lượt đọc nào. `null` (không đọc được) ⇒ **không chặn** (fail-open — lý lẽ ở cổng trong `VoiceControlDispatch`).
-     */
-    fun blockedAtSpeed(id: String, arg: Int, kmh: () -> Int?): Boolean =
-        requiresStationary(id) && arg > 0 && (kmh()?.let { it > 0 } ?: false)
+    /** Ảnh chụp chuyển động cho cổng: [speedKmh] / [gear] thô như [CarStatus.Drivetrain] (`null` = không đọc được). */
+    data class Motion(val speedKmh: Int?, val gear: String?)
 
     /**
-     * Lệnh mà cổng vận tốc KHÔNG BAO GIỜ chặn: [blockedAtSpeed] chỉ chặn `arg > 0` ⇒ `0` (đóng cốp) luôn đi được — *"đóng
+     * ═══ 3.01 · owner 13/10 — MỘT phép DUY NHẤT cho câu *"lệnh [arg] của nút [id] có bị CHẶN vì xe chưa chắc đứng yên?"* ═══
+     *
+     * Owner 13/10 *"Chặn MỞ cốp khi xe chạy (Khuyên dùng)"* (đường chạm) rồi *"vậy làm theo luật mới hết đi cho chắc ăn"*
+     * ⇒ CẢ BA đường hỏi cùng phép này, không còn phép thứ hai (tới 3.01 giọng nói/phím dùng `blockedAtSpeed` fail-OPEN):
+     *  1. **chạm** trên màn (ô nút · chấm trên hình xe) — `ControlTileFactory.gated`;
+     *  2. **giọng nói + phím vô-lăng** — cổng thi hành `VoiceControlDispatch.run` (phím giao intent xuống đúng đó);
+     *  3. **Đảo / Kế tiếp giải từ TRÍ NHỚ** ([KeyCtlPlan], [KeyCtlPlan.Basis.MEMORY]) — trí nhớ có thể CŨ ⇒ hành động nó
+     *     giải ra mà bị chặn thì đổi sang [STATIONARY_SAFE_ARG] thay vì kẹt MỞ-bị-chặn mãi.
+     *
+     * Luật: chỉ nút thuộc [REQUIRES_STATIONARY] và chỉ lệnh MỞ (`arg > 0`) — ĐÓNG luôn đi được. **Fail-safe**: chỉ cho mở
+     * khi CHỨNG MINH được xe đứng ([provenStationary]): tốc độ đọc được `== 0`, hoặc (tốc độ không đọc được mà) số đọc
+     * được là P ([parked]). Tốc độ > 0 ⇒ chặn · không tốc độ + số R/N/D ⇒ chặn · không tốc độ + không số ⇒ chặn.
+     * ⚠ Hệ quả có chủ ý: máy ảo/off-car không tốc độ, không số ⇒ MỞ cốp bị chặn trên cả ba đường.
+     *
+     * [motion] gọi LƯỜI: chỉ đọc khi nút thuộc tập và lệnh là MỞ — mọi nút khác không tốn lượt đọc nào. Nguồn đọc của
+     * cả ba đường là [readMotion] (một phép đọc).
+     */
+    fun blocked(id: String, arg: Int, motion: () -> Motion): Boolean =
+        requiresStationary(id) && arg > 0 && !provenStationary(motion())
+
+    /**
+     * MỘT phép ĐỌC chuyển động cho [blocked] (chạm · giọng nói · phím): datum TƯƠI qua [fresh] (`AppContainer.readFresh` —
+     * vòng poll chỉ tươi cho datum đang hiện), hụt thì lùi [snapshot]; số giả vehicleTest ([CarStatusTap]) áp lên cả hai.
+     * Số (`gear`) chỉ đọc khi KHÔNG có tốc độ — đúng nhu cầu của [provenStationary], không tốn lượt HAL thừa.
+     */
+    fun readMotion(fresh: (String) -> CarStatus?, snapshot: () -> CarStatus): Motion {
+        fun read(id: String): CarStatus.Drivetrain =
+            CarStatusTap.apply(runCatching { fresh(id) }.getOrNull() ?: snapshot()).drivetrain
+        val s = read("speed")
+        return if (s.speedKmh != null) Motion(s.speedKmh, s.gear) else Motion(null, read("gear").gear)
+    }
+
+    /** Xe CHỨNG MINH được là đứng yên: tốc độ đọc được bằng 0; không có tốc độ thì số đọc được là P. */
+    fun provenStationary(m: Motion): Boolean = m.speedKmh?.let { it == 0 } ?: (parked(m.gear) == true)
+
+    /**
+     * Số [gear] có phải P không: `true` P · `false` R/N/D · `null` không biết. Hai dạng chuỗi cùng có mặt: mã thô HAL
+     * `BYDAutoGearboxDevice.getCurrentGear` (`GEAR_P=3/R=1/N=0/D=2/INVALID=255` — `BYDAutoGearboxDevice.java:79-83`, trích
+     * ở [TelemetryRegistry] dòng `gear`; [ĐO xe: =3] lúc đỗ) và chữ cái (số giả vehicleTest). `255`/lạ ⇒ không biết.
+     */
+    fun parked(gear: String?): Boolean? = when (gear?.trim()?.uppercase()) {
+        "P", "3" -> true
+        "R", "N", "D", "0", "1", "2" -> false
+        else -> null
+    }
+
+    /**
+     * Lệnh mà cổng KHÔNG BAO GIỜ chặn: [blocked] chỉ chặn `arg > 0` ⇒ `0` (đóng cốp) luôn đi được — *"đóng
      * cốp lúc đang chạy là việc nên làm"*. Đóng một cốp vốn đã đóng thì không có tác dụng gì (không phải lối vòng qua cổng).
      */
     const val STATIONARY_SAFE_ARG = 0

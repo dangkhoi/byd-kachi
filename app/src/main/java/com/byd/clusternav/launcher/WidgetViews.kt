@@ -1,7 +1,6 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
-import android.graphics.Typeface
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -55,6 +54,7 @@ object WidgetViews {
         "w_board" -> board(ctx, data)
         "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
         "w_apps" -> ShortcutIconsView(ctx, grid = true, scrollKey = scrollKey)   // F1 R1.3 — tự nghe danh sách lối tắt (ShortcutHub)
+        "w_car3d" -> car3d(ctx, data)   // 3.01 R25 — xe 3D (lùi bảng Kính 2D khi không có mô hình / máy yếu)
         // G1·T3: NHÓM khả năng → ba bộ vẽ dùng chung. Đặt TRƯỚC nhánh hành động (thứ tự y như
         // [CapabilityCatalog.kindOf]); bảng 4 bánh truyền vào bằng lambda để KHÔNG có bản dựng thứ hai.
         else -> if (CapabilityGroups.byId(id) != null) GroupTiles.build(ctx, id, data) { c, d -> tyreBoard(c, d) }
@@ -63,6 +63,11 @@ object WidgetViews {
         else if (LauncherActions.isCamera(id)) cameraDemandTile(ctx, id, TileSize.BIG)   // 2.93 CAMERA-WIDGET-TILE (ô tự lo)
         else telemetry(ctx, id, data.car, data.units)
     }
+
+    /** 3.01 R25 — widget xe 3D; đổ tại chỗ qua [WidgetRefreshers.live] (không dựng lại — Filament sống theo view). */
+    private fun car3d(ctx: Context, data: WidgetData): View =
+        Car3dWidgetView(ctx, data) { d -> GroupTiles.build(ctx, Car3dCatalog.GROUPS.first(), d) { c, dd -> tyreBoard(c, dd) } }
+            .let { v -> WidgetRefreshers.live(v) { d -> v.fill(d) } }
 
     /**
      * Nội dung ô widget: **1** widget → to, lấp ô; **2..8** → lưới ô đều nhau. L5 WIDGET-FIT-ALL (2.87): số cột/hàng,
@@ -165,6 +170,7 @@ object WidgetViews {
             "w_board"  -> miniCard(ctx, data, "ic-grid", KachiTheme.ACCENT) { MiniValue(ctx.getString(R.string.kachi_widget_board)) }
             "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
             "w_apps"   -> ShortcutIconsView(ctx, grid = true, compact = true, scrollKey = scrollKey)
+            "w_car3d"  -> miniCard(ctx, data, "ic-car", KachiTheme.ACCENT) { MiniValue(ctx.getString(R.string.kcar3d_title)) }   // ô nén không vẽ 3D
             // G1·T3: nhóm trong ô nén ⇒ TÓM TẮT (xem KDoc GroupTiles.mini), không vẽ dải/bảng thu nhỏ.
             else       -> if (CapabilityGroups.byId(id) != null) GroupTiles.mini(ctx, id, data)
             else if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.DOCK)
@@ -287,14 +293,14 @@ object WidgetViews {
      * kPa → chuỗi theo đơn vị người dùng chọn. Đi qua [UnitFormat] (KHÔNG tự chia 100 tại chỗ như bản cũ — đó chính
      * là chỗ khiến bộ đăng ký nói `kPa` mà widget hiện `bar`).
      */
-    private fun formatPressure(kpa: Double, units: UnitPrefs): String {
+    internal fun formatPressure(kpa: Double, units: UnitPrefs): String {
         val raw = TelemetryView("tyre", "", Units.BASE[Quantity.PRESSURE] ?: "kPa",
             WidgetShape.BOARD, EvidenceTier.PROVEN, trimNumber(kpa))
         return UnitFormat.apply(raw, units).display
     }
 
     /** °C → chuỗi theo đơn vị nhiệt người dùng chọn (cùng đường với [formatPressure]). */
-    private fun formatTemp(celsius: Double, units: UnitPrefs): String {
+    internal fun formatTemp(celsius: Double, units: UnitPrefs): String {
         val raw = TelemetryView("tyre_t", "", Units.BASE[Quantity.TEMPERATURE] ?: "°C",
             WidgetShape.BOARD, EvidenceTier.NEEDS_CAR, trimNumber(celsius))
         return UnitFormat.apply(raw, units).display
@@ -321,7 +327,8 @@ object WidgetViews {
         // truyền số tay (34/30/22/14/13/12.5/11f: giá trị hero + eyebrow của ô widget, phần lớn nằm ngoài 5 bậc) ⇒
         // việc chuyển chúng là một lượt riêng, không thuộc phạm vi lượt này.
         text = s; setTextColor(c(color)); setTextSize(TypedValue.COMPLEX_UNIT_SP, sp); gravity = Gravity.CENTER
-        if (bold) typeface = Typeface.DEFAULT_BOLD
+        // R22 (brief Kim §2.4): "số" không còn DEFAULT_BOLD — cỡ hiển thị (≥ DISPLAY) = nét LIGHT, còn lại = medium; cả hai `tnum`.
+        if (bold) { if (sp >= KachiType.DISPLAY) KachiWidgetType.hero(this, color) else KachiWidgetType.value(this) }
     }
 
     // ── Curated widgets (đọc từ CarStatus) ───────────────────────────────────────────────────────────────
@@ -382,9 +389,8 @@ object WidgetViews {
     private fun speed(ctx: Context, data: WidgetData): View {
         val number = tv(ctx, "—", 44f, KachiTheme.INK, true)
         val root = col(ctx).apply {
-            // UX7 — [AxisRow]: con SỐ ở trục ô (dòng chú thích dưới cũng ở trục đó). Bản cũ canh giữa cả cụm
-            // `số + " km/h"` ⇒ số lệch trái **29 px** (đơn vị 58,3 px ở 15sp/density 1.5), thấy rõ vì chú thích
-            // thì đúng trục — đây là mức lệch LỚN NHẤT trong các ô đọc.
+            // [AxisRow]: cụm `số + " km/h"` cân giữa trục ô, cùng tâm với dòng chú thích dưới (owner 13/10 — KDoc
+            // AxisRow; luật UX7 cũ đặt riêng con số ở trục ⇒ cụm lệch phải 29 px, đơn vị dài nhất trong các ô đọc).
             val row = AxisRow(ctx)
             row.addView(number)
             row.addView(tv(ctx, " km/h", 15f, KachiTheme.MUT))

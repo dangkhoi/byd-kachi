@@ -6,25 +6,20 @@ import android.view.ViewGroup
 import kotlin.math.roundToInt
 
 /**
- * ═══ 2.74 · UX7 — HÀNG "MỘT TRỤC": con SỐ ở trục ô, ĐƠN VỊ treo bên phải nó ════════════════════════════════════
+ * ═══ HÀNG "MỘT TRỤC": cụm `số + đơn vị` cân giữa trục ô ════════════════════════════════════════════════════════
  *
- * Bệnh [ĐO]: mọi ô đọc của launcher xếp `số + đơn vị` bằng `LinearLayout(HORIZONTAL) + gravity = CENTER`, tức canh
- * giữa **CẢ CỤM**. Nhãn/dòng phụ ở trên-dưới thì canh giữa đúng trục ô, nên bản thân CON SỐ — thứ mắt đọc — lệch
- * trái đúng `(khe + rộng đơn vị)/2`: ô *Tốc độ* lệch **29,1 px**, số chính của thẻ nhóm **17,9 px**, ô đọc chung
- * **11,4 px**, ô đọc thanh nút `DOCK`/`GROUP` **8,9 px** (density 1,5 — bảng §3.4 của
- * `docs/diagnostics/offcar-2026-09-26/ux-ux7-composite-widgets.md`, nguồn DUY NHẤT của mấy con số này; công thức là
- * [ĐO], phần px là [SUY] theo mô hình advance của phông). Đây
- * chính là lỗi (2) mà bảng lốp đã sửa ở UX2 — [CellTextLayout.lineStartX] — chỉ khác là ở đây chữ do `TextView`
- * vẽ chứ không do `Canvas`, nên phép canh phải nằm trong một `ViewGroup`.
+ * 2.74 · UX7 dựng hàng này để đặt CON SỐ ở trục ô, đơn vị treo phải (bệnh cũ: `LinearLayout(HORIZONTAL) + gravity =
+ * CENTER` không kẹp được cụm vào lề). **3.01 R20 — owner 13/10 đảo luật trục**: *"cái chỉ số nó có bị lệch phải không?
+ * phải canh sao cho nó cân đối hết nhé"* — [ĐO] `123.4` ở trục, `" km"` treo phải ⇒ khối nhìn thấy lệch phải. Nay
+ * [CellTextLayout.lineStartX] cân giữa CẢ KHỐI; nhãn trên/dưới cũng cân giữa ⇒ mọi khối của ô cùng một tâm.
  *
  * ## Giao kèo
- *  • **con 0** = NEO (số): tâm của nó nằm trên trục dọc của hàng;
- *  • **con 1** (tuỳ chọn, `GONE` được) = đuôi (đơn vị): treo ngay bên phải neo, cách [gapPx];
- *  • hết chỗ bên phải ⇒ **cả cụm nhích trái** (không bao giờ cắt mất đơn vị) — đúng luật `lineStartX`;
+ *  • **con 0** = số; **con 1** (tuỳ chọn, `GONE` được) = đơn vị, ngay bên phải số, cách [gapPx];
+ *  • khối `số + khe + đơn vị` cân giữa trục; hết chỗ ⇒ kẹp vào lề (không bao giờ cắt mất đơn vị);
  *  • đo ĐƠN VỊ trước, số nhận phần còn lại ⇒ số dài thì số bị `ellipsize`, đơn vị vẫn đủ chỗ (cùng luật
  *    [TyreBoardView] dùng khi co chữ trong thẻ);
- *  • canh giữa theo chiều DỌC cho cả hai con ⇒ giống hệt `gravity = CENTER` của bản `LinearLayout` cũ, nên lề trên
- *    của đơn vị (`setPadding(0, Sp.M, 0, 0)` ở chỗ gọi) vẫn cho đúng nhịp baseline như trước.
+ *  • canh giữa theo chiều DỌC cho cả hai con ⇒ lề trên của đơn vị (`setPadding(0, Sp.M, 0, 0)` ở chỗ gọi) cho đúng
+ *    nhịp baseline như bản `LinearLayout` cũ.
  *
  * KHÔNG có phép canh thứ hai ở đây: hình học đi qua [CellTextLayout] (thuần, kiểm off-car). Đó là điều
  * `CompositeWidgetLayoutContractTest` canh — thêm một `centerX − lineWidth/2` nào ở `:app` là đỏ.
@@ -87,7 +82,6 @@ class AxisRow(context: Context) : ViewGroup(context) {
         val gap = if (trailW > 0) gapPx else 0
         val x = CellTextLayout.lineStartX(
             centerX = (left + right) / 2f,
-            anchorWidth = anchor.measuredWidth.toFloat(),
             lineWidth = (anchor.measuredWidth + gap + trailW).toFloat(),
             left = left,
             right = right,

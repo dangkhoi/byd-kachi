@@ -20,7 +20,15 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * [refresh] nhận [CarStatus] và cập nhật hiển thị TẠI CHỖ từ [CarStatus.controls] (không dựng lại ô — ràng buộc
  * C5). No-op cho COVER/BUTTON. Chỗ đặt ô (thanh nút · ô giữa màn) giữ [refresh] rồi gọi mỗi lần trạng thái xe đổi.
  */
-class ActionTile(val view: View, val refresh: (CarStatus) -> Unit)
+class ActionTile(
+    val view: View, val refresh: (CarStatus) -> Unit,
+    /** 3.01 R22·C — đặt TƯỜNG MINH (TOGGLE: `> 0` bật · `0` tắt) qua CÙNG đường ghi với cú chạm ô; `null` = kiểu nút khác. */
+    val set: ((Int) -> Unit)? = null,
+    /** 3.01 R28 — STEP: một bước ±n qua CÙNG đường ghi với nút −/+ của ô (đọc mức thật · [ClimateAuto] · làn nền); khác ⇒ `null`. */
+    val nudge: ((Int) -> Unit)? = null,
+    /** 3.01 R28 — STEP: ô chữ GIÁ TRỊ của chính ô (xe 3D soi theo — một bộ chữ, không tính lại `stepText` ở chỗ khác). */
+    val value: TextView? = null,
+)
 
 /**
  * Cỡ ô theo VÙNG. [BIG] cho ô giữa màn (khung to hơn nhiều nên chữ/icon phải to theo, không thì ô trông hụt).
@@ -60,8 +68,19 @@ enum class TileSize(
      *  3. **Lề trong nhỏ hơn** ([KachiSpace.XS] thay vì [KachiSpace.S]) — lấy lại 12px bề cao cho chính việc trên.
      */
     val narrow: Boolean = false,
+    /**
+     * R22·R (owner 13/10: *"giảm text đi em, làm các icon … chữ nó làm xấu lắm"*) — ô CHỈ icon: nhãn ẩn, tên đầy đủ đi
+     * vào `contentDescription` (trợ năng). Giá trị (nhiệt `22°`, quạt `4`, chấm mức) vẫn hiện — đó là số cần đọc.
+     */
+    val iconOnly: Boolean = false,
+    /**
+     * 3.01 R23 (sửa đỏ `BarScaleBudgetContractTest` c): icon của ô STEP — ô này còn hàng [−][giá trị][+] ([KachiSpace.TOUCH_TIGHT])
+     * dưới icon, nên icon to [Sp.ICON_M] của R22·R làm ô STEP 63 dp tràn ô thanh DỌC 60 dp ([KachiBars.DOCK_TILE_H_VERTICAL]).
+     * Ô không có hàng phụ giữ icon to (nhãn đã ẩn ⇒ dư chỗ).
+     */
+    val stepIconDp: Int = iconDp,
 ) {
-    DOCK(Sp.ICON_S, 11.5f, 15f, 12.5f, KachiBars.DOCK_PAD, Sp.RADIUS_L),
+    DOCK(Sp.ICON_M, 11.5f, 15f, 12.5f, KachiBars.DOCK_PAD, Sp.RADIUS_L, iconOnly = true, stepIconDp = Sp.ICON_S),
     BIG(Sp.ICON_L, 15f, 26f, 16f, Sp.L, Sp.RADIUS_L),
 
     /**
@@ -70,7 +89,9 @@ enum class TileSize(
      * Icon nhỏ hơn [DOCK] một bậc ([Sp.ICON_XS]) vì ô này còn phải chứa hàng nút phụ xếp dọc; cỡ chữ giữ **y như**
      * [DOCK] — thu chữ ở một ô còn hẹp hơn thanh nút là đi ngược chuẩn đọc được của G1.
      */
-    GROUP(Sp.ICON_XS, 11.5f, 15f, 12.5f, Sp.XS, Sp.RADIUS_M, narrow = true),
+    // R22·R (owner 13/10 "giảm text"): hàng nút ô nhóm CHỈ icon (tên ở contentDescription) ⇒ icon lên [Sp.ICON_M]
+    // (chỗ của nhãn hai dòng nay dành cho hình).
+    GROUP(Sp.ICON_M, 11.5f, 15f, 12.5f, Sp.XS, Sp.RADIUS_M, narrow = true, iconOnly = true),
 }
 
 /**

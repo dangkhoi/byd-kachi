@@ -1,0 +1,6 @@
+### display_settings.xml while wm size 1920x720 + overscan 0,-120 active on display 1
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<display-settings>
+<config identifier="0" />
+<display name="overlay:1" overscanTop="-120" />
+</display-settings>

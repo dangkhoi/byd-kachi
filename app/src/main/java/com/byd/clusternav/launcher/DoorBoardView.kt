@@ -3,13 +3,13 @@ package com.byd.clusternav.launcher
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
 import android.graphics.RectF
 import android.view.View
 
 /**
- * BẢNG *CỬA & KHOANG* — **WP3-v5**: hình xe nay là **ẢNH bitmap** ([CarImageLayer]) + **chấm màu** tại vị trí từng
- * bộ phận đang mở ([CarLayout]), thay hình vector cũ (owner bỏ vector car — chê xấu/tốn token).
+ * BẢNG *CỬA & KHOANG* — **WP3-v5**: hình xe nay là **ẢNH bitmap** ([CarImageLayer]) + **chấm tròn** tại vị trí từng
+ * bộ phận ([CarLayout]/[CarArt]), thay hình vector cũ (owner bỏ vector car — chê xấu/tốn token). 3.01 DOT: chấm theo
+ * ngôn ngữ chung với bảng kính ([CarDots]/[StateDotPainter]) — đóng cũng có vòng mảnh, chưa đọc là vòng đứt nét.
  *
  * ## Ranh giới giữ nguyên (vẫn đúng luật `GroupTileWiringContractTest`)
  * Ô vẽ **không phán xét**: bộ phận nào đang mở / sắc thái / câu kết luận đều do [GroupBoard.doorPlan] (`:core`,
@@ -35,13 +35,11 @@ internal class DoorBoardView(context: Context) : View(context) {
     private var plan: DoorBoardPlan? = null
     private val car = CarImageLayer(context) { invalidate() }
 
-    private val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val dots = StateDotPainter(context)
 
     private val carDst = RectF()
     private val content = RectF()
 
-    private val colMut = Color.parseColor(KachiTheme.MUT)
-    private val colAccent = Color.parseColor(KachiTheme.ACCENT)
     private val colAmber = Color.parseColor(KachiTheme.AMBER)
     private val colRed = Color.parseColor(KachiTheme.RED)
 
@@ -52,12 +50,10 @@ internal class DoorBoardView(context: Context) : View(context) {
         if (!unchanged) invalidate()
     }
 
-    /** Màu theo sắc thái — cùng thang với các bảng khác (đỏ nguy · hổ phách để ý · nhấn đang-mở · mờ nghỉ). */
+    /** Màu cảnh báo theo sắc thái (đỏ nguy · hổ phách để ý); sắc thái khác ⇒ bộ tô chấm dùng màu nhấn/mực của nó. */
     private fun tint(tone: GroupTone): Int = when (tone) {
         GroupTone.ALERT -> colRed
-        GroupTone.WARN -> colAmber
-        GroupTone.ACTIVE -> colAccent
-        GroupTone.NEUTRAL -> colMut
+        else -> colAmber
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -72,15 +68,17 @@ internal class DoorBoardView(context: Context) : View(context) {
         car.ensure(width, (h * CAR_BOTTOM).toInt())
         car.draw(canvas, carDst)
 
-        // Chấm màu tại từng bộ phận ĐANG MỞ, theo neo chuẩn hoá trên đúng khung ảnh đã vẽ.
+        // 3.01 DOT (owner 13/10 "vẽ chấm tròn thôi, như bọn kinex, kimlauncher"): MỌI bộ phận một chấm cùng ngôn ngữ bảng
+        // kính ([CarDots] + [StateDotPainter]) — mở = chấm đặc + quầng, đóng = vòng mảnh, chưa đọc = vòng đứt nét.
         car.contentRect(carDst, content)
-        val r = minOf(content.width(), content.height()) * DOT_RATIO
+        val size = StateDotPainter.diameterPx(minOf(content.width(), content.height()), resources.displayMetrics.density)
         for (i in p.parts.indices) {
             val s = p.parts[i]
-            if (!s.open) continue
-            val a = CarLayout.part(s.part)
-            dot.color = tint(s.tone)
-            canvas.drawCircle(content.left + a.x * content.width(), content.top + a.y * content.height(), r, dot)
+            val a = car.art.part(s.part)   // R23: neo theo ẢNH đang vẽ (ảnh BYD đã đo; ảnh khác ⇒ CarLayout chung)
+            dots.draw(
+                canvas, content.left + a.x * content.width(), content.top + a.y * content.height(), size,
+                CarDots.ofPart(s), lit = false, warnColor = tint(s.tone),
+            )
         }
     }
 
@@ -96,7 +94,5 @@ internal class DoorBoardView(context: Context) : View(context) {
         const val TOP_INSET = 0.03f
         /** Mép DƯỚI khung ảnh — **cùng số với [TyreBoardView] `CAR_BOTTOM`** (xem KDoc lớp, UX7). */
         const val CAR_BOTTOM = 0.98f
-        /** Bán kính chấm theo cạnh nhỏ của khung xe. */
-        const val DOT_RATIO = 0.065f
     }
 }

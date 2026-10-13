@@ -72,7 +72,6 @@
     <!-- ── ProfileChip — chip hồ sơ ở thanh trên (S4 · R7) ── -->
     <string name="kachi_profile_chip_desc">Hồ sơ đang dùng: %1$s. Chạm để đổi hồ sơ.</string>
     <string name="kachi_profile_pick_title">Đổi hồ sơ tài xế</string>
-    <string name="kachi_profile_pick_active">%1$s · đang dùng</string>
     <string name="kachi_profile_manage">Quản lý hồ sơ…</string>
     <string name="kachi_profile_none">Chưa có hồ sơ nào — mở Cài đặt → Hồ sơ tài xế để thêm.</string>
     <string name="kachi_profile_switched">Hồ sơ: %1$s</string>
@@ -427,7 +426,7 @@
     <string name="kachi_nav_auto_gps_on">chờ có GPS</string>
     <string name="kachi_nav_auto_gps_off">không cần GPS</string>
     <string name="kachi_nav_auto_enabled">Bật lịch này</string>
-    <string name="kachi_nav_auto_window">Khung giờ (HH:mm)</string>
+    <string name="kachi_nav_auto_window">Khung giờ</string>
     <string name="kachi_nav_auto_days">Thứ trong tuần</string>
     <string name="kachi_nav_auto_gps">Chỉ dẫn khi đã có GPS (chờ ra khỏi hầm)</string>
     <string name="kachi_nav_auto_place">Dẫn tới</string>
@@ -595,11 +594,11 @@
     <string name="kachi_sub_keys_bindings">Gán phím</string>
     <string name="kachi_keys_no_bindings">Chưa gán nút nào. Bấm “Thêm gán…” để nối một nút vật lý với một app hoặc một nút xe.</string>
     <string name="kachi_keys_add">Thêm gán…</string>
-    <string name="kachi_keys_pick_button">Bước 1 — chọn nút</string>
-    <string name="kachi_keys_pick_target">Bước 3 — chọn ứng dụng / trợ lý</string>
-    <string name="kachi_keys_pick_kind">Bước 2 — nút này làm gì</string>
+    <string name="kachi_keys_pick_button">Chọn nút</string>
+    <string name="kachi_keys_pick_target">Chọn ứng dụng / trợ lý</string>
+    <string name="kachi_keys_pick_kind">Nút này làm gì</string>
     <string name="kachi_keys_kind_apps">Mở ứng dụng · trợ lý</string>
-    <string name="kachi_keys_pick_action">Bước 3 — %1$s: chọn việc</string>
+    <string name="kachi_keys_pick_action">%1$s: chọn việc</string>
     <string name="kachi_keys_no_buttons">Chưa có nút nào để gán.</string>
     <string name="kachi_keys_no_targets">Máy chưa có ứng dụng nào mở được từ phím.</string>
     <string name="kachi_sub_keys_custom">Nút tự học</string>
@@ -1069,9 +1068,13 @@
     <string name="kachi_camera_rot_own_row">Xoay</string>
     <string name="kachi_camera_mirror_own_title">Lật gương</string>
     <string name="kachi_keys_kind_camera">Camera theo yêu cầu</string>
-    <string name="kachi_keys_pick_camera">Bước 3 — camera nào</string>
+    <string name="kachi_keys_pick_camera">Camera nào</string>
     <string name="kachi_key_cam_toggle">%1$s — bật/tắt</string>
     <string name="kachi_key_cam_off">Tắt camera</string>
     <!-- 2.97 · R3 — đổi hồ sơ tắt dẫn đường lên cụm -->
     <string name="kachi_profile_nav_off">Hồ sơ «%1$s» đang TẮT dẫn đường lên cụm đồng hồ/HUD. Bật lại ở Cài đặt › Dẫn đường + HUD.</string>
+    <!-- 3.1 · kachi-301 R2/R4/R7 — bước khung chiếu cụm -->
+    <string name="kachi_cast_frame_step">Bước</string>
+    <string name="kachi_cast_geom_resize_failed">Không áp được khung lên cụm — số đã trở về khung thật.</string>
+    <string name="kachi_cast_geom_overflow_note" formatted="false">Mép phải/dưới được vượt khung cụm (tối đa +50 %) để giấu thanh dưới của app; mép trái/trên không âm được (Android chặn).</string>
 </resources>

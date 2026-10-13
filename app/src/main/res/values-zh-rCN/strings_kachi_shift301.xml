@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R6 — hàng "Dịch nội dung" (SettingsCastShiftRow). Tệp riêng, tiền tố kshift_ — cùng tập khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kshift_label">内容平移（负数 = 上移）</string>
+    <string name="kshift_a11y">将仪表上的地图内容上下平移，单位为像素；负数向上</string>
+    <string name="kshift_note">应用在仪表顶部留出多余空白时，将地图上移。Kachi 会自动检测：应用不响应则立即恢复。</string>
+    <string name="kshift_ineffective">此应用在本车上不响应内容平移 — 已恢复原样。</string>
+    <string name="kshift_failed">无法检测内容平移 — 未做任何更改。</string>
+</resources>

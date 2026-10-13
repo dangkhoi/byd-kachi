@@ -1,7 +1,6 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
-import android.graphics.Typeface
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
@@ -47,9 +46,9 @@ class ReadTile internal constructor(
         // người dùng không đọc được ô đó đang là cái gì — đúng lỗi đã đo ở ô con của nhóm (2.33:1). Nhãn trả lời
         // *"ô này là cái gì"*, câu đó không phụ thuộc việc xe đã trả số hay chưa.
         content.alpha = 1f
-        val dim = if (v?.available == true) 1f else DIM
-        value.alpha = dim
-        unit.alpha = dim
+        // R22·B: chưa đọc ⇒ vai MUT (đã khoá ≥ 4,5:1), không hạ alpha — [KachiWidgetType.pending].
+        KachiWidgetType.pending(value, v?.available == true)
+        unit.alpha = 1f
         // Icon: mức (chấm) + active/inactive theo giá trị xe. maxLevel≥1 ⇒ mức = số nguyên trong giá trị (0/1/2);
         // maxLevel=0 ⇒ active theo onOff. Chưa đọc được ⇒ inactive/level 0 (không bịa).
         iconView?.let { iv ->
@@ -68,10 +67,6 @@ class ReadTile internal constructor(
         }
     }
 
-    private companion object {
-        /** Độ mờ của số chưa đọc được — cùng giá trị bản cũ dùng cho cả ô, nên dấu gạch trông y như trước. */
-        const val DIM = 0.5f
-    }
 }
 
 /**
@@ -120,7 +115,7 @@ internal fun readTileOf(
         gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
     }
     val value = TextView(ctx).apply {
-        text = TelemetryView.PLACEHOLDER; setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
+        text = TelemetryView.PLACEHOLDER; setTextColor(c(KachiTheme.INK)); KachiWidgetType.value(this)   // R22: medium + tnum, không DEFAULT_BOLD
         setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp); gravity = Gravity.CENTER; maxLines = 1
         // ⚠ [SOÁT ĐỘC LẬP 2026-09-12] `maxLines = 1` mà KHÔNG ellipsize ⇒ chữ bị cắt CỨNG, không có "…" — đúng
         // họ lỗi mà chính tệp này đã vá hai lần cho NHÃN ô ([actionTile] và nhãn của ô đọc ngay trên). Từ khi
@@ -137,9 +132,8 @@ internal fun readTileOf(
     // Ở ô THẤP của thanh nút (vd "Mức xăng"), ba dòng dọc (nhãn tối đa 2 dòng + giá trị + đơn vị) tràn khỏi ô ⇒
     // đơn vị "%" bị CẮT ở đáy và trông lạc lõng, trong khi ô kế bên KHÔNG có nút −/+ nên ô này nhìn như hỏng.
     // Gộp một hàng vừa hết cắt vừa đọc "— %" thành một cụm. Giữ 2 TextView riêng để [ReadTile.bind] không đổi.
-    // ⚠ UX7 — [AxisRow], KHÔNG phải `LinearLayout` + `gravity = CENTER`: nhãn ô (2 dòng) canh giữa trục ô, nên
-    // canh giữa CẢ CỤM `giá trị + đơn vị` đẩy con SỐ lệch trái đúng `(khe + rộng đơn vị)/2` (~10 px với `"%"` ở
-    // density 1.5) ⇒ số và nhãn không cùng trục. Khe giữ nguyên [Sp.XS] (trước là `marginStart`).
+    // [AxisRow]: cụm `giá trị + đơn vị` cân giữa trục ô, cùng tâm nhãn ô (owner 13/10 — KDoc AxisRow), kẹp vào lề khi
+    // ô hẹp. Khe giữ nguyên [Sp.XS] (trước là `marginStart`).
     content.addView(AxisRow(ctx).apply {
         gapPx = dpi(ctx, Sp.XS)
         addView(value)

@@ -19,6 +19,7 @@ import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceSession
 import com.byd.clusternav.launcher.voice.VoiceSlotPlace
 import com.byd.clusternav.launcher.voice.VoiceTeachPending
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import com.byd.clusternav.launcher.voice.VoiceWiring
 
@@ -433,7 +434,10 @@ internal fun collectHome(
             val unwatch = (owner as? android.content.Context)?.let { com.byd.clusternav.system.ScreenLit.watch(it) { container.carStatusRepository.wake() } }
             try {
                 // 2.88 kênh 2: dòng `TYRE raw …` chỉ khi ĐỔI (`TyreRawLog`) — bằng chứng lốp từ đời xe khác không cần adb.
-                container.carStatusRepository.status.collect { TyreRawLog.note(it.tyres); viewModel.setCarStatus(it) }
+                // 3.01 R20: [CarStatusTap] — chỉ bản vehicleTest cắm số giả; `bump` đẩy lại một lượt khi cắm/gỡ.
+                // 3.01 TURN: xi-nhan THẬT từ socket camera (`LampLive`, `null` ⇒ giữ số đọc) — không mở gì thêm.
+                container.carStatusRepository.status.combine(CarStatusTap.bump) { s, _ -> s }.combine(LampLive.shared.state, LampLive::overlay)
+                    .collect { TyreRawLog.note(it.tyres); viewModel.setCarStatus(CarStatusTap.apply(it)) }
             } finally {
                 unwatch?.invoke()
                 container.carStatusRepository.stop()

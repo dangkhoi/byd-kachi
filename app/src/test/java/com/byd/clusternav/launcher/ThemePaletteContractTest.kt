@@ -220,6 +220,22 @@ class ThemePaletteContractTest {
     }
 
     /**
+     * R22·R (owner 13/10) — ô BẬT nay là nền TÔNG nhạt (`tonalOn` = bề mặt + `tileOn*` ~15 %) với icon MỰC NHẤN. Icon là
+     * đồ hoạ ⇒ WCAG 1.4.11 đòi ≥ 3:1 trên chính nền đó, ở cả hai bảng (đo trên `tile` như bài chữ ở trên).
+     */
+    @Test
+    fun `mau nhan cua icon o bat dat 3 to 1 tren nen tong`() {
+        val bad = mutableListOf<String>()
+        forEachPalette { name, p ->
+            listOf("tileOnFrom", "tileOnTo").forEach { g ->
+                val r = ratio(p.accentInk, over(role(p, g), p.tile))
+                if (r < 3.0) bad += "$name accentInk trên $g(trộn trên tile) = ${fmt(r)}"
+            }
+        }
+        assertEquals(emptyList<String>(), bad, "icon ô bật dưới 3:1: $bad")
+    }
+
+    /**
      * Glyph ⇄ trên đầu ô phải thấy được **kể cả khi app phía dưới là TRẮNG TINH**.
      *
      * Đây là bài canh sinh ra từ một lỗi thật của T1: [KachiPalette.scrimBtn] nằm trên **pixel của app đang chiếu**,
@@ -257,14 +273,14 @@ class ThemePaletteContractTest {
         )
         assertTrue(tint.contains("INK_ON_ACCENT"), "nhánh BẬT phải dùng INK_ON_ACCENT (nền nhấn bán trong suốt)")
         assertTrue(
-            !tint.contains("ON_ACCENT") || tint.contains("INK_ON_ACCENT"),
+            Regex("""\bKachiTheme\.ON_ACCENT\b""").find(tint) == null,
             "không được dùng ON_ACCENT ở đây: nó dành cho nền nhấn ĐẶC",
         )
-        assertEquals(
-            2, Regex("INK_ON_ACCENT").findAll(tint).count(),
-            "cả ICON và CHỮ của ô đang bật đều phải dùng INK_ON_ACCENT — [ĐO] chữ đúng mà icon sai thì bảng sáng " +
-                "mất glyph nhưng vẫn còn nhãn, nên lỗi rất dễ lọt qua một lượt nhìn nhanh",
-        )
+        // R22·R (owner 13/10 "thô" — ô bật gradient chàm→tím): ICON bật = mực NHẤN (`ACCENT_INK`) trên nền tông nhạt,
+        // CHỮ = `INK_ON_ACCENT` (mực trung tính của nền đó). Cả hai vẫn phải là vai đo trên nền `tileOn*` — xem
+        // [mau nhan cua icon o bat dat 3 to 1 tren nen tong] — không phải trắng của nền nhấn đặc.
+        assertEquals(1, Regex("INK_ON_ACCENT").findAll(tint).count(), "CHỮ ô bật = INK_ON_ACCENT")
+        assertTrue(tint.contains("if (active) KachiTheme.ACCENT_INK else"), "ICON ô bật = ACCENT_INK (R22·R)")
     }
 
     /** Viền KẾT CẤU — thứ nói *"đây là một thành phần riêng"*. WCAG 1.4.11 (non-text) đòi 3:1. */

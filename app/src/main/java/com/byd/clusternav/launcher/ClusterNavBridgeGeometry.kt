@@ -1,13 +1,19 @@
 package com.byd.clusternav.launcher
 
+import android.content.Context
+import android.content.SharedPreferences
 import com.byd.clusternav.modules.clustercast.simplified.CastBounds
 import com.byd.clusternav.modules.clustercast.simplified.CastGeometryGuard
+import com.byd.clusternav.modules.clustercast.simplified.CastGeometrySteps
+import com.byd.clusternav.modules.clustercast.simplified.CastResizeOutcome
 import com.byd.clusternav.modules.clustercast.simplified.CastProfile
 import com.byd.clusternav.modules.clustercast.simplified.CastStyle
+import com.byd.clusternav.modules.clustercast.simplified.ClusterDisplayFacts
 import com.byd.clusternav.modules.clustercast.simplified.ClusterRectLayout
 import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.DisplayConfig
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
+import com.byd.clusternav.modules.clustercast.simplified.clusterPhysicalSize
 
 /**
  * ═══ Nửa "KHUNG & DPI khi đang chiếu" của [ClusterNavBridge] ════════════════════════════════════
@@ -79,11 +85,11 @@ fun ClusterNavBridge.geometryFrame(): Pair<Int, Int> {
         is SimpleCastState.CastingFull -> state.displayConfig.wmSize
         is SimpleCastState.CastingSplit -> (state.left ?: state.right)?.displayConfig?.wmSize
         else -> null
-    } ?: DisplayConfig.NORMAL_DEFAULT.wmSize
-    val parts = wmSize.split("x")
-    val width = parts.getOrNull(0)?.toIntOrNull() ?: FALLBACK_WIDTH
-    val height = parts.getOrNull(1)?.toIntOrNull() ?: FALLBACK_HEIGHT
-    return width to height
+    }
+    // 3.1 · R26: kích VẬT LÝ đã đo của cụm thắng `wmSize` — một `wmSize` cũ (1920×520, [ĐO xe 13/10]) làm trần là mép dưới không
+    // bao giờ qua 520. Chỉ đọc RAM (đo trên executor lúc bắt đầu phiên), không shell trên luồng vẽ.
+    val physical = runCatching { coordinator.clusterPhysicalSize }.getOrNull()
+    return ClusterDisplayFacts.editFrameSize(physical, wmSize)
 }
 
 /**
@@ -125,7 +131,7 @@ fun ClusterNavBridge.geometryBounds(target: CastGeometryTarget): CastBounds = bo
  * state hệ thống phải có phạm vi tường minh).
  */
 fun ClusterNavBridge.setGeometryBounds(target: CastGeometryTarget, bounds: CastBounds) {
-    val clamped = clampToBand(target, bounds)
+    val clamped = geometryClamp(target, bounds)
     when (target.side) {
         null -> coordinator.resizeActiveTarget(clamped.left, clamped.top, clamped.right, clamped.bottom)
         else -> coordinator.resizeActiveSlot(target.side, clamped.left, clamped.top, clamped.right, clamped.bottom)
@@ -133,10 +139,45 @@ fun ClusterNavBridge.setGeometryBounds(target: CastGeometryTarget, bounds: CastB
 }
 
 /**
+ * 3.1 · R1 — phép kẹp THUẦN mà [setGeometryBounds] dùng, mở cho màn: màn cộng dồn ý định rồi kẹp ĐỒNG BỘ bằng chính phép này,
+ * nên số hiện ngay = số sẽ gửi = số bản ghim nhận khi lệnh xong (không còn "kẹp im lặng mà màn vẫn đếm tiếp").
+ */
+fun ClusterNavBridge.geometryClamp(target: CastGeometryTarget, bounds: CastBounds): CastBounds = clampToBand(target, bounds)
+
+/** 3.1 · R2 — ô [target] còn yêu cầu khung đang chờ/đang áp ⇒ màn giữ ý định, chưa đồng bộ về bản ghim. */
+fun ClusterNavBridge.geometryResizeBusy(target: CastGeometryTarget): Boolean =
+    runCatching { coordinator.resizeQueue.busy(target.side) }.getOrDefault(false)
+
+/**
+ * 3.1 · R2 — nghe kết cục từng yêu cầu khung (APPLIED/FAILED/DROPPED, [CastResizeOutcome]); gọi trên luồng coordinator — bên nghe
+ * tự `post` về luồng chính. Trả hàm gỡ (gỡ khi khối rời màn, không rò người nghe theo trang Cài đặt).
+ */
+fun ClusterNavBridge.observeGeometryOutcome(onOutcome: (CastResizeOutcome) -> Unit): () -> Unit =
+    coordinator.resizeQueue.addListener(onOutcome)
+
+/** 3.1 · R4 — bước −/+ của HỒ SƠ đang dùng (5/20/50 px; lạ/vắng ⇒ 20). Khoá `cast_frame_step` theo hồ sơ (`ProfileScopeCluster`). */
+fun ClusterNavBridge.geometryStep(): Int =
+    CastGeometrySteps.normalize(runCatching { castPrefs().getInt(CastGeometrySteps.KEY, CastGeometrySteps.DEFAULT) }.getOrNull())
+
+/** 3.1 · R4 — lưu bước cho hồ sơ đang dùng (chỉ nhận một trong [CastGeometrySteps.OPTIONS]). */
+fun ClusterNavBridge.setGeometryStep(px: Int) {
+    castPrefs().edit().putInt(CastGeometrySteps.KEY, CastGeometrySteps.normalize(px)).apply()
+}
+
+/**
+ * Tệp `simple_cast_prefs` — CÙNG tệp `SharedPrefsSimpleCastPrefs` đọc/ghi (Android giữ một thực thể theo tên trong tiến trình),
+ * nên ảnh chụp hồ sơ của tệp đó mang luôn khoá bước. Không thêm hàm vào `SimpleCastPrefs` (`:core`) vì dịch vụ chiếu không đọc
+ * khoá này — nó chỉ là sở thích trình bày của màn Cài đặt.
+ */
+private fun ClusterNavBridge.castPrefs(): SharedPreferences =
+    app.getSharedPreferences(ProfileScopeCluster.SIMPLE_CAST_FILE, Context.MODE_PRIVATE)
+
+/**
  * Đưa ô về khung mặc định của nó — nút "Đặt lại" của màn cũ: cả dải, cao hết cụm (mọi kiểu — 2.90 · R4).
  */
-fun ClusterNavBridge.resetGeometry(target: CastGeometryTarget) {
+fun ClusterNavBridge.resetGeometry(target: CastGeometryTarget): CastBounds {
     setGeometryBounds(target, editFrame(target))
+    return geometryClamp(target, editFrame(target))   // 3.1 · R1: màn hiện ngay đúng khung vừa gửi (ý định), không đợi bản ghim
 }
 
 /**
@@ -224,20 +265,21 @@ private fun ClusterNavBridge.densityOf(config: DisplayConfig?): Int {
     return if (dpi in geometryDensityOptions()) dpi else DEFAULT_DENSITY
 }
 
+/**
+ * Pass 3 · cluster-r2-1: Bo tròn f.top = 0, f.bottom = H ⇒ đúng phép kẹp cũ từng số. 3.1 · R7: mép DƯỚI được tràn tới +50 % cao
+ * cụm (mọi ô), mép PHẢI chỉ khi chiếu TOÀN cụm — một nửa tràn phải là lấn sang nửa kia (CLAUDE.md §4: phạm vi tường minh).
+ */
 private fun ClusterNavBridge.clampToBand(target: CastGeometryTarget, bounds: CastBounds): CastBounds {
-    val f = editFrame(target)   // Pass 3 · cluster-r2-1: Bo tròn f.top = 0, f.bottom = H ⇒ đúng phép kẹp cũ từng số
-    return CastGeometryGuard.clampBounds(bounds, f.left, f.right, f.top, f.bottom)
+    val f = editFrame(target)
+    val (width, height) = geometryFrame()
+    val maxRight = if (target.side == null) CastGeometryGuard.overflowMax(width) else f.right
+    return CastGeometryGuard.clampBounds(bounds, f.left, f.right, f.top, f.bottom, maxRight, CastGeometryGuard.overflowMax(height))
 }
 
 // V-CLUSTER (2026-09-30) — phép kẹp DỜI sang `:core` `CastGeometryGuard.clampBounds` (thân + bài test dời nguyên): tầng
 // UI này và lượt áp hình học của phiên chiếu phải dùng CHUNG một phép kẹp (spec §11.4.4, DRY). Lý do `MIN_SPAN` tự co
 // lại (dải tỉ lệ 10 %, `wmSize` lạ) nay nằm ở KDoc bên đó.
 
-/** Bước của một lần bấm −/+ (px trên cụm). Đủ thấy khác sau một cú chạm, đủ nhỏ để canh được mép. */
-internal const val GEOMETRY_STEP_PX = 20
-
 /** `DisplayConfig.NORMAL_DEFAULT.density` = "240". */
 private const val DEFAULT_DENSITY = 240
 
-private const val FALLBACK_WIDTH = 1920
-private const val FALLBACK_HEIGHT = 720

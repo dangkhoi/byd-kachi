@@ -33,7 +33,7 @@ class WidgetFitJ1ContractTest {
 
     @Test
     fun `1 - nhan ngan - bo dung khai hai ban, bo ap doi chu tai cho, dau chu theo ban day`() {
-        val tile = SourceRoots.body(factory, "fun actionTile(def: ControlDef)")
+        val tile = SourceRoots.body(factory, "fun actionTile(def: ControlDef, label: String? = null)")
         assertTrue(tile.contains("FitScale.named(this, def.displayLabel, def.displayShortLabel)"), "nhãn ĐÃ DỊCH, không nhãn gốc")
         val card = tele.substringAfter("internal class MiniCard(").substringBefore("internal fun miniCard(")
         assertTrue(card.contains("FitScale.named(subView, v.caption, v.captionShort, name = v.captionShort != null)"))

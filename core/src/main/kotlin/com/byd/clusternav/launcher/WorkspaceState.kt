@@ -243,7 +243,9 @@ data class WorkspaceState(
          */
         val DEFAULT: WorkspaceState = of(
             LayoutPreset.THREE,
-            SlotContent.Widget("w_board"),
+            // 3.01 R28 (owner 13/10 *"mặc định để widget này vào ô 1 của app"*): ô LỚN đầu = xe 3D cho cài MỚI / hồ sơ chưa từng lưu
+            // ([WorkspaceDefault]); bố cục đã lưu không đổi. Xe không có mô hình 3D / máy yếu ⇒ widget tự lùi bảng 2D (`Car3dWidgetView`).
+            SlotContent.Widget("w_car3d"),
             SlotContent.Widget("w_energy"),
             SlotContent.Widget("w_pm25"),
         )

@@ -253,6 +253,8 @@ class ClusterProfileScopeCoverageTest {
      * mang kiểu + tệp + đoạn mã ghi thật làm bằng chứng. Bài dưới đòi bảng này khớp ĐÚNG tập khoá quét hụt (không mục).
      */
     private val indirect: Map<String, Pair<PrefType, List<Pair<String, String>>>> = mapOf(
+        // 3.1 · R4 (kachi-301) — bước −/+ khung: tên khoá là hằng `:core` `CastGeometrySteps.KEY` ⇒ bộ quét literal không nối được.
+        "cast_frame_step" to (PrefType.INT to listOf("launcher/ClusterNavBridgeGeometry.kt" to "putInt(CastGeometrySteps.KEY,")),
         "camera_pos_left" to (PrefType.STRING to listOf("PrefsAutomation.kt" to "putString(cameraPosKey(left), v)")),
         "camera_pos_right" to (PrefType.STRING to listOf("PrefsAutomation.kt" to "putString(cameraPosKey(left), v)")),
         "camera_dewarp_amount" to (

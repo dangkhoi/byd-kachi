@@ -88,7 +88,7 @@ class CastDeepRescueContractTest {
     @Test
     fun `the cast settings group carries the deep-rescue button behind a confirmation`() {
         assertTrue(section.contains("bridge.deepRescue("), "the Cluster-cast group calls the bridge action")
-        assertTrue(section.contains("SettingsDialogs.confirm("), "asks again — force-stopping other apps is not undoable")
+        assertTrue(section.contains("KachiDialogs.confirm(") && section.contains("destructive = true"), "asks again — force-stopping other apps is not undoable")
         assertTrue(
             section.indexOf("R.string.kachi_cast_deep_confirm") > 0,
             "the confirmation says what is about to happen (resource, both languages)",

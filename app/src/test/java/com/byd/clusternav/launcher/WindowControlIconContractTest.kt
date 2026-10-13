@@ -1,0 +1,45 @@
+package com.byd.clusternav.launcher
+
+import com.byd.clusternav.testsupport.SourceRoots
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+/**
+ * 3.01 R22·C — icon hai nút chân ô Kính (owner 13/10: *"mấy cái cửa sổ cũng làm cho nó đẹp nha, tinh vi hơn"* → *"thêm 1 icon
+ * mở all, 1 icon đóng all là xong"*). Khoá: icon là VectorDrawable SINH (đường ống `gen-icons.py`, không Canvas tự vẽ), và nét
+ * chính của icon đạt ≥ 3:1 (WCAG 1.4.11 — đồ hoạ điều khiển) trên đĩa nghỉ của nút ở cả bảng Tối lẫn Sáng, cả lúc NHẤN.
+ */
+class WindowControlIconContractTest {
+
+    private val compact = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/ActionMatrixCompact.kt")
+
+    @Test
+    fun `icon chan la vector sinh tu nguon glyph`() {
+        listOf("win_open_all_g", "win_half_all_g", "win_close_all_g").forEach { id ->
+            assertTrue(SourceRoots.exists("../design/glyph/$id.svg"), "$id: thiếu nguồn design/glyph")
+            assertTrue(SourceRoots.text("src/main/res/drawable/ic_$id.xml").contains("SINH BỞI scripts/design/gen-icons.py"), id)
+            assertTrue(compact.contains("R.drawable.ic_$id"), "$id chưa được nút chân dùng")
+        }
+    }
+
+    @Test
+    fun `net icon dat 3 tren 1 tren dia nut o bang toi va sang, ca luc nhan`() {
+        assertTrue(compact.contains("REST_ALPHA = 0x$REST") && compact.contains("RIPPLE_ALPHA = 0x$RIPPLE"), "hằng số bài này soi đã đổi")
+        listOf(KachiPalette.DARK to "Tối", KachiPalette.LIGHT to "Sáng").forEach { (p, name) ->
+            listOf(p.card, p.tile).forEach { surface ->
+                val bg = ColorMath.parse(surface)
+                val rest = ColorMath.over(ColorMath.withAlpha(ColorMath.parse(p.ink), REST.toInt(16)), bg)
+                val pressed = ColorMath.over(ColorMath.withAlpha(ColorMath.parse(p.accent), RIPPLE.toInt(16)), rest)
+                val idle = ColorMath.ratio(ColorMath.parse(p.icon), rest)
+                val down = ColorMath.ratio(ColorMath.parse(p.accentInk), pressed)
+                assertTrue(idle >= 3.0, "$name: icon nghỉ ${"%.2f".format(idle)}:1 < 3:1")
+                assertTrue(down >= 3.0, "$name: icon nhấn ${"%.2f".format(down)}:1 < 3:1")
+            }
+        }
+    }
+
+    private companion object {
+        const val REST = "14"
+        const val RIPPLE = "33"
+    }
+}

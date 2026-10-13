@@ -126,7 +126,7 @@ object KeyCtlDispatch {
  * lệnh cuối Kachi đã gửi (`ControlLastSent.shared`, cùng bảng với ô trên màn) và giải ra hành động cụ thể trước khi
  * giao [VoiceControlDispatch.run] (mọi cổng an toàn áp lên hành động đã giải; ghi bảng chỉ khi lệnh thành công).
  * SOÁT vòng 1 · P1: vận tốc cho luật *"trí nhớ cũ + xe chạy ⇒ hướng luôn được phép"* của [KeyCtlPlan] lấy từ CHÍNH nguồn
- * của cổng thi hành ([VoiceControlDispatch.speedKmh]) — chỉ đọc khi Đảo từ trí nhớ ra MỞ cốp.
+ * của cổng thi hành ([VoiceControlDispatch.motion]) — chỉ đọc khi Đảo từ trí nhớ ra MỞ cốp.
  *
  * @return kết quả của [KeyCtlPlan] (cho nhật ký), `null` khi nút không còn trong registry.
  */
@@ -138,7 +138,7 @@ internal class KeyCtlRunner(
 ) {
     fun run(f: KeyCtlThrottle.Step.Fire): KeyCtlPlan.Outcome? {
         val def = resolve(f.target.controlId) ?: run { say(KeyCtlPlan.invalidReply(f.target.spec)); return null }
-        val o = KeyCtlPlan.of(def, f.target, f.count, speedKmh = controls::speedKmh) {
+        val o = KeyCtlPlan.of(def, f.target, f.count, motion = controls::motion) {
             runCatching { port().readState(def.id) }.getOrNull()
         }
         when (o) {

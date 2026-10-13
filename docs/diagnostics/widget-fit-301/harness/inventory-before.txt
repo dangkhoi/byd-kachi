@@ -1,0 +1,105 @@
+ev_range_km                  LARGE  618x826  nodes=3 bad=0  
+ev_range_km                  NARROW 303x826  nodes=3 bad=0  
+ev_range_km                  SMALL  303x406  nodes=3 bad=0  
+ev_range_km                  WIDE   935x267  nodes=3 bad=0  
+g_battery                    LARGE  619x826  nodes=6 bad=0  
+g_battery                    NARROW 303x826  nodes=6 bad=0  
+g_battery                    SMALL  303x406  nodes=6 bad=0  
+g_battery                    WIDE   934x267  nodes=6 bad=0  
+g_climate                    LARGE  618x826  nodes=28 bad=0  
+g_climate                    LARGE  619x826  nodes=28 bad=0  
+g_climate                    NARROW 303x826  nodes=56 bad=10  'Nhiệt ngoài xe':38x52SHRED; 'Chế độ lấy gió':38x52SHRED; 'Chế độ ĐH':38x52SHRED; 'Sấy trước':38x52SHRED; 'Mức bụi mịn':38x52SHRED; 'Nhiệt ngoài xe':38x52SHRED
+g_climate                    SMALL  303x406  nodes=44 bad=18  'Nhiệt ngoài xe':38x52SHRED; 'Chế độ lấy gió':38x52SHRED; 'Chế độ ĐH':38x52SHRED; 'Sấy trước':38x19SHRED/CLIPH; '—':21x13CLIPH; 'Sấy sau':38x19CLIPH
+g_climate                    WIDE   934x267  nodes=10 bad=0  
+g_climate                    WIDE   935x267  nodes=10 bad=0  
+g_doors                      LARGE  619x826  nodes=4 bad=0  
+g_doors                      NARROW 303x826  nodes=4 bad=0  
+g_doors                      SMALL  303x406  nodes=4 bad=0  
+g_doors                      WIDE   935x266  nodes=4 bad=0  
+g_energy                     LARGE  619x826  nodes=28 bad=0  
+g_energy                     NARROW 303x826  nodes=28 bad=4  'Tiêu thụ 50km':42x52SHRED; 'Công suất mô-tơ':42x52SHRED; 'Tiêu thụ 50km':42x52SHRED; 'Công suất mô-tơ':42x52SHRED
+g_energy                     SMALL  303x406  nodes=28 bad=4  'Tiêu thụ 50km':42x52SHRED; 'Công suất mô-tơ':42x52SHRED; 'Tiêu thụ 50km':42x52SHRED; 'Công suất mô-tơ':42x52SHRED
+g_energy                     WIDE   935x266  nodes=10 bad=0  
+g_energy                     WIDE   935x267  nodes=10 bad=0  
+g_lights                     LARGE  619x826  nodes=22 bad=2  'Đèn sương mù trước':66x52SHRED; 'Đèn sương mù sau':66x52SHRED
+g_lights                     NARROW 303x826  nodes=22 bad=9  'Đèn cốt':2x52SHRED; 'Đèn pha':2x52SHRED; 'Đèn sương mù trước':2x52SHRED; 'Đèn sương mù sau':3x52SHRED; 'Xi-nhan trái':3x52SHRED; 'Xi-nhan phải':4x52SHRED
+g_lights                     SMALL  303x406  nodes=22 bad=9  'Đèn cốt':2x52SHRED; 'Đèn pha':2x52SHRED; 'Đèn sương mù trước':2x52SHRED; 'Đèn sương mù sau':3x52SHRED; 'Xi-nhan trái':3x52SHRED; 'Xi-nhan phải':4x52SHRED
+g_lights                     WIDE   935x267  nodes=1 bad=0  
+g_trip                       LARGE  618x826  nodes=20 bad=0  
+g_trip                       NARROW 302x826  nodes=10 bad=2  'Thời gian chuyến':37x52SHRED; 'Tiêu thụ 50km':38x52SHRED
+g_trip                       NARROW 303x826  nodes=10 bad=2  'Thời gian chuyến':38x52SHRED; 'Tiêu thụ 50km':38x52SHRED
+g_trip                       SMALL  302x406  nodes=10 bad=2  'Thời gian chuyến':37x52SHRED; 'Tiêu thụ 50km':38x52SHRED
+g_trip                       SMALL  303x406  nodes=10 bad=2  'Thời gian chuyến':38x52SHRED; 'Tiêu thụ 50km':38x52SHRED
+g_trip                       WIDE   934x266  nodes=10 bad=0  
+g_trip                       WIDE   935x267  nodes=10 bad=0  
+g_trip                       owner  303x407  nodes=10 bad=2  'Thời gian chuyến':38x52SHRED; 'Tiêu thụ 50km':38x52SHRED
+g_tyres                      LARGE  618x826  nodes=1 bad=0  
+g_tyres                      NARROW 302x826  nodes=1 bad=0  
+g_tyres                      SMALL  302x406  nodes=1 bad=0  
+g_tyres                      WIDE   934x266  nodes=1 bad=0  
+g_tyres                      owner  303x406  nodes=1 bad=0  
+g_windows                    LARGE  619x826  nodes=20 bad=0  
+g_windows                    NARROW 303x826  nodes=20 bad=15  'Kính lái':15x52SHRED; 'Kính phụ':16x52SHRED; 'Kính ST':16x52SHRED; 'Kính SP':16x52SHRED; 'Kính lái':20x44SHRED; 'Kính phụ':20x44SHRED
+g_windows                    SMALL  303x406  nodes=20 bad=15  'Kính lái':15x52SHRED; 'Kính phụ':16x52SHRED; 'Kính ST':16x52SHRED; 'Kính SP':16x52SHRED; 'Kính lái':20x44SHRED; 'Kính phụ':20x44SHRED
+g_windows                    WIDE   934x267  nodes=20 bad=0  
+gear                         LARGE  619x826  nodes=2 bad=0  
+gear                         NARROW 303x826  nodes=2 bad=0  
+gear                         SMALL  303x406  nodes=2 bad=0  
+gear                         WIDE   934x267  nodes=2 bad=0  
+motor_power                  LARGE  619x826  nodes=3 bad=0  
+motor_power                  NARROW 303x826  nodes=3 bad=0  
+motor_power                  SMALL  303x406  nodes=3 bad=0  
+motor_power                  WIDE   934x267  nodes=3 bad=0  
+soc                          LARGE  618x826  nodes=1 bad=0  
+soc                          NARROW 302x826  nodes=1 bad=0  
+soc                          SMALL  302x406  nodes=1 bad=0  
+soc                          WIDE   934x266  nodes=1 bad=0  
+soh_oem                      LARGE  618x826  nodes=3 bad=0  
+soh_oem                      NARROW 302x826  nodes=3 bad=0  
+soh_oem                      SMALL  302x406  nodes=3 bad=0  
+soh_oem                      WIDE   934x266  nodes=3 bad=0  
+speed                        LARGE  619x826  nodes=3 bad=0  
+speed                        NARROW 303x826  nodes=3 bad=0  
+speed                        SMALL  303x406  nodes=3 bad=0  
+speed                        WIDE   935x266  nodes=3 bad=0  
+trip_hours,odometer,ev_range_km,soc LARGE  619x826  nodes=8 bad=0  
+trip_hours,odometer,ev_range_km,soc NARROW 303x826  nodes=8 bad=0  
+trip_hours,odometer,ev_range_km,soc SMALL  303x406  nodes=8 bad=0  
+trip_hours,odometer,ev_range_km,soc WIDE   934x267  nodes=8 bad=0  
+trunk                        LARGE  619x826  nodes=1 bad=0  
+trunk                        NARROW 303x826  nodes=1 bad=0  
+trunk                        SMALL  303x406  nodes=1 bad=0  
+trunk                        WIDE   935x266  nodes=1 bad=0  
+w_apps                       LARGE  619x826  nodes=1 bad=0  
+w_apps                       NARROW 303x826  nodes=1 bad=0  
+w_apps                       SMALL  303x406  nodes=1 bad=0  
+w_apps                       WIDE   935x267  nodes=1 bad=0  
+w_board                      LARGE  618x826  nodes=6 bad=0  
+w_board                      NARROW 303x826  nodes=6 bad=1  'Áp suất lốp (bar)':49x145SHRED
+w_board                      SMALL  303x406  nodes=6 bad=1  'Áp suất lốp (bar)':49x145SHRED
+w_board                      WIDE   935x267  nodes=6 bad=0  
+w_car                        LARGE  619x826  nodes=1 bad=0  
+w_car                        NARROW 303x826  nodes=1 bad=0  
+w_car                        SMALL  303x406  nodes=1 bad=0  
+w_car                        WIDE   935x266  nodes=1 bad=0  
+w_clock                      LARGE  619x826  nodes=3 bad=0  
+w_clock                      NARROW 303x826  nodes=3 bad=0  
+w_clock                      SMALL  303x406  nodes=3 bad=0  
+w_clock                      WIDE   935x267  nodes=3 bad=0  
+w_clock                      owner  1566x826  nodes=3 bad=0  
+w_media                      LARGE  618x826  nodes=1 bad=0  
+w_media                      NARROW 302x826  nodes=1 bad=0  
+w_media                      SMALL  302x406  nodes=1 bad=0  
+w_media                      WIDE   934x266  nodes=1 bad=0  
+w_pm25                       LARGE  619x826  nodes=1 bad=0  
+w_pm25                       NARROW 303x826  nodes=1 bad=0  
+w_pm25                       SMALL  303x406  nodes=1 bad=0  
+w_pm25                       WIDE   934x267  nodes=1 bad=0  
+w_speed                      LARGE  619x826  nodes=3 bad=0  
+w_speed                      NARROW 303x826  nodes=3 bad=0  
+w_speed                      SMALL  303x406  nodes=3 bad=0  
+w_speed                      WIDE   934x267  nodes=3 bad=0  
+window_lf                    LARGE  619x826  nodes=2 bad=0  
+window_lf                    NARROW 303x826  nodes=2 bad=0  
+window_lf                    SMALL  303x406  nodes=2 bad=0  
+window_lf                    WIDE   935x267  nodes=2 bad=0  

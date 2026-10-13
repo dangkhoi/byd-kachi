@@ -25,6 +25,9 @@ val SimpleCastCoordinator.castSession: CastSessionStyle?
 internal fun SimpleCastCoordinator.applySessionPin(pkg: String, pinned: DisplayConfig?) {
     val asked = geometry.applyPinned(pkg, pinned)
     if (asked != null && frameStyle == CastStyle.RECT) geometry.verifyFrame(pkg, asked)
+    // 3.1 · R26 — đường mới CUỐI (§6): màn cụm freeform ⇒ gỡ ép hình học dù phiên chưa có khung để resize (app chưa từng chỉnh —
+    // màn có thể còn `wm size` cũ của tiến trình/lần chiếu trước). Lặp lại = 0 lệnh ([DisplayConfigurator.releaseGeometry]).
+    if (geometry.displayFacts().freeform == true) releaseDisplayGeometry()
 }
 
 /**

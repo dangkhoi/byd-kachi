@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R11/R12 — chữ của hộp Địa chỉ (SettingsPlaceDialog) + Lịch dẫn đường (SettingsNavAutomationDialog,
+     TimeWheel). Tệp riêng, tiền tố kform_ (không kachi_: LauncherI18nContractTest chỉ đọc strings_kachi.xml).
+     Cùng tập khoá ở cả 5 thư mục — KachiFormContractTest canh. -->
+<resources>
+    <string name="kform_place_sub">Used for “navigate home …” and schedules</string>
+    <string name="kform_place_name">Name</string>
+    <string name="kform_place_home">Home</string>
+    <string name="kform_place_work">Work</string>
+    <string name="kform_place_school">School</string>
+    <string name="kform_place_other">Other</string>
+    <string name="kform_place_advanced">Advanced — coordinates</string>
+    <string name="kform_place_coords_bad">Use the form 10.7769, 106.7009</string>
+    <string name="kform_sched_start">Start</string>
+    <string name="kform_sched_end">End</string>
+    <string name="kform_sched_hour_up">Hour up</string>
+    <string name="kform_sched_hour_down">Hour down</string>
+    <string name="kform_sched_minute_up">Minute up</string>
+    <string name="kform_sched_minute_down">Minute down</string>
+    <string name="kform_sched_invalid">End time cannot be earlier than start time (no overnight windows); pick at least one day and one app.</string>
+    <string name="kform_sched_no_days">no days chosen</string>
+    <string name="kform_sched_no_app">no app chosen</string>
+    <string name="kform_sched_summary">%1$s · %2$s–%3$s → %4$s via %5$s</string>
+    <string name="kform_days_weekdays">Weekdays</string>
+    <string name="kform_days_weekend">Weekend</string>
+    <string name="kform_days_every">Every day</string>
+</resources>

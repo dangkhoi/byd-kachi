@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R13 (D4) — chữ mới của các hộp chuyển sang KachiDialog ở giai đoạn 2. Tệp riêng của D4, tiền tố kmisc_
+     (không phải kachi_: LauncherI18nContractTest chỉ đọc strings_kachi.xml) — cùng tập khoá ở cả 5 thư mục
+     (KachiDialogMigrationContractTest canh). -->
+<resources>
+    <string name="kmisc_keys_step">Step %1$d of %2$d</string>
+    <string name="kmisc_keys_bound">Assigned: %1$s</string>
+    <string name="kmisc_vn_delete_msg">Kachi will no longer recognise the names you taught for this app. This cannot be undone.</string>
+</resources>

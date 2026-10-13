@@ -25,14 +25,16 @@ class KeyCtlPlanTest {
     /** Bảng lệnh cuối RIÊNG cho mỗi bài (không chạm `ControlLastSent.shared` của cả JVM kiểm). */
     private val mem = ControlLastSent()
 
-    /** Số lượt đọc vận tốc của lần [plan] gần nhất (bài P1 khoá: chỉ Đảo/Kế tiếp TỪ TRÍ NHỚ ra MỞ cốp mới tốn lượt này). */
+    /** [plan] mặc định 0 km/h (owner 13/10: không biết = chặn, bài trung tính nói rõ xe đứng). Số lượt đọc vận tốc của lần [plan] gần nhất (bài P1 khoá: chỉ Đảo/Kế tiếp TỪ TRÍ NHỚ ra MỞ cốp mới tốn lượt này). */
     private var speedReads = 0
 
-    private fun plan(spec: String, count: Int = 1, state: Int? = null, memory: ControlLastSent = mem, speed: Int? = null): Outcome {
+    private fun plan(
+        spec: String, count: Int = 1, state: Int? = null, memory: ControlLastSent = mem, speed: Int? = 0, gear: String? = null,
+    ): Outcome {
         var reads = 0
         speedReads = 0
         val d = def(t(spec).controlId)
-        val o = KeyCtlPlan.of(d, t(spec), count, memory, speedKmh = { speedReads++; speed }) { reads++; state }
+        val o = KeyCtlPlan.of(d, t(spec), count, memory, motion = { speedReads++; CtlSafetyPolicy.Motion(speed, gear) }) { reads++; state }
         val needsRead = (t(spec).action == KeyCtlAction.FLIP || t(spec).action == KeyCtlAction.NEXT) && d.readKey.isNotBlank()
         assertEquals(if (needsRead) 1 else 0, reads, "$spec: chỉ Đảo/Kế tiếp của nút CÓ readKey được tốn một lượt đọc HAL")
         assertTrue(speedReads <= 1, "$spec: tối đa MỘT lượt đọc vận tốc")
@@ -40,8 +42,12 @@ class KeyCtlPlanTest {
         return o
     }
 
-    /** Không đọc vận tốc (bài không nói về cổng tốc độ) — `null` = "không biết" ⇒ cổng không chặn. */
-    private val noSpeed: () -> Int? = { null }
+    /**
+     * Xe đỗ (0 km/h, P) — cho bài KHÔNG nói về cổng an toàn. Tới 3.01 là `{ null }` (không biết ⇒ fail-open cho mở); owner
+     * 13/10 *"làm theo luật mới hết đi"* ⇒ không biết = CHẶN, nên bài trung tính phải nói rõ xe đứng yên.
+     */
+    private val noSpeed: () -> CtlSafetyPolicy.Motion = { CtlSafetyPolicy.Motion(0, "P") }
+    private fun kmh(v: Int?): () -> CtlSafetyPolicy.Motion = { CtlSafetyPolicy.Motion(v, null) }
     private fun run(id: String, value: Int? = null, relative: Int = 0, basis: KeyCtlPlan.Basis = KeyCtlPlan.Basis.DIRECT) =
         Outcome.Run(VoiceIntent.Control(id, value, relative), basis)
     private fun byCar(id: String, value: Int) = run(id, value, basis = KeyCtlPlan.Basis.CAR)
@@ -119,10 +125,10 @@ class KeyCtlPlanTest {
             val m = ControlLastSent()
             val start = m.index(d.id)
             val f = KeyCtlTarget(d.id, KeyCtlAction.FLIP)
-            val first = KeyCtlPlan.of(d, f, memory = m, speedKmh = noSpeed) { null }
+            val first = KeyCtlPlan.of(d, f, memory = m, motion = noSpeed) { null }
             exec(first, memory = m)
             assertEquals(if (start > 0) 0 else 1, m.index(d.id), "${d.id}: Đảo lần một phải đổi chiều")
-            exec(KeyCtlPlan.of(d, f, memory = m, speedKmh = noSpeed) { null }, memory = m)
+            exec(KeyCtlPlan.of(d, f, memory = m, motion = noSpeed) { null }, memory = m)
             assertEquals(start, m.index(d.id), "${d.id}: Đảo hai lần phải về như cũ")
         }
     }
@@ -138,7 +144,11 @@ class KeyCtlPlanTest {
         assertEquals(byMem("trunk", 1), first, "đứng yên ⇒ giải ra MỞ; cổng thi hành vẫn hỏi lại vận tốc TƯƠI")
         exec(first, ok = false)
         assertEquals(byMem("trunk", 1), plan("ctl:trunk:flip", speed = 0))
-        assertEquals(byMem("trunk", 1), plan("ctl:trunk:flip", speed = null), "không biết vận tốc ⇒ không chặn (fail-open, như cổng)")
+        // Owner 13/10 *"làm theo luật mới hết đi"* (tới 3.01: `speed = null ⇒ MỞ`, fail-open): không tốc độ ⇒ hỏi số.
+        assertEquals(byMem("trunk", 1), plan("ctl:trunk:flip", speed = null, gear = "P"), "không tốc độ + số P ⇒ MỞ")
+        val safe = run("trunk", CtlSafetyPolicy.STATIONARY_SAFE_ARG, basis = KeyCtlPlan.Basis.MEMORY_SAFE)
+        assertEquals(safe, plan("ctl:trunk:flip", speed = null, gear = "D"), "không tốc độ + số D ⇒ hướng an toàn")
+        assertEquals(safe, plan("ctl:trunk:flip", speed = null, gear = null), "không biết gì ⇒ hướng an toàn (fail-safe)")
     }
 
     /**
@@ -165,13 +175,13 @@ class KeyCtlPlanTest {
         // Dựng tay (registry hôm nay: cốp không readKey) — id thuộc REQUIRES_STATIONARY nhưng ĐỌC ĐƯỢC xe.
         val readable = ControlDef("trunk", "Cốp", "ic", ControlKind.COVER, readKey = "x")
         val flip = KeyCtlTarget("trunk", KeyCtlAction.FLIP)
-        assertEquals(byCar("trunk", 1), KeyCtlPlan.of(readable, flip, memory = mem, speedKmh = { 30 }) { 0 },
+        assertEquals(byCar("trunk", 1), KeyCtlPlan.of(readable, flip, memory = mem, motion = kmh(30)) { 0 },
             "xe NÓI cốp đóng ⇒ MỞ bị cổng chặn là đúng sự thật — không đổi thành ĐÓNG")
         val sel = ControlDef("trunk", "Cốp", "ic", ControlKind.SELECT, args = listOf("A", "B", "C"))
         val next = KeyCtlTarget("trunk", KeyCtlAction.NEXT)
-        assertEquals(run("trunk", 0, basis = KeyCtlPlan.Basis.MEMORY_SAFE), KeyCtlPlan.of(sel, next, memory = mem, speedKmh = { 30 }) { null },
+        assertEquals(run("trunk", 0, basis = KeyCtlPlan.Basis.MEMORY_SAFE), KeyCtlPlan.of(sel, next, memory = mem, motion = kmh(30)) { null },
             "Kế tiếp từ trí nhớ ra mức bị chặn ⇒ mức luôn được phép")
-        assertEquals(byMem("trunk", 1), KeyCtlPlan.of(sel, next, memory = mem, speedKmh = { 0 }) { null })
+        assertEquals(byMem("trunk", 1), KeyCtlPlan.of(sel, next, memory = mem, motion = kmh(0)) { null })
         // Nút KHÔNG thuộc tập cổng tốc độ: chạy 90 km/h vẫn Đảo theo trí nhớ, và không hỏi vận tốc (bài `plan` đếm).
         assertEquals(byMem("win_lf", 1), plan("ctl:win_lf:flip", speed = 90))
     }
@@ -192,13 +202,13 @@ class KeyCtlPlanTest {
         val d = ControlDef("zz_sel", "Chọn", "ic", ControlKind.SELECT, args = listOf("A", "B", "C"))
         val next = KeyCtlTarget("zz_sel", KeyCtlAction.NEXT)
         var reads = 0
-        assertEquals(byMem("zz_sel", 1), KeyCtlPlan.of(d, next, memory = mem, speedKmh = noSpeed) { reads++; 2 })
+        assertEquals(byMem("zz_sel", 1), KeyCtlPlan.of(d, next, memory = mem, motion = noSpeed) { reads++; 2 })
         assertEquals(0, reads, "không readKey ⇒ không hỏi HAL")
         mem.record("zz_sel", 2)
-        assertEquals(byMem("zz_sel", 0), KeyCtlPlan.of(d, next, memory = mem, speedKmh = noSpeed) { null })
-        assertEquals(byMem("zz_sel", 1), KeyCtlPlan.of(d, next, count = 2, memory = mem, speedKmh = noSpeed) { null })
+        assertEquals(byMem("zz_sel", 0), KeyCtlPlan.of(d, next, memory = mem, motion = noSpeed) { null })
+        assertEquals(byMem("zz_sel", 1), KeyCtlPlan.of(d, next, count = 2, memory = mem, motion = noSpeed) { null })
         val one = ControlDef("zz_one", "Một", "ic", ControlKind.SELECT, args = listOf("A"))
-        assertEquals(Outcome.Invalid, KeyCtlPlan.of(one, KeyCtlTarget("zz_one", KeyCtlAction.NEXT), memory = mem, speedKmh = noSpeed) { null })
+        assertEquals(Outcome.Invalid, KeyCtlPlan.of(one, KeyCtlTarget("zz_one", KeyCtlAction.NEXT), memory = mem, motion = noSpeed) { null })
     }
 
     @Test

@@ -355,7 +355,7 @@ class VoiceListenWiringContractTest {
         assertFalse(duck.contains("AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE") || duck.contains("requestAudioFocus"),
             "hạ nhạc = đổi chỉ số STREAM_MUSIC, không xin tiêu điểm")
         assertTrue(duck.contains("setStreamVolume(AudioManager.STREAM_MUSIC, tgt, 0)"), "hạ không hiện thanh âm lượng (flags = 0)")
-        assertTrue(duck.contains("VoiceMusicDuckPolicy.target(") && duck.contains("VoiceMusicDuckPolicy.decide("),
+        assertTrue(duck.contains("VoiceMusicDuckPolicy.duckTarget(") && duck.contains("VoiceMusicDuckPolicy.decide("),
             "mức hạ + quyết định trả lại đi qua chính sách thuần ở :core (kiểm off-car)")
         // Dấu bền ghi TRƯỚC khi hạ (CLAUDE.md §5): `write(…)` đứng trước `setStreamVolume(… tgt …)` trong lowerLocked.
         assertTrue(duck.indexOf("if (!write(ctx, marker))") in 0 until duck.indexOf("setStreamVolume(AudioManager.STREAM_MUSIC, tgt, 0)"),
@@ -376,18 +376,43 @@ class VoiceListenWiringContractTest {
         // acquire/release/recoverAtStartup không ném ra ngoài (rò AudioRecord · giết tiến trình lúc khởi động).
         assertEquals(3, Regex("""catch \(e: RuntimeException\) \{\s*\n\s*Log\.w\(TAG, "(hạ nhạc lỗi ngoài|trả nhạc lỗi ngoài|khôi phục dấu)""").findAll(duck).count(),
             "acquire · release · recoverAtStartup đều phải bọc RuntimeException")
-        // Hạ khi mic mở, trả ở closeRecord — `finally` của listenGranted ⇒ mọi đường thoát (xong · hết giờ · lỗi · huỷ).
-        val acq = capture.indexOf("VoiceMusicDuck.acquire(ctx)")
-        val tryAt = capture.indexOf("try {", acq)
-        assertTrue(acq > 0 && tryAt > acq && capture.substring(acq, tryAt).lines().size <= 2,
-            "acquire phải đứng NGAY trước `try` có finally gọi closeRecord — không khe ném giữa hạ và finally")
-        val fin = capture.indexOf("} finally {", acq)
-        assertTrue(fin > 0 && capture.indexOf("closeRecord(record, tailBeep = beep)", fin) in fin until fin + 120,
+        // 3.1 R14 (spec kachi-301 §2.4 V1): KHÔNG có gì của hạ nhạc giữa bíp READY và `startRecording` — 3.0 đặt `acquire`
+        // (khoá tệp + fsync + binder) ở đó ⇒ mất đầu câu ⇒ "Không nghe rõ". Hạ chỉ được gọi SAU khi micro đã thu.
+        val granted = SourceRoots.body(capture, "private fun listenGranted(")
+        val chime = granted.indexOf("VoiceChime.start()")
+        val start = granted.indexOf("record.startRecording()")
+        val firstDuck = granted.indexOf("VoiceMusicDuck.")
+        assertTrue(chime in 0 until start, "bíp READY rồi mới startRecording")
+        assertTrue(firstDuck > start, "mọi lời gọi VoiceMusicDuck phải đứng SAU record.startRecording() (R14)")
+        val acq = granted.indexOf("VoiceMusicDuck.acquire(ctx); ducked = true")
+        assertTrue(acq > granted.indexOf("RECORDSTATE_RECORDING"), "chỉ thuê hạ nhạc khi micro đã vào trạng thái ghi")
+        // Trả ở `finally` của listenGranted ⇒ mọi đường thoát (xong · hết giờ · lỗi · huỷ) — chỉ khi lượt đã thuê; SAU
+        // closeRecord (micro đã đóng), TRƯỚC khi câu đi thi hành/đọc (đồng bộ, có trần — R15).
+        val fin = granted.indexOf("} finally {", acq)
+        assertTrue(fin > 0 && granted.indexOf("closeRecord(record, tailBeep = beep)", fin) in fin until fin + 120,
             "finally của lượt nghe phải gọi closeRecord")
-        val close = capture.substring(capture.indexOf("private fun closeRecord("))
-        val rel = close.indexOf("VoiceMusicDuck.release(ctx)")
-        assertTrue(rel in 0 until close.indexOf("Thread({"),
-            "trả nhạc ĐỒNG BỘ trong closeRecord (trước khi câu đi thi hành/đọc), không trên luồng nền")
+        val closeAt = granted.indexOf("closeRecord(record, tailBeep = beep)", fin)
+        val releaseAt = granted.indexOf("if (ducked) VoiceMusicDuck.release(ctx)", fin)
+        assertTrue(releaseAt > closeAt, "trả nhạc trong finally, sau closeRecord, chỉ khi lượt đã thuê")
+        // Review 3.1 Pass 1 [P1]: `release` phải nằm trong một `finally` RIÊNG bọc `ep.close()` + `closeRecord` — một trong hai
+        // ném là lượt thuê rò (`leases` kẹt ≥ 1 ⇒ mọi lượt sau không hạ, nhạc đã hạ không ai trả). Hình dạng: giữa closeRecord và
+        // release có đúng một `} finally {` nữa, và `ep.close()` đứng sau một `try {` mở trong finally ngoài.
+        val inner = granted.substring(closeAt, releaseAt)
+        assertEquals(1, Regex("""\} finally \{""").findAll(inner).count(), "release trong finally lồng, không cùng khối với closeRecord")
+        assertTrue(granted.indexOf("try {", fin) in fin until granted.indexOf("ep.close()", fin),
+            "ep.close() + closeRecord nằm trong try của finally ngoài ⇒ ném vẫn tới release")
+        assertFalse(SourceRoots.body(capture, "private fun closeRecord(").contains("VoiceMusicDuck"),
+            "closeRecord không trả nhạc nữa (đã dời lên finally, có gác `ducked`)")
+        // R15: hạ · trả · khôi phục cùng MỘT hàng đợi nối tiếp (một luồng) ⇒ trả không bao giờ chạy trước hạ; release chờ có trần.
+        assertTrue(duck.contains("ThreadPoolExecutor(0, 1, IDLE_KEEP_S, TimeUnit.SECONDS, LinkedBlockingQueue())"),
+            "đúng một luồng nối tiếp, lười (lõi 0), FIFO")
+        assertEquals(3, Regex("""enqueue\("(lower|restore|recover)"\)""").findAll(duck).count(),
+            "hạ · trả · khôi phục đều xếp vào cùng hàng đợi")
+        assertTrue(duck.contains("RELEASE_WAIT_MS = 600L") && duck.contains("job.get(RELEASE_WAIT_MS, TimeUnit.MILLISECONDS)"),
+            "release chờ việc trả có trần ≤ 600 ms")
+        // R16: đọc lại "chưa đổi" KHÔNG xoá dấu (3.0 xoá ⇒ nhạc hạ muộn không ai trả).
+        val unchanged = lowerBody.lines().single { it.trim().startsWith("after == cur ->") }
+        assertFalse(unchanged.contains("clear(") || unchanged.contains("lowered = false"), "đọc lại chưa đổi ⇒ GIỮ dấu (áp trễ/có dốc)")
         // Tiến trình chết giữa lượt ⇒ khởi động sau trả lại.
         val application = code("src/main/java/com/byd/clusternav/KachiApplication.kt")
         assertTrue(application.contains("VoiceMusicDuck.recoverAtStartup(this)") &&

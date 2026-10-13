@@ -10,6 +10,8 @@ data class WidgetDef(
     val kind: WidgetKind,
     /** Nhãn tiếng Anh (U5 · T2) — tham số mặc định, xem KDoc [Strings]. */
     override val labelEn: String? = null,
+    /** 3.01 R25 — khung ô tối thiểu (dp, rộng × cao) để bộ chọn GÁN Ô bày widget này; `null` = mọi ô. */
+    val minSlotDp: Pair<Int, Int>? = null,
 ) : Localized
 
 /**
@@ -38,7 +40,22 @@ object WidgetRegistry {
         // với khối trên thanh nút (`app_shortcuts` theo hồ sơ). LOCAL: không đọc gì của xe. Nhãn khác khối thanh nút
         // ("Lối tắt ứng dụng") để hai mục không thành cặp nhãn trùng ([CapabilityCatalog.collidingLabels]).
         WidgetDef("w_apps",   "Lưới lối tắt app",    "ic-apps",  WidgetKind.LOCAL, "App shortcut grid"),
+        // 3.01 R25 (owner 13/10 *"làm 1 cái widget to, cho xe 3D chiếu nghiêng… cho xoay tới lui luôn"*) — chỉ ô LỚN: xe 3D
+        // cần khung đủ để chấm kính/cửa/đèn không chồng nhau và vuốt xoay được (ô nhỏ ⇒ bộ chọn không bày).
+        WidgetDef("w_car3d",  "Xe 3D",               "ic-car",   WidgetKind.CAR, "3D car", minSlotDp = LARGE_SLOT_DP),
     )
 
     fun byId(id: String): WidgetDef? = ALL.firstOrNull { it.id == id }
+
+    /** Khung tối thiểu của widget chỉ-ô-lớn (dp): ô "lớn" của bố cục màn chủ 1920×1080 trở lên. */
+    val LARGE_SLOT_DP: Pair<Int, Int> get() = 420 to 300
+
+    /**
+     * Widget bộ chọn bày cho ô khung [wDp]×[hDp] (dp; `null` = chưa đo ⇒ chỉ widget không đòi cỡ). Thuần — bài
+     * `WidgetRegistrySlotTest` canh.
+     */
+    fun offered(wDp: Int?, hDp: Int?): List<WidgetDef> = ALL.filter { d ->
+        val min = d.minSlotDp ?: return@filter true
+        wDp != null && hDp != null && wDp >= min.first && hDp >= min.second
+    }
 }

@@ -4,6 +4,7 @@ import com.byd.clusternav.launcher.camera.CameraCamConfig
 import com.byd.clusternav.launcher.camera.CameraWhich
 import com.byd.clusternav.modules.clustercast.simplified.CastEnableDeferral
 import com.byd.clusternav.modules.clustercast.simplified.CastGeometryGuard
+import com.byd.clusternav.modules.clustercast.simplified.CastGeometrySteps
 
 /**
  * ═══ V-CLUSTER (owner 2026-09-30: *"Phần cụm lưu hết thành profile nhé"*) — bảng phân loại CỤM · CHIẾU · CAMERA ═════
@@ -125,7 +126,15 @@ object ProfileScopeCluster {
      */
     val PROFILE_EXTRA_KEYS: Map<String, String> =
         CAMERA_PROFILE_KEYS.keys.associateWith { CLUSTERNAV_FILE } +
-            mapOf("bubbleX" to CAST_CATALOG_FILE, "bubbleY" to CAST_CATALOG_FILE)
+            mapOf("bubbleX" to CAST_CATALOG_FILE, "bubbleY" to CAST_CATALOG_FILE) +
+            CAST_PROFILE_KEYS.keys.associateWith { SIMPLE_CAST_FILE }
+
+    /**
+     * 3.1 · R4 (spec `kachi-301-cast-steps-dialog-ia.html`) — khoá theo HỒ SƠ của khối *Khung và DPI* (chỉ hiện khi đang chiếu,
+     * không có mục danh mục riêng — cùng lẽ camera/nút nổi ở trên). Khoá mới rót xuống hồ sơ cũ bằng sổ 2.92 PROFILE-NEW-KEYS.
+     */
+    val CAST_PROFILE_KEYS: Map<String, String>
+        get() = mapOf(CastGeometrySteps.KEY to "bước −/+ khung chiếu 5/20/50 px — người canh mép mịn, người đi nhanh (chip ở khối Khung)")
 
     /** Khoá đổi phạm vi XE → HỒ SƠ ở V-CLUSTER, theo tệp — đầu vào của lượt rót một lần ([ProfileScopeMigration]). */
     val MOVED_TO_PROFILE: Map<String, List<String>> = mapOf(
@@ -170,6 +179,9 @@ object ProfileScopeCluster {
     val DEVICE_KEY_PREFIXES: Map<String, String> = mapOf(
         "scale-" to "khung/DPI từng app của V2 (CastAppCatalog.scaleOf) — [ĐO] không có đường đọc sống, không chép",
         "dpi:" to "DPI cụm từng app của V2 (CastAppCatalog.clusterDensityDpi) — [ĐO] không có đường đọc sống, không chép",
+        com.byd.clusternav.modules.clustercast.simplified.CastContentShift.VERDICT_KEY_PREFIX to
+            "3.1 · R6 — phán quyết ĐO 'app có dời nội dung theo overscan trên xe này' (ROM × app): sự thật của chiếc xe, không " +
+            "phải sở thích — đổi hồ sơ không được mang phán quyết của xe khác theo",
     )
 
     /**
@@ -183,6 +195,7 @@ object ProfileScopeCluster {
         listOf("autostart_package", "autostart_left_package", "autostart_right_package")
             .forEach { put(it, PrefType.STRING) }
         put("split_ratio_left_pct", PrefType.INT)
+        put(CastGeometrySteps.KEY, PrefType.INT)   // 3.1 · R4 — `ClusterNavBridge.setGeometryStep` (`putInt`)
         // B1b · CLUSTER-RECT-OPTION — `SharedPrefsSimpleCastPrefs.castStyle/setCastStyle` (`putString`, tên `CastStyle`).
         put("cast_style", PrefType.STRING)
         // clusternav_prefs — PrefsAutomation / PrefsCameraDewarp.

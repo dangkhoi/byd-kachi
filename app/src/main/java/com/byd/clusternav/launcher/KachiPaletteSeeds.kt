@@ -52,6 +52,12 @@ internal object KachiPaletteSeeds {
         AccentChoice.WARM_WHITE to "#8c7b66",
     )
 
+    // ══ 3.01 R22 — NỀN MẶC ĐỊNH của chính Kachi ([WallDefault]; brief Kim §4: "không có nền mặc định ⇒ đa số thấy nền
+    //    xanh phẳng"). Phòng trưng bày trừu tượng dựng bằng mã: [đỉnh, giữa, đáy] chuyển sắc DỌC + đèn hắt trần + vầng
+    //    sáng sàn. Bảng TỐI = graphite → xanh đêm; bảng SÁNG = sứ ấm → xám xanh. Không ảnh, không bản quyền của ai.
+    val BACKDROP_DARK = Backdrop(top = "#1b2440", mid = "#0d1324", bottom = "#05070e", cove = "#4a6fb0", floor = "#2c4d82")
+    val BACKDROP_LIGHT = Backdrop(top = "#f8f9fc", mid = "#e8ecf3", bottom = "#d3dae5", cove = "#ffffff", floor = "#aebdd3")
+
     /** Tông thẻ ẤM / LẠNH (AC8.2): nhuộm [TONE_MIX] vào các vai bề mặt — một mã cho hai bảng vì chỉ là HƯỚNG nhiệt màu. */
     val TONE_WARM = "#ff9a4a"
     val TONE_COOL = "#4aa8ff"
@@ -59,3 +65,6 @@ internal object KachiPaletteSeeds {
     // ⚠ WP3-v5 (2026-09-20) — `CAR_PAINTS` (màu sơn vector car) đã GỠ cùng toàn bộ vector car (owner: bỏ vector,
     // dùng ảnh bitmap). Màu sơn chỉ tô thân vector; với ẢNH nó vô nghĩa.
 }
+
+/** Năm mã của một nền mặc định ([KachiPaletteSeeds.BACKDROP_DARK] / [KachiPaletteSeeds.BACKDROP_LIGHT]). */
+internal data class Backdrop(val top: String, val mid: String, val bottom: String, val cove: String, val floor: String)

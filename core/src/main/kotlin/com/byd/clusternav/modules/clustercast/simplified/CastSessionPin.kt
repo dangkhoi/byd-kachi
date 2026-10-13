@@ -29,8 +29,16 @@ package com.byd.clusternav.modules.clustercast.simplified
  * mọi lệnh vẫn ở `CastGeometryController`/`CastDensityControl` (bài canh `PersistentWindowStateWriterGuardTest`).
  */
 
-/** Một lượt đọc hồ sơ cho phiên FULL: cấu hình áp lúc bắt đầu ([config]) + bản ghim ([pinned], `null` = chưa lưu gì). */
-internal class FullPin(val config: DisplayConfig, val pinned: DisplayConfig?)
+/**
+ * Một lượt đọc hồ sơ cho phiên FULL: cấu hình áp lúc bắt đầu ([config]) + bản ghim ([pinned], `null` = chưa lưu gì) + 3.1 · R6 độ
+ * "Dịch nội dung" đã lưu ([shift], px, 0 = không). [config]/[pinned] mang overscan TOP = 0: độ dịch KHÔNG đi theo `wm overscan`
+ * của [DisplayConfigurator.apply] lúc bắt đầu mà áp CUỐI, sau khung + DPI, kèm phép đo (`applySavedContentShift`, CLAUDE.md §6).
+ */
+internal class FullPin(val config: DisplayConfig, val pinned: DisplayConfig?, val shift: Int = 0)
+
+/** Bản [c] với overscan TOP = 0 (thành phần "Dịch nội dung"); ba cạnh còn lại giữ nguyên. */
+private fun unshifted(c: DisplayConfig): DisplayConfig =
+    if (CastContentShift.topOf(c.overscan) == 0) c else c.copy(overscan = CastContentShift.withTop(c.overscan, 0))
 
 /**
  * Đọc hồ sơ ĐANG DÙNG **một lần** cho phiên FULL của [pkg]. CP/AA dùng hằng đã đo và không có gì để ghim (resize của
@@ -48,8 +56,11 @@ internal fun SimpleCastCoordinator.pinFull(pkg: String, appType: AppType): FullP
     val pinned = if (style == CastStyle.RECT) ClusterRectLayout.pin(saved, ClusterRectLayout.FULL) else saved
     logPin(pkg, profile, pinned)
     // Pass 2 · cluster-r1-3: Chữ nhật áp `wm size`/overscan 1:1 dù bản `__RECT` có bị làm bẩn (Bo tròn: đúng phép cũ từng byte).
-    val config = saved ?: DisplayConfig.NORMAL_DEFAULT
-    return FullPin(if (style == CastStyle.RECT) ClusterRectLayout.oneToOne(config) else config, pinned)
+    // 3.1 · R26: màn cụm freeform ⇒ `wmSize` đã lưu (đường lùi cũ) không còn ý nghĩa — áp kích vật lý (làm sạch lúc đọc).
+    val config = sanitizedForFreeform(saved ?: DisplayConfig.NORMAL_DEFAULT)
+    // 3.1 · R6: Chữ nhật ép overscan 1:1 (không có dịch); Bo tròn tách độ dịch ra khỏi lượt áp đầu ⇒ áp CUỐI kèm phép đo.
+    if (style == CastStyle.RECT) return FullPin(ClusterRectLayout.oneToOne(config), pinned)
+    return FullPin(unshifted(config), pinned?.let(::unshifted), CastContentShift.topOf(saved?.overscan))
 }
 
 /**
@@ -61,7 +72,7 @@ internal fun SimpleCastCoordinator.pinFull(pkg: String, appType: AppType): FullP
 internal fun SimpleCastCoordinator.slotDisplayConfig(pkg: String): DisplayConfig {
     val style = frameStyle
     val saved = prefs.displayConfigFor(pkg, CastProfile.FULL.inStyle(style)) ?: DisplayConfig.NORMAL_DEFAULT
-    return if (style == CastStyle.RECT) ClusterRectLayout.oneToOne(saved) else saved
+    return if (style == CastStyle.RECT) ClusterRectLayout.oneToOne(saved) else sanitizedForFreeform(saved)   // 3.1 · R26
 }
 
 /**
@@ -108,29 +119,45 @@ private fun slotBase(slot: SlotState): DisplayConfig =
 
 // ─── Chỉnh TƯỜNG MINH — chạy lệnh như hôm nay, rồi cập nhật bản ghim bằng đúng giá trị vừa áp ──────────────────────
 
-/** Thân của `resizeActiveTarget` (−/+ toàn cụm). */
-internal fun SimpleCastCoordinator.resizeFullBody(left: Int, top: Int, right: Int, bottom: Int) {
-    val current = state as? SimpleCastState.CastingFull ?: return
-    if (!current.appType.isResizable || right <= left || bottom <= top) {
-        log("resizeActiveTarget: skip (state/bounds invalid) [$left,$top,$right,$bottom]")
-        return
+/**
+ * 3.1 · R2/R3 — thân áp của hàng gộp [CastResizeQueue] (`SimpleCastCoordinator.resizeQueue`): một yêu cầu đã gộp ⇒ đúng một
+ * lượt [resizeFullBody]/[resizeSlotBody] như trước, nay trả KẾT CỤC để màn đồng bộ lại số (lệnh hỏng ⇒ số về sự thật + báo).
+ */
+internal fun SimpleCastCoordinator.runResize(request: CastResizeRequest): CastResizeResult {
+    val b = request.bounds
+    return when (val side = request.side) {
+        null -> resizeFullBody(b.left, b.top, b.right, b.bottom)
+        else -> resizeSlotBody(side, b.left, b.top, b.right, b.bottom)
     }
-    if (!geometry.resizeFull(current.targetPkg, left, top, right, bottom, frameStyle)) return
-    val bounds = CastBounds(left, top, right, bottom)
-    replaceState(current, current.copy(pinned = basePin(current.pinned, current.displayConfig).copy(bounds = bounds)))
 }
 
-/** Thân của `resizeActiveSlot` (−/+ một nửa) — ô nhớ theo tỉ lệ CỦA PHIÊN (C2), không theo prefs. */
-internal fun SimpleCastCoordinator.resizeSlotBody(side: ClusterSlotSide, left: Int, top: Int, right: Int, bottom: Int) {
-    val current = state as? SimpleCastState.CastingSplit ?: return
-    val slot = (if (side == ClusterSlotSide.LEFT) current.left else current.right) ?: return
+/** Thân của `resizeActiveTarget` (−/+ toàn cụm). Trạng thái không còn khớp ⇒ DROPPED; shell hỏng ⇒ FAILED. */
+internal fun SimpleCastCoordinator.resizeFullBody(left: Int, top: Int, right: Int, bottom: Int): CastResizeResult {
+    val current = state as? SimpleCastState.CastingFull ?: return CastResizeResult.DROPPED
+    if (!current.appType.isResizable || right <= left || bottom <= top) {
+        log("resizeActiveTarget: skip (state/bounds invalid) [$left,$top,$right,$bottom]")
+        return CastResizeResult.DROPPED
+    }
+    if (!geometry.resizeFull(current.targetPkg, left, top, right, bottom, frameStyle)) return CastResizeResult.FAILED
+    val bounds = CastBounds(left, top, right, bottom)
+    replaceState(current, current.copy(pinned = basePin(current.pinned, current.displayConfig).copy(bounds = bounds)))
+    return CastResizeResult.APPLIED
+}
+
+/** Thân của `resizeActiveSlot` (−/+ một nửa) — ô nhớ theo tỉ lệ CỦA PHIÊN (C2), không theo prefs. Kết cục như [resizeFullBody]. */
+internal fun SimpleCastCoordinator.resizeSlotBody(side: ClusterSlotSide, left: Int, top: Int, right: Int, bottom: Int): CastResizeResult {
+    val current = state as? SimpleCastState.CastingSplit ?: return CastResizeResult.DROPPED
+    val slot = (if (side == ClusterSlotSide.LEFT) current.left else current.right) ?: return CastResizeResult.DROPPED
     if (right <= left || bottom <= top) {
         log("resizeActiveSlot: skip (bounds invalid) [$left,$top,$right,$bottom]")
-        return
+        return CastResizeResult.DROPPED
     }
-    if (!geometry.resizeSlot(slot.pkg, CastProfile.of(side, current.leftPercent, frameStyle), left, top, right, bottom)) return
+    if (!geometry.resizeSlot(slot.pkg, CastProfile.of(side, current.leftPercent, frameStyle), left, top, right, bottom)) {
+        return CastResizeResult.FAILED
+    }
     val updated = slot.copy(pinned = slotBase(slot).copy(bounds = CastBounds(left, top, right, bottom)))
     replaceState(current, if (side == ClusterSlotSide.LEFT) current.copy(left = updated) else current.copy(right = updated))
+    return CastResizeResult.APPLIED
 }
 
 /**

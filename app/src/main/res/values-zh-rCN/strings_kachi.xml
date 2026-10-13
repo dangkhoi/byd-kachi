@@ -37,7 +37,6 @@
     <string name="kachi_photos_hint">请将照片放入Kachi照片文件夹</string>
     <string name="kachi_profile_chip_desc">当前档案：%1$s。点按可切换档案。</string>
     <string name="kachi_profile_pick_title">切换驾驶员档案</string>
-    <string name="kachi_profile_pick_active">%1$s · 使用中</string>
     <string name="kachi_profile_manage">管理档案…</string>
     <string name="kachi_profile_none">暂无档案——请打开“设置 → 驾驶员档案”添加。</string>
     <string name="kachi_profile_switched">档案：%1$s</string>
@@ -329,7 +328,7 @@
     <string name="kachi_nav_auto_gps_on">等待GPS</string>
     <string name="kachi_nav_auto_gps_off">无需GPS</string>
     <string name="kachi_nav_auto_enabled">启用此日程</string>
-    <string name="kachi_nav_auto_window">时段（HH:mm）</string>
+    <string name="kachi_nav_auto_window">时段</string>
     <string name="kachi_nav_auto_days">星期</string>
     <string name="kachi_nav_auto_gps">仅在有GPS信号后导航（等驶出停车场）</string>
     <string name="kachi_nav_auto_place">导航至</string>
@@ -488,11 +487,11 @@
     <string name="kachi_sub_keys_bindings">按键绑定</string>
     <string name="kachi_keys_no_bindings">尚未绑定任何按键。点按“添加绑定…”可将实体按键关联到应用或车控功能。</string>
     <string name="kachi_keys_add">添加绑定…</string>
-    <string name="kachi_keys_pick_button">第1步——选择按键</string>
-    <string name="kachi_keys_pick_target">第3步——选择应用 / 助手</string>
-    <string name="kachi_keys_pick_kind">第2步——此按键的功能</string>
+    <string name="kachi_keys_pick_button">选择按键</string>
+    <string name="kachi_keys_pick_target">选择应用 / 助手</string>
+    <string name="kachi_keys_pick_kind">此按键的功能</string>
     <string name="kachi_keys_kind_apps">打开应用 · 助手</string>
-    <string name="kachi_keys_pick_action">第3步——%1$s：选择操作</string>
+    <string name="kachi_keys_pick_action">%1$s：选择操作</string>
     <string name="kachi_keys_no_buttons">还没有可绑定的按键。</string>
     <string name="kachi_keys_no_targets">此设备上还没有可通过按键打开的应用。</string>
     <string name="kachi_sub_keys_custom">已学习按键</string>
@@ -914,9 +913,13 @@
     <string name="kachi_camera_rot_own_row">旋转</string>
     <string name="kachi_camera_mirror_own_title">镜像画面</string>
     <string name="kachi_keys_kind_camera">按需摄像头</string>
-    <string name="kachi_keys_pick_camera">第3步——哪个摄像头</string>
+    <string name="kachi_keys_pick_camera">哪个摄像头</string>
     <string name="kachi_key_cam_toggle">%1$s——开/关</string>
     <string name="kachi_key_cam_off">关闭摄像头</string>
     <!-- 2.97 · R3 — đổi hồ sơ tắt dẫn đường lên cụm -->
     <string name="kachi_profile_nav_off">配置文件«%1$s»已关闭仪表/HUD 导航。可在 设置 › 导航 + HUD 中重新开启。</string>
+    <!-- 3.1 · kachi-301 R2/R4/R7 — bước khung chiếu cụm -->
+    <string name="kachi_cast_frame_step">步长</string>
+    <string name="kachi_cast_geom_resize_failed">无法将框应用到仪表 — 数值已恢复为实际框。</string>
+    <string name="kachi_cast_geom_overflow_note" formatted="false">右/下边缘可超出仪表（最多 +50 %）以隐藏应用底栏；左/上边缘不能为负（Android 禁止）。</string>
 </resources>

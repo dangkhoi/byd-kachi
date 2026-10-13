@@ -20,7 +20,7 @@ import com.byd.clusternav.launcher.trip.TripAppCodec
 /**
  * Ngăn kéo app — **ba chế độ** (cùng một view, không nhân bản UI):
  *  - [Mode.ASSIGN_SLOT] (như cũ): "Đặt widget / mở app vào ô này". **Widget**: chọn NHIỀU (1..8) → tô sáng, bấm
- *    **Đặt** để áp vào ô. **Ứng dụng**: chạm 1 app → đặt vào ô (1 app / ô).
+ *    **Đặt** để áp vào ô. **Ứng dụng**: chạm 1 app → đặt vào ô (1 app / ô). R27: hàng **Gần đây** trên cùng.
  *  - [Mode.OPEN_APP] (gói 1 · U3): "Mở ứng dụng" — KHÔNG có mục widget, chạm app là **mở toàn màn**, không gắn vào
  *    ô nào. Có thêm hàng **Gần đây** (nguồn: [RecentApps], không cần quyền nào).
  *  - [Mode.PICK_DOCK] (T6 · spec `kachi-settings-ia-v2.html` R-UI **(m)**): "Chọn nút cho thanh nút xe" — đa chọn
@@ -157,9 +157,10 @@ class AppDrawer(
             // #7 (owner 2026-09-21): thứ tự App → Widget của app → Thông tin khác. App là thứ người dùng đưa vào
             // ô nhiều nhất nên bày TRƯỚC; "Thông tin khác" (nhóm xe · thẻ dựng tay · mục lẻ) xuống cuối.
 
-            // ── App (chạm đặt vào ô) — ĐẦU ──
-            body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_apps)))
-            apps.grid(body, apps.load(), cols = COLS_APP)
+            // ── R27 (owner 13/10): "Gần đây" TRÊN CÙNG (rỗng ⇒ không bày), rồi App (chạm đặt vào ô) — AppDrawerRecent.kt ──
+            val all = apps.load(); val hadRecent = recentSection(body, apps, all, recentApps, COLS_APP)
+            body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_apps)).also { if (hadRecent) it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
+            apps.grid(body, all, cols = COLS_APP)
 
             // ── Widget của APP KHÁC (T4) ──
             // Rỗng thì VẪN hiện tiêu đề kèm câu nói rõ "máy chưa có app nào cung cấp widget" (không im lặng bỏ mục).
@@ -183,10 +184,7 @@ class AppDrawer(
         } else {
             // ── Chế độ MỞ THƯỜNG: gần đây trước, rồi tất cả ──
             val all = apps.load()
-            val recent = apps.recent(all, recentApps)
-            if (recent.isNotEmpty()) {
-                body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_recent)))
-                apps.grid(body, recent, cols = COLS_APP)
+            if (recentSection(body, apps, all, recentApps, COLS_APP)) {
                 body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_all_apps)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
             }
             apps.grid(body, all, cols = COLS_APP)
@@ -448,7 +446,7 @@ class AppDrawer(
         (tile as? ViewGroup)?.getChildAt(0)?.let { PickerBadge.retint(it, Sp.ICON_XL, on) }
     }
 
-    private fun sectionLabel(text: String) = TextView(context).apply {
+    internal fun sectionLabel(text: String) = TextView(context).apply {
         // [SOÁT UI 2026-09-12] Header nhóm TRƯỚC ĐÂY màu MUT2 (mờ) + 12sp ⇒ mờ và nhỏ HƠN chữ nội dung (INK ~14.5sp)
         // nên không ra "đầu mục", các phần dồn thành một dải. Header phải NỔI hơn body: màu INK sáng + đậm + thưa chữ.
         // ⚠ [type scale] Bản vá đó nâng lên 13sp — vẫn **dưới** [KachiType.BODY] (13.5) nên tỉ số cỡ với nội dung là

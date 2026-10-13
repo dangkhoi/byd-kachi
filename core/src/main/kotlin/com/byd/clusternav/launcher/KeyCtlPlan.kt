@@ -27,8 +27,8 @@ import com.byd.clusternav.launcher.voice.VoiceIntent
  * Cốp mở bằng đường bảng không thấy (chìa, công tắc cốp, app BYD, Kachi dựng lại khi cốp đang mở) ⇒ bảng vẫn "đóng" ⇒
  * Đảo giải ra MỞ ⇒ xe đang chạy ⇒ cổng tốc độ chặn, bảng không đổi ⇒ MỌI lần bấm sau lặp lại y hệt: phím Đảo KHÔNG BAO
  * GIỜ đóng được cốp tới khi xe dừng — đúng ca *"bấm lại là được"* (spec §4.3) gãy. Luật: hành động giải từ TRÍ NHỚ
- * ([Basis.MEMORY], không phải số đọc từ xe) mà cổng an toàn sẽ chặn NGAY LÚC NÀY ([CtlSafetyPolicy.blockedAtSpeed] —
- * CÙNG phép của cổng thi hành) ⇒ đổi sang [CtlSafetyPolicy.STATIONARY_SAFE_ARG] ([Basis.MEMORY_SAFE]). Không một
+ * ([Basis.MEMORY], không phải số đọc từ xe) mà cổng an toàn sẽ chặn NGAY LÚC NÀY ([CtlSafetyPolicy.blocked] — CÙNG
+ * phép của cổng thi hành, fail-safe từ 3.01 owner 13/10) ⇒ đổi sang [CtlSafetyPolicy.STATIONARY_SAFE_ARG] ([Basis.MEMORY_SAFE]). Không một
  * `if (cốp)`: tập nút nằm ở [CtlSafetyPolicy.REQUIRES_STATIONARY]. Số đọc từ XE ([Basis.CAR]) thì không đổi — ở đó MỞ bị
  * chặn là đúng sự thật. Bảng vẫn chỉ ghi khi lệnh thành công.
  *
@@ -56,8 +56,8 @@ object KeyCtlPlan {
     /**
      * @param count số lần bấm đã gộp (≥ 1) — STEP: số nấc; SELECT Kế tiếp: số bước vòng; hành động khác bỏ qua.
      * @param memory bảng lệnh cuối của tiến trình — mặc định [ControlLastSent.shared] (bài kiểm tiêm bảng riêng).
-     * @param speedKmh vận tốc TƯƠI (`VoiceControlDispatch.speedKmh` — cùng nguồn của cổng thi hành), `null` = không biết.
-     *   KHÔNG mặc định: quên nối là không biên dịch được (mặc định `{ null }` sẽ im lặng đưa P1 "Đảo cốp kẹt MỞ" trở lại).
+     * @param motion chuyển động TƯƠI (`VoiceControlDispatch.motion` → [CtlSafetyPolicy.readMotion] — cùng nguồn của cổng
+     *   thi hành và cổng chạm). KHÔNG mặc định: quên nối là không biên dịch được (mặc định `{ null }` sẽ im lặng đưa P1 "Đảo cốp kẹt MỞ" trở lại).
      *   Chỉ được gọi khi Đảo / Kế tiếp giải từ TRÍ NHỚ ra lệnh MỞ cho nút thuộc [CtlSafetyPolicy.REQUIRES_STATIONARY].
      * @param readState đọc trạng thái THẬT của nút (`CarControlPort.readState` — 0/1 cho TOGGLE, % cho kính, chỉ số mức
      *   cho SELECT). Chỉ được gọi cho Đảo / Kế tiếp của nút CÓ readKey — mọi ca khác KHÔNG tốn một lượt đọc HAL nào.
@@ -67,7 +67,7 @@ object KeyCtlPlan {
         t: KeyCtlTarget,
         count: Int = 1,
         memory: ControlLastSent = ControlLastSent.shared,
-        speedKmh: () -> Int?,
+        motion: () -> CtlSafetyPolicy.Motion,
         readState: () -> Int?,
     ): Outcome {
         val n = count.coerceAtLeast(1)
@@ -79,7 +79,7 @@ object KeyCtlPlan {
                 ?: (memory.index(def.id) to Basis.MEMORY)
         // Trí nhớ có thể cũ ⇒ hành động nó giải ra mà cổng tốc độ sẽ chặn ⇒ hướng luôn được phép (KDoc lớp, P1).
         fun resolved(value: Int, basis: Basis): Outcome.Run =
-            if (basis == Basis.MEMORY && CtlSafetyPolicy.blockedAtSpeed(def.id, value, speedKmh)) {
+            if (basis == Basis.MEMORY && CtlSafetyPolicy.blocked(def.id, value, motion)) {
                 run(value = CtlSafetyPolicy.STATIONARY_SAFE_ARG, basis = Basis.MEMORY_SAFE)
             } else {
                 run(value = value, basis = basis)

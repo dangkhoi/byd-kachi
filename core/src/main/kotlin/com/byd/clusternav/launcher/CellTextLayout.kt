@@ -22,9 +22,9 @@ package com.byd.clusternav.launcher
  *     ≈ **0.11 × cellH**; ở `RingView` cùng bệnh nhưng lệch **xuống** `0.146 × d` (đường kính vòng), ở
  *     `PhotoWidgetView` lệch xuống `0.267 × cỡ chữ`. [twoLineTopBaseline] lấy số đo THẬT của phông (ink dòng trên +
  *     khoảng baseline + descent dòng dưới) nên không còn hằng nào. Một dòng ⇒ [centeredBaseline].
- *  2. **Con số lệch TRỤC** [ĐO]. Canh giữa CẢ CỤM `số + khe + đơn vị` quanh tâm ô đẩy bản thân CON SỐ — thứ mắt
- *     đọc — lệch trái đúng `(khe + rộng đơn vị)/2`, còn nhãn/dòng phụ thì canh đúng tâm ⇒ hai dòng KHÔNG cùng trục.
- *     [lineStartX] đặt CON SỐ vào trục ô (đơn vị treo bên phải nó), chỉ đẩy cụm sang khi mép thẻ không đủ chỗ.
+ *  2. **Cụm số lệch trục** — luật UX7 (2.74) đặt CON SỐ vào trục ô, đơn vị treo phải. **Owner 13/10 đảo luật này**
+ *     (*"lệch phải… phải canh sao cho nó cân đối hết"*): nay [lineStartX] cân giữa CẢ KHỐI `số + khe + đơn vị`, cùng
+ *     tâm với nhãn/dòng phụ; chỉ kẹp vào lề khi thẻ không đủ chỗ.
  *     Ô dựng bằng `TextView` mắc đúng lỗi này qua `LinearLayout(HORIZONTAL) + gravity = CENTER`; ở `:app` chúng
  *     dùng `AxisRow` — một `ViewGroup` mỏng gọi đúng [lineStartX], không có phép canh thứ hai.
  *  3. **Thẻ đục ĐÈ LÊN ảnh** [ĐO]. Cho thẻ chạy tới `neo ∓ gap` trong khi neo ([CarLayout.wheel]/[CarLayout.part])
@@ -114,16 +114,20 @@ object CellTextLayout {
         if (contentWidth <= 0f || room <= 0f) 1f else minOf(1f, room / contentWidth)
 
     /**
-     * Toạ độ x (mép trái) để vẽ một dòng rộng [lineWidth] sao cho **phần NEO** rộng [anchorWidth] nằm giữa trục
-     * [centerX], mà cả dòng vẫn nằm trong \[[left]+[inset], [right]−[inset]\].
+     * Toạ độ x (mép trái) để vẽ một dòng rộng [lineWidth] sao cho **CẢ CỤM** cân giữa trục [centerX], mà cả dòng vẫn
+     * nằm trong \[[left]+[inset], [right]−[inset]\].
      *
-     * Dòng số: `anchorWidth` = bề rộng CON SỐ, `lineWidth` = số + khe + đơn vị ⇒ số ở trục, đơn vị treo bên phải;
-     * hết chỗ bên phải thì cả cụm nhích sang trái (thà số lệch vài px còn hơn cắt mất đơn vị).
-     * Dòng phụ / nhãn: hai tham số bằng nhau ⇒ canh giữa đúng trục ⇒ hai dòng CÙNG một trục.
+     * ## 3.01 R20 (owner 13/10) — đảo luật UX7 "số ở trục, đơn vị treo phải"
+     * Owner: *"cái chỉ số nó có bị lệch phải không? phải canh sao cho nó cân đối hết nhé, nhiều cái khi hiện số lên nó
+     * nằm chơi vơi lắm"*. [ĐO uiautomator, máy ảo, số giả] số chính `123.4` của *Chuyến đi* nằm đúng trục ô (ô
+     * 1616–1883, tâm 1749.5; số 1684–1815) còn `" km"` treo bên phải tới 1849 ⇒ khối mực `số + đơn vị` lệch PHẢI đúng
+     * `(khe + rộng đơn vị)/2`. Mắt đọc KHỐI (số + đơn vị là một cụm), không đọc riêng con số — nên luật mới: **khối
+     * nhìn thấy** (số + khe + đơn vị) cân giữa trục; nhãn/dòng phụ cũng cân giữa trục ⇒ mọi khối trong ô cùng một tâm.
+     * Hết chỗ thì kẹp vào lề (cụm rộng hơn ô ⇒ bám lề trái; chỗ gọi đo đơn vị trước nên đơn vị không bao giờ bị cắt).
+     * Dòng một khối (nhãn, dòng phụ) đi qua cùng hàm ⇒ cùng tâm, không có phép canh thứ hai.
      */
     fun lineStartX(
         centerX: Float,
-        anchorWidth: Float,
         lineWidth: Float,
         left: Float,
         right: Float,
@@ -132,6 +136,6 @@ object CellTextLayout {
         val lo = left + inset
         val hi = right - inset - lineWidth
         if (hi <= lo) return lo
-        return (centerX - anchorWidth / 2f).coerceIn(lo, hi)
+        return (centerX - lineWidth / 2f).coerceIn(lo, hi)
     }
 }

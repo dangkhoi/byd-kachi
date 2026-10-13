@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.camera
 
 import android.util.Log
+import com.byd.clusternav.launcher.LampLive
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.InetSocketAddress
@@ -30,22 +31,38 @@ import java.util.concurrent.atomic.AtomicInteger
  * BG-15 (2026-09-25): thất bại liên tiếp ≥ [IDLE_AFTER_FAILURES] lần (máy ảo / xe không helper) ⇒ trần lùi lên
  * [BACKOFF_CAP_IDLE_MS] — KHÔNG dừng hẳn (helper lên muộn vẫn nối được), chỉ thưa đi. Nối được ⇒ đặt lại từ đầu.
  *
+ * 3.01 TURN/LAMPLIVE (owner 13/10): client này cũng là NGUỒN DUY NHẤT của [LampLive] — bảng Đèn + xe 3D của HOME đọc đèn thật
+ * từ đó (xi-nhan: getter `getLightStatus(4/5)` luôn trả 0 [ĐO xe 09-25]). Nối được ⇒ phát hai bên TẮT (helper gửi ảnh chụp ngay
+ * sau) · mỗi lần một đèn ĐỔI ⇒ phát · đứt dây / [stop] ⇒ `clear()` (bảng lùi về số đọc của `CarStatus`). Ngoài xi-nhan, dòng
+ * `light.onLightOn/Off` với `type` khác (1/2/3/6/7) và `light.dayRunning` cập nhật các đèn còn lại ([applyLine]); [onTurn] CHỈ
+ * được gọi khi xi-nhan đổi (camera không bị đánh thức vì đèn cốt). Ai giữ client chạy: `HalSignalHub` (đếm nhu cầu camera +
+ * bảng Đèn) — không socket thứ hai, không ai khác gọi [start].
+ *
+ * @param live hộp phát lại trạng thái cho HOME — test truyền hộp riêng.
  * @param sleeper ngủ giữa hai lần nối lại — test thay bằng đồng hồ giả (không chờ thật).
+ * @param onLinkLost gọi (trên luồng đọc) khi một kết nối ĐÃ thành công rồi đứt trong lúc còn chạy — `HalSignalHub` dùng để
+ *   khởi lại helper nếu nó chết (ROM giết `app_process`); [stop] chủ động KHÔNG gọi.
  */
 class HalSignalClient(
     private val port: Int = HalHelperLauncher.PORT,
+    private val live: LampLive = LampLive.shared,
+    // `onLinkLost` đứng TRƯỚC `sleeper`: bài test cũ truyền `sleeper` bằng lambda đuôi — đổi chỗ thì lambda đuôi âm thầm thành móc khác.
+    private val onLinkLost: () -> Unit = {},
     private val sleeper: (Long) -> Unit = { Thread.sleep(it) },
 ) {
 
     /** Số lần đã gọi `connect` (test đếm; không dùng cho logic). */
     internal val connectAttempts = AtomicInteger(0)
 
-    private var thread: Thread? = null
+    @Volatile private var thread: Thread? = null
     @Volatile private var running = false
     @Volatile private var socket: Socket? = null
 
     @Volatile private var left = false
     @Volatile private var right = false
+
+    /** Trạng thái đèn theo dây của lần nối hiện tại (chỉ luồng đọc ghi). */
+    @Volatile private var lamps = LampLive.Lamps(left = false, right = false)
 
     /**
      * Bắt đầu nghe. Gọi lại khi đang chạy = no-op (không dựng luồng thứ hai).
@@ -58,10 +75,11 @@ class HalSignalClient(
         running = true
         left = false
         right = false
-        thread = Thread({ loop(onTurn) }, "KachiHalSignal").apply {
-            isDaemon = true
-            start()
-        }
+        lamps = LampLive.Lamps(left = false, right = false)
+        // Gán [thread] TRƯỚC khi start(): luồng đọc so `currentThread() === thread` để biết mình còn là luồng hiện hành.
+        val t = Thread({ loop(onTurn) }, "KachiHalSignal").apply { isDaemon = true }
+        thread = t
+        t.start()
     }
 
     /** Dừng nghe. Đóng socket để bẻ `readLine()` đang chặn — nếu không, luồng sống tới khi xe tắt máy. */
@@ -72,30 +90,73 @@ class HalSignalClient(
         socket = null
         thread?.interrupt()
         thread = null
+        live.clear()
     }
+
+    /**
+     * Luồng gọi còn là luồng đọc HIỆN HÀNH không. [SOÁT Pass 2 · 13/10] Trước đây vòng đọc chỉ hỏi cờ chung [running]: `stop()` rồi
+     * `start()` nhanh (hub nhả rồi xin lại) bật [running] về `true` ⇒ luồng CŨ (đang kẹt trong `onTurn`/`readLine`/`connect`) thấy
+     * "vẫn chạy" ⇒ ghi đè [socket] của luồng mới về `null` (lần `stop()` sau không bẻ được `readLine` của luồng mới), báo `onLinkLost`
+     * giả (hub khởi lại helper vô cớ), rồi — nếu cờ ngắt đã bị ai đó nuốt — NỐI LẠI và phát vào [LampLive] SONG SONG với luồng mới.
+     * Gắn với danh tính luồng thì luồng cũ tự thoát ở lần hỏi kế, không ghi gì nữa.
+     */
+    private fun current(): Boolean = running && Thread.currentThread() === thread
+
+    /** Gán [socket] của lần nối này — dưới khoá của [start]/[stop], chỉ khi còn hiện hành (để [stop] bẻ được cả `connect`). */
+    @Synchronized
+    private fun claim(s: Socket): Boolean = current().also { if (it) socket = s }
+
+    /** Nhả [socket] nếu nó vẫn là của lần nối này (không xoá socket của luồng mới). */
+    @Synchronized
+    private fun unclaim(s: Socket) { if (socket === s) socket = null }
+
+    /**
+     * Ghi trạng thái mới + phát vào [LampLive] — dưới khoá của [start]/[stop] và CHỈ khi còn hiện hành ⇒ không bao giờ có hai luồng
+     * đọc cùng phát, và không phát đè sau [stop]. @return `false` nếu luồng đã bị thay (bên gọi thoát).
+     */
+    @Synchronized
+    private fun commit(next: LampLive.Lamps): Boolean {
+        if (!current()) return false
+        lamps = next
+        left = next.left
+        right = next.right
+        live.publish(next)
+        return true
+    }
+
+    /** Không nối = không biết ⇒ bảng Đèn lùi về số đọc CarStatus — chỉ luồng hiện hành ([stop] đã tự xoá). */
+    @Synchronized
+    private fun forget() { if (current()) live.clear() }
 
     private fun loop(onTurn: (Boolean, Boolean) -> Unit) {
         var backoff = BACKOFF_START_MS
         var failures = 0
-        while (running) {
+        while (current()) {
+            var linked = false
+            val s = Socket()
             try {
                 connectAttempts.incrementAndGet()
-                Socket().use { s ->
+                s.use {
+                    if (!claim(s)) return@use
                     s.connect(InetSocketAddress("127.0.0.1", port), CONNECT_TIMEOUT_MS)
                     s.tcpNoDelay = true
-                    socket = s
                     backoff = BACKOFF_START_MS   // nối được ⇒ đặt lại backoff
                     failures = 0
+                    // Nối được = biết: hai bên TẮT tới khi ảnh chụp của helper nói khác; đèn khác CHƯA biết (null ⇒ getter).
+                    if (!commit(LampLive.Lamps(left = left, right = right))) return@use
+                    linked = true
                     logI("đã nối 127.0.0.1:$port")
                     read(s, onTurn)
                 }
             } catch (t: Throwable) {
-                if (running) logD("mất kết nối ($t), thử lại sau ${backoff}ms")
+                if (current()) logD("mất kết nối ($t), thử lại sau ${backoff}ms")
             } finally {
-                socket = null
+                unclaim(s)
                 announceOffIfDropped(onTurn)
+                forget()
+                if (linked && current()) runCatching { onLinkLost() }.onFailure { logW("onLinkLost ném: $it") }
             }
-            if (!running) break
+            if (!current()) break
             failures++
             try {
                 sleeper(backoff)
@@ -123,7 +184,7 @@ class HalSignalClient(
      * `running` đã false và `CameraSignalController.tick()` tự đóng overlay theo pref.
      */
     private fun announceOffIfDropped(onTurn: (Boolean, Boolean) -> Unit) {
-        if (!running || (!left && !right)) return
+        if (!current() || (!left && !right)) return
         left = false
         right = false
         logI("đứt dây giữa lúc xi-nhan đang bật ⇒ báo TẮT cả hai bên (tránh treo overlay)")
@@ -132,7 +193,7 @@ class HalSignalClient(
 
     private fun read(s: Socket, onTurn: (Boolean, Boolean) -> Unit) {
         val reader = BufferedReader(InputStreamReader(s.getInputStream(), Charsets.UTF_8))
-        while (running) {
+        while (current()) {
             val line = reader.readLine() ?: break   // null = helper đóng đầu bên kia
             val parsed = parseLine(line)
             if (parsed == null) {
@@ -140,23 +201,20 @@ class HalSignalClient(
                 continue
             }
             val (topic, type) = parsed
-            val on = when (topic) {
-                TOPIC_ON -> true
-                TOPIC_OFF -> false
-                else -> {
-                    logD("bỏ topic lạ: $topic")
-                    continue
-                }
+            val next = applyLine(lamps, topic, type)
+            if (next == null) {
+                logD("bỏ dòng lạ: $topic/$type")
+                continue
             }
-            val changed = when (type) {
-                TYPE_LEFT -> (left != on).also { left = on }
-                TYPE_RIGHT -> (right != on).also { right = on }
-                else -> false
-            }
+            if (next == lamps) continue
+            val changed = next.left != left || next.right != right
+            if (!commit(next)) break   // luồng đã bị thay sau stop()→start() — không phát, không gọi onTurn cũ
             if (changed) {
                 logI("xi-nhan trái=$left phải=$right")
                 runCatching { onTurn(left, right) }
                     .onFailure { logW("onTurn ném: $it") }   // bên nhận ném KHÔNG được giết luồng đọc
+            } else {
+                logI("đèn $next")   // đèn khác xi-nhan đổi — hiếm (bật/tắt cốt, pha…), là bằng chứng buổi xe (CLAUDE.md §11)
             }
         }
     }
@@ -172,8 +230,21 @@ class HalSignalClient(
 
         const val TOPIC_ON = "light.onLightOn"
         const val TOPIC_OFF = "light.onLightOff"
-        const val TYPE_LEFT = 4
-        const val TYPE_RIGHT = 5
+
+        /** 3.01 LAMPLIVE — `onDayRunningLightStateChanged(v)` chuyển nguyên `v`: 1=BẬT · 2=TẮT (`DAY_RUNNING_LIGHT_ON/OFF`). */
+        const val TOPIC_DRL = "light.dayRunning"
+        const val TYPE_LEFT = LampLive.TYPE_LEFT
+        const val TYPE_RIGHT = LampLive.TYPE_RIGHT
+
+        /**
+         * Một dòng → trạng thái đèn mới. THUẦN, test off-car. `null` = dòng không hiểu (topic lạ · `type` ngoài thang · DRL giá trị
+         * lạ như 0=INVALID/3=UNDEFINED) — bỏ, KHÔNG đoán. `type` hợp lệ mà không đổi gì ⇒ trả đối tượng bằng [cur].
+         */
+        fun applyLine(cur: LampLive.Lamps, topic: String, type: Int): LampLive.Lamps? = when (topic) {
+            TOPIC_ON, TOPIC_OFF -> cur.withType(type, topic == TOPIC_ON).takeIf { type in LampLive.TYPE_SIDE..LampLive.TYPE_REAR_FOG }
+            TOPIC_DRL -> when (type) { 1 -> cur.copy(drl = true); 2 -> cur.copy(drl = false); else -> null }
+            else -> null
+        }
 
         private const val CONNECT_TIMEOUT_MS = 800
         const val BACKOFF_START_MS = 1_000L

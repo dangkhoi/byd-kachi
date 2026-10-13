@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R6 — hàng "Dịch nội dung" (SettingsCastShiftRow). Tệp riêng, tiền tố kshift_ — cùng tập khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kshift_label">Dịch nội dung (âm = lên)</string>
+    <string name="kshift_a11y">Dịch nội dung bản đồ trên cụm lên hoặc xuống, tính bằng điểm ảnh; số âm kéo nội dung lên</string>
+    <string name="kshift_note">Kéo bản đồ lên khi app chừa dải thừa trên đỉnh cụm. Kachi tự đo: app không nhận thì trả lại ngay.</string>
+    <string name="kshift_ineffective">App này không nhận dịch nội dung trên xe này — đã trả lại như cũ.</string>
+    <string name="kshift_failed">Không đo được để dịch nội dung — chưa đổi gì.</string>
+</resources>

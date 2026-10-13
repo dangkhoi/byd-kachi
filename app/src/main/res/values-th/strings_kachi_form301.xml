@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R11/R12 — chữ của hộp Địa chỉ (SettingsPlaceDialog) + Lịch dẫn đường (SettingsNavAutomationDialog,
+     TimeWheel). Tệp riêng, tiền tố kform_ (không kachi_: LauncherI18nContractTest chỉ đọc strings_kachi.xml).
+     Cùng tập khoá ở cả 5 thư mục — KachiFormContractTest canh. -->
+<resources>
+    <string name="kform_place_sub">ใช้กับ “นำทางกลับ …” และกำหนดการ</string>
+    <string name="kform_place_name">ชื่อ</string>
+    <string name="kform_place_home">บ้าน</string>
+    <string name="kform_place_work">ที่ทำงาน</string>
+    <string name="kform_place_school">โรงเรียน</string>
+    <string name="kform_place_other">อื่นๆ</string>
+    <string name="kform_place_advanced">ขั้นสูง — พิกัด</string>
+    <string name="kform_place_coords_bad">ใช้รูปแบบ 10.7769, 106.7009</string>
+    <string name="kform_sched_start">เริ่ม</string>
+    <string name="kform_sched_end">สิ้นสุด</string>
+    <string name="kform_sched_hour_up">เพิ่มชั่วโมง</string>
+    <string name="kform_sched_hour_down">ลดชั่วโมง</string>
+    <string name="kform_sched_minute_up">เพิ่มนาที</string>
+    <string name="kform_sched_minute_down">ลดนาที</string>
+    <string name="kform_sched_invalid">เวลาสิ้นสุดต้องไม่เร็วกว่าเวลาเริ่ม (ไม่ข้ามเที่ยงคืน); เลือกอย่างน้อยหนึ่งวันและหนึ่งแอป</string>
+    <string name="kform_sched_no_days">ยังไม่เลือกวัน</string>
+    <string name="kform_sched_no_app">ยังไม่เลือกแอป</string>
+    <string name="kform_sched_summary">%1$s · %2$s–%3$s → %4$s ด้วย %5$s</string>
+    <string name="kform_days_weekdays">วันธรรมดา</string>
+    <string name="kform_days_weekend">สุดสัปดาห์</string>
+    <string name="kform_days_every">ทุกวัน</string>
+</resources>

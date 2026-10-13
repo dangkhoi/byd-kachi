@@ -44,7 +44,11 @@ internal object ThemeHost {
         state: HomeUiState,
         now: Calendar = Calendar.getInstance(),
         artDominant: IntArray? = WallArtStore.accentDominant(),
-    ): Boolean =
-        KachiTheme.applyTheme(state.themeMode, now.get(Calendar.HOUR_OF_DAY), state.colorChoice, artDominant) or
+    ): Boolean {
+        // 3.01 R25 — màu sơn xe 3D: KHÔNG dựng lại màn (widget 3D tự đổi một tham số vật liệu ở lượt đổ số kế).
+        Car3dPaintChoice.current = state.colorChoice.carPaint; Car3dPaintChoice.tyres = state.colorChoice.carTyres
+        Car3dBackdropChoice.current = state.colorChoice.carBackdrop
+        return KachiTheme.applyTheme(state.themeMode, now.get(Calendar.HOUR_OF_DAY), state.colorChoice, artDominant) or
             KachiChrome.apply(state.colorChoice.surfaceOpacity)
+    }
 }

@@ -28,5 +28,20 @@
                 <action android:name="com.byd.clusternav.vehicletest.HAL_PROBE" />
             </intent-filter>
         </receiver>
+        <!-- 3.01 R20 (vehicleTest-only): cắm SỐ GIẢ vào CarStatusTap để soát canh lề/co giãn widget trên máy ảo.
+             exported=true để adb (uid shell) tới được. Không có trong release/debug. -->
+        <receiver
+            android:name=".DummyCarReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.byd.clusternav.vehicletest.DUMMY_CAR" />
+            </intent-filter>
+        </receiver>
+        <!-- 3.01 R23 (vehicleTest-only): gắn ảnh xe BYD trích firmware cho máy ảo (owner 13/10 cho phép CHỈ bản kiểm thử).
+             Không xuất, không dữ liệu — chỉ để chạy onCreate lúc khởi động tiến trình. -->
+        <provider
+            android:name=".OemCarArtTestProvider"
+            android:authorities="${applicationId}.vehicletest.oemcarart"
+            android:exported="false" />
     </application>
 </manifest>

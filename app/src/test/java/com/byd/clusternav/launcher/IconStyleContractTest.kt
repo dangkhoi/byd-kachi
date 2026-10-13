@@ -116,7 +116,10 @@ class IconStyleContractTest {
     @Test
     fun `bo icon dung DUNG HAI do day net 1_8 va 1_2`() {
         val offenders = piped().flatMap { (name, xml) ->
-            paths(xml).mapNotNull { attr(it, "strokeWidth") }.filter { it !in strokeWidths }.map { "$name → $it" }
+            // POLISH2: icon khai `"weight": "fine"` trong grammar (ba nút kính chân widget — owner 13/10 "vẽ thanh mảnh") dùng nét
+            // chính MẢNH 1.25; mọi icon khác giữ đúng hai độ dày.
+            val allowed = if (grammar.getJSONObject("icons").optJSONObject(idOf(name))?.optString("weight") == "fine") strokeWidths + "1.25" else strokeWidths
+            paths(xml).mapNotNull { attr(it, "strokeWidth") }.filter { it !in allowed }.map { "$name → $it" }
         }
         assertEquals(emptyList<String>(), offenders, "độ dày nét phải là 1.8 (chính) hoặc 1.2 (phụ) — AC2.2")
         val total = piped().sumOf { (_, xml) -> paths(xml).count { stroked(it) } }

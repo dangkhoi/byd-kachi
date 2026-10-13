@@ -9,16 +9,8 @@ import android.view.View
  * thành hàm mở rộng `internal` cùng package (cùng khuôn `WorkspaceViewCards.kt`).
  */
 
-/**
- * Lĩnh vực của nội dung trong ô — để khay mang sắc của chính thứ nó chứa.
- *
- * Tra qua [CapabilityCatalog.pick] (chỗ tra DUY NHẤT, đã phủ cả nhóm lẫn datum lẫn nút — xem
- * `LauncherCatalog.kt`), KHÔNG đoán theo tiền tố mã. Ô App / ô widget bên thứ ba / ô trống ⇒ `null` = khay
- * trung tính: launcher không biết app của người khác thuộc lĩnh vực nào, và mượn đại một sắc là nói sai.
- */
-internal fun WorkspaceView.slotDomain(content: SlotContent): Domain? = (content as? SlotContent.Widget)
-    ?.ids?.firstOrNull()
-    ?.let { CapabilityCatalog.pick(it)?.domain }
+// 3.01 R22 — `slotDomain` (sắc lĩnh vực của KHAY) đã XOÁ: khay nay trung tính (brief Kim §2.3); sắc lĩnh vực của thẻ
+// tra ở chính bộ dựng widget qua `KachiWidgetType.accentOf` (chip icon đầu thẻ, thanh mức).
 
 internal fun WorkspaceView.startSlotDrag(index: Int, v: View) {
     v.startDragAndDrop(null, View.DragShadowBuilder(v), index, 0)

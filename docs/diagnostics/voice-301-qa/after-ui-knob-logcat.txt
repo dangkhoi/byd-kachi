@@ -1,0 +1,24 @@
+--------- beginning of main
+--------- beginning of system
+10-13 10:07:39.340 I/KachiVoiceTiming(10003): sẵn sàng nghe sau 156 ms kể từ lúc bấm
+10-13 10:07:39.366 I/KachiVoiceTiming(10003): mic mở sau 26 ms
+10-13 10:07:39.381 I/KachiVoiceDuck(10003): hạ nhạc khi nghe: 10 → 6 (đích 6)
+10-13 10:07:39.381 I/KachiVoiceTiming(10003): hạ nhạc 14 ms (luồng nền)
+10-13 10:07:47.445 I/KachiVoiceTiming(10003): hết trần: duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=8000ms cat_con=8000ms bo_dau=0ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_im=600ms)
+10-13 10:07:47.445 I/KachiVoiceTiming(10003): nghe 8078 ms
+10-13 10:07:47.445 I/KachiVoiceTiming(10003): bỏ giải mã: lượt này không có tiếng nào (duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=8000ms cat_con=8000ms bo_dau=0ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_im=600ms))
+10-13 10:07:47.550 I/KachiVoiceTiming(10003): đóng mic: stop 101 ms · release 4 ms (bíp chạy nền)
+10-13 10:07:47.553 I/KachiVoiceTiming(10003): nền: bíp 0 ms · âm báo ĐÃ TẮT (cầu chì)
+10-13 10:07:47.561 I/KachiVoiceDuck(10003): trả nhạc (release): 6 → 10
+10-13 10:07:47.562 I/KachiVoiceTiming(10003): trả nhạc 11 ms
+10-13 10:07:54.010 I/KachiVoiceTiming(10003): sẵn sàng nghe sau 133 ms kể từ lúc bấm
+10-13 10:07:54.033 I/KachiVoiceTiming(10003): mic mở sau 22 ms
+10-13 10:07:54.055 I/KachiVoiceDuck(10003): hạ nhạc khi nghe: 10 → 6 (đích 6)
+10-13 10:07:54.056 I/KachiVoiceTiming(10003): hạ nhạc 23 ms (luồng nền)
+10-13 10:08:02.081 I/KachiVoiceTiming(10003): hết trần: duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=8000ms cat_con=8000ms bo_dau=0ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_im=600ms)
+10-13 10:08:02.082 I/KachiVoiceTiming(10003): nghe 8049 ms
+10-13 10:08:02.082 I/KachiVoiceTiming(10003): bỏ giải mã: lượt này không có tiếng nào (duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=8000ms cat_con=8000ms bo_dau=0ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_im=600ms))
+10-13 10:08:02.103 I/KachiVoiceTiming(10003): đóng mic: stop 14 ms · release 7 ms (bíp chạy nền)
+10-13 10:08:02.105 I/KachiVoiceTiming(10003): nền: bíp 0 ms · âm báo ĐÃ TẮT (cầu chì)
+10-13 10:08:02.118 I/KachiVoiceDuck(10003): trả nhạc (release): 6 → 10
+10-13 10:08:02.119 I/KachiVoiceTiming(10003): trả nhạc 16 ms

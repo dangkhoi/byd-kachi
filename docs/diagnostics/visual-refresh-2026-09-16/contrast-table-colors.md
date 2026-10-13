@@ -16,30 +16,30 @@
 | TỐI · TEAL · NEUTRAL | `#46d9c7` | `#3fb3aa`→`#448fc1` | `#141b30` | INK trên surfOnFrom+bg | **4.60** | ✅ |
 | TỐI · TEAL · WARM | `#46d9c7` | `#3fb3aa`→`#448fc1` | `#141b30` | INK trên surfOnFrom+bg | **4.60** | ✅ |
 | TỐI · TEAL · COOL | `#46d9c7` | `#3fb3aa`→`#448fc1` | `#141b30` | INK trên surfOnFrom+bg | **4.60** | ✅ |
-| TỐI · AMBER · NEUTRAL | `#f6bb47` | `#d5a93a`→`#c0dc46` | `#141b30` | INK_ON_ACCENT trên tileOnFrom+tile | **4.67** | ✅ |
+| TỐI · AMBER · NEUTRAL | `#f6bb47` | `#d5a93a`→`#c0dc46` | `#141b30` | INK trên surfOnFrom+bg | **4.94** | ✅ |
 | TỐI · AMBER · WARM | `#f6bb47` | `#d5a93a`→`#c0dc46` | `#141b30` | INK trên surfOnFrom+bg | **4.94** | ✅ |
 | TỐI · AMBER · COOL | `#f6bb47` | `#d5a93a`→`#c0dc46` | `#141b30` | INK trên surfOnFrom+bg | **4.94** | ✅ |
 | TỐI · CHERRY · NEUTRAL | `#f1709b` | `#d65e80`→`#dc7f6a` | `#141b30` | ON_ACCENT trên gradFrom | **4.70** | ✅ |
 | TỐI · CHERRY · WARM | `#f1709b` | `#d65e80`→`#dc7f6a` | `#141b30` | ON_ACCENT trên gradFrom | **4.70** | ✅ |
 | TỐI · CHERRY · COOL | `#f1709b` | `#d65e80`→`#dc7f6a` | `#141b30` | ON_ACCENT trên gradFrom | **4.70** | ✅ |
-| TỐI · CORAL · NEUTRAL | `#ff5f5f` | `#e3564e`→`#e8a55c` | `#141b30` | INK_ON_ACCENT trên tileOnTo+tile | **4.58** | ✅ |
+| TỐI · CORAL · NEUTRAL | `#ff5f5f` | `#e3564e`→`#e8a55c` | `#141b30` | ON_ACCENT trên gradFrom | **4.64** | ✅ |
 | TỐI · CORAL · WARM | `#ff5f5f` | `#e3564e`→`#e8a55c` | `#141b30` | ON_ACCENT trên gradFrom | **4.64** | ✅ |
 | TỐI · CORAL · COOL | `#ff5f5f` | `#e3564e`→`#e8a55c` | `#141b30` | ON_ACCENT trên gradFrom | **4.64** | ✅ |
 | TỐI · SILVER · NEUTRAL | `#aab6c6` | `#949eaf`→`#a19eb8` | `#141b30` | INK trên surfOnFrom+bg | **4.81** | ✅ |
-| TỐI · SILVER · WARM | `#aab6c6` | `#949eaf`→`#a19eb8` | `#141b30` | INK_ON_ACCENT trên tileOnFrom+tile | **4.63** | ✅ |
-| TỐI · SILVER · COOL | `#aab6c6` | `#949eaf`→`#a19eb8` | `#141b30` | INK_ON_ACCENT trên tileOnFrom+tile | **4.64** | ✅ |
-| TỐI · WARM_WHITE · NEUTRAL | `#e6d0b5` | `#d0bd9d`→`#d3d7a9` | `#141b30` | INK_ON_ACCENT trên tileOnTo+tile | **4.87** | ✅ |
-| TỐI · WARM_WHITE · WARM | `#e6d0b5` | `#d0bd9d`→`#d3d7a9` | `#141b30` | INK_ON_ACCENT trên tileOnFrom+tile | **4.59** | ✅ |
-| TỐI · WARM_WHITE · COOL | `#e6d0b5` | `#d0bd9d`→`#d3d7a9` | `#141b30` | INK_ON_ACCENT trên tileOnFrom+tile | **4.65** | ✅ |
+| TỐI · SILVER · WARM | `#aab6c6` | `#949eaf`→`#a19eb8` | `#141b30` | INK trên surfOnFrom+bg | **4.81** | ✅ |
+| TỐI · SILVER · COOL | `#aab6c6` | `#949eaf`→`#a19eb8` | `#141b30` | INK trên surfOnFrom+bg | **4.81** | ✅ |
+| TỐI · WARM_WHITE · NEUTRAL | `#e6d0b5` | `#d0bd9d`→`#d3d7a9` | `#141b30` | INK trên surfOnFrom+bg | **5.24** | ✅ |
+| TỐI · WARM_WHITE · WARM | `#e6d0b5` | `#d0bd9d`→`#d3d7a9` | `#141b30` | mut2 trên surfFrom | **4.96** | ✅ |
+| TỐI · WARM_WHITE · COOL | `#e6d0b5` | `#d0bd9d`→`#d3d7a9` | `#141b30` | mut2 trên surfFrom | **5.00** | ✅ |
 | TỐI · FROM_ART(trắng) · NEUTRAL | `#b1b1b1` | `#9a9a9a`→`#a4a4a4` | `#141b30` | INK trên surfOnFrom+bg | **4.94** | ✅ |
 | TỐI · FROM_ART(đen) · NEUTRAL | `#969696` | `#686a6f`→`#6f7175` | `#ffffff` | ON_ACCENT trên gradTo | **4.89** | ✅ |
 | TỐI · FROM_ART(đỏ rực) · NEUTRAL | `#f53c3c` | `#922f31`→`#976738` | `#ffffff` | ON_ACCENT trên gradTo | **4.87** | ✅ |
 | TỐI · FROM_ART(xám) · NEUTRAL | `#969696` | `#686a6f`→`#6f7175` | `#ffffff` | ON_ACCENT trên gradTo | **4.89** | ✅ |
-| TỐI · FROM_ART(trắng) · WARM | `#b1b1b1` | `#9a9a9a`→`#a4a4a4` | `#141b30` | INK_ON_ACCENT trên tileOnTo+tile | **4.60** | ✅ |
+| TỐI · FROM_ART(trắng) · WARM | `#b1b1b1` | `#9a9a9a`→`#a4a4a4` | `#141b30` | INK trên surfOnFrom+bg | **4.94** | ✅ |
 | TỐI · FROM_ART(đen) · WARM | `#969696` | `#686a6f`→`#6f7175` | `#ffffff` | ON_ACCENT trên gradTo | **4.89** | ✅ |
-| TỐI · FROM_ART(đỏ rực) · WARM | `#f53c3c` | `#922f31`→`#976738` | `#ffffff` | INK_ON_ACCENT trên tileOnTo+tile | **4.63** | ✅ |
+| TỐI · FROM_ART(đỏ rực) · WARM | `#f53c3c` | `#922f31`→`#976738` | `#ffffff` | ACCENT_INK trên tile | **4.68** | ✅ |
 | TỐI · FROM_ART(xám) · WARM | `#969696` | `#686a6f`→`#6f7175` | `#ffffff` | ON_ACCENT trên gradTo | **4.89** | ✅ |
-| TỐI · FROM_ART(trắng) · COOL | `#b1b1b1` | `#9a9a9a`→`#a4a4a4` | `#141b30` | INK_ON_ACCENT trên tileOnTo+tile | **4.68** | ✅ |
+| TỐI · FROM_ART(trắng) · COOL | `#b1b1b1` | `#9a9a9a`→`#a4a4a4` | `#141b30` | INK trên surfOnFrom+bg | **4.94** | ✅ |
 | TỐI · FROM_ART(đen) · COOL | `#969696` | `#686a6f`→`#6f7175` | `#ffffff` | ON_ACCENT trên gradTo | **4.89** | ✅ |
 | TỐI · FROM_ART(đỏ rực) · COOL | `#f53c3c` | `#922f31`→`#976738` | `#ffffff` | ACCENT_INK trên tile | **4.71** | ✅ |
 | TỐI · FROM_ART(xám) · COOL | `#969696` | `#686a6f`→`#6f7175` | `#ffffff` | ON_ACCENT trên gradTo | **4.89** | ✅ |

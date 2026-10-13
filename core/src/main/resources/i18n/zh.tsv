@@ -285,7 +285,7 @@ Dẫn đường tới 	Navigate to 	导航到
 Mở ứng dụng 	Open app 	打开应用
 Bố cục 	Layout 	切换布局：
 Tạm biệt, hẹn gặp lại	Bye, see you	再见，回头见
-chỉ mở được khi xe đang dừng	only while the car is stopped	仅可在停车时操作
+Dừng xe để mở cốp	Stop the car to open the boot	请停车后再打开后备箱
 Đã gửi {0} {1} — xe báo {2}	Sent {0} {1} — the car reports {2}	已发送{0} {1}——车辆反馈{2}
 chưa kiểm trên xe	not yet checked on this car	尚未在本车验证
 xe không nhận lệnh	the car refused	车辆拒绝执行
@@ -638,7 +638,7 @@ Mức 2	Level 2	2挡
 Đóng	Close	关闭
 Nửa	Half	半开
 áp suất + nhiệt độ từng bánh	pressure and temperature of each wheel	各轮胎的气压和温度
-mở/đóng và mở nửa từng kính · đóng cả cụm	open/close and half-open each window · close all	各车窗开/关和半开 · 全部关闭
+từng kính: hé, mở hẳn, đóng · cốp sau · mở/đóng tất cả	each window: half, full, close · tailgate · open/close all	每扇车窗：半开、全开、关闭 · 后备箱 · 全开/全关
 cửa, nóc, rèm	doors, sunroof, sunshade	车门、天窗、遮阳帘
 đèn ngoài, đèn pha, đèn đọc trong xe	exterior lights, headlights, interior reading light	外部灯光、大灯、车内阅读灯
 nhiệt trong/ngoài, điều hoà, bụi mịn	inside/outside temperature, air conditioning, fine dust	车内/车外温度、空调、PM2.5
@@ -849,3 +849,6 @@ Chạm để bật/tắt camera đó; mở camera khác thì thay camera đang m
 Không có camera nào đang mở	No camera is open	没有正在打开的摄像头
 {0} đang không mở	{0} is not open	{0}未打开
 chưa liên lạc được màn hình chính	couldn't reach the home screen	无法连接主屏幕
+Mở hẳn	Full	全开
+Hé	Vent	微开
+Xe 3D	3D car	3D 车辆

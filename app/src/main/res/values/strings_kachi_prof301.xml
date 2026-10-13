@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R10 — chữ của bộ chọn hồ sơ + hộp Xoá hồ sơ (ProfileChip / SettingsSectionsProfiles). Tệp riêng, tiền tố
+     kprof_ (KHÔNG phải kachi_: bài khoá mồ côi của LauncherI18nContractTest chỉ đọc values/strings_kachi.xml); cùng tập
+     khoá ở cả 5 thư mục (ProfileDialog301ContractTest canh). -->
+<resources>
+    <string name="kprof_pick_subtitle">Đổi là áp cả bố cục, cụm, phím, giao diện</string>
+    <string name="kprof_delete_title">Xoá hồ sơ «%1$s»?</string>
+    <string name="kprof_delete_message">Mất mọi thứ hồ sơ này giữ: bố cục và ô, thanh nút, giao diện, sổ địa chỉ, phím vô-lăng, chiếu cụm (khung/DPI từng app), camera, lịch dẫn đường. Không hoàn tác — muốn giữ thì Xuất hồ sơ trước.</string>
+    <string name="kprof_delete_confirm">Xoá hồ sơ</string>
+</resources>

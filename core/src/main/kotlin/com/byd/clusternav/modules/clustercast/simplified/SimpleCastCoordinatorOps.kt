@@ -82,6 +82,7 @@ internal fun SimpleCastCoordinator.openProjectionBody() {
         // (no ContentObserver), so they take effect after a physical ignition off/on.
         // Idempotent — safe to run every open.
         geometry.ensureFreeformFlags()
+        geometry.forgetDisplayFacts()   // 3.1 · R26: sự thật màn cụm đọc lại cho phiên mới (màn ảo có thể đã dựng lại)
 
         if (preOpenId >= 1) cleanDisplay(preOpenId)
 

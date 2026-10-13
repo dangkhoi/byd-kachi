@@ -86,9 +86,9 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi widget co nhan EN, dung 10 widget`() {
+    fun `moi widget co nhan EN, dung 11 widget`() {
         // F1 (2026-10-02): 9 → 10 = `w_apps` (lưới lối tắt ứng dụng, spec shortcuts-autostart R1.3).
-        assertEquals(10, WidgetRegistry.ALL.size)
+        assertEquals(11, WidgetRegistry.ALL.size)   // 3.01 R25: + `w_car3d`
         val missing = WidgetRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "widget thiếu nhãn tiếng Anh: $missing")
     }
@@ -262,7 +262,8 @@ class LangCoverageTest {
         // 2.93 · CAMERA-ON-DEMAND (2026-10-06): **264 → 269 (+5)** = bốn việc *"Camera sau/trái/phải/trước"* + *"Tắt camera"*
         // (`LauncherActions`), EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
         // 2.98 · R18 (2026-10-10): **269 → 270 (+1)** = mục Cài đặt `home_escape_return`, EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
-        assertEquals(270, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 3.01 R25 (2026-10-13): **270 → 271 (+1)** = widget `w_car3d` ("Xe 3D" / "3D car"), EN tại chỗ khai + dòng zh/th/ms.
+        assertEquals(271, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
@@ -486,8 +487,8 @@ class LangCoverageTest {
     fun `dong phu cua nhom giu so dem tu du lieu o ca hai thu tieng`() {
         val g = CapabilityGroups.WINDOWS
         Strings.current = Lang.VI
-        assertEquals("4 mục · 11 nút · mở/đóng và mở nửa từng kính · đóng cả cụm", g.contentLine)
+        assertEquals("4 mục · 12 nút · từng kính: hé, mở hẳn, đóng · cốp sau · mở/đóng tất cả", g.contentLine)
         Strings.current = Lang.EN
-        assertEquals("4 items · 11 buttons · open/close and half-open each window · close all", g.contentLine)
+        assertEquals("4 items · 12 buttons · each window: half, full, close · tailgate · open/close all", g.contentLine)
     }
 }

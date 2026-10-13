@@ -124,27 +124,38 @@ class SettingsKeysSection(
     }
 
     /**
-     * "Thêm gán" = hai bước: **chọn nút** rồi **chọn đích**. Hộp thoại thứ hai chỉ mở sau khi bước một xong, nên
-     * huỷ giữa chừng không ghi gì.
+     * "Thêm gán" = ba bước: **chọn nút** → **loại đích** → **việc**. Huỷ giữa chừng không ghi gì: dòng gán chỉ được ghi
+     * trong bước CUỐI.
      *
-     * Hai bước chứ không một màn hai cột: trên xe, một danh sách dài một cột bấm dễ hơn hẳn; và [ĐO] màn cũ dùng
-     * hai `Spinner` cạnh nhau — cùng số bước, nhưng `Spinner` không nói ra là mình bấm được.
+     * Từng bước một danh sách một cột chứ không một màn hai cột: trên xe, một danh sách dài một cột bấm dễ hơn hẳn; và
+     * [ĐO] màn cũ dùng hai `Spinner` cạnh nhau — cùng số bước, nhưng `Spinner` không nói ra là mình bấm được.
+     *
+     * QA-301 D3 (spec §4.3 #8) — cả chuỗi là MỘT hộp [KachiDialogs.steps]: thanh bước 1-2-3, *"← Quay lại"* + phím Back lùi
+     * một bước (bản trước: 3 hộp chồng nhau, Back ở bước 3 đóng cả chuỗi). Dữ liệu + đích của từng bước giữ nguyên.
      */
     private fun addBinding() {
         val buttons = bridge.buttonOptions()
-        SettingsDialogs.pick(
-            context,
+        // KACHI-301 R13 · #8 — dòng phụ của mỗi nút = đích ĐANG gán cho đúng (mã, nguồn) đó (cùng phép tra của danh sách gán).
+        // `targetOptions()` (duyệt mọi app) chỉ chạy khi thật có dòng gán — `by lazy`, xem KDoc [rebuildBindings].
+        val bindings = bridge.bindings()
+        val targets by lazy { bridge.targetOptions() }
+        val first = KachiDialogs.Step(
             context.getString(R.string.kachi_keys_pick_button),
-            buttons.map { optionLabel(it) },
+            buttons.map { o ->
+                val bound = bindings.filter { it.keyCode == o.code && it.source == o.source }
+                    .joinToString(SUB_SEP) { targetLabel(it.targetSpec, targets) }
+                PickItem(optionLabel(o), subtitle = bound.ifEmpty { null }?.let { context.getString(R.string.kmisc_keys_bound, it) })
+            },
             context.getString(R.string.kachi_keys_no_buttons),
         ) { buttonIndex ->
             // 2.88 · R2: nút học kèm nguồn ⇒ dòng gán theo nguồn (mục preset / nút không nguồn ⇒ `source` null như 2.87).
             val option = buttons[buttonIndex]
-            pickTarget { spec ->
+            targetStep { spec ->
                 bridge.addBinding(option.code, spec, option.source)
                 rebuildBindings()
             }
         }
+        KachiDialogs.steps(context, STEP_COUNT, first) { n, total -> context.getString(R.string.kmisc_keys_step, n, total) }
     }
 
     /**
@@ -152,20 +163,25 @@ class SettingsKeysSection(
      * nhóm ⇒ bước 3 chọn việc (*"Gió +1"*, *"Bật Kính lái"*…). Nhóm + việc SINH từ `ControlRegistry` qua
      * [KeyCtlTargets.groups] (`:core`) — không chép tay, thêm nút vào registry là có mặt ở đây.
      */
-    private fun pickTarget(onSpec: (String) -> Unit) {
+    private fun targetStep(onSpec: (String) -> Unit): KachiDialogs.Step {
         val groups = KeyCtlTargets.groups()
         // 2.93 · CAMERA-ON-DEMAND — loại đích thứ hai *"Camera theo yêu cầu"* (owner 06/10 *"trigger từ bind phím vật lý"*).
-        SettingsDialogs.pick(
-            context,
+        return KachiDialogs.Step(
             context.getString(R.string.kachi_keys_pick_kind),
-            listOf(context.getString(R.string.kachi_keys_kind_apps), context.getString(R.string.kachi_keys_kind_camera)) +
-                groups.map { it.displayLabel },
+            listOf(
+                PickItem(context.getString(R.string.kachi_keys_kind_apps), icon = R.drawable.ic_grid),
+                PickItem(context.getString(R.string.kachi_keys_kind_camera), icon = R.drawable.ic_cam),
+            ) + groups.map { g ->
+                // Icon nhóm: cùng tên icon `:core` khai cho nhóm khả năng (nhóm suy từ Domain không có ⇒ 0; khuôn chừa ô).
+                val icon = CapabilityGroups.ALL.firstOrNull { it.id == g.id }?.let { KachiTheme.iconRes(it.icon) } ?: 0
+                PickItem(g.displayLabel, subtitle = previewOf(g), icon = icon)
+            },
             context.getString(R.string.kachi_keys_no_targets),
         ) { kind ->
             when (kind) {
-                0 -> pickApp(onSpec)
-                1 -> pickCamera(onSpec)
-                else -> pickControl(groups[kind - 2], onSpec)
+                0 -> appStep(onSpec)
+                1 -> cameraStep(onSpec)
+                else -> controlStep(groups[kind - 2], onSpec)
             }
         }
     }
@@ -174,14 +190,13 @@ class SettingsKeysSection(
      * 2.93 — năm đích camera: bốn camera (mỗi phím = BẬT/TẮT camera ấy — owner *"các nút đều là toggle"*) + *Tắt camera*.
      * Danh sách + mã bền sinh từ `:core` [CameraDemand.KEY_OPS] / [CameraDemand.keySpec] — không chép tay mã nào.
      */
-    private fun pickCamera(onSpec: (String) -> Unit) {
+    private fun cameraStep(onSpec: (String) -> Unit): KachiDialogs.Step {
         val ops = CameraDemand.KEY_OPS
-        SettingsDialogs.pick(
-            context,
+        return KachiDialogs.Step(
             context.getString(R.string.kachi_keys_pick_camera),
-            ops.map { camOpLabel(it) },
+            ops.map { PickItem(camOpLabel(it), icon = camOpIcon(it)) },
             context.getString(R.string.kachi_keys_no_targets),
-        ) { i -> CameraDemand.keySpec(ops[i])?.let(onSpec) }
+        ) { i -> CameraDemand.keySpec(ops[i])?.let(onSpec); null }
     }
 
     /** Nhãn một đích camera: *"Camera sau — bật/tắt"* · *"Tắt camera"*. */
@@ -191,23 +206,35 @@ class SettingsKeysSection(
         else -> context.getString(R.string.kachi_key_cam_off)
     }
 
-    private fun pickApp(onSpec: (String) -> Unit) {
+    /**
+     * Đích app/trợ lý. KHÔNG icon app: bung icon MỌI app trên luồng vẽ lúc mở bước là đúng cái đơ mà KDoc [rebuildBindings]
+     * cấm; chỉ mục trợ lý (sentinel, `appLabel == null`) mang icon micro — tài nguyên sẵn, 0 lượt `PackageManager`.
+     */
+    private fun appStep(onSpec: (String) -> Unit): KachiDialogs.Step {
         val targets = bridge.targetOptions()
-        SettingsDialogs.pick(
-            context,
+        return KachiDialogs.Step(
             context.getString(R.string.kachi_keys_pick_target),
-            targets.map { targetOptionLabel(it, targets) },
+            targets.map { PickItem(targetOptionLabel(it, targets), icon = if (it.appLabel == null) R.drawable.ic_mic else 0) },
             context.getString(R.string.kachi_keys_no_targets),
-        ) { targetIndex -> onSpec(targets[targetIndex].spec) }
+        ) { targetIndex -> onSpec(targets[targetIndex].spec); null }
     }
 
-    private fun pickControl(group: KeyCtlGroup, onSpec: (String) -> Unit) {
-        SettingsDialogs.pick(
-            context,
-            context.getString(R.string.kachi_keys_pick_action, group.displayLabel),
-            group.targets.map { KeyCtlTargets.displayLabel(it) },
-            context.getString(R.string.kachi_keys_no_targets),
-        ) { i -> onSpec(group.targets[i].spec) }
+    private fun controlStep(group: KeyCtlGroup, onSpec: (String) -> Unit): KachiDialogs.Step = KachiDialogs.Step(
+        context.getString(R.string.kachi_keys_pick_action, group.displayLabel),
+        group.targets.map { PickItem(KeyCtlTargets.displayLabel(it)) },
+        context.getString(R.string.kachi_keys_no_targets),
+    ) { i -> onSpec(group.targets[i].spec); null }
+
+    /** Hai việc đầu của nhóm làm dòng phụ (*"Gió +1 · Gió −1 …"*) — người lái nhận ra nhóm bằng việc, không chỉ bằng tên. */
+    private fun previewOf(group: KeyCtlGroup): String {
+        val head = group.targets.take(PREVIEW_N).joinToString(SUB_SEP) { KeyCtlTargets.displayLabel(it) }
+        return if (group.targets.size > PREVIEW_N) head + ELLIPSIS else head
+    }
+
+    /** Icon một đích camera: CÙNG icon vị trí của nút thanh xe ([LauncherActions], luật U7) — không bảng thứ hai. */
+    private fun camOpIcon(op: CameraDemand.Op): Int {
+        val id = if (op is CameraDemand.Op.Toggle) LauncherActions.cameraId(op.which) else LauncherActions.CAM_OFF
+        return LauncherActions.byId(id)?.let { KachiTheme.iconRes(it.icon) } ?: 0
     }
 
     // ── Nút TỰ HỌC ───────────────────────────────────────────────────────────────────────────────
@@ -381,5 +408,15 @@ class SettingsKeysSection(
     private companion object {
         /** Tiền tố hằng mã phím của framework (`KEYCODE_VOICE_ASSIST`) — cắt đi cho dòng chữ đỡ ồn. */
         const val KEYCODE_PREFIX = "KEYCODE_"
+
+        /** Chuỗi gán phím: nút → loại đích → việc (R13 · #8) — số ô của thanh bước. */
+        const val STEP_COUNT = 3
+
+        /** Số việc xem trước dưới tên nhóm. */
+        const val PREVIEW_N = 2
+
+        /** Ký hiệu nối/cắt dòng phụ — dấu câu, không phải chữ cần dịch. */
+        const val SUB_SEP = " · "
+        const val ELLIPSIS = " …"
     }
 }

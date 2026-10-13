@@ -308,7 +308,8 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         // KachiTheme.surface(..., SurfaceTone.WELL, ...) như trước — cùng cửa, cùng tone, không đổi một byte.
         // Ô TRỐNG không đi qua kính, và KHÔNG được mang tag kính: FIX286 · ES1 (owner 03/10) — khung trống TRONG SUỐT
         // thấy hình nền; tag kính còn trên khung thì lượt `KachiGlass.refresh` khi ảnh đổi sẽ đắp kính lên (bẫy P1b).
-        if (content !is SlotContent.Empty) KachiGlass.apply(fl, Sp.RADIUS_L, SurfaceTone.WELL, slotDomain(content))
+        // ⚠ 3.01 R22 (brief Kim §2.3): khay KHÔNG nhuộm sắc lĩnh vực (đục, lệch tông) — sắc lĩnh vực chỉ ở chip icon đầu thẻ.
+        if (content !is SlotContent.Empty) KachiGlass.apply(fl, Sp.RADIUS_L, SurfaceTone.WELL)
         SlotFrameClip.apply(fl, Sp.dpf(context, Sp.RADIUS_L))   // cắt nội dung theo góc bo (overflow:hidden) — A5(b): viền RIÊNG, không mượn nền
         val mm = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         when (content) {
@@ -385,7 +386,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         return fl
     }
 
-    // `slotDomain` · `startSlotDrag` → `WorkspaceViewSlotDomain.kt` (tách THUẦN theo trần 500 dòng, L6-debt 2026-09-27).
+    // `slotDomain` · `startSlotDrag` → `WorkspaceViewSlotDomain.kt` (tách THUẦN theo trần 500 dòng, L6-debt 2026-09-27; `slotDomain` xoá ở 3.01 R22).
 
     /**
      * Khung trong suốt bọc nút ⇄ **nổi** ở đầu ô.

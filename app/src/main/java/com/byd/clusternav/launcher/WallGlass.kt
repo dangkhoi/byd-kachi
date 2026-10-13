@@ -168,7 +168,7 @@ object KachiGlass {
      * cảnh báo — lỗi im lặng, và là đúng bệnh mà KDoc `WorkspaceView.makeSlot` đã ghi cho ô TRỐNG. Gỡ thẻ + listener
      * trước rồi mới đặt nền.
      */
-    fun plain(view: View, background: Drawable) {
+    fun plain(view: View, background: Drawable?) {
         view.setTag(R.id.kachi_glass_spec, null)
         unbind(view)
         view.background = background

@@ -61,6 +61,14 @@ import java.util.List;
  *
  * Chỉ phát khi trạng thái ĐỔI (chống trùng: một lượt rẽ có thể fire cả {@code onLightOn(4)} lẫn
  * {@code onTurnLightStateChanged(2)} — cùng nghĩa, hai callback).
+ *
+ * ── 3.01 LAMPLIVE: CÁC ĐÈN KHÁC trên CÙNG listener (owner 13/10 "nối luôn đi") ─────────────────────────────────────────────
+ * {@code onLightOn/Off(type)} với {@code type} ngoài 4/5 (1 hông · 2 cốt · 3 pha · 6 sương mù trước · 7 sương mù sau — thang
+ * {@code BYDAutoLightDevice.LIGHT_*}; [ĐO RE] app Kim {@code VehicleBridge.createLightListener} lưu đúng khoá {@code area} này)
+ * trước đây bị BỎ; nay chuyển tiếp nguyên dạng dòng cũ (client cũ bỏ qua {@code type} lạ ⇒ tương thích hai chiều). DRL tới qua
+ * {@code onDayRunningLightStateChanged(v)} ⇒ dòng {@code {"topic":"light.dayRunning","type":v}} (1=BẬT · 2=TẮT). Không thêm
+ * listener, không thêm device, không poll: chỉ là không vứt sự kiện HAL đã gửi tới. Ảnh chụp cho client mới nối kèm mọi đèn
+ * ĐÃ THẤY sự kiện (đèn chưa thấy ⇒ không gửi ⇒ client giữ getter). [CHƯA BIẾT trên xe] trim nào phát các type này.
  */
 public final class KachiHalMain {
 
@@ -82,6 +90,18 @@ public final class KachiHalMain {
 
     private static volatile boolean left;
     private static volatile boolean right;
+
+    private static final String TOPIC_DRL = "light.dayRunning";
+
+    /** Thang {@code type} ngoài xi-nhan được chuyển tiếp — {@code BYDAutoLightDevice.LIGHT_*}. */
+    private static final int TYPE_MIN = 1;
+    private static final int TYPE_MAX = 7;
+
+    /** Trạng thái đèn khác xi-nhan ĐÃ THẤY: chỉ số = type; -1 = chưa thấy · 0 = tắt · 1 = bật. Truy cập trong {@code synchronized (CLIENTS)}. */
+    private static final int[] OTHER = new int[] {-1, -1, -1, -1, -1, -1, -1, -1};
+
+    /** DRL đã thấy: -1 chưa · 1 BẬT · 2 TẮT (giá trị thô của callback). Trong {@code synchronized (CLIENTS)}. */
+    private static int drl = -1;
 
     private KachiHalMain() {
     }
@@ -197,10 +217,17 @@ public final class KachiHalMain {
 
         @Override public void onLightOn(int type) {
             if (type == TYPE_LEFT || type == TYPE_RIGHT) set(type, true);
+            else other(type, true);
         }
 
         @Override public void onLightOff(int type) {
             if (type == TYPE_LEFT || type == TYPE_RIGHT) set(type, false);
+            else other(type, false);
+        }
+
+        /** DRL — không có trong thang {@code onLightOn}; callback riêng ({@code DAY_RUNNING_LIGHT_ON=1/OFF=2}). */
+        @Override public void onDayRunningLightStateChanged(int value) {
+            dayRunning(value);
         }
 
         @Override public void onTurnLightStateChanged(int value) {
@@ -254,6 +281,27 @@ public final class KachiHalMain {
             return;
         }
         broadcast(on ? TOPIC_ON : TOPIC_OFF, type);
+    }
+
+    /** Đèn khác xi-nhan: chỉ phát khi ĐỔI; {@code type} ngoài 1..7 ⇒ bỏ (không đoán nghĩa). */
+    private static void other(int type, boolean on) {
+        if (type < TYPE_MIN || type > TYPE_MAX) return;
+        int v = on ? 1 : 0;
+        synchronized (CLIENTS) {
+            if (OTHER[type] == v) return;
+            OTHER[type] = v;
+        }
+        broadcast(on ? TOPIC_ON : TOPIC_OFF, type);
+    }
+
+    /** DRL: chỉ 1/2 có nghĩa; 0=INVALID/3=UNDEFINED ⇒ bỏ. Chỉ phát khi ĐỔI. */
+    private static void dayRunning(int value) {
+        if (value != 1 && value != 2) return;
+        synchronized (CLIENTS) {
+            if (drl == value) return;
+            drl = value;
+        }
+        broadcast(TOPIC_DRL, value);
     }
 
     // ── Socket ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -315,6 +363,12 @@ public final class KachiHalMain {
         try {
             os.write(line(l ? TOPIC_ON : TOPIC_OFF, TYPE_LEFT));
             os.write(line(r ? TOPIC_ON : TOPIC_OFF, TYPE_RIGHT));
+            synchronized (CLIENTS) {
+                for (int t = TYPE_MIN; t <= TYPE_MAX; t++) {
+                    if (OTHER[t] >= 0) os.write(line(OTHER[t] == 1 ? TOPIC_ON : TOPIC_OFF, t));
+                }
+                if (drl > 0) os.write(line(TOPIC_DRL, drl));
+            }
             os.flush();
         } catch (IOException e) {
             drop(os);

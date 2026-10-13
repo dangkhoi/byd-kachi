@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.camera
 import android.content.Context
 import android.util.Base64
 import android.util.Log
+import com.byd.clusternav.system.MutationPriority
 import com.byd.clusternav.system.ShellTransport
 import java.io.File
 import java.net.InetSocketAddress
@@ -135,13 +136,13 @@ object HalHelperLauncher {
      * [CHƯA BIẾT] nhưng rất khó xảy ra; nếu gặp thì xoá `$REMOTE` trên xe.
      */
     private fun remoteMatches(shell: ShellTransport, size: Long): Boolean {
-        val out = shell.run("wc -c < $REMOTE 2>/dev/null").trim()
+        val out = shell.bg("wc -c < $REMOTE 2>/dev/null").trim()
         return out.toLongOrNull() == size && size > 0
     }
 
     private fun push(shell: ShellTransport, jar: File): Boolean {
         val bytes = jar.readBytes()
-        shell.run("rm -f $REMOTE $REMOTE_B64")
+        shell.bg("rm -f $REMOTE $REMOTE_B64")
         var offset = 0
         while (offset < bytes.size) {
             val end = minOf(offset + CHUNK_RAW, bytes.size)
@@ -151,10 +152,10 @@ object HalHelperLauncher {
                 Log.w(TAG, "khúc base64 có dấu nháy ở offset $offset — huỷ")
                 return false
             }
-            shell.run("echo '$chunk' >> $REMOTE_B64")
+            shell.bg("echo '$chunk' >> $REMOTE_B64")
             offset = end
         }
-        shell.run("base64 -d < $REMOTE_B64 > $REMOTE && rm -f $REMOTE_B64")
+        shell.bg("base64 -d < $REMOTE_B64 > $REMOTE && rm -f $REMOTE_B64")
         val ok = remoteMatches(shell, bytes.size.toLong())
         if (!ok) Log.w(TAG, "sau khi đẩy, cỡ ở xe vẫn không khớp (${bytes.size} B)")
         return ok
@@ -169,7 +170,7 @@ object HalHelperLauncher {
      * `…hal.KachiHalMain 19322` của helper thật. (Cùng bẫy vừa cho `pgrep` một dương-tính-giả lúc dọn máy ảo.)
      */
     private fun killHelper(shell: ShellTransport) {
-        shell.run("pkill -9 -f '[K]achiHalMain' 2>/dev/null; true")
+        shell.bg("pkill -9 -f '[K]achiHalMain' 2>/dev/null; true")
     }
 
     /**
@@ -187,8 +188,15 @@ object HalHelperLauncher {
         // `nohup … &` + chuyển hướng cả 3 fd ⇒ lệnh trả về NGAY, không giữ worker của ShellTransport (xem KDoc).
         val cmd = "$pick; CLASSPATH=$REMOTE nohup \$BIN / $MAIN_CLASS $PORT > $REMOTE_LOG 2>&1 < /dev/null &"
         Log.i(TAG, "khởi động helper: $MAIN_CLASS $PORT")
-        shell.run(cmd)
+        shell.bg(cmd)
     }
+
+    /**
+     * 3.01 LAMPLIVE — mọi lệnh của helper đi mức [MutationPriority.BACKGROUND]: rút SAU mọi lệnh đặt-cửa-sổ/cast đang xếp hàng
+     * trên worker dùng chung, nên một lượt `ensure` (nay có thể do bảng Đèn khởi, không chỉ công tắc camera) không bao giờ chen
+     * trước việc người dùng đang chờ trên màn. Lệnh đang chạy thì không bị cắt — mỗi lệnh ở đây đều ngắn (KDoc lớp).
+     */
+    private fun ShellTransport.bg(cmd: String): String = run(cmd, MutationPriority.BACKGROUND)
 
     private fun waitForPort(): Boolean {
         repeat(WAIT_TRIES) {

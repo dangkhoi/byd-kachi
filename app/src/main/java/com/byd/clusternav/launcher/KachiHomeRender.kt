@@ -20,6 +20,7 @@ package com.byd.clusternav.launcher
  */
 internal fun KachiHomeActivity.applyThemeInPlace() {
     runCatching { KachiGlass.refresh(rootFrame) }; wall.restyle()   // nền kính + màu nền tổng theo palette (#4)
+    wallpaper.onThemeChanged()   // 3.01 R22: nền MẶC ĐỊNH theo Sáng/Tối (ảnh người dùng giữ nguyên)
     topStrip.restyle(); dock.restyle(); workspace.restyle()            // chrome đổi màu; ô App giữ nguyên (app chạy tiếp)
     panels.restyleSettings()   // 2.93 SETTINGS-RETHEME-INPLACE — màn Cài đặt đang mở cũng đổi màu tại chỗ
 }
@@ -40,10 +41,13 @@ internal fun KachiHomeActivity.render(state: HomeUiState) {
     val prev = shownState
     // #10 (2026-09-23) GIỮ STATE: theme đổi ⇒ restyle tại chỗ (không recreate=không giết ô app); chỉ LANG mới recreate.
     val themeChanged = ThemeHost.sync(state)
+    // 3.01 R25 — ảnh nền xe 3D: widget xong chế độ căn ⇒ ghi MỘT chiều qua ViewModel (theo hồ sơ, như mọi lựa chọn màu).
+    Car3dBackdropChoice.save = { b -> viewModel.setColorChoice(viewModel.uiState.value.colorChoice.copy(carBackdrop = b)) }
     if (LangHost.changed(prev, state) && prev != null) { recreate(); return }
     // 2.97 · R3 — đổi hồ sơ vừa TẮT dẫn đường lên cụm ⇒ nhắc MỘT lần (sau `recreate` vẫn còn: cờ lấy ra ở lượt render kế).
     ProfileNavNotice.take()?.let { android.widget.Toast.makeText(this, getString(com.byd.clusternav.R.string.kachi_profile_nav_off, it), android.widget.Toast.LENGTH_LONG).show() }
     if (themeChanged && prev != null) applyThemeInPlace()
+    else if (themeChanged) wallpaper.onThemeChanged()   // 3.01 R22: lượt đầu — nền mặc định dựng trước khi bảng được áp
     // T4: thu hồi id ở ĐÚNG chỗ diff này ⇒ mọi đường đổi đều qua đây. CẢ state, vì "còn dùng" tính cả sổ cảnh.
     prev?.let { appWidgets.reclaim(it, state) }
     // 2.87 · R-AH3 — công tắc "Tự ẩn nút ⇄" đổi (hoặc lượt đầu / đổi hồ sơ) ⇒ áp lại ⇄ TẠI CHỖ, không dựng lại ô. Đặt TRƯỚC

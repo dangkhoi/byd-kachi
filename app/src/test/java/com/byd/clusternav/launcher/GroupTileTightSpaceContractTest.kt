@@ -113,13 +113,21 @@ class GroupTileTightSpaceContractTest {
                 "rồi hàng nút bị cắt IM LẶNG",
         )
         assertTrue(
-            Regex("""if \(!boardWithActions\) addView\(View\(context\), LayoutParams\(MATCH, 0, 1f\)\)""")
+            Regex("""breath = if \(boardWithActions\) null else View\(context\)\.also \{ addView\(it, LayoutParams\(MATCH, 0, 1f\)\) \}""")
                 .containsMatchIn(fn),
             "khoảng thở chỉ dành cho ca thân `WRAP` — thêm `weight` thứ hai là chia đôi chỗ của bảng mà không để " +
                 "làm gì",
         )
+        // 3.01 R20 — owner 13/10 "nằm chơi vơi": thân cân giữa nhờ DỜI lúc đặt (nửa khoảng thở), KHÔNG nhờ `weight` thứ hai
+        // TRƯỚC thân — [ĐO] `weight` đứng trước ⇒ `LinearLayout` đo thân với `heightUsed = 0` ⇒ bảng lốp tràn, rơi về tóm tắt.
+        val body = fn.indexOf("addView(bodyHolder,")
+        assertFalse(Regex("""LayoutParams\(MATCH, 0, 1f\)""").containsMatchIn(fn.substring(0, body).substringAfter("boardWithActions =")),
+            "không được có `weight` nào TRƯỚC thân")
+        val layout = SourceRoots.body(tiles, "override fun onLayout(")
+        assertTrue(layout.contains("bodyHolder.offsetTopAndBottom(half)"), "thân phải dời xuống nửa khoảng thở ⇒ cân giữa")
+        assertTrue(layout.indexOf("super.onLayout(") in 0 until layout.indexOf("offsetTopAndBottom"), "dời SAU khi đặt")
         assertTrue(
-            fn.contains("if (model.hasActions) addView(actionsRow("),
+            fn.contains("if (model.hasActions && matrix == null) addView(actionsRow("),   // R22: bảng vật × việc thay hàng nút
             "hàng nút vẫn dựng theo `hasActions` — nó CHƯA BAO GIỜ phụ thuộc vào hình, thứ từng thiếu là CHỖ",
         )
     }

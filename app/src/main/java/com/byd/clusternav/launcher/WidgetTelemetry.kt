@@ -81,12 +81,12 @@ internal object WidgetTelemetry {
             .apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END; if (free) FitScale.markFree(this) }
         val root: LinearLayout = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            KachiGlass.apply(this, Sp.RADIUS_M, domain = domain)   // P1b: kính khi có ảnh nền, surface() khi không
+            KachiGlass.apply(this, Sp.RADIUS_M)   // P1b kính · R22: mặt thẻ trung tính (brief Kim §2.3), sắc lĩnh vực chỉ ở icon
             val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
             val r = KachiTheme.iconRes(icon)
             if (r != 0) {
                 addView(
-                    ImageView(ctx).apply { setImageResource(r); setColorFilter(c(color)) },
+                    ImageView(ctx).apply { setImageResource(r); setColorFilter(domain?.let(KachiWidgetType::accentOf) ?: c(color)) },
                     LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_S), dpi(ctx, Sp.ICON_S))
                         .also { it.bottomMargin = dpi(ctx, Sp.XS) },
                 )
@@ -98,10 +98,9 @@ internal object WidgetTelemetry {
 
         fun set(v: MiniValue) {
             bigView.text = v.big
-            bigView.setTextColor(c(v.color ?: color))
+            KachiWidgetType.pending(bigView, !v.dim, v.color ?: color)   // R22·B: chưa đọc ⇒ MUT, không alpha cả ô
             FitScale.named(subView, v.caption, v.captionShort, name = v.captionShort != null)
             subView.visibility = if (v.caption.isEmpty()) View.GONE else View.VISIBLE
-            root.alpha = if (v.dim) 0.5f else 1f
         }
     }
 
@@ -244,8 +243,7 @@ internal object WidgetTelemetry {
         }
         fun fillShape(now: CarStatus, unit: UnitPrefs) {
             val v = read(id, now, unit) ?: return
-            body.fill(v)
-            body.root.alpha = if (v.available) 1f else 0.5f
+            body.fill(v)   // R22·B: mỗi bộ vẽ tự tô chữ chưa đọc bằng MUT ([KachiWidgetType.pending]) — không alpha cả ô
         }
         fillShape(car, units)
         return WidgetRefreshers.live(root) { d -> fillShape(d.car, d.units) }
@@ -270,13 +268,12 @@ internal object WidgetTelemetry {
     }
 
     private fun valueShape(ctx: Context, v: TelemetryView): TelemetryBody {
-        val number = WidgetViews.tv(ctx, v.display, 34f, KachiTheme.INK, true)
-        val unit = WidgetViews.tv(ctx, "", 14f, KachiTheme.MUT).apply { setPadding(0, dpi(ctx, Sp.M), 0, 0) }
+        val number = WidgetViews.tv(ctx, v.display, KachiWidgetType.HERO_SP, KachiTheme.INK, true)
+        val unit = WidgetViews.tv(ctx, "", KachiWidgetType.UNIT_SP, KachiTheme.MUT).apply { setPadding(0, dpi(ctx, Sp.L), 0, 0) }
         val root = WidgetViews.col(ctx).apply {
             addView(eyebrow(ctx, v.label))
-            // UX7 — [AxisRow] (không phải `LinearLayout` + `gravity = CENTER`): CON SỐ phải nằm đúng trục ô, cùng
-            // trục với nhãn eyebrow ở trên. Khe giữa số và đơn vị đã nằm trong chính chuỗi đơn vị (`" %"`) nên
-            // `gapPx` giữ 0 ⇒ nhịp chữ không đổi một pixel, chỉ TRỤC đổi.
+            // [AxisRow]: cụm `số + đơn vị` cân giữa trục ô, cùng tâm với nhãn eyebrow (owner 13/10 — KDoc AxisRow).
+            // Khe giữa số và đơn vị đã nằm trong chính chuỗi đơn vị (`" %"`) nên `gapPx` giữ 0.
             val row = AxisRow(ctx).apply { setPadding(0, dpi(ctx, Sp.XS), 0, 0) }
             row.addView(number)
             row.addView(unit)
@@ -284,6 +281,7 @@ internal object WidgetTelemetry {
         }
         return TelemetryBody(root) { n ->
             number.text = n.display
+            KachiWidgetType.pending(number, n.available)
             unit.text = " ${n.unit}"
             unit.visibility = if (n.unit.isEmpty()) View.GONE else View.VISIBLE
         }
@@ -341,7 +339,7 @@ internal object WidgetTelemetry {
     }
 
     private fun eyebrow(ctx: Context, s: String) =
-        WidgetViews.tv(ctx, s, 11f, KachiTheme.MUT2).apply { letterSpacing = 0.08f }
+        WidgetViews.tv(ctx, s, KachiWidgetType.LABEL_SP, KachiTheme.MUT).apply { KachiWidgetType.caption(this) }   // R22
 
     /** Thẻ chữ suy giảm: eyebrow + số to + dòng phụ. Dùng cho ô trống và cho mã không tra ra được. */
     internal fun labelCard(ctx: Context, title: String, big: String, sub: String) = WidgetViews.col(ctx).apply {

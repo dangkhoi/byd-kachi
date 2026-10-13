@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R8/R9 — chữ của khung hộp thoại dùng chung (KachiDialog / KachiDialogs). Tệp riêng (không gộp
+     strings_kachi.xml) để giai đoạn 1 không đụng tệp chung; tiền tố kdlg_ — giữ cùng tập khoá ở cả 5 thư mục
+     (KachiDialogContractTest canh). -->
+<resources>
+    <string name="kdlg_cancel">取消</string>
+    <string name="kdlg_close">关闭</string>
+    <string name="kdlg_ok">确定</string>
+    <string name="kdlg_current">✓ 当前使用</string>
+    <string name="kdlg_back">← 上一步</string>
+</resources>

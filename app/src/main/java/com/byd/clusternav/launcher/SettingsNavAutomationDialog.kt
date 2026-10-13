@@ -1,19 +1,16 @@
 package com.byd.clusternav.launcher
 
-import android.app.AlertDialog
 import android.content.Context
-import android.text.InputType
-import android.view.Gravity
+import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.view.View
-import android.widget.CheckBox
-import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
 import com.byd.clusternav.R
+import com.byd.clusternav.launcher.automation.DayPreset
 import com.byd.clusternav.launcher.automation.ScheduledNavRule
 import com.byd.clusternav.launcher.automation.ScheduledNavRules
 import com.byd.clusternav.launcher.voice.VoiceAppTargets
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /** Giờ-phút → `"07:30"`, và tên thứ — dùng chung bởi hàng danh sách và hộp sửa (một chỗ khai). */
 internal object SettingsNavAutomationFormat {
@@ -85,22 +82,26 @@ internal object SettingsNavAutomationFormat {
 }
 
 /**
- * ═══ HỘP THÊM/SỬA một luật dẫn-đường-theo-lịch ═══════════════════════════════════════════════════════════════
+ * ═══ HỘP THÊM/SỬA một luật dẫn-đường-theo-lịch — KACHI-301 R12, khuôn Biểu mẫu trên [KachiDialog] ═══════════════
  *
  * Spec `docs/specs/kachi-automation.html` R2.2 — sáu thứ trong một hộp: **bật/tắt · giờ bắt đầu–kết thúc · thứ
- * T2–CN · chỉ-khi-có-GPS · điểm đến (từ sổ địa chỉ) · app dẫn đường**.
+ * T2–CN · chỉ-khi-có-GPS · điểm đến (từ sổ địa chỉ) · app dẫn đường**. Hình theo mẫu §4.4 *"Lịch dẫn đường"* của
+ * `kachi-301-cast-steps-dialog-ia.html`: hai ô giờ lớn + [TimeWheel] · 7 chip thứ tròn + chip *Ngày thường / Cuối
+ * tuần / Mỗi ngày* · thẻ điểm đến · chip app (kèm icon app nếu máy có cài) · hai công tắc.
  *
- * ## Vì sao tệp RIÊNG, không thêm hàm thứ năm vào [SettingsDialogs]
- * KDoc [SettingsDialogs] cấm **bản dựng `AlertDialog` thứ hai** cho cùng một việc, và ba việc nó gom là *chọn một
- * mục · hỏi lại · hỏi một cái tên*. Hộp này không phải việc nào trong ba: nó là một **biểu mẫu sáu trường** có
- * lưới 7 ô tick. Nhồi nó vào tệp kia đẩy tệp đó từ 209 lên ~360 dòng và trộn hai loại trách nhiệm; giữ riêng thì
- * ba quyết định dùng chung (nút huỷ · nhãn nút lưu · nút xoá ở giữa) vẫn **chép đúng khuôn** của tệp kia.
+ * ## MỘT hộp, không hộp con, không bàn phím — bài học tiêu điểm 2026-09-12 giữ nguyên
+ * `TimePickerDialog` là một hộp con cho MỖI mốc giờ ⇒ chuỗi *hộp → hộp → hộp*, và hộp con chồng lên hộp cha là đúng ca
+ * [ĐO] 2026-09-12 bắt được trên xe (*"không gõ được tên cảnh khi có app đang chiếu trong ô"* — tiêu điểm không chuyển).
+ * Bản đầu né bằng ô gõ `"HH:mm"`; bản này thay ô gõ bằng [TimeWheel] nằm NGAY TRONG hộp ⇒ vẫn một hộp, lại không
+ * mở bàn phím che màn. [SettingsNavAutomationFormat.parseHhmm] ở lại cho đường giọng nói / nhập tệp.
  *
- * ## Giờ là Ô GÕ `"HH:mm"`, không phải `TimePickerDialog`
- * Một luật cần **hai** mốc giờ, mà `TimePickerDialog` là một hộp thoại riêng cho mỗi mốc ⇒ chuỗi *hộp → hộp →
- * hộp*, và hai hộp con chồng lên hộp cha là đúng ca mà [ĐO] 2026-09-12 đã bắt được trên xe (*"không gõ được tên
- * cảnh khi có app đang chiếu trong ô"* — tiêu điểm không chuyển). Một ô chữ giữ mọi thứ trong **một** hộp, và
- * phép đọc nằm ở [SettingsNavAutomationFormat.parseHhmm] (thuần, nhận cả `7:30`/`7h30`).
+ * ## Kiểm: một nguồn luật
+ * Nút Lưu khoá khi [ScheduledNavRules.of] trả `null` cho bản nháp — đúng hàm mà [SettingsNavAutomationSection.edit]
+ * gọi lúc lưu (khung qua đêm · thứ rỗng · không app). Không chép luật nào sang đây; câu lỗi dưới ô giờ chỉ NÓI.
+ *
+ * ## Dòng tóm tắt sống
+ * Dòng phụ đầu hộp = *"T2–T6 · 07:00–09:00 → Công ty bằng VietMap"*, cập nhật sau MỌI thay đổi — người lái đọc
+ * một dòng là biết luật sẽ làm gì, không phải dò lại sáu trường.
  */
 internal object SettingsNavAutomationDialog {
 
@@ -119,9 +120,11 @@ internal object SettingsNavAutomationDialog {
     private const val DEFAULT_START = 7 * 60
     private const val DEFAULT_END = 9 * 60
 
+    /** Mã giả chỉ để hỏi [ScheduledNavRules.of] "bản nháp này lưu được không" — không bao giờ được lưu. */
+    private const val CHECK_ID = "draft"
+
     /**
-     * Mở hộp. [onOk] nhận [Draft] **thô**: mọi phép kiểm (khung qua đêm · thứ rỗng · giờ ngoài dải) là việc của
-     * `:core`, nên hộp này không giữ một luật nào — xem KDoc [SettingsNavAutomationSection.edit].
+     * Mở hộp. [onOk] nhận [Draft] **thô**: mọi phép kiểm là việc của `:core` — xem KDoc [SettingsNavAutomationSection.edit].
      *
      * @param initial luật đang sửa, `null` = thêm mới.
      * @param places sổ địa chỉ của hồ sơ đang dùng — **đã được chỗ gọi bảo đảm là không rỗng**.
@@ -137,168 +140,157 @@ internal object SettingsNavAutomationDialog {
         onDelete: (() -> Unit)? = null,
         onOk: (Draft) -> Unit,
     ) {
-        val pad = KachiTheme.dpi(context, KachiSpace.M)
-        val enabled = CheckBox(context).apply {
-            text = context.getString(R.string.kachi_nav_auto_enabled)
-            isChecked = initial?.enabled ?: true
+        var handle: KachiDialog.Handle? = null
+        var refresh: () -> Unit = {}
+
+        // Mặc định BẬT GPS cho luật mới: usecase gốc là xe đỗ trong hầm (R2.4). Mặc định tắt thì lần dùng đầu tiên
+        // sẽ dẫn trong hầm và người dùng kết luận tính năng hỏng.
+        val enabled = KachiFormControls.toggle(context, context.getString(R.string.kachi_nav_auto_enabled),
+            initial?.enabled ?: true) { refresh() }
+        val gps = KachiFormControls.toggle(context, context.getString(R.string.kachi_nav_auto_gps),
+            initial?.requireGps ?: true) { refresh() }
+        val wheel = TimeWheel(context, initial?.startMin ?: DEFAULT_START, initial?.endMin ?: DEFAULT_END) { refresh() }
+
+        // Thứ: khoá là THỨ ISO (không phải chỉ số) ⇒ không có phép đổi chỉ số nào để lệch.
+        val days = (initial?.days ?: ScheduledNavRules.WEEKDAYS).toMutableSet()
+        val dayChips = ScheduledNavRules.ALL_DAYS.sorted().associateWith { dow ->
+            KachiFormControls.roundChip(context, context.getString(SettingsNavAutomationFormat.dayLabel(dow))) {
+                if (!days.remove(dow)) days += dow
+                refresh()
+            }
         }
-        val start = timeField(context, initial?.startMin ?: DEFAULT_START)
-        val end = timeField(context, initial?.endMin ?: DEFAULT_END)
-        val dayBoxes = dayBoxes(context, initial?.days ?: ScheduledNavRules.WEEKDAYS)
-        val gps = CheckBox(context).apply {
-            text = context.getString(R.string.kachi_nav_auto_gps)
-            // Mặc định BẬT cho luật mới: usecase gốc là xe đỗ trong hầm (R2.4). Mặc định tắt thì lần dùng đầu
-            // tiên sẽ dẫn trong hầm và người dùng kết luận tính năng hỏng.
-            isChecked = initial?.requireGps ?: true
+        val presetChips = DayPreset.entries.associateWith { p ->
+            KachiFormControls.chip(context, context.getString(presetLabel(p))) {
+                days.clear()
+                days += p.days
+                refresh()
+            }
         }
-        // Điểm đến + app: hai dãy nút một-dòng-một-lựa-chọn. KHÔNG `Spinner` — [ĐO] dự án đã bỏ `Spinner` khỏi
-        // Settings từ IA v2 (chip/nút có đích chạm ≥ TOUCH, `Spinner` thì mở một cửa sổ thả xuống thứ hai).
+
+        // Điểm đến: thẻ chọn-một. KHÔNG `Spinner` — [ĐO] dự án đã bỏ `Spinner` khỏi Settings từ IA v2 (nó mở một cửa
+        // sổ thả xuống thứ hai — đúng thứ "hộp chồng hộp" ở trên).
         val placeIds = places.map { ScheduledNavRules.placeIdOf(it) }
-        val placePick = Picker(context, places.map { it.name }, placeIds.indexOf(initial?.placeId).coerceAtLeast(0))
-        // Khoá app lấy từ `:core` (nguồn sự thật), NHÃN tra tài nguyên launcher — xem KDoc
-        // [SettingsNavAutomationFormat.navAppLabel] về vì sao không đọc `VoiceAppTarget.label`.
+        var placeAt = placeIds.indexOf(initial?.placeId).coerceAtLeast(0)
+        val placeCards = places.mapIndexed { i, p ->
+            KachiFormControls.selectCard(context, p.name, p.query) { placeAt = i; refresh() }
+        }
+
+        // App: NHIỀU lựa chọn (owner 2026-09-24 — tới giờ mở cả hai). Khoá lấy từ `:core`, NHÃN tra tài nguyên
+        // launcher ([SettingsNavAutomationFormat.navAppLabel]). Luật mới ⇒ tick sẵn app đầu tiên (đỡ luật trống app).
         val appKeys = VoiceAppTargets.NAV.map { it.key }
-        // Multi-choice (owner 2026-09-24): chọn NHIỀU app dẫn đường (gmaps + vietmap) — tới giờ mở cả hai. Dùng
-        // checkbox như dãy THỨ, không Picker chọn-một. Mặc định tick app đầu tiên nếu luật mới (đỡ luật trống app).
-        val initialApps = initial?.navApps?.toSet() ?: setOf(appKeys.firstOrNull().orEmpty())
-        val appBoxes: Map<String, CheckBox> = appKeys.associateWith { key ->
-            CheckBox(context).apply {
-                text = SettingsNavAutomationFormat.navAppLabel(context, key)
-                setTextColor(KachiTheme.c(KachiTheme.INK))
-                isChecked = key in initialApps
+        val apps = (initial?.navApps ?: listOfNotNull(appKeys.firstOrNull())).toMutableSet()
+        val appChips = appKeys.associateWith { key ->
+            KachiFormControls.chip(context, SettingsNavAutomationFormat.navAppLabel(context, key), appIcon(context, key)) {
+                if (!apps.remove(key)) apps += key
+                refresh()
             }
         }
 
-        val body = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad, pad, 0)
-            addView(enabled)
-            addView(label(context, R.string.kachi_nav_auto_window))
-            addView(LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                addView(start, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                addView(TextView(context).apply {
-                    text = " – "
-                    setTextColor(KachiTheme.c(KachiTheme.MUT))
-                })
-                addView(end, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            })
-            addView(label(context, R.string.kachi_nav_auto_days))
-            addView(dayRow(context, dayBoxes))
-            addView(gps)
-            addView(label(context, R.string.kachi_nav_auto_place))
-            addView(placePick.view)
-            addView(label(context, R.string.kachi_nav_auto_app))
-            appBoxes.values.forEach { addView(it) }
+        val error = KachiDialogs.caption(context, context.getString(R.string.kform_sched_invalid)).apply {
+            setTextColor(KachiTheme.c(KachiTheme.RED))
+            visibility = View.GONE
         }
-        AlertDialog.Builder(context)
-            .setTitle(title)
-            // Cuộn: bảy ô tick + hai dãy nút vượt chiều cao hộp trên màn xe 720px ⇒ không cuộn thì nút Lưu của
-            // `AlertDialog` bị đẩy ra ngoài và người dùng không lưu được (cùng bệnh "hàng nút bị cắt đáy" mà
-            // `GroupTileView.onMeasure` đã gặp ở U5).
-            .setView(ScrollView(context).apply { addView(body) })
-            .setPositiveButton(context.getString(R.string.kachi_save)) { _, _ ->
-                onOk(
-                    Draft(
-                        enabled = enabled.isChecked,
-                        // Giờ gõ sai ⇒ đưa **−1** xuống `:core`, để chính `of()` từ chối và chỗ gọi nói ra. Lùi
-                        // về một giá trị mặc định ở đây sẽ lưu một khung giờ người dùng KHÔNG gõ, im lặng.
-                        startMin = SettingsNavAutomationFormat.parseHhmm(start.text.toString()) ?: -1,
-                        endMin = SettingsNavAutomationFormat.parseHhmm(end.text.toString()) ?: -1,
-                        days = dayBoxes.filterValues { it.isChecked }.keys,
-                        requireGps = gps.isChecked,
-                        placeId = placeIds.getOrElse(placePick.chosen) { "" },
-                        navApp = appBoxes.filterValues { it.isChecked }.keys.joinToString("+"),
-                    ),
-                )
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .also { b ->
-                onDelete?.let { del -> b.setNeutralButton(context.getString(R.string.kachi_delete)) { _, _ -> del() } }
-            }
-            .show()
+
+        fun draft() = Draft(
+            enabled = enabled.on,
+            startMin = wheel.start,
+            endMin = wheel.end,
+            days = days.toSet(),
+            requireGps = gps.on,
+            placeId = placeIds.getOrElse(placeAt) { "" },
+            // Thứ tự theo bảng `:core`, không theo thứ tự chạm ⇒ chuỗi lưu ổn định.
+            navApp = appKeys.filter { it in apps }.joinToString("+"),
+        )
+
+        fun summary(): String {
+            val d = draft()
+            val dayText = if (d.days.isEmpty()) context.getString(R.string.kform_sched_no_days)
+            else SettingsNavAutomationFormat.days(context, d.days)
+            val appText = appKeys.filter { it in apps }
+                .joinToString(" + ") { SettingsNavAutomationFormat.navAppLabel(context, it) }
+                .ifEmpty { context.getString(R.string.kform_sched_no_app) }
+            val line = context.getString(
+                R.string.kform_sched_summary,
+                dayText,
+                SettingsNavAutomationFormat.hhmm(d.startMin),
+                SettingsNavAutomationFormat.hhmm(d.endMin),
+                places.getOrNull(placeAt)?.name.orEmpty(),
+                appText,
+            )
+            return if (d.enabled) line else context.getString(R.string.kachi_nav_auto_row_off, line)
+        }
+
+        fun paint() {
+            dayChips.forEach { (dow, chip) -> chip.on = dow in days }
+            val preset = DayPreset.matching(days)
+            presetChips.forEach { (p, chip) -> chip.on = p == preset }
+            placeCards.forEachIndexed { i, card -> card.on = i == placeAt }
+            appChips.forEach { (key, chip) -> chip.on = key in apps }
+        }
+
+        refresh = {
+            paint()
+            handle?.setSubtitle(summary())
+            handle?.revalidate()
+        }
+        paint()
+
+        handle = KachiDialogs.form(
+            context,
+            title = title,
+            subtitle = summary(),
+            icon = R.drawable.ic_clock_g,
+            body = listOf(
+                enabled.view,
+                KachiFormControls.heading(context, context.getString(R.string.kachi_nav_auto_window)),
+                wheel.view,
+                error,
+                KachiFormControls.heading(context, context.getString(R.string.kachi_nav_auto_days)),
+                KachiFormControls.flow(context, dayChips.values.toList()),
+                KachiFormControls.flow(context, presetChips.values.toList()),
+                KachiFormControls.heading(context, context.getString(R.string.kachi_nav_auto_place)),
+                stack(context, placeCards.map { it.view }),
+                KachiFormControls.heading(context, context.getString(R.string.kachi_nav_auto_app)),
+                KachiFormControls.flow(context, appChips.values.toList()),
+                gps.view,
+            ),
+            primaryLabel = context.getString(R.string.kachi_save),
+            validate = {
+                val d = draft()
+                val ok = ScheduledNavRules.of(CHECK_ID, d.enabled, d.startMin, d.endMin, d.days, d.requireGps,
+                    d.placeId, d.navApp) != null
+                error.visibility = if (ok) View.GONE else View.VISIBLE
+                ok
+            },
+            dangerLabel = onDelete?.let { context.getString(R.string.kachi_delete) },
+            onDanger = onDelete,
+        ) { onOk(draft()) }
     }
 
-    private fun label(context: Context, res: Int) = TextView(context).apply {
-        text = context.getString(res)
-        setTextColor(KachiTheme.c(KachiTheme.MUT))
-        KachiType.apply(this, KachiType.CAPTION)
+    private fun presetLabel(p: DayPreset): Int = when (p) {
+        DayPreset.WEEKDAYS -> R.string.kform_days_weekdays
+        DayPreset.WEEKEND -> R.string.kform_days_weekend
+        DayPreset.EVERYDAY -> R.string.kform_days_every
     }
-
-    private fun timeField(context: Context, minOfDay: Int) = EditText(context).apply {
-        setText(SettingsNavAutomationFormat.hhmm(minOfDay))
-        // `TYPE_CLASS_DATETIME | VARIATION_TIME` cho bàn phím số có dấu `:` — gõ giờ trong xe bằng bàn phím chữ
-        // đầy đủ là ba lần chuyển bảng cho bốn chữ số.
-        inputType = InputType.TYPE_CLASS_DATETIME or InputType.TYPE_DATETIME_VARIATION_TIME
-    }
-
-    /** Bảy ô tick, khoá là **thứ ISO** (không phải chỉ số) ⇒ không có phép đổi chỉ số nào để lệch. */
-    private fun dayBoxes(context: Context, checked: Set<Int>): Map<Int, CheckBox> =
-        ScheduledNavRules.ALL_DAYS.sorted().associateWith { dow ->
-            CheckBox(context).apply {
-                text = context.getString(SettingsNavAutomationFormat.dayLabel(dow))
-                isChecked = dow in checked
-            }
-        }
-
-    /** Bảy ô trên MỘT hàng ngang, chia đều — vừa màn xe và đọc ra ngay là "một tuần". */
-    private fun dayRow(context: Context, boxes: Map<Int, CheckBox>): View =
-        LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            boxes.values.forEach { box ->
-                addView(box, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            }
-        }
 
     /**
-     * Dãy nút chọn-một trong hộp thoại: mỗi lựa chọn một hàng, hàng đang chọn tô nền nhấn.
-     *
-     * Dùng [SettingsRows.chipRow] thì phải dựng một [SettingsRows] mới bên trong hộp (nó nhận `Context` và mang
-     * lề **stack của trang Cài đặt** — sai ngữ cảnh trong một hộp thoại). Đây là bản gọn cho đúng bối cảnh hộp,
-     * và nó **không** dựng một hình dạng nút thứ hai: nền lấy đúng `KachiTheme.gradient`/`card` mà chip đang dùng.
+     * Icon của app dẫn đường nếu máy có cài một gói của nó (tra [VoiceAppTargets.NAV] — nguồn gói duy nhất); không cài
+     * ⇒ `null`, chip chỉ có chữ. Ba lần tra `PackageManager` lúc MỞ hộp, không gì chạy nền.
      */
-    private class Picker(context: Context, labels: List<String>, initial: Int) {
-        var chosen: Int = initial.coerceIn(0, (labels.size - 1).coerceAtLeast(0))
-            private set
-
-        private val items = ArrayList<TextView>(labels.size)
-
-        val view: View = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            labels.forEachIndexed { index, text ->
-                val tv = TextView(context).apply {
-                    this.text = text
-                    gravity = Gravity.CENTER_VERTICAL
-                    KachiType.apply(this, KachiType.BODY)
-                    val p = KachiTheme.dpi(context, KachiSpace.S)
-                    setPadding(KachiTheme.dpi(context, KachiSpace.M), p, KachiTheme.dpi(context, KachiSpace.M), p)
-                    minHeight = KachiTheme.dpi(context, KachiSpace.TOUCH)
-                    setOnClickListener {
-                        chosen = index
-                        paint(context)
-                    }
-                }
-                items += tv
-                addView(
-                    tv,
-                    LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                    ).also { it.bottomMargin = KachiTheme.dpi(context, KachiSpace.XS) },
-                )
-            }
-            paint(context)
-        }
-
-        private fun paint(context: Context) = items.forEachIndexed { index, tv ->
-            val on = index == chosen
-            tv.setTextColor(KachiTheme.c(if (on) KachiTheme.ON_ACCENT else KachiTheme.INK))
-            tv.background = if (on) {
-                KachiTheme.gradient(context, KachiSpace.RADIUS_L)
-            } else {
-                KachiTheme.card(context, KachiSpace.RADIUS_L, KachiTheme.CHIP_OFF)
+    private fun appIcon(context: Context, key: String): Drawable? {
+        val pkgs = VoiceAppTargets.NAV.firstOrNull { it.key == key }?.packages ?: return null
+        for (pkg in pkgs) {
+            try {
+                return context.packageManager.getApplicationIcon(pkg)
+            } catch (_: PackageManager.NameNotFoundException) {
+                // gói này không cài — thử gói kế
             }
         }
+        return null
+    }
+
+    private fun stack(context: Context, views: List<View>): View = LinearLayout(context).apply {
+        orientation = LinearLayout.VERTICAL
+        views.forEachIndexed { i, v -> addView(v, KachiDialog.stackLp(context, top = if (i == 0) 0 else Sp.XS)) }
     }
 }

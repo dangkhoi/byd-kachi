@@ -52,7 +52,14 @@ class VoiceDispatcherSafetyTest {
         var listens = 0
         val dispatcher = VoiceDispatcher(
             control = { port },
-            state = { HomeUiState(profiles = listOf("Mặc định", "Vợ")) },
+            // Xe ĐỖ (0 km/h, P): bài canh cổng HỎI-LẠI, không canh cổng chuyển động. Owner 13/10 *"làm theo luật mới hết đi"*
+            // ⇒ không biết chuyển động = CHẶN mở cốp (tới 3.01 trạng thái rỗng = fail-open, cho mở) — nói rõ xe đứng yên.
+            state = {
+                HomeUiState(
+                    profiles = listOf("Mặc định", "Vợ"),
+                    carStatus = CarStatus(drivetrain = CarStatus.Drivetrain(speedKmh = 0, gear = "P")),
+                )
+            },
             media = { error("bài này không chạm tới nhạc") },
             appsByLabel = { emptyMap() },
             openApp = { false },

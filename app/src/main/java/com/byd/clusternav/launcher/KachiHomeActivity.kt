@@ -93,7 +93,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      * Hình nền + trình chiếu (U4) — tách khỏi Activity để Activity còn là composition-root (xem
      * [WallpaperController]). Lười dựng: cần `wall` đã có mặt.
      */
-    private val wallpaper: WallpaperController by lazy {
+    internal val wallpaper: WallpaperController by lazy {
         WallpaperController(
             ctx = this,
             wall = wall,

@@ -1,0 +1,21 @@
+
+
+    -AUDIO_STREAM_MUSIC (id: 6)
+      Volume Curves Streams/Attributes, Curve points Streams for device category (index, attenuation in millibel)
+       Streams: AUDIO_STREAM_MUSIC(3)  
+       Attributes: { Content type: AUDIO_CONTENT_TYPE_UNKNOWN Usage: AUDIO_USAGE_MEDIA Source: AUDIO_SOURCE_DEFAULT Flags: 0x0 Tags:  }
+                    { Content type: AUDIO_CONTENT_TYPE_UNKNOWN Usage: AUDIO_USAGE_GAME Source: AUDIO_SOURCE_DEFAULT Flags: 0x0 Tags:  }
+                    { Content type: AUDIO_CONTENT_TYPE_UNKNOWN Usage: AUDIO_USAGE_ASSISTANT Source: AUDIO_SOURCE_DEFAULT Flags: 0x0 Tags:  }
+                    { Content type: AUDIO_CONTENT_TYPE_UNKNOWN Usage: AUDIO_USAGE_ASSISTANCE_NAVIGATION_GUIDANCE Source: AUDIO_SOURCE_DEFAULT Flags: 0x0 Tags:  }
+                    { Any }
+       DEVICE_CATEGORY_HEADSET : { (  1, -5800),  ( 20, -4000),  ( 60, -1700),  (100,     0) }
+       DEVICE_CATEGORY_SPEAKER : { (  1, -5800),  ( 20, -4000),  ( 60, -1700),  (100,     0) }
+       DEVICE_CATEGORY_EARPIECE : { (  1, -5800),  ( 20, -4000),  ( 60, -1700),  (100,     0) }
+       DEVICE_CATEGORY_EXT_MEDIA : { (  1, -5800),  ( 20, -4000),  ( 60, -1700),  (100,     0) }
+       DEVICE_CATEGORY_HEARING_AID : { (  1, -12700),  ( 20, -8000),  ( 60, -4000),  (100,     0) }
+        Can be muted  Index Min  Index Max  Index Cur [device : index]...
+        true          00         15         0002 : 10, 40000000 : 05, 
+
+
+    -AUDIO_STREAM_NOTIFICATION (id: 7)
+      Volume Curves Streams/Attributes, Curve points Streams for device category (index, attenuation in millibel)

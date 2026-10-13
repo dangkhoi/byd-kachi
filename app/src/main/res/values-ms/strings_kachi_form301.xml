@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R11/R12 — chữ của hộp Địa chỉ (SettingsPlaceDialog) + Lịch dẫn đường (SettingsNavAutomationDialog,
+     TimeWheel). Tệp riêng, tiền tố kform_ (không kachi_: LauncherI18nContractTest chỉ đọc strings_kachi.xml).
+     Cùng tập khoá ở cả 5 thư mục — KachiFormContractTest canh. -->
+<resources>
+    <string name="kform_place_sub">Digunakan untuk “navigasi ke rumah …” dan jadual</string>
+    <string name="kform_place_name">Nama</string>
+    <string name="kform_place_home">Rumah</string>
+    <string name="kform_place_work">Pejabat</string>
+    <string name="kform_place_school">Sekolah</string>
+    <string name="kform_place_other">Lain-lain</string>
+    <string name="kform_place_advanced">Lanjutan — koordinat</string>
+    <string name="kform_place_coords_bad">Gunakan bentuk 10.7769, 106.7009</string>
+    <string name="kform_sched_start">Mula</string>
+    <string name="kform_sched_end">Tamat</string>
+    <string name="kform_sched_hour_up">Jam naik</string>
+    <string name="kform_sched_hour_down">Jam turun</string>
+    <string name="kform_sched_minute_up">Minit naik</string>
+    <string name="kform_sched_minute_down">Minit turun</string>
+    <string name="kform_sched_invalid">Masa tamat tidak boleh lebih awal daripada masa mula (tiada tetingkap merentas malam); pilih sekurang-kurangnya satu hari dan satu aplikasi.</string>
+    <string name="kform_sched_no_days">tiada hari dipilih</string>
+    <string name="kform_sched_no_app">tiada aplikasi dipilih</string>
+    <string name="kform_sched_summary">%1$s · %2$s–%3$s → %4$s dengan %5$s</string>
+    <string name="kform_days_weekdays">Hari bekerja</string>
+    <string name="kform_days_weekend">Hujung minggu</string>
+    <string name="kform_days_every">Setiap hari</string>
+</resources>

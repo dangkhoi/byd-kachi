@@ -159,7 +159,30 @@ data class ControlDef(
      * một lượt thử hiện trường cần để **chốt nghĩa** (enum chưa rõ, cấu hình xe) — không phải đường đọc của ô.
      */
     val probe: List<HalProbe> = emptyList(),
+    /**
+     * 3.01 R22 — ĐỘNG TỪ ngắn của nút khi nó là MỘT trong nhiều việc làm trên CÙNG một vật (`"50%"` · `"100%"`).
+     *
+     * ## [ĐO] bệnh nó chữa — ảnh owner 13/10 *"nhìn như này nó đâu có OK em, rối mà"*
+     * Nhóm *Kính* bày 11 nút phẳng cùng cỡ (`Kính lái` · `50% lái` · `Kính ST` · `50% ST`…) — thật ra chỉ là HAI việc
+     * lặp lại trên năm vật. Khai động từ thì [GroupActionMatrix] dựng được bảng *vật × việc* (một hàng một vật, nút
+     * thẳng cột) mà không có `if (group == windows)` nào (CLAUDE.md §7): nhóm khác khai động từ là tự có bảng.
+     *
+     * `null` (mặc định) ⇒ nút không thuộc bảng nào ⇒ ở hàng nút như cũ. Vật = [icon] (các nút cùng một vật dùng
+     * chung hình — xem KDoc [GroupActionMatrix]).
+     */
+    val verb: String? = null,
+    /** Động từ tiếng Anh; `null` ⇒ lùi về [verb]. */
+    val verbEn: String? = null,
+    /**
+     * 3.01 R22·B — MỨC (%) mà việc [verb] đặt cho vật (`Mở hẳn` = 100 · `Hé` = 50 · `Đóng` = 0); `null` = việc không
+     * phải một mức. Owner 13/10 bác chữ số trên nút (*"cả mớ số 100% 50% nhìn rối"*) ⇒ động từ là CHỮ, còn mức là DỮ
+     * LIỆU riêng để hình nút chân vẽ kính đầy đúng mức, không phải bóc số từ chuỗi đã dịch.
+     */
+    val verbLevel: Int? = null,
 ) : Localized {
+    /** Động từ theo [Strings.current]; rỗng nếu nút không khai [verb]. */
+    val displayVerb: String get() = verb?.let { Strings.pick(it, verbEn) }.orEmpty()
+
     fun clamp(v: Int): Int = if (kind == ControlKind.STEP) v.coerceIn(min, max) else v
 
     /** Nhãn ngắn tiếng Việt — luôn có giá trị (lùi về [label] khi chưa khai [short]). */

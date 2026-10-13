@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R25 — widget xe 3D: tên widget (contentDescription) + hàng "Màu xe 3D" (Cài đặt › Giao diện › Hình xe; ô màu
+     chỉ có chữ cho trợ năng). Tên màu theo tên dòng `car_body_color.csv` của AVM; dòng lạ ⇒ kcar3d_paint_other. Cùng khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kcar3d_title">3D car</string>
+    <string name="kcar3d_paint_row">3D car colour</string>
+    <string name="kcar3d_paint_white">White</string>
+    <string name="kcar3d_paint_black">Black</string>
+    <string name="kcar3d_paint_grey">Grey</string>
+    <string name="kcar3d_paint_darkblue">Dark blue</string>
+    <string name="kcar3d_paint_purple">Purple</string>
+    <string name="kcar3d_paint_red">Red</string>
+    <string name="kcar3d_paint_smartblue">Blue</string>
+    <string name="kcar3d_paint_green">Green</string>
+    <string name="kcar3d_paint_blue">Blue</string>
+    <string name="kcar3d_paint_orange">Orange</string>
+    <string name="kcar3d_paint_pink">Pink</string>
+    <string name="kcar3d_paint_silvery">Silver</string>
+    <string name="kcar3d_paint_mountain_grey">Mountain grey</string>
+    <string name="kcar3d_paint_tianshan_white">Tianshan white</string>
+    <string name="kcar3d_paint_other">Colour %1$s</string>
+    <string name="kcar3d_bg_row">3D car background</string>
+    <string name="kcar3d_bg_none">No image</string>
+    <string name="kcar3d_bg_align">Align background</string>
+    <string name="kcar3d_bg_align_note">Close Settings, drag to move and pinch to zoom the image behind the 3D car, then tap Done.</string>
+    <string name="kcar3d_bg_empty">No images in the wallpaper folder yet: %1$s</string>
+    <string name="kcar3d_paint_steel">Steel blue-grey</string>
+    <string name="kcar3d_tyres_row">Show tyre readings</string>
+    <string name="kcar3d_tyres_sub">Pressure and temperature under each wheel of the 3D car</string>
+    <string name="kcar3d_step_down">%1$s: lower</string>
+    <string name="kcar3d_step_up">%1$s: raise</string>
+</resources>

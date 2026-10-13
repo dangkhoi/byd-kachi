@@ -130,11 +130,11 @@ class CompositeWidgetLayoutContractTest {
         }
     }
 
-    // ══ 2 · một TRỤC: con số ở trục ô (ô dựng bằng TextView) ══════════════════════════════════════════════════
+    // ══ 2 · một TRỤC: cụm số + đơn vị cân giữa trục ô (ô dựng bằng TextView) ═══════════════════════════════════
 
     /**
-     * Bốn chỗ dựng `số + đơn vị` bằng `TextView` phải đi qua [AxisRow]. `LinearLayout(HORIZONTAL) + gravity =
-     * CENTER` canh giữa CẢ CỤM ⇒ con số lệch trục so với nhãn/chú thích của chính ô đó.
+     * Bốn chỗ dựng `số + đơn vị` bằng `TextView` phải đi qua [AxisRow] — MỘT chỗ quyết hình học (kẹp lề, đo đơn vị
+     * trước). `LinearLayout(HORIZONTAL) + gravity = CENTER` không kẹp được cụm vào lề và là đường canh thứ hai.
      */
     @Test
     fun `bon cho dung so + don vi deu qua AxisRow, khong con hang canh giua ca cum`() {
@@ -152,6 +152,22 @@ class CompositeWidgetLayoutContractTest {
                 "$name: còn một hàng ngang tự canh giữa ⇒ con số lại lệch trục",
             )
         }
+    }
+
+    /**
+     * 3.01 R20 — owner 13/10: *"cái chỉ số nó có bị lệch phải không? phải canh sao cho nó cân đối hết nhé"*. [ĐO] luật
+     * UX7 cũ đặt riêng CON SỐ ở trục, `" km"` treo phải ⇒ khối nhìn thấy lệch phải `(khe + đơn vị)/2`. Nay [AxisRow]
+     * đưa cho [CellTextLayout.lineStartX] bề rộng của CẢ KHỐI (số + khe + đơn vị) và hàm đó cân giữa khối (số học
+     * khoá ở `CellTextLayoutTest`). Chỉ truyền bề rộng con số (luật cũ) là đỏ.
+     */
+    @Test
+    fun `AxisRow can giua CA KHOI so + don vi, khong con dat rieng con so o truc (owner 13-10)`() {
+        val layout = SourceRoots.body(axis, "override fun onLayout(")
+        assertTrue(
+            Regex("""lineWidth\s*=\s*\(\s*anchor\.measuredWidth\s*\+\s*gap\s*\+\s*trailW\s*\)""").containsMatchIn(layout),
+            "lineStartX phải nhận bề rộng CẢ KHỐI số + khe + đơn vị",
+        )
+        assertFalse(layout.contains("anchorWidth"), "neo theo bề rộng CON SỐ = luật UX7 cũ (khối lệch phải)")
     }
 
     /** [AxisRow] KHÔNG được tự tính trục — nó chỉ là vỏ `ViewGroup` quanh [CellTextLayout.lineStartX]. */

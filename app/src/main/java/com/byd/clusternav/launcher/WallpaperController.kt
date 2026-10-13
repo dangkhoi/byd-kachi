@@ -67,17 +67,15 @@ class WallpaperController(
         // dùng gặp vòng lặp chết — muốn thấy ảnh phải bật, muốn bật có nghĩa phải bỏ ảnh vào trước, mà thư mục lại
         // chưa tồn tại để mà bỏ vào.
         if (!prefs().enabled) {
-            wall.setPhoto(null)
-            release()
             wallImages = emptyList()
             // [SOÁT P1-3] Phải HUỶ luôn lượt giải mã đang bay. Trước bản vá này chỗ này chỉ tăng thẻ QUÉT, nên một
             // lượt giải mã bắt đầu TRƯỚC khi tắt vẫn về sau và gọi `wall.setPhoto(next…)` ⇒ **ảnh quay trở lại** sau
             // khi người dùng đã tắt, và ở đó tới lần nạp kế tiếp. Cùng loại hồi quy thẻ-thế-hệ đã vá trước đó, chỉ
             // đổi hướng ⇒ tăng thẻ GIẢI MÃ + nhả chốt đang-nạp.
+            // [SOÁT P1-3] huỷ lượt giải mã đang bay (về muộn sẽ vẽ lại ảnh sau khi người dùng đã tắt).
             wallDecodeGen++
-            wallLoading = null
-            // P1b: tắt hình nền ⇒ hết kính. Dựng lại nền các thẻ TRƯỚC rồi mới nhả ảnh mờ (drawable cũ còn trỏ tới nó).
-            WallArtStore.clear()?.let { old -> onArtChanged(); old.blurred.recycle() }
+            // 3.01 R22: tắt ảnh của người dùng ⇒ về NỀN MẶC ĐỊNH của Kachi (không còn nền phẳng không kính).
+            showDefault()
         }
         // [SOÁT P2-2] Tạo thư mục + quét thư mục + giải mã ảnh đều là I/O. Trước đây cả ba chạy trên thread chính
         // NGAY trong lúc về màn chính ⇒ đứng hình mỗi lần về HOME. Nay đẩy sang thread nền có sẵn (cùng nơi các
@@ -122,7 +120,7 @@ class WallpaperController(
                 ).show()
                 }
             }
-            wall.setPhoto(null)
+            showDefault()   // 3.01 R22: bật mà chưa có ảnh ⇒ nền mặc định (trước: nền phẳng)
             return
         }
         val before = slide
@@ -154,6 +152,7 @@ class WallpaperController(
                 }
                 val old = wallBitmap
                 wallBitmap = next
+                defaultNight = null
                 wall.setPhoto(next, prefs().fit, prefs().dim)
                 Log.i("Wallpaper", "đã nạp ảnh $shown/$total (${next.width}×${next.height})")
                 // Nhả ảnh CŨ sau khi đã đưa ảnh mới vào View — nhả trước thì lần vẽ kế tiếp dùng ảnh đã thu hồi và sập.
@@ -219,6 +218,42 @@ class WallpaperController(
     private fun wallReqW(): Int = maxOf(wall.width, ctx.resources.displayMetrics.widthPixels, 1)
 
     private fun wallReqH(): Int = maxOf(wall.height, ctx.resources.displayMetrics.heightPixels, 1)
+
+    /** Bảng (Tối?) của NỀN MẶC ĐỊNH đang hiện; `null` = đang hiện ảnh người dùng / chưa có gì. */
+    private var defaultNight: Boolean? = null
+
+    /**
+     * 3.01 R22 — hiện NỀN MẶC ĐỊNH ([WallDefault]) theo bảng đang dùng, qua đúng đường của ảnh người dùng (ảnh hiện +
+     * [WallArtStore] cho kính). Đã hiện đúng bảng ⇒ không làm gì. Dựng ở thread nền; thẻ giải mã chặn lượt về muộn.
+     */
+    private fun showDefault() {
+        val night = KachiTheme.night
+        if (defaultNight == night && wall.hasPhoto()) return
+        val gen = ++wallDecodeGen
+        wallLoading = null
+        val reqW = wallReqW(); val reqH = wallReqH()
+        submitIo {
+            val built = WallDefault.build(night, reqW, reqH)
+            onUi {
+                if (gen != wallDecodeGen || gone() || built == null) {
+                    built?.first?.recycle(); built?.second?.blurred?.recycle(); return@onUi
+                }
+                val old = wallBitmap
+                wallBitmap = built.first
+                defaultNight = night
+                wall.setPhoto(built.first, ImageFit.FILL, 0)
+                old?.recycle()
+                val oldArt = WallArtStore.swap(built.second, true)
+                onArtChanged()
+                oldArt?.blurred?.recycle()
+            }
+        }
+    }
+
+    /** Đổi Sáng/Tối tại chỗ — nền mặc định đang hiện thì dựng lại theo bảng mới (ảnh người dùng thì giữ nguyên). */
+    fun onThemeChanged() {
+        if (defaultNight != null && defaultNight != KachiTheme.night) showDefault()
+    }
 
     fun release() {
         wallBitmap?.recycle()

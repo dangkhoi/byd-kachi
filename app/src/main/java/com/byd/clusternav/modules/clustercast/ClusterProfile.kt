@@ -7,6 +7,7 @@ import com.byd.clusternav.launcher.escape.EscapeReturnApi
 import com.byd.clusternav.launcher.escape.TaskBinderCodes
 import com.byd.clusternav.modules.navaccess.AccessibilityRebind
 import com.byd.clusternav.SysProps
+import com.byd.clusternav.modules.clustercast.simplified.CastContentShift
 import com.byd.clusternav.modules.clustercast.simplified.CastStyle
 import com.byd.clusternav.modules.clustercast.simplified.ClusterCarType
 import com.byd.clusternav.modules.clustercast.simplified.ProjectionRecipe
@@ -158,8 +159,18 @@ data class ClusterProfile(
      * `styleOps` trước đây là trường CHẾT với đường đó (`ProjectionManager` ghi cứng 30-16-35). Seal DL3 ra đúng chuỗi cũ;
      * opcode cấm (17, 41 — ghi bền) bị lọc; opcode theme chỉ đi qua cổng `ClusterThemeGuard` + `ClusterStylePlan`.
      */
-    fun projectionRecipe(): ProjectionRecipe =
-        ProjectionRecipe.of(svcName, castSeq, teardownSeq, styleOps, nativeStyle, themeOnVacantVd)
+    fun projectionRecipe(sdkInt: Int = android.os.Build.VERSION.SDK_INT): ProjectionRecipe =
+        ProjectionRecipe.of(
+            svcName, castSeq, teardownSeq, styleOps, nativeStyle, themeOnVacantVd,
+            supportsOverscan = supportsOverscan && CastContentShift.usableOn(sdkInt),
+        )
+
+    /**
+     * 3.1 · R6 — đời xe có lệnh `wm overscan` (bước "Dịch nội dung"): DiLink < 5 (Android 10). DiLink 5 = Android 12 — [ĐO source
+     * A11/A12] lệnh đã gỡ, khớp [SUY dữ liệu cũ] DashCast CHANGELOG DL5 *"Unknown command: overscan"*. Khác biệt đời xe nằm ở đây
+     * (CLAUDE.md §7); API lúc chạy chặn thêm ở [projectionRecipe]. App nào ăn hay không thì ĐO lúc chạy, không khai ở đây.
+     */
+    val supportsOverscan: Boolean get() = diLink < 5
 
     /** Mô tả ngắn cho UI. */
     fun summary(): String =

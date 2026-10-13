@@ -107,7 +107,10 @@ object CastGeometryGuard {
         return raw.takeIf { raw.split(',').all { it.toInt() in -OVERSCAN_ABS_MAX..OVERSCAN_ABS_MAX } }
     }
 
-    /** Bốn số không âm `l,t,r,b` với `l<r`, `t<b`, mọi số ≤ [DIMENSION_MAX]; mọi thứ khác ⇒ `null`. */
+    /**
+     * Bốn số không âm `l,t,r,b` với `l<r`, `t<b`, mọi số ≤ [DIMENSION_MAX]; mọi thứ khác ⇒ `null`. 3.1 · R7: khung TRÀN
+     * (`r > W`, `b > H`, tối đa [overflowMax]) vẫn hợp lệ ở đây — chốt không biết kích cụm, chỉ canh dạng + trần cứng.
+     */
     fun bounds(raw: String?): CastBounds? {
         if (raw == null || !BOUNDS_RE.matches(raw)) return null
         val (l, t, r, b) = raw.split(',').map { it.toInt() }
@@ -223,18 +226,43 @@ object CastGeometryGuard {
      * Review 2.89 Pass 3 · cluster-r2-1 — như trên nhưng dải Y là `[bandTop, bandBottom]` (một nửa / khung tuỳ ý). 2.90 · R4: mọi
      * chỗ gọi đều truyền `0..H` (không còn vùng chừa) — `bandTop = 0` ⇒ đúng phép 4 tham số từng số.
      */
-    fun clampBounds(bounds: CastBounds, bandMin: Int, bandMax: Int, bandTop: Int, bandBottom: Int): CastBounds {
+    fun clampBounds(bounds: CastBounds, bandMin: Int, bandMax: Int, bandTop: Int, bandBottom: Int): CastBounds =
+        clampBounds(bounds, bandMin, bandMax, bandTop, bandBottom, maxRight = bandMax, maxBottom = bandBottom)
+
+    /**
+     * 3.1 · R7 (spec `kachi-301-cast-steps-dialog-ia.html` §2.2) — như trên, nhưng mép PHẢI được tới [maxRight] và mép DƯỚI tới
+     * [maxBottom] (≥ biên của dải): khung TRÀN ra ngoài cụm để giấu thanh dưới/cạnh của app.
+     *
+     * Vì sao chỉ phải/dưới: [ĐO source A10 r47] `ActivityManagerShellCommand.getBounds()` :2488–2513 từ chối `left`/`top` âm
+     * ("Error: bad top arg") nhưng không chặn `right > W`, `bottom > H`. Mép trái/trên vẫn kẹp trong dải, và trái/trên còn phải
+     * chừa [MIN_SPAN] TRONG dải — khung không bao giờ trượt hẳn ra ngoài cụm (app biến mất, CLAUDE.md §4). Trần cứng
+     * [DIMENSION_MAX] giữ bất biến [boundsOk] (bản ghi lưu lại vẫn qua được chốt [bounds]/[isShellSafe]).
+     */
+    fun clampBounds(
+        bounds: CastBounds, bandMin: Int, bandMax: Int, bandTop: Int, bandBottom: Int, maxRight: Int, maxBottom: Int,
+    ): CastBounds {
         val hi = bandMax.coerceAtLeast(bandMin)
         val lo = bandTop.coerceAtLeast(0)
         val bottomMax = bandBottom.coerceAtLeast(lo)
+        val rightCap = maxRight.coerceIn(hi, DIMENSION_MAX.coerceAtLeast(hi))
+        val bottomCap = maxBottom.coerceIn(bottomMax, DIMENSION_MAX.coerceAtLeast(bottomMax))
         val spanX = MIN_SPAN.coerceAtMost(hi - bandMin)
         val spanY = MIN_SPAN.coerceAtMost(bottomMax - lo)
         val left = bounds.left.coerceIn(bandMin, hi - spanX)
-        val right = bounds.right.coerceIn(left + spanX, hi)
+        val right = bounds.right.coerceIn(left + spanX, rightCap)
         val top = bounds.top.coerceIn(lo, bottomMax - spanY)
-        val bottom = bounds.bottom.coerceIn(top + spanY, bottomMax)
+        val bottom = bounds.bottom.coerceIn(top + spanY, bottomCap)
         return CastBounds(left, top, right, bottom)
     }
+
+    /**
+     * 3.1 · R7 — trần tràn của một cạnh cụm dài [frame] px: thêm [OVERFLOW_PCT] % (owner duyệt "+50 % kích cụm"). 1920 → 2880,
+     * 720 → 1080 — đủ giấu thanh dưới của app, không đủ để một khung lưu sai đẩy cả app ra khỏi cụm.
+     */
+    fun overflowMax(frame: Int): Int = (frame + frame * OVERFLOW_PCT / 100).coerceAtMost(DIMENSION_MAX)
+
+    /** Phần trăm tràn tối đa của mép phải/dưới so với kích cụm ([overflowMax]). */
+    const val OVERFLOW_PCT = 50
 
     /** Cạnh nhỏ nhất còn nhìn thấy được — dưới mức này thì app coi như biến mất khỏi cụm. */
     const val MIN_SPAN = 80

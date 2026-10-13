@@ -51,9 +51,10 @@ class KeyCtlWiringContractTest {
         assertTrue(mk.contains("control = { AppContainer.get(app).carControl }"), "cùng cổng xe (WakeOnWriteControl) với ô/giọng nói")
         assertTrue(mk.contains("freshCar = { id -> fresh(app, id) }"), "cổng tốc độ phải đọc TƯƠI, không ảnh chụp cũ")
         val run = SourceRoots.body(dispatch, "fun run(f: KeyCtlThrottle.Step.Fire)")
-        // SOÁT vòng 1 · P1 (đổi chốt có lý do): `KeyCtlPlan.of` nay BẮT BUỘC nguồn vận tốc — CHÍNH nguồn của cổng thi hành
-        // (`VoiceControlDispatch.speedKmh`), để Đảo cốp từ trí nhớ lúc xe chạy lùi về ĐÓNG thay vì kẹt MỞ-bị-chặn.
-        assertTrue(run.contains("KeyCtlPlan.of(def, f.target, f.count, speedKmh = controls::speedKmh)"))
+        // SOÁT vòng 1 · P1 (đổi chốt có lý do): `KeyCtlPlan.of` BẮT BUỘC nguồn chuyển động — CHÍNH nguồn của cổng thi hành,
+        // để Đảo cốp từ trí nhớ lúc xe chạy lùi về ĐÓNG thay vì kẹt MỞ-bị-chặn. 3.01 owner 13/10: vận tốc → `motion` (tốc độ
+        // + số, fail-safe — `VoiceControlDispatch.motion` = `CtlSafetyPolicy.readMotion`, cùng phép đọc với cổng chạm).
+        assertTrue(run.contains("KeyCtlPlan.of(def, f.target, f.count, motion = controls::motion)"))
         assertTrue(run.contains("controls.run(o.intent)"))
         // Không có lệnh ghi HAL nào viết tay trong tệp phím.
         listOf(".toggle(", ".cover(", ".coverLevel(", ".select(", "actByKind(", "HalBindingTable", "featureSet", "namedInt")
@@ -89,17 +90,17 @@ class KeyCtlWiringContractTest {
     @Test
     fun `KC5 - Cai dat sinh nhom va viec tu core, nhan ctl khong hien ma tho`() {
         val add = SourceRoots.body(section, "private fun addBinding()")
-        assertTrue(add.contains("pickTarget {"), "bước 2 phải qua bộ chọn loại đích")
-        val pick = SourceRoots.body(section, "private fun pickTarget(onSpec: (String) -> Unit)")
+        assertTrue(add.contains("targetStep {"), "bước 2 phải qua bộ chọn loại đích")  // QA-301 D3: bước của hộp nhiều bước
+        val pick = SourceRoots.body(section, "private fun targetStep(onSpec: (String) -> Unit)")
         assertTrue(pick.contains("KeyCtlTargets.groups()"), "nhóm SINH từ registry, không chép tay")
         // 2.93 · CAMERA-ON-DEMAND: loại đích thứ hai là *Camera theo yêu cầu* ⇒ nhóm xe dời một chỉ số (kind − 2).
-        assertTrue(pick.contains("pickApp(onSpec)") && pick.contains("pickControl(groups[kind - 2], onSpec)"))
-        assertTrue(pick.contains("1 -> pickCamera(onSpec)"), "loại đích camera phải nối vào bộ chọn camera")
-        val cam = SourceRoots.body(section, "private fun pickCamera(onSpec: (String) -> Unit)")
+        assertTrue(pick.contains("appStep(onSpec)") && pick.contains("controlStep(groups[kind - 2], onSpec)"))
+        assertTrue(pick.contains("1 -> cameraStep(onSpec)"), "loại đích camera phải nối vào bộ chọn camera")
+        val cam = SourceRoots.body(section, "private fun cameraStep(onSpec: (String) -> Unit)")
         assertTrue(cam.contains("CameraDemand.KEY_OPS") && cam.contains("CameraDemand.keySpec(ops[i])"),
             "đích camera SINH từ `:core` (danh sách + mã bền), không chép tay `cam:…`")
         assertTrue("\"cam:" !in section, "mã `cam:` không được chép trần trong Cài đặt")
-        val ctl = SourceRoots.body(section, "private fun pickControl(group: KeyCtlGroup, onSpec: (String) -> Unit)")
+        val ctl = SourceRoots.body(section, "private fun controlStep(group: KeyCtlGroup, onSpec: (String) -> Unit)")
         assertTrue(ctl.contains("KeyCtlTargets.displayLabel(it)") && ctl.contains("onSpec(group.targets[i].spec)"))
         val lbl = SourceRoots.body(section, "private fun targetLabel(spec: String, targets: List<TargetOption>): String")
         assertTrue(lbl.contains("KeyCtlTargets.displayLabelOf(spec)"), "dòng đã gán hiện 'Gió +1', không 'ctl:fan:+1'")

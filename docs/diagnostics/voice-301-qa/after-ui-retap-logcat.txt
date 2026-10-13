@@ -1,0 +1,11 @@
+10-13 10:12:26.866 I/KachiVoiceTiming(11437): sẵn sàng nghe sau 779 ms kể từ lúc bấm
+10-13 10:12:26.902 I/KachiVoiceTiming(11437): mic mở sau 35 ms
+10-13 10:12:26.920 I/KachiVoiceDuck(11437): hạ nhạc khi nghe: 10 → 6 (đích 6)
+10-13 10:12:26.920 I/KachiVoiceTiming(11437): hạ nhạc 16 ms (luồng nền)
+10-13 10:12:28.140 I/KachiVoiceTiming(11437): hết trần: duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=1200ms cat_con=1200ms bo_dau=0ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_im=
+10-13 10:12:28.141 I/KachiVoiceTiming(11437): nghe 1238 ms
+10-13 10:12:28.141 I/KachiVoiceTiming(11437): bỏ giải mã: lượt này không có tiếng nào (duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=1200ms cat_con=1200ms bo_dau=0ms (nguong=0.45 · toi
+10-13 10:12:28.243 I/KachiVoiceTiming(11437): đóng mic: stop 90 ms · release 12 ms (bíp chạy nền)
+10-13 10:12:28.249 I/KachiVoiceTiming(11437): nền: bíp 0 ms · âm báo ĐÃ TẮT (cầu chì)
+10-13 10:12:28.259 I/KachiVoiceDuck(11437): trả nhạc (release): 6 → 10
+10-13 10:12:28.260 I/KachiVoiceTiming(11437): trả nhạc 15 ms

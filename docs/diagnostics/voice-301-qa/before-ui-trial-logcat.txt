@@ -1,0 +1,8 @@
+# chép từ đầu ra lệnh lượt thử (bộ đệm logcat đã xoay khi pull lại)
+10-13 10:02:26.662 I/KachiVoiceTiming( 1314): sẵn sàng nghe sau 750 ms kể từ lúc bấm
+10-13 10:02:26.733 I/KachiVoiceDuck( 1314): hạ nhạc khi nghe: 10 → 2 (đích 2)
+10-13 10:02:26.733 I/KachiVoiceTiming( 1314): hạ nhạc 15 ms
+10-13 10:02:26.750 I/KachiVoiceTiming( 1314): mic mở sau 87 ms
+10-13 10:02:34.862 I/KachiVoiceDuck( 1314): trả nhạc (release): 2 → 10
+10-13 10:02:34.862 I/KachiVoiceTiming( 1314): trả nhạc 16 ms
+10-13 10:02:34.862 I/KachiVoiceTiming( 1314): đóng mic: stop 61 ms · release 5 ms · trả nhạc 16 ms (bíp chạy nền)

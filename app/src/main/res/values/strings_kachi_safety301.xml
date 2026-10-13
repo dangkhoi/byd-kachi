@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 (owner 13/10): câu báo khi cổng chạm chặn MỞ cốp lúc xe chưa đứng (toast + đọc to) · bước kế đọc to của
+     điểm đèn trên hình xe (R24, contentDescription — không hiện chữ trên màn) · "chỉ xem" của điểm không có nút (3.01 TAPFIX). Cùng tập khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kctl_stop_to_open_trunk">Dừng xe để mở cốp</string>
+    <string name="klight_tap_on">chạm: bật</string>
+    <string name="klight_tap_off">chạm: tắt</string>
+    <string name="klight_view_only">chỉ xem</string>
+</resources>

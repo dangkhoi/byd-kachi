@@ -1,0 +1,26 @@
+### cleanup 2026-10-13 09:36:02
+--- display_settings.xml after overscan reset (display 1 still present)
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<display-settings>
+<config identifier="0" />
+<display name="overlay:1" />
+</display-settings>
+Deleted 1 rows
+Deleted 1 rows
+Deleted 1 rows
+overlay_display_devices=null
+enable_freeform_support=null
+force_resizable_activities=null
+--- displays after
+  DisplayDeviceInfo{"Built-in Screen": uniqueId="local:0", 1920 x 1080, modeId 1, defaultModeId 1, supportedModes [{id=1, width=1920, height=1080, fps=60.000004}], colorMode 0, supportedColorModes [0], HdrCapabilities android.view.Display$HdrCapabilities@40f16308, density 240, 240.0 x 240.0 dpi, appVsyncOff 1000000, presDeadline 16666666, touch INTERNAL, rotation 0, type BUILT_IN, address {port=0}, state ON, FLAG_DEFAULT_DISPLAY, FLAG_ROTATES_WITH_CONTENT, FLAG_SECURE, FLAG_SUPPORTS_PROTECTED_BUFFERS}
+--- stacks after
+Stack id=4 bounds=[0,0][1920,1080] displayId=0
+Stack id=3 bounds=[0,0][1920,1080] displayId=0
+Stack id=2 bounds=[0,0][1920,1080] displayId=0
+Stack id=0 bounds=[0,0][1920,1080] displayId=0
+--- display_settings.xml final
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<display-settings>
+<config identifier="0" />
+<display name="overlay:1" />
+</display-settings>

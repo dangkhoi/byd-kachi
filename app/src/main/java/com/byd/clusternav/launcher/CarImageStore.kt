@@ -237,7 +237,7 @@ object CarImageStore {
     fun shared(ctx: Context, key: CacheKey): Bitmap? {
         peek(key)?.let { return it }
         shared.remove(key)   // bản cũ đã recycled (phòng hờ) ⇒ bỏ, nạp lại
-        return shared.getOrLoad(key) { loadFeathered(ctx, key.w, key.h) }
+        return shared.getOrLoad(key) { loadFeathered(ctx, key.w, key.h, builtin = key.signature.takeIf(::isBuiltin)) }
     }
 
     /** Thư mục ảnh xe; `null` nếu bộ nhớ ngoài không dùng được. Tự tạo (để người dùng thấy chỗ mà bỏ vào). */
@@ -259,10 +259,30 @@ object CarImageStore {
     /** `true` nếu người dùng đã tự bỏ ảnh vào thư mục (khác với ảnh mặc định đóng theo APK). */
     fun hasUserImage(ctx: Context): Boolean = imageFiles(ctx).isNotEmpty()
 
+    /**
+     * 3.01 R22·R — dấu-vết của ảnh MẶC ĐỊNH. Bảng kính ép dùng ảnh này ([CarImageLayer] `defaultArt = true`): mặt nạ kính
+     * hông ([CarArtPanes]) chỉ đăng ký trên đúng ảnh đó; ảnh riêng người dùng không có toạ độ kính.
+     */
+    const val DEFAULT_SIGNATURE = "default:$DEFAULT_ASSET"
+
+
+    /** 3.01 R23 — tiền tố dấu-vết của ảnh BYD chính hãng ([OemCarArt]); sau nó là khoá [CarArt]. */
+    const val OEM_PREFIX = "oem:"
+
+    /** Ảnh DỰNG SẴN (không phải tệp người dùng): ảnh BYD của xe nếu có, không thì ảnh mặc định đóng theo APK. */
+    fun builtinSignature(ctx: Context): String = OemCarArt.source(ctx)?.let { OEM_PREFIX + it.art.key } ?: DEFAULT_SIGNATURE
+
+    /** Hình học của ảnh ứng với dấu-vết [signature]: ảnh dựng sẵn ⇒ [CarArt] đã đo; tệp người dùng ⇒ ảnh mặc định (neo chung). */
+    fun artOf(signature: String?): CarArt =
+        signature?.takeIf { it.startsWith(OEM_PREFIX) }?.let { CarArtCatalog.byKey(it.removePrefix(OEM_PREFIX)) }
+            ?: CarArtCatalog.DEFAULT
+
+    fun isBuiltin(signature: String): Boolean = signature == DEFAULT_SIGNATURE || signature.startsWith(OEM_PREFIX)
+
     /** Dấu vết đổi ảnh (đường dẫn + lần sửa cuối) — [CarImageLayer] dùng làm khoá cache để nạp lại khi ảnh đổi.
-     *  Thư mục trống ⇒ dùng dấu vết của ảnh MẶC ĐỊNH (đóng theo APK) để cache vẫn nạp lại đúng một lần. */
+     *  Thư mục trống ⇒ dấu vết của ảnh DỰNG SẴN ([builtinSignature]) để cache vẫn nạp lại đúng một lần. */
     fun signature(ctx: Context): String =
-        imageFiles(ctx).firstOrNull()?.let { "${it.absolutePath}|${it.lastModified()}" } ?: "default:$DEFAULT_ASSET"
+        imageFiles(ctx).firstOrNull()?.let { "${it.absolutePath}|${it.lastModified()}" } ?: builtinSignature(ctx)
 
     private fun imageFiles(ctx: Context): List<File> = runCatching {
         val dir = folder(ctx) ?: return emptyList()
@@ -284,10 +304,10 @@ object CarImageStore {
      * Nạp ảnh xe **đã giảm cỡ + feather** cho khung [reqW]×[reqH]. `null` nếu chưa có ảnh / giải mã hỏng — chỗ gọi
      * vẽ placeholder. Cả ảnh người dùng lẫn ảnh mặc định giải mã theo **fit** ([decodePlan]) — xem KDoc [DecodePlan].
      */
-    fun loadFeathered(ctx: Context, reqW: Int, reqH: Int): Bitmap? {
+    fun loadFeathered(ctx: Context, reqW: Int, reqH: Int, builtin: String? = null): Bitmap? {
         if (reqW <= 0 || reqH <= 0) return null
-        val scaled = imagePath(ctx)?.let { loadUserScaled(it, reqW, reqH) }
-            ?: loadDefaultScaled(ctx, reqW, reqH)   // thư mục trống ⇒ ảnh MẶC ĐỊNH đóng theo APK
+        val scaled = (if (builtin != null) null else imagePath(ctx))?.let { loadUserScaled(it, reqW, reqH) }
+            ?: loadBuiltinScaled(ctx, builtin ?: builtinSignature(ctx), reqW, reqH)   // thư mục trống ⇒ ảnh DỰNG SẴN
             ?: return null
         return runCatching { feather(scaled) }.getOrElse {
             Log.w(TAG, "feather hỏng, dùng ảnh thô: ${it.javaClass.simpleName}")
@@ -328,6 +348,18 @@ object CarImageStore {
      * Giải mã ảnh xe MẶC ĐỊNH từ assets **đúng khung** ([decodePlan]: `inSampleSize` + `inScaled` hạ về đích ngay
      * trong bộ giải mã — trước chỉ có `inSampleSize` ⇒ có thể to 2×/trục). `null` nếu asset thiếu/hỏng.
      */
+    /**
+     * 3.01 R23 — ảnh dựng sẵn theo dấu-vết [sig]: ảnh BYD ([OemCarArt.decode] — đã cắt + xoay về khung của [CarArt]) hoặc ảnh
+     * mặc định. Ảnh BYD hỏng ⇒ `null` + [OemCarArt.markBroken]: lượt thử lại kế có dấu-vết MẶC ĐỊNH (khoá đổi) — không bao giờ
+     * trả ảnh mặc định dưới khoá BYD (hình học sẽ lệch với bitmap).
+     */
+    private fun loadBuiltinScaled(ctx: Context, sig: String, reqW: Int, reqH: Int): Bitmap? {
+        if (!sig.startsWith(OEM_PREFIX)) return loadDefaultScaled(ctx, reqW, reqH)
+        val key = sig.removePrefix(OEM_PREFIX)
+        val src = OemCarArt.source(ctx)?.takeIf { it.art.key == key }
+        return src?.let { OemCarArt.decode(it, reqW, reqH) } ?: run { OemCarArt.markBroken(key); null }
+    }
+
     private fun loadDefaultScaled(ctx: Context, reqW: Int, reqH: Int): Bitmap? = runCatching {
         val am = ctx.applicationContext.assets
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }

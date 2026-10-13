@@ -1,0 +1,41 @@
+g_tyres	tyre_p_fl	vi=Lốp TT(6)	en=Tyre FL(7)	zh=左前胎压(4)	th=ยางหน้าซ้าย(11)	ms=Tayar DKr(9)	longest=th
+g_tyres	tyre_p_fr	vi=Lốp TP(6)	en=Tyre FR(7)	zh=右前胎压(4)	th=ยางหน้าขวา(10)	ms=Tayar DKn(9)	longest=th
+g_tyres	tyre_p_rl	vi=Lốp ST(6)	en=Tyre RL(7)	zh=左后胎压(4)	th=ยางหลังซ้าย(11)	ms=Tayar BKr(9)	longest=th
+g_tyres	tyre_p_rr	vi=Lốp SP(6)	en=Tyre RR(7)	zh=右后胎压(4)	th=ยางหลังขวา(10)	ms=Tayar BKn(9)	longest=th
+g_tyres	tyre_t_fl	vi=Nhiệt TT(8)	en=Temp FL(7)	zh=左前胎温(4)	th=อุณหภูมิหน้าซ้าย(16)	ms=Suhu tayar DKr(14)	longest=th
+g_tyres	tyre_t_fr	vi=Nhiệt TP(8)	en=Temp FR(7)	zh=右前胎温(4)	th=อุณหภูมิหน้าขวา(15)	ms=Suhu tayar DKn(14)	longest=th
+g_tyres	tyre_t_rl	vi=Nhiệt ST(8)	en=Temp RL(7)	zh=左后胎温(4)	th=อุณหภูมิหลังซ้าย(16)	ms=Suhu tayar BKr(14)	longest=th
+g_tyres	tyre_t_rr	vi=Nhiệt SP(8)	en=Temp RR(7)	zh=右后胎温(4)	th=อุณหภูมิหลังขวา(15)	ms=Suhu tayar BKn(14)	longest=th
+g_windows	window_lf	vi=Kính lái(8)	en=Driver win(10)	zh=主驾车窗(4)	th=กระจกคนขับ(10)	ms=Kaca pemandu(12)	longest=ms
+g_windows	window_rf	vi=Kính phụ(8)	en=Pass. win(9)	zh=副驾车窗(4)	th=กระจกผู้โดยสาร(14)	ms=Kaca penumpang(14)	longest=th
+g_windows	window_lr	vi=Kính ST(7)	en=Win RL(6)	zh=左后车窗(4)	th=กระจกหลังซ้าย(13)	ms=Kaca BKr(8)	longest=th
+g_windows	window_rr	vi=Kính SP(7)	en=Win RR(6)	zh=右后车窗(4)	th=กระจกหลังขวา(12)	ms=Kaca BKn(8)	longest=th
+g_doors	door_lf	vi=Cửa trước-trái(14)	en=Door FL(7)	zh=左前门(3)	th=ประตูหน้าซ้าย(13)	ms=Pintu DKr(9)	longest=vi
+g_doors	door_rf	vi=Cửa trước-phải(14)	en=Door FR(7)	zh=右前门(3)	th=ประตูหน้าขวา(12)	ms=Pintu DKn(9)	longest=vi
+g_doors	door_lr	vi=Cửa sau-trái(12)	en=Door RL(7)	zh=左后门(3)	th=ประตูหลังซ้าย(13)	ms=Pintu BKr(9)	longest=th
+g_doors	door_rr	vi=Cửa sau-phải(12)	en=Door RR(7)	zh=右后门(3)	th=ประตูหลังขวา(12)	ms=Pintu BKn(9)	longest=vi
+g_doors	sunroof_state	vi=Cửa sổ trời(11)	en=Sunroof(7)	zh=天窗(2)	th=ซันรูฟ(6)	ms=Bumbung matahari(16)	longest=ms
+g_doors	sunshade_pct	vi=Rèm che nắng(12)	en=Sunshade(8)	zh=遮阳帘(3)	th=ม่านบังแดด(10)	ms=Teduh matahari(14)	longest=ms
+g_lights	light_low_beam	vi=Đèn cốt(7)	en=Low beam(8)	zh=近光灯(3)	th=ไฟต่ำ(5)	ms=Lampu rendah(12)	longest=ms
+g_lights	light_high_beam	vi=Đèn pha(7)	en=High beam(9)	zh=远光灯(3)	th=ไฟสูง(5)	ms=Lampu tinggi(12)	longest=ms
+g_lights	light_front_fog	vi=Đèn sương mù trước(18)	en=Fog front(9)	zh=前雾灯(3)	th=ไฟตัดหมอกหน้า(13)	ms=Kabus depan(11)	longest=vi
+g_lights	light_rear_fog	vi=Đèn sương mù sau(16)	en=Fog rear(8)	zh=后雾灯(3)	th=ไฟตัดหมอกหลัง(13)	ms=Kabus belakang(14)	longest=vi
+g_lights	light_left_turn	vi=Xi-nhan trái(12)	en=Left indicator(14)	zh=左转向灯(4)	th=ไฟเลี้ยวซ้าย(12)	ms=Lampu isyarat kiri(18)	longest=ms
+g_lights	light_right_turn	vi=Xi-nhan phải(12)	en=Right indicator(15)	zh=右转向灯(4)	th=ไฟเลี้ยวขวา(11)	ms=Lampu isyarat kanan(19)	longest=ms
+g_lights	light_side	vi=Đèn hông(8)	en=Side lights(11)	zh=示廓灯(3)	th=ไฟบอกตำแหน่ง(12)	ms=Lampu sisi(10)	longest=th
+g_lights	light_drl	vi=Đèn ban ngày(12)	en=DRL(3)	zh=日行灯(3)	th=DRL(3)	ms=Lampu siang(11)	longest=vi
+g_lights	headlight_feedback	vi=Chế độ đèn pha(14)	en=Headlight mode(14)	zh=大灯模式(4)	th=โหมดไฟหน้า(10)	ms=Mod lampu hadapan(17)	longest=ms
+g_climate	cabin_temp	vi=Nhiệt trong cabin(17)	en=Cabin temp(10)	zh=车内温度(4)	th=อุณหภูมิในห้องโดยสาร(20)	ms=Suhu kabin(10)	longest=th
+g_climate	inside_temp	vi=Trong xe(8)	en=In car(6)	zh=车内(2)	th=ในรถ(4)	ms=Dalam kereta(12)	longest=ms
+g_climate	ext_temp	vi=Nhiệt ngoài xe(14)	en=Outside temp(12)	zh=车外温度(4)	th=อุณหภูมิภายนอก(14)	ms=Suhu luar(9)	longest=vi
+g_climate	ac_on	vi=Điều hòa(8)	en=A/C(3)	zh=空调(2)	th=แอร์(4)	ms=A/C(3)	longest=vi
+g_climate	ac_cycle	vi=Chế độ lấy gió(14)	en=Air intake(10)	zh=循环模式(4)	th=หมุนเวียนอากาศ(14)	ms=Edaran udara(12)	longest=vi
+g_energy	soc	vi=Pin (SOC)(9)	en=Battery (SOC)(13)	zh=电量（SOC）(7)	th=แบตเตอรี่ (SOC)(15)	ms=Bateri (SOC)(12)	longest=th
+g_energy	ev_range_km	vi=Tầm điện(8)	en=EV range(8)	zh=纯电续航(4)	th=ระยะ EV(7)	ms=Jarak EV(8)	longest=vi
+g_energy	fuel_range_km	vi=Tầm xăng(8)	en=Fuel range(10)	zh=燃油续航(4)	th=ระยะน้ำมัน(10)	ms=Jarak petrol(12)	longest=ms
+g_energy	fuel_pct	vi=Mức xăng(8)	en=Fuel level(10)	zh=油量(2)	th=ระดับน้ำมัน(11)	ms=Paras petrol(12)	longest=ms
+g_energy	consumption_50km	vi=Tiêu thụ 50km(13)	en=Use 50 km(9)	zh=50km能耗(6)	th=ใช้ไป 50 km(11)	ms=Guna 50 km(10)	longest=vi
+g_battery	soh_oem	vi=SOH pin(7)	en=SOH(3)	zh=电池SOH(5)	th=SOH(3)	ms=SOH(3)	longest=vi
+g_battery	volt_12v	vi=Ắc-quy 12V(10)	en=12V battery(11)	zh=12V蓄电池(6)	th=แบตเตอรี่ 12V(13)	ms=Bateri 12V(10)	longest=th
+g_trip	consumption_50km	vi=Tiêu thụ 50km(13)	en=Use 50 km(9)	zh=50km能耗(6)	th=ใช้ไป 50 km(11)	ms=Guna 50 km(10)	longest=vi
+g_trip	odometer	vi=Odo tổng(8)	en=Odometer(8)	zh=总里程(3)	th=ระยะทางสะสม(11)	ms=Odometer(8)	longest=th

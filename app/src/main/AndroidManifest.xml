@@ -73,6 +73,14 @@
     <uses-permission android:name="android.permission.REAL_GET_TASKS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" tools:ignore="ProtectedPermissions" />
 
+    <!-- 3.01 R23: đọc ảnh xe chính hãng từ tài nguyên của CarSettings lúc chạy (createPackageContext) — khai tường minh cho
+         A11+ (không dựa riêng QUERY_ALL_PACKAGES). Không phân phối lại ảnh nào. -->
+    <queries>
+        <package android:name="com.byd.carsettings.plugins" />
+        <!-- 3.01 R25 — app AVM (AutoVideo.apk): mô hình 3D của xe đọc lúc chạy qua createPackageContext (không phân phối lại). -->
+        <package android:name="com.byd.avc" />
+    </queries>
+
     <!-- allowBackup=false: app lưu ADB private key (adb.key/adb.pub) trong filesDir — key này grant shell
          localhost:5555. Bật backup sẽ để `adb backup`/auto-backup rút key ra ngoài → tắt để không lộ. -->
     <application

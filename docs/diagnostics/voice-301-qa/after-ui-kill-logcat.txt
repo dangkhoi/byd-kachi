@@ -1,0 +1,9 @@
+--------- beginning of main
+--------- beginning of system
+10-13 10:08:08.906 I/KachiVoiceTiming(10003): sẵn sàng nghe sau 20 ms kể từ lúc bấm
+10-13 10:08:08.959 I/KachiVoiceTiming(10003): mic mở sau 52 ms
+10-13 10:08:09.011 I/KachiVoiceDuck(10003): hạ nhạc khi nghe: 10 → 6 (đích 6)
+10-13 10:08:09.011 I/KachiVoiceTiming(10003): hạ nhạc 51 ms (luồng nền)
+10-13 10:08:11.665 I/KachiVoiceDuck(11025): trả nhạc (orphan pid=10003 startup): 6 → 10
+10-13 10:08:18.387 I/KachiVoiceTiming(11025): nạp sherpa zipformer-vi-int8-2025-04-20 trong 3591 ms (biasing=true · luồng=2 · lõi=4 · beam=4 · diem_hotword=3.0)
+10-13 10:08:18.388 I/KachiVoiceTiming(11025): nạp sẵn mô hình 3595 ms (ok=true)

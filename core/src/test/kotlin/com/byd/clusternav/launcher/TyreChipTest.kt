@@ -288,15 +288,18 @@ class TyreChipTest {
 
     /** Màn mặc định THẬT: bố cục `WorkspaceState.DEFAULT` (có `w_board` ⇒ có lốp) + chip mặc định; thanh nút đọc ở
      *  nhịp NHANH ([CarDataAdapter.readFast]) nên ngoài phép đo nhịp chậm này. */
+    // 3.01 R28 — bố cục mặc định nay là xe 3D (owner 13/10). Luật cắt lốp R7 vẫn đo trên MÀN BẢNG (bố cục mặc định ≤ 3.1: `w_board` ·
+    // `w_energy` · `w_pm25`) — đó là thứ bài này khoá; chi phí của màn mặc định MỚI có bài riêng bên dưới (trần đo được + công tắc lốp).
+    private val boardScreen = WorkspaceState.of(LayoutPreset.THREE, SlotContent.Widget("w_board"), SlotContent.Widget("w_energy"), SlotContent.Widget("w_pm25"))
     private val defaultDemand: () -> Set<String>? = {
-        CarDataDemand.of(HomeUiState(workspace = WorkspaceState.DEFAULT, dock = DockConfig(enabled = emptyList())))
+        CarDataDemand.of(HomeUiState(workspace = boardScreen, dock = DockConfig(enabled = emptyList())))
     }
 
     /** Lượt đọc / phút ở trạng thái ổn định: 1 phút làm nóng (cho cache nguội xong) rồi đo 10 phút. */
-    private fun perMinute(colour: String): Triple<Int, Int, Int> {
+    private fun perMinute(colour: String, demand: () -> Set<String>? = defaultDemand): Triple<Int, Int, Int> {
         val gw = AnswerAll(colour)
         var now = 0L
-        val adapter = CarDataAdapter(HalBindingTable(gw), defaultDemand, clock = { now })
+        val adapter = CarDataAdapter(HalBindingTable(gw), demand, clock = { now })
         var s = CarStatus()
         repeat(6) { s = adapter.readSlow(s); now += 10_000 }
         gw.reads = 0; gw.stateReads = 0; gw.colourReads = 0
@@ -323,6 +326,25 @@ class TyreChipTest {
         assertTrue(got.getValue("int=-2147482648").third <= 4, "không kênh màu: chỉ còn lượt thử lại của cache")
         assertEquals(16 to 24, got.getValue("int=3").let { it.second to it.third }, "đỏ: 8 PS/LK × 2, KHÔNG SYS")
         assertEquals(18 to 24, got.getValue("int=9").let { it.second to it.third }, "mã lạ: 9 × 2 + 4 màu × 6")
+    }
+
+    /**
+     * 3.01 R28 — màn mặc định MỚI (xe 3D ô lớn): trần TRÊN (mọi getter trả lời, không datum nào nguội) [ĐO off-car]: 240 lượt/phút
+     * có số lốp · 168 khi TẮT "Hiện thông số lốp". Xe 3D trước R28 đã tốn 114/phút (19 datum kính/cửa/đèn × 6 nhịp) nên màn này VƯỢT K1
+     * (150) dù không có lốp — đánh đổi do owner chọn 3D làm mặc định; ghi ở spec R28 + backlog `CAR3D-K1-BUDGET` để owner chốt. Bài này
+     * GHIM số đo (không cho phình thêm âm thầm) và khoá công tắc lốp thật sự bớt đọc.
+     */
+    @Test
+    fun `R28 man mac dinh xe 3D - tran doc ghim, tat so lop thi bot doc`() {
+        fun screen(tyres: Boolean): () -> Set<String>? = {
+            CarDataDemand.of(HomeUiState(workspace = WorkspaceState.DEFAULT, dock = DockConfig(enabled = emptyList()),
+                colorChoice = ColorChoice(carTyres = tyres)))
+        }
+        val on = perMinute("int=1", screen(true)).first
+        val off = perMinute("int=1", screen(false)).first
+        assertTrue(on <= 240, "màn mặc định 3D + lốp: $on lượt/phút > trần đã đo 240")
+        assertTrue(off <= 168, "màn mặc định 3D không lốp: $off lượt/phút > trần đã đo 168")
+        assertTrue(on - off >= 60, "tắt số lốp phải bớt ≥ 60 lượt/phút (8 datum + mã phán màu): on=$on off=$off")
     }
 
     // ── Soát 2.88 Pass 2 — tuổi của mã giữ lại · mã "chưa có số" không làm nguội getter ─────────────────────────

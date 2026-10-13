@@ -41,6 +41,9 @@ DEFAULT_OUT = ROOT / "app" / "src" / "main" / "res" / "drawable"
 SVG_NS = "{http://www.w3.org/2000/svg}"
 LAYER_ALPHA = {"main": 1.0, "sub": 0.38, "bg": 0.16}
 STROKE_MAIN, STROKE_SUB = 1.8, 1.2
+# POLISH2 (owner 13/10 *"3 cái icon mở cửa sổ vẽ thanh mảnh"*): icon khai `"weight": "fine"` trong icon-grammar.json dùng nét
+# CHÍNH mảnh 1.25 (nét phụ giữ 1.2). Khai ở grammar — không vá tay; IconStyleContractTest chỉ nhận 1.25 cho icon khai fine.
+STROKE_FINE = 1.25
 PATH_CAP = {24: 6, 32: 10, 48: 10}
 OPTICAL_LO, OPTICAL_HI, OPTICAL_TOL, MIN_SIDE = 2.0, 22.0, 0.05, 16.0   # = IconGeometryContractTest (2..22 dung sai 0.05 · cạnh lớn ≥ 16)
 VARIANT_SUFFIX = {24: "", 32: "_l", 48: "_xl"}
@@ -272,7 +275,7 @@ def _token(v: str | None) -> str:
     return m.group(1)
 
 
-def read_glyph(svg_path: Path) -> tuple[str, list[Layer]]:
+def read_glyph(svg_path: Path, fine: bool = False) -> tuple[str, list[Layer]]:
     text = svg_path.read_text(encoding="utf-8")
     why = re.search(r"<!--(.*?)-->", text, re.S)
     if not why or len(" ".join(why.group(1).split())) < 24:
@@ -297,7 +300,7 @@ def read_glyph(svg_path: Path) -> tuple[str, list[Layer]]:
         if fill == "none" and stroke == "none":
             raise GlyphError(f"{svg_path.name}: path không tô cũng không nét")
         if stroke != "none":
-            want = STROKE_MAIN if layer == "main" else STROKE_SUB
+            want = (STROKE_FINE if fine else STROKE_MAIN) if layer == "main" else STROKE_SUB
             if abs(width - want) > 1e-6:
                 raise GlyphError(f"{svg_path.name}: lớp {layer} phải dùng nét {want}, gặp {width}")
         elif width:
@@ -393,7 +396,7 @@ def render(gid: str, why: str, layers: list[Layer], size: int, family: dict, ent
         f"  {why}",
         f"  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/{src_name} — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;",
         "  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·",
-        "  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.",
+        "  bg 0.16) · nét " + ("MẢNH 1.25/1.2" if entry.get("weight") == "fine" else "1.8/1.2") + " tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.",
         f"  Lĩnh vực {entry['domain']} · họ màu {family['name']} · cỡ {size}dp.",
         "-->",
     ]
@@ -446,7 +449,7 @@ def build_all(grammar: dict) -> dict[str, str]:
             errors.append(f"{gid}: họ màu không khai")
             continue
         try:
-            why, layers = read_glyph(src)
+            why, layers = read_glyph(src, fine=entry.get("weight") == "fine")
             sizes = [24] + ([32, 48] if entry.get("large") else [])
             for s in sizes:
                 out[f"ic_{gid}{VARIANT_SUFFIX[s]}.xml"] = render(gid, why, layers, s, fam, entry, src.name)

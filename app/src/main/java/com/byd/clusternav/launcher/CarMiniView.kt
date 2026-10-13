@@ -57,7 +57,7 @@ class CarMiniView(context: Context) : View(context) {
     }
 
     private fun markAt(canvas: Canvas, part: CarPart, r: Float, color: Int) {
-        val a = CarLayout.part(part)
+        val a = car.art.part(part)   // R23: neo theo ảnh đang vẽ
         dot.color = color
         canvas.drawCircle(content.left + a.x * content.width(), content.top + a.y * content.height(), r, dot)
     }

@@ -38,6 +38,11 @@ import java.util.concurrent.Executors
  */
 internal class CarImageLayer(
     private val ctx: Context,
+    /**
+     * 3.01 R22·R — `true` = luôn ảnh DỰNG SẴN, bỏ qua ảnh người dùng (bảng kính: mặt nạ kính chỉ có cho ảnh đã đo). R23: dựng
+     * sẵn = ảnh BYD của xe nếu có ([OemCarArt]), không thì ảnh mặc định ([CarImageStore.builtinSignature]).
+     */
+    private val defaultArt: Boolean = false,
     private val onReady: () -> Unit,
 ) {
     private var bmp: Bitmap? = null
@@ -58,8 +63,9 @@ internal class CarImageLayer(
     /** Đảm bảo có ảnh cho khung [w]×[h]; nạp nền nếu cỡ/ảnh đổi. Trả `true` nếu đã có ảnh dùng được ngay. */
     fun ensure(w: Int, h: Int): Boolean {
         if (w <= 0 || h <= 0) return hasImage()
+        val sig = if (defaultArt) CarImageStore.builtinSignature(ctx) else CarImageStore.signature(ctx)
         // Khoá = dấu-vết-tệp + khung gom bậc 32px (đổi cỡ nhỏ không nạp lại; đổi ảnh thì nạp lại).
-        val key = CarImageStore.cacheKey(CarImageStore.signature(ctx), w, h)
+        val key = CarImageStore.cacheKey(sig, w, h)
         // Khoá đã nạp ⇒ không hỏi lại tới khi khoá đổi. Trước (closeout): nạp hỏng ⇒ lượt sau lại xếp nạp ⇒ onReady ⇒
         // invalidate ⇒ onDraw ⇒ nạp… vòng vô hạn ở tốc độ giải mã (chỉ không lộ vì asset mặc định luôn có).
         if (key == loadedKey) {
@@ -112,6 +118,12 @@ internal class CarImageLayer(
     private fun now(): Long = SystemClock.uptimeMillis()
 
     private fun hasImage(): Boolean = bmp?.isRecycled == false
+
+    /**
+     * 3.01 R23 — hình học của ảnh ĐANG vẽ ([CarArt]: neo bánh/cửa, mặt nạ kính). Ảnh người dùng / chưa nạp ⇒ ảnh mặc định, mà
+     * neo của nó lùi về [CarLayout] chung ⇒ bảng lốp/cửa trên ảnh không phải BYD giữ nguyên như trước.
+     */
+    val art: CarArt get() = CarImageStore.artOf(loadedKey?.signature?.takeIf { hasImage() })
 
     /**
      * Vẽ ảnh xe **giữ tỉ lệ, canh giữa** vào [dst]. Chưa có ảnh ⇒ placeholder. Overlay trạng thái do chỗ gọi vẽ

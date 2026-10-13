@@ -60,8 +60,12 @@ class VoiceWakeFakeStateContractTest {
             reads(dispatcher), "VoiceDispatcher đọc state() ở chỗ mới — trong `:wake` trường ấy thật hay GIẢ?",
         )
         assertEquals(listOf("state().savedPlaces"), reads(targets), "VoiceTargetDispatch đọc state() ở chỗ mới")
+        // 3.01 SAFETY (owner 13/10 *"làm theo luật mới hết đi"*, `docs/_handoff/kachi-301-stage-7-SAFETY-done.md`): cổng cốp
+        // không còn chỉ đọc `drivetrain.speedKmh` — nó đọc `Motion(tốc độ, số)` qua `CtlSafetyPolicy.readMotion(fresh, snapshot)`,
+        // phép đọc CHUNG với cổng chạm, cần NGUYÊN `CarStatus` (số + `CarStatusTap.apply`). Ảnh chụp ấy vẫn chỉ là đường LÙI sau
+        // `freshCar` — canh ở test (4) + `VoiceWakeTrunkMotionTest` (chạy thật với `HomeUiState()` rỗng như `:wake`).
         assertEquals(
-            listOf("state().carStatus.controls", "state().carStatus.drivetrain.speedKmh"),
+            listOf("state().carStatus", "state().carStatus.controls"),
             reads(controls), "VoiceControlDispatch đọc state() ở chỗ mới",
         )
         // Bảng trên chỉ ĐÓNG khi lambda `state` không chảy sang lớp nào ngoài ba tệp đã quét — xem [handOffs].
@@ -164,8 +168,10 @@ class VoiceWakeFakeStateContractTest {
         assertTrue(controls.contains("ClimateAuto.autoOnFromControl(autoState(def))"), "bảng quyết định phải nhận cờ đọc tươi")
         // Hai chỗ đọc carStatus mà kết quả là SỐ cho người nghe / CỔNG an toàn: phải hỏi freshCar TRƯỚC, state chỉ là đường lùi.
         assertTrue(dispatcher.contains("runCatching { freshCar(i.datumId) }.getOrNull() ?: state().carStatus"))
-        assertTrue(Regex("freshCar\\(\"speed\"\\)[^\\n]*\\n\\s*\\?: state\\(\\)\\.carStatus\\.drivetrain\\.speedKmh").containsMatchIn(controls),
-            "cổng cốp/ca-pô phải đọc tốc độ TƯƠI trước — trong `:wake` state().carStatus là CarStatus() rỗng (fail-open)")
+        // 3.01 SAFETY: cổng cốp đọc qua phép CHUNG `CtlSafetyPolicy.readMotion` — `fresh` hỏi TRƯỚC, `snapshot` chỉ khi đọc tươi
+        // hụt/ném (thứ tự canh ở `:core` `CtlSafetyPolicyTest.readMotion…`; hành vi `:wake` ở `VoiceWakeTrunkMotionTest`).
+        assertTrue(controls.contains("CtlSafetyPolicy.readMotion(fresh = freshCar, snapshot = { state().carStatus })"),
+            "cổng cốp/ca-pô phải đọc chuyển động TƯƠI trước — trong `:wake` state().carStatus là CarStatus() rỗng (fail-safe ⇒ luôn chặn)")
         // refreshForRead: nhu cầu khác `null` và datum không trong nhu cầu ⇒ đọc NGAY đúng datum ấy.
         val refresh = SourceRoots.body(code("src/main/java/com/byd/clusternav/AppContainer.kt"), "fun refreshForRead(id: String)")
         assertTrue(refresh.contains("val want = carDemand.get() ?: return null") && refresh.contains("carDemand.withExtra(setOf(id)) { carStatusRepository.refreshNow() }"),

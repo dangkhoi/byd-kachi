@@ -1,7 +1,7 @@
 package com.byd.clusternav
 
 import android.app.Activity
-import android.app.AlertDialog
+import com.byd.clusternav.launcher.KachiDialogs
 import java.lang.ref.WeakReference
 
 /**
@@ -58,16 +58,19 @@ object UpdateFlow {
         setStatus: (String, Boolean) -> Unit,
     ) {
         if (activity.isFinishing || activity.isDestroyed) return
-        AlertDialog.Builder(activity)
-            .setTitle(Lang.f("Có bản mới: v{0}", "New version: v{0}", latest))
-            .setMessage(Lang.f(
+        // KACHI-301 R13 · #21 — khuôn XÁC NHẬN (không phá huỷ: cài đè giữ dữ liệu). Chữ vẫn từ [Lang] như mọi câu của luồng
+        // này (màn chẩn đoán + màn chính dùng chung, không qua R.string). Nhãn huỷ = "Để sau" như hộp cũ.
+        KachiDialogs.confirm(
+            activity,
+            Lang.f("Có bản mới: v{0}", "New version: v{0}", latest),
+            Lang.f(
                 "Đang dùng v{0}. Tải v{1} và cài đè? App sẽ tự khởi động lại.",
                 "You have v{0}. Download v{1} and install? The app will restart.",
                 cur, latest,
-            ))
-            .setPositiveButton(Lang.t("Tải & cài", "Download & install")) { _, _ -> doUpdate(activity, url, setStatus) }
-            .setNegativeButton(Lang.t("Để sau", "Later"), null)
-            .show()
+            ),
+            Lang.t("Tải & cài", "Download & install"),
+            cancelLabel = Lang.t("Để sau", "Later"),
+        ) { doUpdate(activity, url, setStatus) }
     }
 
     private fun doUpdate(activity: Activity, url: String, setStatus: (String, Boolean) -> Unit) {

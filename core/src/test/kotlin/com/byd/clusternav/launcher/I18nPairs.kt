@@ -70,6 +70,8 @@ internal object I18nPairs {
         ControlRegistry.ALL.filter { it.short != null || it.shortEn != null }.forEach {
             add(it.shortLabel, it.shortEn?.takeIf(String::isNotBlank) ?: it.labelEn, Kind.SHORT, "control:${it.id}.short", SHORT_CAPS)
         }
+        // 3.01 R22 — động từ của nút trong bảng vật × việc (verb/verbEn — cùng luật lùi `Strings.pick`).
+        ControlRegistry.ALL.filter { it.verb != null }.forEach { add(it.verb, it.verbEn, Kind.SHORT, "control:${it.id}.verb", SHORT_CAPS) }
         // 2.93 ACTIONMACRO-SHORT-LABEL — nhãn ngắn của gói lệnh: cùng bậc lùi + cùng trần với nút.
         ActionMacros.ALL.filter { it.short != null || it.shortEn != null }.forEach {
             add(it.shortLabel, it.shortEn?.takeIf(String::isNotBlank) ?: it.labelEn, Kind.SHORT, "macro:${it.id}.short", SHORT_CAPS)

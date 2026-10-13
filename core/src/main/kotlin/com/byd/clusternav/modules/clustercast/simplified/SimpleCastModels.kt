@@ -337,6 +337,14 @@ interface SimpleCastPrefs {
     fun lastDisplayId(): Int?
     fun saveLastDisplayId(id: Int)
 
+    /**
+     * 3.1 · R6 — phán quyết ĐÃ ĐO trên chính xe này: app [pkg] có dời nội dung theo "Dịch nội dung" (overscan) không. `null` =
+     * chưa đo. Sự thật của (ROM xe × app), không phải sở thích ⇒ phạm vi XE (`ProfileScopeCluster.DEVICE_KEY_PREFIXES`).
+     * Mặc định không lưu gì (bản giả của test cũ không phải biết tới nó).
+     */
+    fun contentShiftVerdict(pkg: String): Boolean? = null
+    fun setContentShiftVerdict(pkg: String, effective: Boolean) {}
+
     // Autostart
     fun autoStartPackage(): String?
     fun setAutoStartPackage(pkg: String?)

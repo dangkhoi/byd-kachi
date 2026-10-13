@@ -1,0 +1,52 @@
+[after-ui-base #1 base] trước: vol=10 yt=state:started
+[after-ui-base #1] +1,5 s đang nghe: vol=6 yt=state:started
+[after-ui-base #1] sau lượt: vol=10 yt=state:started
+[after-ui-base #2 base] trước: vol=10 yt=state:started
+[after-ui-base #2] +1,5 s đang nghe: vol=6 yt=state:started
+[after-ui-base #2] sau lượt: vol=10 yt=state:started
+[after-ui-base #3 base] trước: vol=10 yt=state:started
+[after-ui-base #3] +1,5 s đang nghe: vol=6 yt=state:started
+[after-ui-base #3] sau lượt: vol=10 yt=state:started
+[after-ui-base #4 base] trước: vol=10 yt=state:started
+[after-ui-base #4] +1,5 s đang nghe: vol=6 yt=state:started
+[after-ui-base #4] sau lượt: vol=10 yt=state:started
+[after-ui-base #5 base] trước: vol=10 yt=state:started
+[after-ui-base #5] +1,5 s đang nghe: vol=6 yt=state:started
+[after-ui-base #5] sau lượt: vol=10 yt=state:started
+[after-ui-base #6 base] trước: vol=10 yt=state:started
+[after-ui-base #6] +1,5 s đang nghe: vol=6 yt=state:started
+[after-ui-base #6] sau lượt: vol=10 yt=state:started
+10:10:00.886 before: STREAM_MUSIC=10 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10:10:02.610 during: STREAM_MUSIC=6 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10:10:08.703 +6 s (giữa lượt nối): STREAM_MUSIC=6 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10:10:24.912 after: STREAM_MUSIC=10 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10:11:27.985 before: STREAM_MUSIC=10 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10:11:29.786 during: STREAM_MUSIC=6 · YouTube state=3 · focus: pack: com.google.android.youtube 
+10:11:31.010 say «dừng nhạc»: STREAM_MUSIC=6 · YouTube state=2 · focus: pack: com.google.android.youtube 
+10:11:37.135 +6 s (giữa lượt nối): STREAM_MUSIC=10 · YouTube state=2 · focus: pack: com.google.android.youtube pack: com.byd.launcher 
+10:11:53.271 after: STREAM_MUSIC=10 · YouTube state=2 · focus: pack: com.google.android.youtube 
+[after-ui-kill #1 kill] trước: vol=10 yt=state:started
+[after-ui-kill #1] +1,5 s đang nghe: vol=6 yt=state:started
+[after-ui-kill #1] force-stop +2 s: vol=10 yt=state:started
+[after-ui-kill #1] khởi động lại +4 s: vol=10 yt=state:started
+[after-ui-kill #1] sau lượt: vol=10 yt=state:started
+[after-ui-knob #1 knob] trước: vol=10 yt=state:started
+[after-ui-knob #1] +1,5 s đang nghe: vol=6 yt=state:started
+[after-ui-knob #1] vặn núm → 6: vol=6
+[after-ui-knob #1] sau lượt: vol=10 yt=state:started
+[after-ui-knob #2 knob] trước: vol=10 yt=state:started
+[after-ui-knob #2] +1,5 s đang nghe: vol=6 yt=state:started
+[after-ui-knob #2] vặn núm → 6: vol=6
+[after-ui-knob #2] sau lượt: vol=10 yt=state:started
+[after-ui-knob8 #1 knob] trước: vol=10 yt=state:started
+[after-ui-knob8 #1] +1,5 s đang nghe: vol=6 yt=state:started
+[after-ui-knob8 #1] vặn núm → 8: vol=8
+[after-ui-knob8 #1] sau lượt: vol=8 yt=state:started
+[after-ui-knob12 #1 knob] trước: vol=10 yt=state:started
+[after-ui-knob12 #1] +1,5 s đang nghe: vol=6 yt=state:started
+[after-ui-knob12 #1] vặn núm → 12: vol=12
+[after-ui-knob12 #1] sau lượt: vol=12 yt=state:started
+[after-ui-knob4 #1 knob] trước: vol=10 yt=state:started
+[after-ui-knob4 #1] +1,5 s đang nghe: vol=6 yt=state:stopped
+[after-ui-knob4 #1] vặn núm → 4: vol=4
+[after-ui-knob4 #1] sau lượt: vol=10 yt=state:started

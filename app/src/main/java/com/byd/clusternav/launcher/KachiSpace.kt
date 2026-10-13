@@ -196,6 +196,12 @@ object KachiSpace {
     /** Chấm chỉ báo tròn (badge "chưa kiểm trên xe", chấm màu ô). Trước T5 rải 6·7·9dp cho cùng một việc. */
     const val DOT = 8
 
+    /** Chip icon đầu thẻ widget (3.01 R22 — brief Kim §2.5: ô vuông bo 28 dp chứa icon [ICON_XS] tô sắc lĩnh vực). */
+    const val HEAD_CHIP = ICON_L - XS
+
+    /** Lề trong của chip [HEAD_CHIP] quanh icon [ICON_XS] (= 6 dp mỗi phía). */
+    const val HEAD_CHIP_PAD = (HEAD_CHIP - ICON_XS) / 2
+
     // ── Vạch mảnh ─────────────────────────────────────────────────────────────────────────────────────────
 
     /**

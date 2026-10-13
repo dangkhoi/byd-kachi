@@ -5,6 +5,7 @@ import android.util.Log
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.cameraGlUniforms
+import com.byd.clusternav.launcher.HalSignalDemand
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Turn
 import com.byd.clusternav.launcher.testbridge.TestBridgeStore
 
@@ -50,17 +51,15 @@ class CameraSignalController(private val appCtx: Context) {
     @Volatile
     private var synth = false
 
-    // Nguồn xi-nhan THẬT = HAL helper (app_process uid shell) publish socket 19322 → [HalSignalClient] subscribe.
+    // Nguồn xi-nhan THẬT = HAL helper (app_process uid shell) publish socket 19322 → [HalSignalClient] (giữ bởi [hub]).
     // [ĐO xe 2026-09-25] register listener dưới uid APP bị SecurityException BYDAUTO_LIGHT_GET (perm signature);
     // chạy dưới uid shell (mô hình kinex) thì OK. getLightStatus poll trả 0 trên trim này ⇒ không dùng poll.
     // BG-15 + [SOÁT Pass 1 · 2026-09-25]: MỘT controller dùng chung ⇒ `tick()` chạy CẢ trên main (HOME) lẫn luồng
     // vòng `AutomationService`. Cờ phải đổi bằng **một phép nguyên tử**: `if (started) … started = true` cho hai
     // luồng đi qua cùng lúc ⇒ hai lượt `start` xếp hàng (hoặc một `stop` lọt giữa) ⇒ cờ nói khác sự thật của socket.
     private val started = java.util.concurrent.atomic.AtomicBoolean(false)
-    private val signal by lazy { HalSignalClient() }
-    private val bg = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
-        Thread(r, "kachi-camera-hal").apply { isDaemon = true }
-    }
+    // 3.01 LAMPLIVE: helper + client 19322 thuộc [HalSignalHub] (MỘT chủ, đếm nhu cầu camera + bảng Đèn) — controller chỉ XIN/THÔI.
+    private val hub by lazy { checkNotNull(com.byd.clusternav.AppContainer.get(appCtx).halSignal).also { h -> h.onTurn = { l, r -> tick(l, r) } } }
 
     /**
      * Đồng bộ với công tắc — gọi từ `AutomationService` (mỗi nhịp 60 s + ngay khi `sync`) và từ HOME khi state đổi.
@@ -77,14 +76,11 @@ class CameraSignalController(private val appCtx: Context) {
         tick(null, null)
     }
 
-    /** Khởi HAL helper (uid shell) + socket client MỘT lần, trên thread NỀN (ensure() chặn: push jar + shell). */
+    /** Xin [hub] giữ helper + socket (hub tự `ensure` + `start` trên luồng NỀN của nó); `cam_sort` ghi trên cùng luồng ấy. */
     private fun ensureSignal() {
         if (!started.compareAndSet(false, true)) return
-        bg.execute {
-            logCamSort()
-            runCatching { HalHelperLauncher.ensure(appCtx) }.onFailure { Log.w(PanoramaHal.TAG, "HAL helper ensure lỗi: ${it.message}") }
-            runCatching { signal.start { l, r -> tick(l, r) } }.onFailure { Log.w(PanoramaHal.TAG, "HAL signal start lỗi: ${it.message}") }
-        }
+        hub.background { logCamSort() }
+        hub.want(HalSignalDemand.Source.CAMERA, true)
     }
 
     /**
@@ -107,13 +103,13 @@ class CameraSignalController(private val appCtx: Context) {
 
     /**
      * BG-15 (2026-09-25): dừng luồng socket `KachiHalSignal` khi không còn ai cần (công tắc TẮT / automation hết
-     * việc). Trước đây không có đường này ⇒ mỗi controller một luồng sống tới khi xe tắt máy. Idempotent; đi qua
-     * [bg] để KHÔNG vượt mặt một `start` đang xếp hàng (executor một luồng giữ thứ tự). Bật lại ⇒ [ensureSignal]
-     * dựng lại (helper `ensure` idempotent: dò cổng trước khi khởi).
+     * việc). Trước đây không có đường này ⇒ mỗi controller một luồng sống tới khi xe tắt máy. Idempotent. 3.01 LAMPLIVE: chỉ
+     * THÔI xin — [hub] dừng client sau ân hạn 60 s nếu bảng Đèn cũng không cần (executor một luồng của hub giữ thứ tự start/stop).
+     * Bật lại ⇒ [ensureSignal] xin lại (helper `ensure` idempotent: dò cổng trước khi khởi).
      */
     fun release() {
         if (!started.compareAndSet(true, false)) return
-        bg.execute { runCatching { signal.stop() }.onFailure { Log.w(PanoramaHal.TAG, "HAL signal stop lỗi: ${it.message}") } }
+        hub.want(HalSignalDemand.Source.CAMERA, false)
     }
 
     /**

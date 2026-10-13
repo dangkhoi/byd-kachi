@@ -57,4 +57,12 @@ public abstract class AbsBYDAutoLightListener {
 
     public void onAFSSwitchStateChange(int state) {
     }
+
+    /**
+     * 3.01 LAMPLIVE — đèn chạy ban ngày đổi: 1=BẬT · 2=TẮT (`DAY_RUNNING_LIGHT_ON/OFF`). Có trong stub SDK BYD
+     * (`jadx-tmap/.../AbsBYDAutoLightListener.java`). Lớp THẬT không có phương thức này ⇒ override của ta chỉ là một phương thức
+     * thừa không ai gọi (không ngã lúc chạy, khác chiều "thiếu abstract" ở trên).
+     */
+    public void onDayRunningLightStateChanged(int value) {
+    }
 }

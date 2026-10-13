@@ -356,8 +356,10 @@ data class KachiPalette(
             // ⚠ [SOÁT Pass 4] Nút TẮT nay sáng lên (nền thẻ 1.23× → 1.35×) ⇒ bậc BẬT↔TẮT tụt từ ~1.35× xuống
             // **1.22×**, sát sàn 1.20×. Nâng alpha 36 % → 50 % kéo bậc lên **1.59×** mà chữ [inkOnAccent] vẫn
             // **7.71:1**. Đây là cái bẫy kinh điển của việc đổi một bậc trong thang: bậc bên cạnh im lặng hẹp lại.
-            tileOnFrom = "#804d86ff",
-            tileOnTo = "#668a63ff",
+            // R22·R (owner 13/10 "thô"): nền ô BẬT = lớp nhấn 16 % PHẲNG trên bề mặt ô (`tonalOn`), không còn
+            // chuyển sắc xanh 50 % → tím 40 %. Bật/tắt nay đọc bằng icon mực nhấn + nền tông (như ô Đèn).
+            tileOnFrom = "#294d86ff",
+            tileOnTo = "#294d86ff",
             tileOnLine = "#b34d86ff",
             scrimPanel = "#ff070a11",
             scrimBtn = "#80000000",
@@ -457,8 +459,8 @@ data class KachiPalette(
             accentSoft = "#1f2f5ae0",
             accentLine = "#992f5ae0",
             accentWash = "#1a2f5ae0",
-            tileOnFrom = "#382f5ae0",
-            tileOnTo = "#305b3ee0",
+            tileOnFrom = "#242f5ae0",
+            tileOnTo = "#242f5ae0",
             tileOnLine = "#b32f5ae0",
             scrimPanel = "#ff10151d",
             scrimBtn = "#80000000",

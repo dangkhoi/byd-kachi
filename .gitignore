@@ -167,3 +167,15 @@ cum-*.png
 camera-frame-*.png
 cluster-fb-*.png
 **/img/car-*.png
+
+# 3.01 R23: ảnh xe trích firmware BYD — CHỈ đóng vào bản vehicleTest dựng tại máy (owner 13/10), KHÔNG đưa lên repo
+# (không phân phối lại). Thiếu tệp ⇒ bản vehicleTest lùi ảnh mặc định. Trích lại: docs/diagnostics/oem-car-art-2026-10-13.md
+app/src/vehicleTest/assets/oem-car/
+# 3.01 R25: mô hình 3D (car.mesh/wheel.mesh + ảnh vật liệu) trích firmware BYD (AutoVideo.apk) — CHỈ bản vehicleTest dựng tại
+# máy (owner 13/10 "cho phép dùng mô hình 3D trong firmware BYD … cho bản kiểm thử"). Trích lại: docs/diagnostics/widget-3d-301-2026-10-13.md
+app/src/vehicleTest/assets/oem-3d/
+# Soát 3.1 Pass 2: mọi thư mục trích BYD sau này cùng tiền tố — không để một tên mới lọt lên repo.
+app/src/vehicleTest/assets/oem-*/
+
+# 3.1.1 — ảnh chụp máy ảo có ảnh/hình xe BYD (chỉ để thử, owner 13/10) ⇒ chỉ giữ ở máy, không lên repo public
+docs/diagnostics/widget-visual-301/*.jpg

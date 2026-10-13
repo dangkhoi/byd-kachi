@@ -80,6 +80,9 @@ class FakeShell : SimpleCastShell {
      */
     val overlayWindows = CopyOnWriteArrayList<String>()
 
+    /** 3.1 · R6 — trả lời riêng cho lệnh ĐỌC (vd `dumpsys window windows`); `null` = để fake xử lý như cũ. Mặc định rỗng. */
+    val responders = CopyOnWriteArrayList<(String) -> ShellResult?>()
+
     init {
         // CP/AA are always already running when user requests cast (they're system apps)
         runningTasks["com.byd.autolink.carplay"] = 10
@@ -93,6 +96,7 @@ class FakeShell : SimpleCastShell {
         if (failCommands.any { command.contains(it) }) {
             return ShellResult(1, "", "fake failure for: $command")
         }
+        responders.firstNotNullOfOrNull { it(command) }?.let { return it }
         if (vdAfterTheme != null && oldVd == null && Regex(" i32 1000 i32 (29|30|31) ").containsMatchIn(command)) {
             oldVd = clusterDisplayId
             clusterDisplayId = vdAfterTheme!!
@@ -261,6 +265,9 @@ class FakePrefs : SimpleCastPrefs {
 
     /** B1b — các khoá bản ghi đã lưu (để test khẳng định khung Chữ nhật KHÔNG đè khoá Bo tròn). */
     val savedRecordKeys: Set<String> get() = configs.keys.toSet()
+    private val shiftVerdicts = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+    override fun contentShiftVerdict(pkg: String): Boolean? = shiftVerdicts[pkg]
+    override fun setContentShiftVerdict(pkg: String, effective: Boolean) { shiftVerdicts[pkg] = effective }
     override fun lastDisplayId(): Int? = lastDisplay
     override fun saveLastDisplayId(id: Int) { lastDisplay = id }
 

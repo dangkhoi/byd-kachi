@@ -147,20 +147,22 @@ class SettingsSections(
      */
     private fun color(body: LinearLayout) {
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_color)))
-        var choice = deps.state().colorChoice
+        // Mỗi hàng ghi từ state SỐNG (không từ bản chép lúc dựng): [ĐO máy ảo 13/10] chọn màu sơn rồi chọn màu nhấn ở một lượt mở
+        // khác ⇒ bản chép cũ ghi đè màu sơn vừa chọn. Mỗi hàng chỉ đổi đúng trường của nó.
+        val choice = deps.state().colorChoice
         val swatches = AccentChoice.values().map { it.name to it.label() }.map { (code, text) ->
             // Bảng GỐC, không phải `KachiTheme.palette`: bảng đang dùng đã chuyển sắc theo lựa chọn hiện hành, hỏi nó
             // màu của ô *Xanh Kachi* sẽ ra chính màu đang chọn (hai ô vẽ giống hệt nhau) — xem [KachiTheme.basePalette].
             Swatch(code, KachiTheme.basePalette.accentPreview(AccentChoice.valueOf(code), KachiTheme.artDominant, KachiTheme.night), text)
         }
         body.addView(rows.swatchRow(context.getString(R.string.kachi_row_accent), swatches, choice.accent.name) { code ->
-            choice = choice.copy(accent = AccentChoice.valueOf(code)); deps.onColorChoice(choice)
+            deps.onColorChoice(deps.state().colorChoice.copy(accent = AccentChoice.valueOf(code)))
         })
         body.addView(rows.chipRow(
             label = context.getString(R.string.kachi_row_tone),
             options = CardTone.values().map { it.name to it.label() },
             current = choice.tone.name,
-        ) { code -> choice = choice.copy(tone = CardTone.valueOf(code)); deps.onColorChoice(choice) })
+        ) { code -> deps.onColorChoice(deps.state().colorChoice.copy(tone = CardTone.valueOf(code))) })
         // R-OP — độ TRONG SUỐT nền CHUNG (thanh trên · thanh nút · widget), cùng `color_choice` ⇒ theo hồ sơ + xuất/nhập.
         // 2.88 (owner 04/10 "có thay kéo từ 0-100%"): thanh kéo 0–100 % bước 5, áp khi THẢ tay ([sliderRow]). Cùng intent
         // `deps.onColorChoice` với hai hàng trên; ThemeHost áp, màn dựng lại nền tại chỗ (không recreate).
@@ -170,7 +172,7 @@ class SettingsSections(
             current = ChromeOpacity.position(choice.surfaceOpacity),
             valueText = { pos -> "${ChromeOpacity.transparencyPct(ChromeOpacity.ofPosition(pos))}%" },
             describe = { value -> context.getString(R.string.kachi_bg_opacity_a11y, value) },
-        ) { pos -> choice = choice.copy(surfaceOpacity = ChromeOpacity.ofPosition(pos)); deps.onColorChoice(choice) })
+        ) { pos -> deps.onColorChoice(deps.state().colorChoice.copy(surfaceOpacity = ChromeOpacity.ofPosition(pos))) })
         body.addView(rows.note(context.getString(R.string.kachi_bg_opacity_note)))
         // Footnote màu đứng sau các hàng màu (nhấn + tông + độ đục) — nó nói về màu, không phải hình xe. Nếu để sau
         // khối HÌNH XE thì nó đọc như đang giải thích hình xe (đúng họ lỗi U12/U13: cơ chế đúng, UI nói sai chỗ).
@@ -185,6 +187,12 @@ class SettingsSections(
         } else {
             body.addView(rows.note(context.getString(R.string.kachi_car_image_default)))
         }
+        // 3.01 R25 — màu sơn xe 3D (8 màu của AVM), cùng `choice` với các hàng màu trên (không ghi đè lẫn nhau).
+        SettingsCarPaintRow.paintRow(context, rows, choice.carPaint) { p -> deps.onColorChoice(deps.state().colorChoice.copy(carPaint = p)) }
+            ?.let(body::addView)
+        SettingsCarPaintRow.backdrop(context, rows, choice.carBackdrop) { b -> deps.onColorChoice(deps.state().colorChoice.copy(carBackdrop = b)) }
+            .forEach(body::addView)
+        SettingsCarPaintRow.tyres(context, rows, choice.carTyres) { on -> deps.onColorChoice(deps.state().colorChoice.copy(carTyres = on)) }?.let(body::addView)
         val carFolder = CarImageStore.folderHint(context)
         body.addView(rows.note(context.getString(R.string.kachi_car_image_steps, carFolder)))
         body.addView(rows.button(context.getString(R.string.kachi_copy_path)) {

@@ -1,0 +1,112 @@
+ev_range_km                  LARGE  618x826 top=340 bottom=341  HOFF '412'+'km' +26px
+ev_range_km                  NARROW 303x826 top=340 bottom=341  HOFF '412'+'km' +26px
+ev_range_km                  SMALL  303x406 top=130 bottom=131  HOFF '412'+'km' +26px
+ev_range_km                  WIDE   935x267 top=61 bottom=61  HOFF '412'+'km' +26px
+g_battery                    LARGE  619x826 top=18 bottom=548 VEMPTY HOFF '97'+'%' +10px
+g_battery                    NARROW 303x826 top=18 bottom=548 VEMPTY HOFF '97'+'%' +10px
+g_battery                    SMALL  303x406 top=18 bottom=128  HOFF '97'+'%' +10px
+g_battery                    WIDE   934x267 top=18 bottom=30  HOFF '97'+'%' +10px
+g_climate                    LARGE  618x826 top=18 bottom=210  HOFF '26'+'°C' +14px
+g_climate                    LARGE  619x826 top=18 bottom=210  HOFF '26'+'°C' +14px
+g_climate                    NARROW 303x826 top=18 bottom=40  HOFF '26'+'°C' +14px
+g_climate                    NARROW 303x826 top=18 bottom=40  HOFF '26'+'°C' +14px
+g_climate                    SMALL  303x406 top=18 bottom=31  HOFF '26'+'°C' +14px
+g_climate                    SMALL  303x406 top=18 bottom=31  HOFF '26'+'°C' +14px
+g_climate                    WIDE   934x267 top=18 bottom=60  HOFF '26'+'°C' +14px
+g_climate                    WIDE   935x267 top=18 bottom=60  HOFF '26'+'°C' +14px
+g_doors                      LARGE  619x826 top=18 bottom=33  
+g_doors                      NARROW 303x826 top=18 bottom=42  
+g_doors                      SMALL  303x406 top=18 bottom=42  
+g_doors                      WIDE   935x266 top=18 bottom=33  
+g_energy                     LARGE  619x826 top=18 bottom=426 VEMPTY HOFF '78'+'%' +10px
+g_energy                     LARGE  619x826 top=18 bottom=426 VEMPTY HOFF '78'+'%' +10px
+g_energy                     NARROW 303x826 top=18 bottom=102  HOFF '78'+'%' +10px
+g_energy                     NARROW 303x826 top=18 bottom=102  HOFF '78'+'%' +10px
+g_energy                     SMALL  303x406 top=18 bottom=77  HOFF '78'+'%' +10px
+g_energy                     SMALL  303x406 top=18 bottom=77  HOFF '78'+'%' +10px
+g_energy                     WIDE   935x266 top=18 bottom=59  HOFF '78'+'%' +10px
+g_energy                     WIDE   935x267 top=18 bottom=60  HOFF '78'+'%' +10px
+g_lights                     LARGE  619x826 top=18 bottom=24  HOFF 'Chế độ đèn pha'+'Tắt' -146px
+g_lights                     NARROW 303x826 top=18 bottom=24  
+g_lights                     SMALL  303x406 top=18 bottom=24  
+g_lights                     WIDE   935x267 top=18 bottom=24  
+g_trip                       LARGE  618x826 top=18 bottom=534 VEMPTY HOFF '123.4'+'km' +18px
+g_trip                       LARGE  618x826 top=18 bottom=534 VEMPTY HOFF '123.4'+'km' +18px
+g_trip                       NARROW 302x826 top=18 bottom=318 VEMPTY HOFF '123.4'+'km' +18px
+g_trip                       NARROW 303x826 top=18 bottom=318 VEMPTY HOFF '123.4'+'km' +17px
+g_trip                       SMALL  302x406 top=18 bottom=42  HOFF '123.4'+'km' +18px
+g_trip                       SMALL  303x406 top=18 bottom=42  HOFF '123.4'+'km' +17px
+g_trip                       WIDE   934x266 top=18 bottom=30  HOFF '123.4'+'km' +18px
+g_trip                       WIDE   935x267 top=18 bottom=30  HOFF '123.4'+'km' +17px
+g_tyres                      LARGE  618x826 top=18 bottom=783 VEMPTY 
+g_tyres                      NARROW 302x826 top=18 bottom=783 VEMPTY 
+g_tyres                      SMALL  302x406 top=18 bottom=363 VEMPTY 
+g_tyres                      WIDE   934x266 top=18 bottom=223 VEMPTY 
+g_windows                    LARGE  619x826 top=18 bottom=24  
+g_windows                    NARROW 303x826 top=18 bottom=24  
+g_windows                    SMALL  303x406 top=18 bottom=24  
+g_windows                    WIDE   934x267 top=18 bottom=24  
+gear                         LARGE  619x826 top=344 bottom=345  
+gear                         NARROW 303x826 top=344 bottom=345  
+gear                         SMALL  303x406 top=134 bottom=135  
+gear                         WIDE   934x267 top=65 bottom=65  
+motor_power                  LARGE  619x826 top=340 bottom=341  HOFF '125'+'kW' +26px
+motor_power                  NARROW 303x826 top=340 bottom=341  HOFF '125'+'kW' +26px
+motor_power                  SMALL  303x406 top=130 bottom=131  HOFF '125'+'kW' +26px
+motor_power                  WIDE   934x267 top=61 bottom=61  HOFF '125'+'kW' +26px
+soc                          LARGE  618x826 top=782 bottom=12  
+soc                          NARROW 302x826 top=782 bottom=12  
+soc                          SMALL  302x406 top=362 bottom=12  
+soc                          WIDE   934x266 top=222 bottom=12  
+soh_oem                      LARGE  618x826 top=340 bottom=341  HOFF '97'+'%' +16px
+soh_oem                      NARROW 302x826 top=340 bottom=341  HOFF '97'+'%' +16px
+soh_oem                      SMALL  302x406 top=130 bottom=131  HOFF '97'+'%' +16px
+soh_oem                      WIDE   934x266 top=60 bottom=61  HOFF '97'+'%' +16px
+speed                        LARGE  619x826 top=340 bottom=341  HOFF '112'+'km/h' +41px
+speed                        NARROW 303x826 top=340 bottom=341  HOFF '112'+'km/h' +27px
+speed                        SMALL  303x406 top=130 bottom=131  HOFF '112'+'km/h' +27px
+speed                        WIDE   935x266 top=60 bottom=61  HOFF '112'+'km/h' +41px
+trip_hours,odometer,ev_range_km,soc LARGE  619x826 top=190 bottom=118  
+trip_hours,odometer,ev_range_km,soc NARROW 303x826 top=91 bottom=33  
+trip_hours,odometer,ev_range_km,soc SMALL  303x406 top=34 bottom=35  HOFF '1:25'+'Thời gian chuyến' +22px; HOFF '45678'+'km' +22px; HOFF '412'+'km' +22px; HOFF '78'+'%' +22px
+trip_hours,odometer,ev_range_km,soc WIDE   934x267 top=36 bottom=37  
+trunk                        LARGE  619x826 top=411 bottom=330  
+trunk                        NARROW 303x826 top=411 bottom=330  
+trunk                        SMALL  303x406 top=201 bottom=120  
+trunk                        WIDE   935x266 top=150 bottom=70  
+w_apps                       LARGE  619x826 top=436 bottom=359  
+w_apps                       NARROW 303x826 top=426 bottom=348  
+w_apps                       SMALL  303x406 top=216 bottom=138  
+w_apps                       WIDE   935x267 top=157 bottom=79  
+w_board                      LARGE  618x826 top=199 bottom=146  
+w_board                      NARROW 303x826 top=201 bottom=165  
+w_board                      SMALL  303x406 top=96 bottom=60  
+w_board                      WIDE   935x267 top=117 bottom=64  
+w_car                        LARGE  619x826 top=787 bottom=12  
+w_car                        NARROW 303x826 top=787 bottom=12  
+w_car                        SMALL  303x406 top=367 bottom=12  
+w_car                        WIDE   935x266 top=227 bottom=12  
+w_clock                      LARGE  619x826 top=288 bottom=288  
+w_clock                      NARROW 303x826 top=298 bottom=298  
+w_clock                      SMALL  303x406 top=88 bottom=88  
+w_clock                      WIDE   935x267 top=58 bottom=59  
+w_energy                     LARGE  619x826 top=782 bottom=12  
+w_energy                     NARROW 303x826 top=782 bottom=12  
+w_energy                     SMALL  303x406 top=362 bottom=12  
+w_energy                     WIDE   934x267 top=223 bottom=12  
+w_media                      LARGE  618x826 top=394 bottom=393  
+w_media                      NARROW 302x826 top=397 bottom=396  
+w_media                      SMALL  302x406 top=187 bottom=186  
+w_media                      WIDE   934x266 top=83 bottom=144  
+w_pm25                       LARGE  619x826 top=782 bottom=12  
+w_pm25                       NARROW 303x826 top=782 bottom=12  
+w_pm25                       SMALL  303x406 top=362 bottom=12  
+w_pm25                       WIDE   934x267 top=223 bottom=12  
+w_speed                      LARGE  619x826 top=318 bottom=319  HOFF '112'+'km/h' +43px
+w_speed                      NARROW 303x826 top=318 bottom=319  
+w_speed                      SMALL  303x406 top=108 bottom=109  
+w_speed                      WIDE   934x267 top=39 bottom=39  HOFF '112'+'km/h' +44px
+window_lf                    LARGE  619x826 top=358 bottom=358  
+window_lf                    NARROW 303x826 top=358 bottom=358  
+window_lf                    SMALL  303x406 top=148 bottom=148  
+window_lf                    WIDE   935x267 top=78 bottom=79  

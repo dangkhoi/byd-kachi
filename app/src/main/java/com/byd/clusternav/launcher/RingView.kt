@@ -38,7 +38,8 @@ class RingView(context: Context) : View(context) {
         style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; color = Color.parseColor(KachiTheme.GREEN)
     }
     private val bigP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor(KachiTheme.INK); textAlign = Paint.Align.CENTER; isFakeBoldText = true
+        color = Color.parseColor(KachiTheme.INK); textAlign = Paint.Align.CENTER
+        typeface = KachiWidgetType.heroFace; fontFeatureSettings = KachiWidgetType.TABULAR   // R22: số LIGHT, không giả đậm
     }
     private val smallP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor(KachiTheme.MUT); textAlign = Paint.Align.CENTER
@@ -100,7 +101,7 @@ class RingView(context: Context) : View(context) {
     }
 
     private companion object {
-        const val STROKE_RATIO = 0.062f
+        const val STROKE_RATIO = 0.042f   // R22 (brief Kim §2.6 "vòng mảnh"): 6,2 % → 4,2 % — vẫn ≥ 3:1 trên rãnh, đọc được lúc lái
         const val DIAMETER_RATIO = 0.76f
         const val BIG_RATIO = 0.26f
         const val SMALL_RATIO = 0.12f

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R10 — chữ của bộ chọn hồ sơ + hộp Xoá hồ sơ (ProfileChip / SettingsSectionsProfiles). Tệp riêng, tiền tố
+     kprof_ (KHÔNG phải kachi_: bài khoá mồ côi của LauncherI18nContractTest chỉ đọc values/strings_kachi.xml); cùng tập
+     khoá ở cả 5 thư mục (ProfileDialog301ContractTest canh). -->
+<resources>
+    <string name="kprof_pick_subtitle">Menukar akan menggunakan susun atur, kluster, kekunci dan rupa</string>
+    <string name="kprof_delete_title">Padam profil “%1$s”?</string>
+    <string name="kprof_delete_message">Semua yang disimpan oleh profil ini akan hilang: susun atur dan petak, bar butang, rupa, buku alamat, kekunci stereng, tayangan kluster (bingkai/DPI setiap aplikasi), kamera, jadual navigasi. Tidak boleh dibuat asal — eksport profil dahulu untuk menyimpannya.</string>
+    <string name="kprof_delete_confirm">Padam profil</string>
+</resources>

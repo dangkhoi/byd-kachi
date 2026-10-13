@@ -34,8 +34,8 @@ import org.junit.jupiter.api.Test
  *    "gần cân" ở đúng cặp tỉ lệ hiện tại (0.075/0.058) và vỡ ngay khi ai đổi một trong hai;
  *  • `GridEditorView`: `centerY + s*0.35f` xấp xỉ `capHeight/2` của **một** phông (Roboto 0.3555) — sai tới
  *    `0.025 × cỡ chữ` với phông có cap-height khác, mà phông là thứ ROM quyết.
- * Và lỗi (2) của ô dựng bằng `TextView` (`AxisRow` ở `:app`): canh giữa CẢ CỤM `số + đơn vị` đẩy con số lệch trục
- * đúng `(khe + rộng đơn vị)/2`.
+ * Lỗi (2) — trục của cụm `số + đơn vị` — UX7 giải bằng "số ở trục, đơn vị treo phải"; **owner 13/10 đảo luật**
+ * (*"lệch phải… cân đối hết"*): nay cả khối cân giữa trục (bài `cum so + don vi can giua…`, `AxisRow - khoi…`).
  */
 class CellTextLayoutTest {
 
@@ -205,36 +205,47 @@ class CellTextLayoutTest {
     }
 
     // ══ V3 · một trục cho cả hai dòng + co cho vừa thẻ ════════════════════════════════════════════════════════
+    // 3.01 R20 — owner 13/10 *"chỉ số lệch phải… canh cho cân đối hết"*: luật UX7 (số ở trục, đơn vị treo phải) bị
+    // đảo ⇒ CẢ KHỐI `số + khe + đơn vị` cân giữa trục, cùng tâm với dòng phụ.
 
     @Test
-    fun `con so nam giua truc o, don vi treo ben phai - hai dong cung truc`() {
+    fun `cum so + don vi can giua truc o - cung tam voi dong phu (owner 13-10)`() {
         val left = 100f; val right = 400f; val inset = 10f
         val centerX = (left + right) / 2f
         val numW = 80f; val gapU = 8f; val unitW = 40f
-        val x = CellTextLayout.lineStartX(centerX, numW, numW + gapU + unitW, left, right, inset)
-        assertEquals(centerX, x + numW / 2f, TOL, "CON SỐ phải nằm giữa trục ô (đơn vị treo bên phải)")
+        val pairW = numW + gapU + unitW
+        val x = CellTextLayout.lineStartX(centerX, pairW, left, right, inset)
+        assertEquals(centerX, x + pairW / 2f, TOL, "tâm KHỐI số + đơn vị phải ở trục ô")
         val subW = 120f
-        val sx = CellTextLayout.lineStartX(centerX, subW, subW, left, right, inset)
-        assertEquals(centerX, sx + subW / 2f, TOL, "dòng phụ phải cùng trục với con số")
-        // Bản CŨ canh giữa CẢ CỤM ⇒ con số lệch trái đúng (gapU+unitW)/2 = 24 px.
-        val oldNumCenter = centerX - (numW + gapU + unitW) / 2f + numW / 2f
-        assertEquals(24f, centerX - oldNumCenter, TOL, "kiểm lại giả định: cụm-canh-giữa đẩy số lệch trái 24 px")
+        val sx = CellTextLayout.lineStartX(centerX, subW, left, right, inset)
+        assertEquals(x + pairW / 2f, sx + subW / 2f, TOL, "dòng phụ và khối số phải CÙNG một tâm")
+        // Luật UX7 cũ (số ở trục) ⇒ tâm khối lệch PHẢI đúng (khe + đơn vị)/2 = 24 px — chính cái owner thấy.
+        val ux7Start = centerX - numW / 2f
+        assertEquals(24f, ux7Start + pairW / 2f - centerX, TOL, "kiểm lại giả định: số-ở-trục đẩy khối lệch phải 24 px")
+        assertTrue(kotlin.math.abs(x - ux7Start) > 20f, "luật mới phải khác luật UX7 thấy được")
     }
 
     @Test
-    fun `het cho ben phai thi ca cum nhich sang trai, khong bao gio bi cat`() {
+    fun `cum rong gan bang the thi kep trong le, khong bao gio bi cat`() {
         val left = 100f; val right = 300f; val inset = 10f   // chỗ trống trong thẻ = 180 px
         val centerX = (left + right) / 2f
-        val numW = 120f; val pairW = 170f                    // vừa thẻ, nhưng canh giữa SỐ thì đơn vị tràn mép phải
-        val x = CellTextLayout.lineStartX(centerX, numW, pairW, left, right, inset)
+        val pairW = 170f
+        val x = CellTextLayout.lineStartX(centerX, pairW, left, right, inset)
         assertTrue(x >= left + inset - TOL, "không được tràn mép TRÁI thẻ")
         assertTrue(x + pairW <= right - inset + TOL, "không được tràn mép PHẢI thẻ (đơn vị bị cắt)")
-        assertTrue(x < centerX - numW / 2f, "phải nhích sang trái so với vị trí canh giữa lý tưởng")
+        // Tâm lệch khỏi trục chỉ khi tâm ô không nằm giữa vùng trong — ở đây đối xứng ⇒ vẫn đúng tâm.
+        assertEquals(centerX, x + pairW / 2f, TOL)
+    }
+
+    @Test
+    fun `truc lech khoi giua the thi cum kep vao le, khong tran`() {
+        val x = CellTextLayout.lineStartX(centerX = 280f, lineWidth = 100f, left = 100f, right = 300f, inset = 10f)
+        assertEquals(190f, x, TOL, "cụm chạm lề phải trong ⇒ dừng ở 290 − 100")
     }
 
     @Test
     fun `cum rong hon ca the thi dat o le trong, khong day ra ngoai`() {
-        val x = CellTextLayout.lineStartX(centerX = 200f, anchorWidth = 500f, lineWidth = 500f, left = 100f, right = 300f, inset = 10f)
+        val x = CellTextLayout.lineStartX(centerX = 200f, lineWidth = 500f, left = 100f, right = 300f, inset = 10f)
         assertEquals(110f, x, TOL, "cụm rộng hơn thẻ ⇒ bám lề trong bên trái, không đẩy ra ngoài thẻ")
     }
 
@@ -422,13 +433,13 @@ class CellTextLayoutTest {
         }
     }
 
-    // ══ UX7 · một TRỤC cho ô dựng bằng TextView (AxisRow) ════════════════════════════════════════════════════
+    // ══ AxisRow (ô dựng bằng TextView) — 3.01 R20: khối cân giữa, owner 13/10 ════════════════════════════════════
 
     @Test
-    fun `AxisRow - con so ve dung truc o, cum canh giua cu thi lech nua be rong don vi`() {
-        // Bốn chỗ gọi thật + bề rộng đơn vị theo mô hình advance của Roboto ở density 1.5 [SUY cho px, [ĐO] cho
-        // công thức]: ô Tốc độ (" km/h" 15sp) · ô đọc chung (" %" 14sp) · số chính thẻ nhóm (" bar" 14sp) ·
-        // ô đọc thanh nút ("%" 13sp + khe Sp.XS = 6 px).
+    fun `AxisRow - khoi so + don vi can giua truc o o ca bon cho goi (owner 13-10)`() {
+        // Bốn chỗ gọi thật + bề rộng đơn vị theo mô hình advance của Roboto ở density 1.5 [SUY cho px]: ô Tốc độ
+        // (" km/h" 15sp) · ô đọc chung (" %" 14sp) · số chính thẻ nhóm (" bar" 14sp) · ô đọc thanh nút ("%" 13sp +
+        // khe Sp.XS = 6 px). [ĐO] 13/10: số chính Chuyến đi `123.4` ở trục, `" km"` treo phải ⇒ owner thấy lệch phải.
         val cases = listOf(
             Triple("Tốc độ", 58.3f, 0f),
             Triple("ô đọc chung", 22.9f, 0f),
@@ -436,15 +447,17 @@ class CellTextLayoutTest {
             Triple("ô đọc thanh nút", 16.2f, 6f),
         )
         for ((name, unitW, gap) in cases) {
-            val left = 0f; val right = 300f; val inset = 0f
+            val left = 0f; val right = 300f
             val centerX = (left + right) / 2f
             val numW = 60f
-            val x = CellTextLayout.lineStartX(centerX, numW, numW + gap + unitW, left, right, inset)
-            assertEquals(centerX, x + numW / 2f, TOL, "$name: CON SỐ phải ở trục ô")
-            // Nhãn/dòng phụ của cùng ô canh giữa đúng trục ⇒ lệch của bản cũ = khoảng cách giữa hai trục.
-            val oldNumCenter = centerX - (numW + gap + unitW) / 2f + numW / 2f
-            assertEquals((gap + unitW) / 2f, centerX - oldNumCenter, TOL, "$name: lệch cũ = (khe + đơn vị)/2")
-            assertTrue(centerX - oldNumCenter > 8f, "$name: lệch cũ phải thấy được (> 8 px)")
+            val lineW = numW + gap + unitW
+            val x = CellTextLayout.lineStartX(centerX, lineW, left, right, inset = 0f)
+            val inkLeft = x; val inkRight = x + lineW
+            assertEquals(inkLeft - left, right - inkRight, TOL, "$name: lề trái của khối phải bằng lề phải")
+            // Luật UX7 cũ (số ở trục) ⇒ khối lệch phải (khe + đơn vị)/2 — thấy được (> 8 px).
+            val ux7Shift = (centerX - numW / 2f + lineW / 2f) - centerX
+            assertEquals((gap + unitW) / 2f, ux7Shift, TOL, "$name: lệch của luật cũ = (khe + đơn vị)/2")
+            assertTrue(ux7Shift > 8f, "$name: lệch cũ phải thấy được (> 8 px)")
         }
     }
 
@@ -458,7 +471,7 @@ class CellTextLayoutTest {
         val wanted = 150f
         val numW = minOf(wanted, right - left - unitW - gap)      // bước 1: đo số trong phần CÒN LẠI
         assertEquals(144f, numW, TOL, "số phải bị kẹp về phần còn lại, không lấy trọn bề rộng ô")
-        val x = CellTextLayout.lineStartX((left + right) / 2f, numW, numW + gap + unitW, left, right, inset = 0f)
+        val x = CellTextLayout.lineStartX((left + right) / 2f, numW + gap + unitW, left, right, inset = 0f)
         assertTrue(x >= left - TOL, "không tràn mép trái")
         assertTrue(x + numW + gap + unitW <= right + TOL, "đơn vị không bị đẩy ra ngoài ô")
     }

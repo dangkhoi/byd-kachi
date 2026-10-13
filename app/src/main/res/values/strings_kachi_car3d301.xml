@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R25 — widget xe 3D: tên widget (contentDescription) + hàng "Màu xe 3D" (Cài đặt › Giao diện › Hình xe; ô màu
+     chỉ có chữ cho trợ năng). Tên màu theo tên dòng `car_body_color.csv` của AVM; dòng lạ ⇒ kcar3d_paint_other. Cùng khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kcar3d_title">Xe 3D</string>
+    <string name="kcar3d_paint_row">Màu xe 3D</string>
+    <string name="kcar3d_paint_white">Trắng</string>
+    <string name="kcar3d_paint_black">Đen</string>
+    <string name="kcar3d_paint_grey">Xám</string>
+    <string name="kcar3d_paint_darkblue">Xanh đậm</string>
+    <string name="kcar3d_paint_purple">Tím</string>
+    <string name="kcar3d_paint_red">Đỏ</string>
+    <string name="kcar3d_paint_smartblue">Xanh dương</string>
+    <string name="kcar3d_paint_green">Xanh lục</string>
+    <string name="kcar3d_paint_blue">Xanh lam</string>
+    <string name="kcar3d_paint_orange">Cam</string>
+    <string name="kcar3d_paint_pink">Hồng</string>
+    <string name="kcar3d_paint_silvery">Bạc</string>
+    <string name="kcar3d_paint_mountain_grey">Xám núi</string>
+    <string name="kcar3d_paint_tianshan_white">Trắng Thiên Sơn</string>
+    <string name="kcar3d_paint_other">Màu %1$s</string>
+    <string name="kcar3d_bg_row">Nền xe 3D</string>
+    <string name="kcar3d_bg_none">Không ảnh</string>
+    <string name="kcar3d_bg_align">Căn ảnh nền</string>
+    <string name="kcar3d_bg_align_note">Đóng Cài đặt, kéo để dịch và chụm hai ngón để phóng ảnh sau xe 3D, rồi bấm Xong.</string>
+    <string name="kcar3d_bg_empty">Chưa có ảnh trong thư mục hình nền: %1$s</string>
+    <string name="kcar3d_paint_steel">Xanh xám</string>
+    <string name="kcar3d_tyres_row">Hiện thông số lốp</string>
+    <string name="kcar3d_tyres_sub">Áp suất và nhiệt độ ngay dưới từng bánh của xe 3D</string>
+    <string name="kcar3d_step_down">%1$s: giảm</string>
+    <string name="kcar3d_step_up">%1$s: tăng</string>
+</resources>

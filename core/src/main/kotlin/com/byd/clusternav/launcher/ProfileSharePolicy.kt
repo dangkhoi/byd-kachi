@@ -85,6 +85,8 @@ object ProfileSharePolicy {
         listOf(
             "cast_enabled", "cast_bubble_visible", "split_ratio_left_pct", "autostart_enabled", "autostart_package",
             "autostart_split_enabled", "autostart_left_package", "autostart_right_package", "cast_style",
+            // 3.1 · R4 — bước −/+ khung (5/20/50 px): một con số trình bày, không vị trí.
+            com.byd.clusternav.modules.clustercast.simplified.CastGeometrySteps.KEY,
         ).forEach { put(it, R_CAST) }
         listOf("voice_music_default_app", "headless_autostart").forEach { put(it, R_APPS) }
         // F2/F3 — `pkg|B,pkg|N` (tên gói + kiểu) và `ytmusic|<từ khoá/link mã hoá>`: lựa chọn app/nhạc, không vị trí.

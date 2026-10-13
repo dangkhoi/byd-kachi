@@ -62,6 +62,11 @@ data class ProjectionRecipe(
      * màn ảo tạo lại làm hỏng sổ display của ATM (`ClusterManager.kt:37`) ⇒ bên gọi dò lại id sau khi gửi. Không vào chuỗi export.
      */
     val themeOnVacantVd: Boolean = false,
+    /**
+     * 3.1 · R6 — đời xe + đời Android này có lệnh `wm overscan` (bước "Dịch nội dung"). `:app` đặt từ `ClusterProfile` (DiLink < 5)
+     * VÀ API lúc chạy ([CastContentShift.usableOn] — A11+ đã gỡ lệnh). Mặc định `false`: đường mới tắt tới khi hồ sơ nói có.
+     */
+    val supportsOverscan: Boolean = false,
 ) {
     /** Mọi opcode coi là đổi theme: [KNOWN_THEME_OPS] ∪ [styleOps]. */
     val themeOps: Set<Int> get() = KNOWN_THEME_OPS + styleOps.values
@@ -163,6 +168,7 @@ data class ProjectionRecipe(
             styleOps: Map<CastStyle, Int>,
             nativeStyle: CastStyle?,
             themeOnVacantVd: Boolean = false,
+            supportsOverscan: Boolean = false,
         ): ProjectionRecipe {
             val svc = svcName.takeIf(::svcOk) ?: SVC_DILINK3
             val declared = styleOps.values.toSet()
@@ -175,7 +181,7 @@ data class ProjectionRecipe(
             }
             val cast = castLeft.ifEmpty { SEAL_CAST }
             val tear = peelTheme(teardownSeq, declared).second.ifEmpty { SEAL_TEARDOWN }
-            return ProjectionRecipe(svc, cast, tear, styles, nativeStyle, themeOnVacantVd)
+            return ProjectionRecipe(svc, cast, tear, styles, nativeStyle, themeOnVacantVd, supportsOverscan)
         }
     }
 }

@@ -1,7 +1,6 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
-import android.graphics.Typeface
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
@@ -46,14 +45,25 @@ class GroupTileView(context: Context) : LinearLayout(context) {
     private val boards = GroupBoardBinder()
 
     /**
-     * Lưới ô con ĐANG dựng — thứ duy nhất trong ô này **nhường chỗ được** (xem [onMeasure]).
+     * Các vùng **nhường chỗ được** (xem [onMeasure]), theo THỨ TỰ nhường: khoảng thở của số chính thẻ CARD ([ReadGrid] trần
+     * [Sp.LEAD_ROW], sàn = chỗ số thật cần) TRƯỚC, rồi lưới ô con ([GroupCellGrid] — bớt hàng/dạng, cuối cùng bỏ mục cuối).
+     * 3.01 R20: [ĐO] *Chuyến đi* ở khung 6×2 — số chính giữ trọn 162 px trong khi hàng số phụ còn 25 px (bị cắt): khoảng
+     * trắng phải nhường trước chữ.
      *
-     * `null` với nhóm BOARD (bảng tự vẽ, không có lưới) ⇒ ở đó không có gì nhường. Từ U9 pha 2 nhóm BOARD **có thể
+     * Rỗng với nhóm BOARD (bảng tự vẽ, không có lưới) ⇒ ở đó không có gì nhường. Từ U9 pha 2 nhóm BOARD **có thể
      * có nút** (*Cửa & khoang*), nên chỗ cho hàng nút được lo bằng cách khác: thân ô nhận `weight` để `LinearLayout`
-     * đo hàng nút — chi phí CỐ ĐỊNH — trước rồi mới chia phần dư cho bảng (xem [bind]). Bảng Canvas co được tới 0 mà
-     * không mất gì phải bấm; lưới chữ thì không, nên hai ca cần hai cách.
+     * đo hàng nút — chi phí CỐ ĐỊNH — trước rồi mới chia phần dư cho bảng (xem [bind]).
      */
-    private var readGrid: ReadGrid? = null
+    private val trimAreas = ArrayList<TrimArea>(2)
+
+    /** Khoảng thở dưới thân (`null` ở bảng BOARD-có-nút: thân ăn `weight`) — [onLayout] chia đôi nó trên/dưới thân. */
+    private var breath: View? = null
+
+    /** Mực nhấn của lĩnh vực nhóm (chip icon đầu ô + thanh mức) — đặt ở [bind]. */
+    private var accent = 0
+
+    /** R22 — thân HÌNH ([GroupBodies]: hình xe vật-là-nút / bảng icon) thay lưới đọc + hàng nút chữ khi dữ liệu có dạng đó. */
+    private var matrix: View? = null
 
     init {
         orientation = VERTICAL
@@ -66,8 +76,10 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         val model = GroupBoard.of(id, data.car, data.units) ?: return false
         groupId = id
         tyreBoardPort = tyreBoard
-        removeAllViews(); binders.clear(); readGrid = null
+        accent = KachiWidgetType.accentOf(CapabilityCatalog.pick(id)?.domain)   // R22: sắc lĩnh vực CHỈ ở chip đầu + thanh mức
+        removeAllViews(); binders.clear(); trimAreas.clear()
         bodyHolder.removeAllViews()
+        matrix = GroupBodies.of(context, model, data)
 
         addView(header(model), LayoutParams(MATCH, WRAP))
         // ⚠⚠ [KIỂM TOÁN UX mục 3] Thân ô **KHÔNG còn `weight = 1`**.
@@ -86,10 +98,10 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         addView(bodyHolder, if (boardWithActions) LayoutParams(MATCH, 0, 1f) else LayoutParams(MATCH, WRAP))
         buildBody(model, data)
         // Khoảng thở đẩy hàng nút xuống đáy ô — không cần khi thân đã ăn phần dư bằng `weight` (hai `weight` cùng lúc
-        // thì bảng chỉ còn một nửa chỗ mà chẳng để làm gì).
-        if (!boardWithActions) addView(View(context), LayoutParams(MATCH, 0, 1f))
+        // thì bảng chỉ còn một nửa chỗ mà chẳng để làm gì). [onLayout] dời thân xuống NỬA khoảng này (owner 13/10).
+        breath = if (boardWithActions) null else View(context).also { addView(it, LayoutParams(MATCH, 0, 1f)) }
         // Hàng nút dựng MỘT LẦN. [refresh] không chạm ⇒ cú bấm không bị cắt giữa chuỗi MotionEvent.
-        if (model.hasActions) addView(actionsRow(context, model, data), LayoutParams(MATCH, WRAP))
+        if (model.hasActions && matrix == null) addView(actionsRow(context, model, data), LayoutParams(MATCH, WRAP))
         return true
     }
 
@@ -107,22 +119,38 @@ class GroupTileView(context: Context) : LinearLayout(context) {
      * khi hai ô macro cạnh đó thấp hơn nên nguyên vẹn.
      *
      * ## Chữa — cái nào CO ĐƯỢC thì nhường
-     * Nút phải bấm được ⇒ chi phí CỐ ĐỊNH. Dòng dữ liệu thì co được, và [ReadGrid] đã có sẵn giao kèo đó. Nên: đo một
-     * lượt bình thường, thấy tổng vượt hộp thì bảo lưới bớt đúng phần vượt và đo lại. Vòng lặp bị chặn bởi
-     * [ReadGrid.trimBy] (`false` khi tới sàn) nên tối đa hai lượt.
+     * Nút phải bấm được ⇒ chi phí CỐ ĐỊNH. Khoảng thở của số chính và dòng dữ liệu thì co được ([TrimArea]). Nên: đo một
+     * lượt bình thường, thấy tổng vượt hộp thì bảo vùng nhường ĐẦU TIÊN còn nhường được bớt đúng phần vượt và đo lại.
+     * Vòng lặp bị chặn bởi [TrimArea.trimBy] (`false` khi tới sàn) và [MAX_PASSES].
      *
      * ⚠ **PHẢI `resetTrim()` ở đầu mỗi lượt**: không thì lần đo sau (ô rộng ra, đổi bố cục) vẫn dùng phần đã bớt của
      * lần trước ⇒ lưới **co dần một chiều** và không bao giờ trở lại — đúng họ lỗi "trạng thái rò qua các lượt vẽ".
      */
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val grid = readGrid
-        grid?.resetTrim()
+        trimAreas.forEach { it.resetTrim() }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        if (grid == null || MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.UNSPECIFIED) return
+        if (trimAreas.isEmpty() || MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.UNSPECIFIED) return
         val box = MeasureSpec.getSize(heightMeasureSpec) - paddingTop - paddingBottom
-        var need = 0
-        for (i in 0 until childCount) need += getChildAt(i).measuredHeight
-        if (need > box && grid.trimBy(need - box)) super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        repeat(MAX_PASSES) {
+            var need = 0
+            for (i in 0 until childCount) need += getChildAt(i).measuredHeight
+            // Phần tràn bị cha `WRAP` kẹp mất (KDoc [TrimArea.overflowPx]) cũng là phần phải nhường.
+            val excess = maxOf(need - box, trimAreas.sumOf { it.overflowPx })
+            if (excess <= 0 || trimAreas.none { it.trimBy(excess) }) return
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        }
+    }
+
+    /**
+     * 3.01 R20 — owner 13/10 *"nhiều cái khi hiện số lên nó nằm chơi vơi lắm"*: [ĐO] thẻ CARD ở ô cao dồn lên đầu ô (Chuyến
+     * đi 2×6: 318 px trống dưới; Pin 4×6: 553 px). Thân dời xuống NỬA khoảng thở ⇒ cân giữa đầu ô và hàng nút/đáy ô.
+     * Chỉ dời lúc đặt, KHÔNG đổi phép đo: thêm `Space`/`View` `weight` TRƯỚC thân thì `LinearLayout` đo thân với
+     * `heightUsed = 0` (đã có `weight` đứng trước) ⇒ [ĐO] bảng lốp nhận trọn khung, tràn, rơi về ô tóm tắt.
+     */
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        super.onLayout(changed, l, t, r, b)
+        val half = (breath?.height ?: 0) / 2
+        if (half > 0) bodyHolder.offsetTopAndBottom(half)
     }
 
     /**
@@ -135,6 +163,8 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         val id = groupId ?: return false
         val model = GroupBoard.of(id, data.car, data.units) ?: return false
         model.cells.forEach { cell -> binders[cell.id]?.bind(cell) }
+        (matrix as? GroupBody)?.refresh(model)
+        trimAreas.forEach { (it as? GroupCellGrid)?.recheck() }   // 3.01 R20: cột bề rộng tĩnh ⇒ tự xin đo khi định dạng số đổi
         // Bảng nào có đường đổ dữ liệu thì giữ NGUYÊN ô vẽ (Paint đã cấp phát sẵn trong nó); chỉ bảng lốp phải thay
         // ô vẽ, và chỉ nhóm lốp — nhóm KHÔNG có nút — mới đi vào nhánh đó (xem KDoc [GroupBoardBinder.refill]).
         if (model.shape == WidgetShape.BOARD && !boards.refill(model)) {
@@ -149,9 +179,10 @@ class GroupTileView(context: Context) : LinearLayout(context) {
     private fun header(m: GroupBoardModel): View = LinearLayout(context).apply {
         orientation = HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
         val r = KachiTheme.iconRes(m.icon)
+        // R22 (owner 13/10 "thô"; brief Kim §2.5): icon trong chip 28 dp tô sắc lĩnh vực + tiêu đề medium mực đầy.
         if (r != 0) addView(
-            ImageView(context).apply { setImageResource(r); setColorFilter(c(KachiTheme.MUT)) },
-            LayoutParams(dpi(context, Sp.ICON_XS), dpi(context, Sp.ICON_XS))
+            ImageView(context).apply { setImageResource(r); KachiWidgetType.chipIcon(this, accent) },
+            LayoutParams(dpi(context, Sp.HEAD_CHIP), dpi(context, Sp.HEAD_CHIP))
                 .also { it.marginEnd = dpi(context, Sp.S) },
         )
         addView(
@@ -160,8 +191,9 @@ class GroupTileView(context: Context) : LinearLayout(context) {
             // đó SAI: nó lấy trung vị mực trên **hộp a11y rộng 1158px** trong khi chữ "Lốp" chỉ chiếm **31px**, nên
             // phân vị rơi vào viền khử răng cưa chứ không vào lòng nét. Cắt về đúng vùng có mực thì `MUT2` đo được
             // **5.67:1** — ĐẠT. Đã hoàn nguyên: không đổi thẩm mỹ một màn owner đã duyệt dựa trên một số đo đã bị bác.
-            text(context, m.label, 12f, KachiTheme.MUT2).apply {
-                letterSpacing = 0.06f; gravity = Gravity.START
+            text(context, m.label, KachiWidgetType.TITLE_SP, KachiTheme.INK2).apply {
+                KachiWidgetType.title(this); gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                maxLines = 1; ellipsize = TextUtils.TruncateAt.END
             },
             LayoutParams(0, WRAP, 1f),
         )
@@ -180,7 +212,13 @@ class GroupTileView(context: Context) : LinearLayout(context) {
 
     // ── Thân ô theo bộ vẽ ───────────────────────────────────────────────────────────────────────────────
     private fun buildBody(m: GroupBoardModel, data: WidgetData) {
-        val body = when (m.shape) {
+        val mx = matrix
+        val body = if (mx != null) LinearLayout(context).apply {
+            orientation = VERTICAL   // ô XEM đã gộp vào hàng của vật thì không vẽ lần hai; còn lại giữ lưới đọc ở trên
+            val rest = m.cells.filter { it.id !in (mx as GroupBody).consumed }
+            if (rest.isNotEmpty()) addView(gridRows(rest, MAX_PER_ROW, withIcon = false), LayoutParams(MATCH, WRAP))
+            addView(mx, LayoutParams(MATCH, WRAP))
+        } else when (m.shape) {
             WidgetShape.BOARD -> boardBody(m, data)
             WidgetShape.CARD -> cardBody(m)
             else -> stripBody(m)
@@ -223,40 +261,27 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         orientation = VERTICAL
         // Số chính cao [Sp.LEAD_ROW] (= 1.5 dòng dữ liệu) — KHÔNG ăn phần dư của ô. Trước đây nó `WRAP` và phần dư
         // dồn vào lưới số phụ bên dưới, nên thẻ CARD cũng bị đúng bệnh phình của kiểm toán mục 3.
-        m.lead?.let { addView(leadRow(it), LayoutParams(MATCH, dpi(context, Sp.LEAD_ROW))) }
+        // 3.01 R20: trần [Sp.LEAD_ROW] qua [ReadGrid] (nhường khoảng trắng trước khi lưới số phụ phải bỏ mục).
+        m.lead?.let { lead ->
+            addView(ReadGrid(context, dpi(context, Sp.LEAD_ROW)).apply {
+                trimAreas += this
+                addView(leadRow(lead), LayoutParams(MATCH, MATCH))
+            }, LayoutParams(MATCH, WRAP))
+        }
         // `withIcon = false` — xem KDoc [stripCell]: thẻ CARD không đủ bề cao cho icon + nhãn + số.
         addView(gridRows(m.rest, CARD_PER_ROW, withIcon = false), LayoutParams(MATCH, WRAP))
     }
 
     /**
-     * Lưới ô con: các hàng **đều nhau**, mỗi hàng ≤ [perRow], hàng thiếu ô thì chèn chỗ trống.
-     *
-     * Chèn chỗ trống là để ô con hàng trên và hàng dưới rộng **BẰNG NHAU** — không thì hàng 4 ô có ô to hơn hàng
-     * 5 ô và trông như hai cỡ ô khác nhau trong cùng một bảng.
-     *
-     * ⚠⚠ **Chèn tới số ô THỰC TẾ của hàng dài nhất, KHÔNG tới [perRow]** — [ĐO] trên máy ảo: nhóm Kính có 4 ô con
-     * với `perRow = 5`, bản đầu chèn `5 − 4 = 1` ô trống ⇒ **1/5 bề ngang bị bỏ trống** trong khi hàng nút bên
-     * dưới trải hết ô, nhìn ra ngay là lệch. [rowsOf] vốn đã chia đều (4 ô ⇒ một hàng 4), nên trần `perRow` chỉ
-     * là *giới hạn*, không phải *số cột phải phủ*.
+     * Lưới ô con — 3.01 R20: [GroupCellGrid] chọn số cột (≤ [perRow]), dạng ngang/dọc, số dòng nhãn và số mục hiện theo
+     * BỀ RỘNG đo được ([GroupCellFit] ở `:core`). Trần [perRow] giữ nguyên ⇒ ô rộng y như cũ (R21); hàng chia đều như
+     * [rowsOf] (hàng ngắn canh giữa — R22, cùng bề rộng ô với hàng đủ). Cao: trần = số hàng × [Sp.READ_ROW] (kiểm toán mục 3).
      */
-    private fun gridRows(cells: List<GroupCell>, perRow: Int, withIcon: Boolean): View {
-        val rows = rowsOf(cells, perRow)
-        val cols = rows.maxOfOrNull { it.size } ?: 0
-        // TRẦN chiều cao = số hàng × chiều cao MỘT dòng dữ liệu. Đây là chỗ chặn phình (kiểm toán mục 3): lưới xin
-        // đúng chỗ nó cần, không xin "tất cả chỗ còn lại". [ReadGrid] tự co khi ô hẹp hơn trần, và **sàn co** là chỗ
-        // chữ thật cần — nó tự đo, nên không có con số dp nào để đoán sai (xem KDoc [ReadGrid]).
-        return ReadGrid(context, dpi(context, Sp.READ_ROW) * rows.size).apply {
-            readGrid = this
-            rows.forEach { rowCells ->
-                val row = LinearLayout(context).apply { orientation = HORIZONTAL }
-                rowCells.forEach { cell ->
-                    row.addView(stripCell(cell, withIcon), LayoutParams(0, MATCH, 1f).also { it.setMargins(xs(), xs(), xs(), xs()) })
-                }
-                repeat(cols - rowCells.size) { row.addView(View(context), LayoutParams(0, MATCH, 1f)) }
-                addView(row, LayoutParams(MATCH, 0, 1f))
-            }
+    private fun gridRows(cells: List<GroupCell>, perRow: Int, withIcon: Boolean): View =
+        GroupCellGrid(context, dpi(context, Sp.READ_ROW), perRow, withIcon, xs(), dpi(context, Sp.S)).apply {
+            trimAreas += this
+            cells.forEach { add(stripCell(it, withIcon)) }
         }
-    }
 
     /**
      * Một ô con của lưới. **KHÔNG gắn chạm** — xem OQ1 ở KDoc [GroupTiles].
@@ -269,21 +294,22 @@ class GroupTileView(context: Context) : LinearLayout(context) {
      * Đúng §4.3: CARD là *"một số chính + các số phụ xếp hàng, dùng nhãn ngắn"* — không nói tới icon cho từng số
      * phụ. STRIP thì giữ icon vì ở đó icon **là** chỉ báo trạng thái, không phải hình trang trí.
      */
-    private fun stripCell(cell: GroupCell, withIcon: Boolean): View {
+    private fun stripCell(cell: GroupCell, withIcon: Boolean): GroupCellGrid.Cell {
         val icon = KachiTheme.iconRes(cell.icon).takeIf { withIcon && it != 0 }?.let { res ->
             ImageView(context).apply { setImageResource(res) }
         }
         // ⚠ [KIỂM TOÁN UX mục 3] GIÁ TRỊ là thứ TO NHẤT trong ô con (13sp → 17sp): người mở ô nhóm ra để xem SỐ,
         // còn nhãn chỉ để biết số đó là của cái gì. Trước đây số 13sp / nhãn 9.5sp — cùng bậc, nên mắt không có chỗ
         // để dừng. Đơn vị đã nằm ngay trong [GroupCell.value] ("2.4 bar") nên nó đi cùng số, không xuống caption.
-        val value = text(context, cell.value, VALUE_SP, tintOf(cell.tone), bold = true).apply {
+        val value = text(context, cell.value, KachiWidgetType.VALUE_SP, tintOf(cell.tone), bold = true).apply {
             maxLines = 1; ellipsize = TextUtils.TruncateAt.END
         }
         // ⚠⚠ [KIỂM TOÁN UX mục 2] Nhãn dùng [KachiTheme.MUT] (147,160,180) — KHÔNG dùng `MUT2` (139,149,167) nữa —
         // và cỡ 9.5sp → 12sp (nét ~10px → ~13px). [ĐO] nhãn cũ ra **2.33:1** trên nền ô con, dưới xa mức đọc được
         // 4.5:1; phần lớn độ tối đến từ việc CẢ Ô bị làm mờ 50% (đã sửa ở [CellBinder]), phần còn lại từ chính mã
         // màu. MUT trên nền ô con cho **5.9:1** ⇒ đọc được cả khi off-car.
-        val labelView = text(context, cell.label, LABEL_SP, KachiTheme.MUT).apply {
+        val labelView = text(context, cell.label, KachiWidgetType.LABEL_SP, KachiTheme.MUT).apply {
+            KachiWidgetType.caption(this)
             // ⚠⚠ HAI DÒNG, không phải một — đây là **lỗi tôi tự gây ra khi nới cỡ nhãn** và tìm ra bằng ảnh chụp.
             // [ĐO] nhãn 13.5sp trong ô con rộng ~130px (nhóm Kính ở khung nhỏ) bị cắt thành `"Kính trư…"` cho CẢ
             // trước-trái LẪN trước-phải, và `"Kính sau…"` cho cả hai bánh sau ⇒ bốn ô thành hai cặp **giống hệt
@@ -293,50 +319,50 @@ class GroupTileView(context: Context) : LinearLayout(context) {
             // cao 108px vẫn chứa được (2 dòng nhãn 40px + số 28px + lề 8px = 76px).
             maxLines = 2; ellipsize = TextUtils.TruncateAt.END
         }
+        // 3.01 R20: hướng xếp + LayoutParams nhãn/số do [GroupCellGrid] đặt theo kế hoạch đo được (ngang nhãn·số khi đủ
+        // chỗ, dọc nhãn trên số dưới khi hẹp). Ở đây chỉ dựng đủ con, đúng thứ tự icon · nhãn · số.
         val root = LinearLayout(context).apply {
-            // CARD xếp NGANG (nhãn · số), STRIP xếp DỌC (icon / nhãn / số) — xem KDoc trên.
-            orientation = if (withIcon) VERTICAL else HORIZONTAL
             gravity = Gravity.CENTER
             val p = xs(); setPadding(p, p, p, p)
             if (icon != null) addView(
                 icon,
                 LayoutParams(dpi(context, Sp.ICON_XS), dpi(context, Sp.ICON_XS)).also { it.bottomMargin = dpi(context, Sp.XS) },
             )
-            if (withIcon) {
-                addView(labelView)
-                addView(value)
-            } else {
-                // Nhãn co được (weight) để số LUÔN còn chỗ: thà cắt "Cảm biến PM2.5" còn hơn mất con số.
-                addView(labelView, LayoutParams(0, WRAP, 1f))
-                addView(value, LayoutParams(WRAP, WRAP).also { it.marginStart = dpi(context, Sp.XS) })
-            }
+            addView(labelView, LayoutParams(0, WRAP, 1f))
+            addView(value, LayoutParams(WRAP, WRAP))
         }
         CellBinder(root, value, icon).also { binders[cell.id] = it; it.bind(cell) }
-        return root
+        return GroupCellGrid.Cell(root, icon, labelView, value)
     }
 
-    /** Số chính: số to + đơn vị nhỏ bên cạnh + nhãn ngắn phía dưới. */
+    /**
+     * Số chính: số to nét MẢNH + đơn vị nhỏ lùi màu + nhãn ngắn dưới (R22 · brief Kim §2.4) + thanh mức mảnh khi đại lượng
+     * CÓ TRẦN ([KachiMeter.bounded] — đơn vị `%`: pin, SOH…). Luật chọn thanh theo DỮ LIỆU, không theo mã nhóm.
+     */
     private fun leadRow(cell: GroupCell): View {
-        val big = text(context, cell.number, 34f, tintOf(cell.tone), bold = true).apply { maxLines = 1 }
+        val big = text(context, cell.number, KachiWidgetType.HERO_SP, tintOf(cell.tone)).apply {
+            maxLines = 1; KachiWidgetType.hero(this, tintOf(cell.tone))
+        }
+        val meter = if (KachiMeter.bounded(cell.unit)) KachiMeter(context).apply { setColors(accent) } else null
         val root = LinearLayout(context).apply {
             orientation = VERTICAL; gravity = Gravity.CENTER
-            // UX7 — [AxisRow]: số chính ở TRỤC ô như nhãn dưới nó (cũ: canh cả cụm ⇒ lệch trái nửa bề rộng đơn vị).
+            // [AxisRow]: cụm số chính + đơn vị cân giữa trục ô, cùng tâm nhãn dưới nó (owner 13/10 — KDoc AxisRow).
             addView(AxisRow(context).apply {
                 addView(big)
                 if (cell.unit.isNotEmpty()) addView(
-                    text(context, " ${cell.unit}", 14f, KachiTheme.MUT).apply {
-                        setPadding(0, dpi(context, Sp.S), 0, 0)
+                    text(context, " ${cell.unit}", KachiWidgetType.UNIT_SP, KachiTheme.MUT).apply {
+                        KachiWidgetType.unit(this); setPadding(0, dpi(context, Sp.M), 0, 0)
                     },
                 )
             })
-            addView(text(context, cell.label, 11f, KachiTheme.MUT2).apply { letterSpacing = 0.06f })
+            addView(text(context, cell.label, KachiType.CAPTION, KachiTheme.MUT).apply { KachiWidgetType.caption(this) })
+            meter?.let { addView(it, LayoutParams(MATCH, WRAP).also { lp -> lp.topMargin = dpi(context, Sp.S) }) }
         }
         // Số chính CŨNG phải đổi tại chỗ ⇒ đăng ký bộ nối như mọi ô con khác. Thiếu bước này thì mọi số phụ chạy
         // trong khi số to đứng im — sai theo cách rất dễ tưởng là "xe chưa trả dữ liệu".
-        CellBinder(root, big, null, numberOnly = true).also { binders[cell.id] = it; it.bind(cell) }
+        CellBinder(root, big, null, numberOnly = true, meter = meter).also { binders[cell.id] = it; it.bind(cell) }
         return root
     }
-
 
     /** [Sp.XS] quy ra pixel — khe/lề nhỏ nhất của lưới ô con, gọi nhiều lần nên tách cho gọn. */
     private fun xs(): Int = dpi(context, Sp.XS)
@@ -345,31 +371,11 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
         private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
 
-        // ── T5 XONG: năm hằng khoảng cách/cỡ TẠM ở đây đã bị XOÁ, mọi chỗ đi thẳng vào thang KachiSpace ──
-        // PAD 10 → Sp.M(12) · GAP 6 → Sp.S(8) · XS 3 → Sp.XS(4) · ICON_HEAD 16 + ICON_CELL 15 → Sp.ICON_XS(16).
-        // ⚠ Xoá hẳn thay vì trỏ sang thang: hằng cũ tên `XS` mang giá trị **3** trong khi `Sp.XS` là **4** — hai
-        // thứ cùng tên khác giá trị trong cùng một tệp là cái bẫy đọc-nhầm, và ICON_HEAD/ICON_CELL lệch nhau 1dp
-        // (16 vs 15) cho hai icon nằm cạnh nhau, tức là lệch mà không ai cố ý.
-
         /** Ô con tối đa mỗi hàng của dải STRIP — 5 vì nhóm dài nhất có 10 thành viên (⇒ 2 hàng đều). */
         private const val MAX_PER_ROW = 5
 
-        /**
-         * Cỡ chữ GIÁ TRỊ / NHÃN của ô con (sp).
-         *
-         * Chúng phải cách nhau đủ xa để mắt đọc ra **thứ bậc**: giá trị là nội dung, nhãn là chú thích. Trước lượt
-         * kiểm toán là 13 / 9.5 — cùng bậc, nên ô con trông như hai dòng chữ ngang hàng và người xem phải đọc cả hai
-         * mới biết đâu là số. Tỉ lệ mới ≈ 1.4× (17 / 12), cùng tỉ lệ mà thẻ CARD dùng giữa số chính và nhãn của nó.
-         *
-         * ## ⚠ Vì sao 13.5sp mà KHÔNG phải 16sp
-         * Kiểm toán ghi *"cỡ ≥ 16dp"*. [ĐO] ở density 1.5: 13.5sp cho **nét cao 16px** (đạt, nếu đọc "16" là chiều
-         * cao nét — con số kiểm toán dùng để đo cái sai là *"cao nét 10px"*, cùng thang). Còn hiểu "16" là **cỡ
-         * chữ** thì nhãn 16sp = 24px, tức **bằng con số** (19sp = 28px chỉ hơn 4px) ⇒ mất hẳn thứ bậc mà chính
-         * kiểm toán đòi ở mục 3 (*"giá trị là thứ to nhất"*). Hai yêu cầu đó xung đột trong một dòng cao 108px, nên
-         * tôi chọn giữ thứ bậc và đạt "16" theo thang mà số đo của kiểm toán đang dùng. Ghi ra để owner bác được.
-         */
-        private const val VALUE_SP = 19f
-        private const val LABEL_SP = 13.5f
+        /** Số lượt đo tối đa của [onMeasure] (1 lượt thường + mỗi vùng nhường ≤ 2 lượt). */
+        private const val MAX_PASSES = 4
 
         /** Số phụ mỗi hàng của thẻ CARD — 3, vì số phụ có nhãn dài hơn ô con của dải. */
         private const val CARD_PER_ROW = 3
@@ -397,14 +403,9 @@ class GroupTileView(context: Context) : LinearLayout(context) {
          */
         fun <T> rowsOf(items: List<T>, max: Int): List<List<T>> {
             if (items.isEmpty() || max <= 0) return emptyList()
-            val rows = (items.size + max - 1) / max
-            val base = items.size / rows
-            val extra = items.size % rows
+            // 3.01: cùng phép chia của [GridFit.rowCounts] `BALANCED` (một luật cho lưới ô con, hàng nút và lưới widget).
             var at = 0
-            return (0 until rows).map { i ->
-                val n = base + if (i < extra) 1 else 0
-                ArrayList(items.subList(at, at + n)).also { at += n }
-            }
+            return GridFit.rowCounts(items.size, max, GridFit.RowSplit.BALANCED).map { n -> ArrayList(items.subList(at, at + n)).also { at += n } }
         }
 
         /** Sắc thái NẶNG NHẤT trong ô nhóm — cho ô nén và cho màu tóm tắt. */
@@ -424,17 +425,15 @@ class GroupTileView(context: Context) : LinearLayout(context) {
          * sẽ khiến dải đèn có 4 màu chữ cùng lúc.
          */
         fun tintOf(t: GroupTone): String = when (t) {
+            // R22 (owner 13/10: `0 %` trắng cạnh `35 %` xanh — "rối"): MỘT luật cho mọi số — mực trung tính; "đang bật/mở"
+            // nói bằng nút sáng nền nhấn + mức đầy (thứ có nghĩa với nó), chỉ CẢNH BÁO mới đổi màu chữ.
             GroupTone.NEUTRAL, GroupTone.ACTIVE -> KachiTheme.INK
             GroupTone.WARN -> KachiTheme.AMBER
             GroupTone.ALERT -> KachiTheme.RED
         }
 
         /**
-         * Nền ô con. Suy ra từ CHÍNH màu của [KachiTheme] bằng cách thêm kênh trong suốt — KHÔNG khai mã màu mới (đó
-         * là cách một bảng màu thứ hai bắt đầu). Cùng thủ pháp với `#264c7dff` đang dùng ở lưới chọn khả năng.
-         */
-        /**
-         * Nền ô con theo trạng thái.
+         * Nền ô con theo trạng thái — suy từ CHÍNH màu [KachiTheme] + kênh trong suốt (không khai mã màu mới).
          *
          * ## ⚠⚠ WP1 · R1.1 — MÀU NGỮ NGHĨA chuyển hẳn sang NỀN (viền `strokeOf` đã xoá)
          * Owner gỡ hết viền, riêng màu ngữ nghĩa thì *"chuyển sang nền/chữ màu"*. WARN/ALERT trước nói ra bằng **hai**
@@ -494,7 +493,7 @@ class GroupTileView(context: Context) : LinearLayout(context) {
             TextView(ctx).apply {
                 text = s; setTextColor(c(color)); setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
                 gravity = Gravity.CENTER
-                if (bold) typeface = Typeface.DEFAULT_BOLD
+                if (bold) KachiWidgetType.value(this)   // R22: số = medium + tnum, KHÔNG còn DEFAULT_BOLD (brief Kim §2.4)
             }
     }
 }

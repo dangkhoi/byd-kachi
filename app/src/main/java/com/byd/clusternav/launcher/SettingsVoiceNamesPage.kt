@@ -1,6 +1,5 @@
 package com.byd.clusternav.launcher
 
-import android.app.AlertDialog
 import android.content.Context
 import android.graphics.drawable.Drawable
 import android.os.Handler
@@ -10,10 +9,8 @@ import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
@@ -68,38 +65,43 @@ internal class SettingsVoiceNamesPage(private val context: Context, private val 
     /** Mở trang; [request] từ lối (b) (gói) hoặc (c) (mẫu đang chờ). */
     fun open(request: VoiceTeachHint.Request = VoiceTeachHint.Request()) {
         pending = request
-        val root = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            val p = dpi(context, Sp.L); setPadding(p, dpi(context, Sp.S), p, 0)
-        }
-        root.addView(rows.note(context.getString(R.string.kachi_voice_lang_only)))
-        root.addView(rows.note(context.getString(R.string.kachi_vn_page_note)))
-        if (port.readOnly()) root.addView(rows.note(context.getString(R.string.kachi_vn_readonly)))
+        // Lề ngang do vùng ghim/thân [KachiDialog] lo (Sp.XL) — cột không tự đệm thêm.
+        // [root] = phần ĐỨNG YÊN — CHỈ ô tìm + chip lọc. QA-301 D4: hai ghi chú dài + băng mẫu chờ từng nằm ở đây ⇒ bàn phím mở
+        // là danh sách còn ~25 px. Nay chúng là đầu THÂN cuộn ([head]): đọc được lúc mở, cuộn đi khi cần chỗ cho danh sách.
+        val head = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+        head.addView(rows.note(context.getString(R.string.kachi_voice_lang_only)))
+        head.addView(rows.note(context.getString(R.string.kachi_vn_page_note)))
+        if (port.readOnly()) head.addView(rows.note(context.getString(R.string.kachi_vn_readonly)))
         banner.apply { setTextColor(c(KachiTheme.ACCENT)); KachiType.apply(this, KachiType.BODY, bold = true); visibility = View.GONE }
-        root.addView(banner)
-        root.addView(EditText(context).apply {
-            hint = context.getString(R.string.kachi_vn_search_hint); setSingleLine()
-            addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = Unit
-                override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = Unit
-                override fun afterTextChanged(s: Editable?) { query = s?.toString().orEmpty().trim(); paint() }
-            })
+        head.addView(banner)
+        val root = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+        // QA-301 D2 [P1]: ô tìm = ô chuẩn của khung ([KachiDialogs.field]: mực/gợi ý theo bảng, nền lõm, cao ≥ 48 dp) — ô
+        // `EditText` trần theo theme Activity (tối) từng vô hình ở bảng Sáng.
+        val search = KachiDialogs.field(context, label = null, hint = context.getString(R.string.kachi_vn_search_hint))
+        search.edit.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = Unit
+            override fun afterTextChanged(s: Editable?) { query = s?.toString().orEmpty().trim(); paint() }
         })
+        root.addView(search.view)
         root.addView(chips)
-        root.addView(ScrollView(context).apply { addView(list) }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
-        AlertDialog.Builder(context)
-            .setTitle(context.getString(R.string.kachi_vn_page_title))
-            .setView(root)
-            .setPositiveButton(android.R.string.ok, null)
-            .create().also { d ->
-                // Trang Cài đặt được nhớ lại (`SettingsPanel.pages`): dòng "Đã dạy: N app" + nhóm "Tên app đã dạy" của danh sách
-                // Câu lệnh nói được sẽ CŨ tới lượt đổi hồ sơ ⇒ có ghi thì dựng lại trang đang xem khi đóng.
-                d.setOnDismissListener { if (dirty) deps.refreshSettings() }
-                // Không bật bàn phím lúc mở trang (ô tìm là lựa chọn, không phải bước đầu) — trên màn xe bàn phím che nửa danh sách.
-                d.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
-                d.show()
-                d.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-            }
+        // KACHI-301 R13 · #14 — trang TOÀN MÀN trên khung [KachiDialog] (spec §4.3): `fullScreen()` = cửa sổ phủ màn, thân
+        // lấp hết chiều cao; `pinned(root)` = ô tìm + chip đứng yên; `body(list)` = chỉ danh sách cuộn (thân khung đã là
+        // ScrollView ⇒ danh sách nằm thẳng, không lồng ScrollView).
+        // Không bàn phím lúc mở: khung mặc định `SOFT_INPUT_STATE_HIDDEN` + không `focus(...)` (ô tìm là lựa chọn, không phải bước đầu).
+        KachiDialog(context)
+            .title(context.getString(R.string.kachi_vn_page_title))
+            .icon(R.drawable.ic_mic)
+            .fullScreen()
+            .pinned(root)
+            .body(head)
+            .body(list)
+            .noCancel()
+            .primary(context.getString(R.string.kdlg_ok)) {}
+            // Trang Cài đặt được nhớ lại (`SettingsPanel.pages`): dòng "Đã dạy: N app" + nhóm "Tên app đã dạy" của danh sách
+            // Câu lệnh nói được sẽ CŨ tới lượt đổi hồ sơ ⇒ có ghi thì dựng lại trang đang xem khi đóng.
+            .onDismiss { if (dirty) deps.refreshSettings() }
+            .show() ?: return
         reload()
     }
 
@@ -174,7 +176,7 @@ internal class SettingsVoiceNamesPage(private val context: Context, private val 
 
     private fun appRow(a: App, mine: List<TaughtName>): View = LinearLayout(context).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-        background = KachiTheme.surface(context, Sp.RADIUS_L)
+        background = KachiTheme.card(context, Sp.RADIUS_L, KachiDialogSupport.controlFill())   // QA-301: hàng thấy hình trên thẻ trang
         val p = dpi(context, Sp.S); setPadding(p, p, p, p)
         layoutParams = rows.stackLp()
         setOnClickListener { teach(a, pending.sample) }
@@ -211,21 +213,27 @@ internal class SettingsVoiceNamesPage(private val context: Context, private val 
 
     private fun tryOut(a: App) = SettingsVoiceNamesDialog(context, deps, this, a.pkg, a.title, null) { reload() }.tryOnce()
 
+    /** KACHI-301 R13 · #19 — xoá tên đã dạy KHÔNG hoàn lại được ⇒ khuôn Xác nhận PHÁ HUỶ (ô icon + nút chính đỏ). */
     private fun confirmDelete(pkg: String, label: String) {
         if (port.readOnly()) return
-        SettingsDialogs.confirm(
-            context, context.getString(R.string.kachi_vn_page_title), context.getString(R.string.kachi_vn_delete_q, label),
-            context.getString(R.string.kachi_vn_delete),
+        // QA-301 (P3): tiêu đề = câu hỏi CÓ tên app (bản trước: tiêu đề chung "Dạy tên app"); thân nói mất gì (R9).
+        KachiDialogs.confirm(
+            context, context.getString(R.string.kachi_vn_delete_q, label), context.getString(R.string.kmisc_vn_delete_msg),
+            context.getString(R.string.kachi_vn_delete), destructive = true,
         ) { if (port.save(TaughtNames.removeApp(port.names(), pkg))) { dirty = true; reload() } }
     }
 
-    /** Viên thuốc nhỏ (chip lọc · nút hàng) — cùng nền/đích chạm của nút Cài đặt ([KachiSpace.TOUCH]). */
+    /**
+     * Viên thuốc nhỏ (chip lọc · nút hàng) — đích chạm ≥ [KachiSpace.TOUCH] CẢ HAI chiều (QA-301: "Xoá" chỉ rộng 47 dp).
+     * Nền tắt = [KachiDialogSupport.controlFill] (viên nằm trên thẻ hộp/trang — `surface` NEUTRAL trùng màu thẻ ở bảng Sáng).
+     */
     internal fun pill(label: String, active: Boolean, onClick: () -> Unit): TextView = TextView(context).apply {
         text = label
         setTextColor(c(if (active) KachiTheme.ACCENT else KachiTheme.INK)); KachiType.apply(this, KachiType.BODY, bold = active)
-        gravity = Gravity.CENTER; minHeight = dpi(context, Sp.TOUCH)
+        gravity = Gravity.CENTER; minHeight = dpi(context, Sp.TOUCH); minWidth = dpi(context, Sp.TOUCH)
         setPadding(dpi(context, Sp.M), 0, dpi(context, Sp.M), 0)
-        background = KachiTheme.surface(context, Sp.RADIUS_PILL, if (active) SurfaceTone.ACTIVE else SurfaceTone.NEUTRAL)
+        background = if (active) KachiTheme.surface(context, Sp.RADIUS_PILL, SurfaceTone.ACTIVE)
+        else KachiTheme.pill(context, KachiDialogSupport.controlFill())
         layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).also {
             it.leftMargin = dpi(context, Sp.XS)
         }

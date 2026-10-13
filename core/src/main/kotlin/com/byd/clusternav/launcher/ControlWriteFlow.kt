@@ -120,6 +120,7 @@ class ControlWriteFlow(
             sent
         }
         val valid = rc != null && !HalBindingTable.isSentinelRc(rc)
+        CtlWriteTap.sent(def, primary)   // xe giả của máy ảo nhại lệnh (chỉ vehicleTest cắm; mặc định không làm gì)
         log { CtlWriteJournal.writeLine(n, def.id, route, args, rc, before, CtlWriteJournal.WHY_CMD, cancelled, rel) }
         if (withReads && valid) {
             releaser.schedule("${def.id}$AFTER_KEY$n", CtlWriteJournal.AFTER_MS) {

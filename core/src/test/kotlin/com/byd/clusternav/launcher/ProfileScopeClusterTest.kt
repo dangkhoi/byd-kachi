@@ -52,8 +52,13 @@ class ProfileScopeClusterTest {
             "cast_enabled", "cast_bubble_visible", "split_ratio_left_pct", "autostart_enabled", "autostart_package",
             "autostart_split_enabled", "autostart_left_package", "autostart_right_package",
             "config_size_a.b", "config_overscan_a.b__L30", "config_density_a.b", "config_bounds_a.b__R70",
+            // 3.1 · R4 — bước −/+ khung theo hồ sơ (tệp simple_cast_prefs, khoá không có mục danh mục).
+            com.byd.clusternav.modules.clustercast.simplified.CastGeometrySteps.KEY,
         )
         simpleCast.forEach { assertEquals(ProfileScope.Scope.PROFILE, ProfileScope.scopeOf(it), it) }
+        assertTrue("cast_frame_step" in ProfileScope.CLUSTERNAV_KEYS.getValue(ProfileScopeCluster.SIMPLE_CAST_FILE), "phải vào ảnh chụp tệp chiếu")
+        assertEquals(PrefType.INT, ProfileScopeCluster.DECLARED_TYPES["cast_frame_step"], "kiểu khai sẵn — tệp nhập sai kiểu bị bỏ")
+        assertTrue(ProfileSharePolicy.shareable("cast_frame_step"), "đã soát chia sẻ (không vị trí)")
         listOf("last_display_id", "doze_whitelist_applied", CastEnableDeferral.PENDING_KEY, "bubbleEnabled", "favorites",
             "protected", "rectStyle", "legacyDefaultCandidate", "migrationVersion", "scale-dpi:a.b", "scale-l:a.b",
             "dpi:a.b", "profileOverride", "autoCast", "castable", "keepSession", "bubble_auto", "badge_corner",

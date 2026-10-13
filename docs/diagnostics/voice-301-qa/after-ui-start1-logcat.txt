@@ -1,0 +1,11 @@
+--------- beginning of main
+--------- beginning of system
+10-13 10:14:50.867 I/KachiVoiceTiming(11437): sẵn sàng nghe sau 134 ms kể từ lúc bấm
+10-13 10:14:50.903 I/KachiVoiceTiming(11437): mic mở sau 36 ms
+10-13 10:14:50.909 I/KachiVoiceTiming(11437): hạ nhạc 6 ms (luồng nền)
+10-13 10:14:58.928 I/KachiVoiceTiming(11437): hết trần: duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=8000ms cat_con=8000ms bo_dau=0ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_im=600ms)
+10-13 10:14:58.928 I/KachiVoiceTiming(11437): nghe 8025 ms
+10-13 10:14:58.930 I/KachiVoiceTiming(11437): bỏ giải mã: lượt này không có tiếng nào (duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=8000ms cat_con=8000ms bo_dau=0ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_im=600ms))
+10-13 10:14:58.953 I/KachiVoiceTiming(11437): đóng mic: stop 7 ms · release 16 ms (bíp chạy nền)
+10-13 10:14:58.954 I/KachiVoiceTiming(11437): nền: bíp 0 ms · âm báo ĐÃ TẮT (cầu chì)
+10-13 10:14:58.955 I/KachiVoiceTiming(11437): trả nhạc 1 ms

@@ -44,7 +44,7 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
 internal class ReadGrid(
     context: Context,
     private val capPx: Int,
-) : LinearLayout(context) {
+) : LinearLayout(context), TrimArea {
 
     /** Phần chiều cao đã tự nguyện bớt đi trong lượt đo này (px). Reset mỗi lượt đo của ô nhóm — xem [resetTrim]. */
     private var trim = 0
@@ -65,10 +65,14 @@ internal class ReadGrid(
      */
     private var contentPx = 0
 
+    /** 3.01 R20 — xem KDoc [TrimArea.overflowPx]: phần sàn nội dung vượt chỗ cha đưa (cha `WRAP` kẹp mất phần tràn). */
+    override var overflowPx = 0
+        private set
+
     init { orientation = VERTICAL }
 
     /** Bỏ phần đã bớt — gọi ở ĐẦU mỗi lượt đo, để lưới không co dần vĩnh viễn khi ô sau này rộng ra. */
-    fun resetTrim() { trim = 0 }
+    override fun resetTrim() { trim = 0 }
 
     /**
      * Bớt thêm [px] (cộng dồn), **tối đa tới chỗ nội dung thật cần**. Trả `true` nếu bớt được thêm ⇒ chỗ gọi đo lại.
@@ -76,7 +80,7 @@ internal class ReadGrid(
      * Trả `false` khi đã tới sàn: lúc đó ô thật sự không đủ chỗ cho cả lưới lẫn hàng nút, và chỗ gọi phải chấp nhận —
      * nhưng nó đã nhường **hết mức không làm hỏng chính nó**, chứ không phải chưa thử.
      */
-    fun trimBy(px: Int): Boolean {
+    override fun trimBy(px: Int): Boolean {
         if (px <= 0) return false
         val room = (capPx - trim) - contentPx
         if (room <= 0) return false
@@ -95,6 +99,7 @@ internal class ReadGrid(
         val cap = capPx - trim
         // Lượt 2 — kẹp: không phình quá trần, không tràn quá chỗ có, và không co xuống dưới chỗ chữ cần.
         val target = (if (mode == MeasureSpec.UNSPECIFIED) cap else minOf(cap, avail)).coerceAtLeast(contentPx)
+        overflowPx = if (mode == MeasureSpec.UNSPECIFIED) 0 else (target - avail).coerceAtLeast(0)
         super.onMeasure(widthSpec, MeasureSpec.makeMeasureSpec(target, MeasureSpec.EXACTLY))
     }
 }
@@ -113,14 +118,32 @@ internal class CellBinder(
     private val value: TextView,
     private val icon: ImageView?,
     private val numberOnly: Boolean = false,
+    private val meter: KachiMeter? = null,
 ) {
+    /** Chuỗi/tone đã đổ lượt trước — nhịp 1 Hz chỉ đổi khi KHÁC (không dựng span/drawable mỗi giây — R22 chi phí). */
+    private var shownText: String? = null
+    private var shownTone: GroupTone? = null
+
     fun bind(cell: GroupCell) {
-        value.text = if (numberOnly) cell.number else cell.value
-        value.setTextColor(c(GroupTileView.tintOf(cell.tone)))
+        val raw = if (numberOnly) cell.number else cell.value
+        if (raw != shownText) {
+            shownText = raw
+            // R22: đơn vị trong chuỗi số phụ nhỏ + lùi màu (`18.2 kWh` → `kWh` 0,72× MUT); số chính có ô đơn vị riêng.
+            value.text = if (numberOnly || !cell.available) raw else KachiWidgetType.withUnit(cell.number, cell.unit)
+            meter?.set(KachiMeter.fractionOf(cell.number, cell.unit))
+            value.requestLayout()   // chuỗi ĐỔI (không phải mỗi nhịp): TextView ellipsize không tự xin đo khi bề rộng giữ — [ĐO] `Bật` kẹt 19 px (bề rộng `—`)
+        }
+        KachiWidgetType.pending(value, cell.available, GroupTileView.tintOf(cell.tone))   // R22·B: chưa đọc ⇒ vai MUT, không alpha
         icon?.setColorFilter(c(if (cell.tone == GroupTone.NEUTRAL) KachiTheme.MUT2 else GroupTileView.tintOf(cell.tone)))
         // Ô số-chính không có nền riêng (nó nằm trên nền của cả ô nhóm) ⇒ chỉ ô con của lưới mới tô nền.
-        if (!numberOnly) {
-            GroupTileView.surfaceOf(root, Sp.RADIUS_M, cell.tone)
+        // R22 (brief Kim §2.2 "hộp trong hộp"): giá trị CHỈ-ĐỌC là HÀNG trên thẻ — NEUTRAL/ACTIVE không còn phiến nền;
+        // chỉ WARN/ALERT giữ nền màu vì ở đó MÀU NỀN LÀ thông tin (KDoc [GroupTileView.surfaceOf]).
+        if (!numberOnly && cell.tone != shownTone) {
+            shownTone = cell.tone
+            when (cell.tone) {
+                GroupTone.WARN, GroupTone.ALERT -> GroupTileView.surfaceOf(root, Sp.RADIUS_M, cell.tone)
+                GroupTone.NEUTRAL, GroupTone.ACTIVE -> KachiGlass.plain(root, null)
+            }
         }
         // ⚠⚠ [KIỂM TOÁN UX mục 2] LÀM MỜ **GIÁ TRỊ**, KHÔNG LÀM MỜ CẢ Ô.
         //
@@ -131,13 +154,7 @@ internal class CellBinder(
         //
         // Nhãn phải luôn đọc được: nó là câu trả lời cho *"ô này là cái gì"*, và câu đó không phụ thuộc việc xe đã
         // trả số hay chưa.
-        root.alpha = 1f
-        value.alpha = if (cell.available) 1f else DIM
-    }
-
-    private companion object {
-        /** Độ mờ của GIÁ TRỊ chưa đọc được. Cùng giá trị bản cũ dùng cho cả ô ⇒ dấu gạch trông y như trước. */
-        const val DIM = 0.5f
+        root.alpha = 1f   // giá trị chưa đọc đã lùi về vai MUT ở trên ([KachiWidgetType.pending]) — không nhân độ đục
     }
 }
 
@@ -170,30 +187,16 @@ internal fun actionsRow(context: Context, m: GroupBoardModel, data: WidgetData):
     val factory = ControlTileFactory(
         context, control = { data.control }, size = TileSize.GROUP, icons = m.actionIconsDistinguish,
     )
-    return LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL
+    // 3.01 R20: số cột theo bề rộng đo được + chỗ nhãn nút thật cần ([GroupActionGrid] · [GroupCellFit.actionCols]), trần
+    // [ACTIONS_PER_ROW]. Bản cũ chia CỐ ĐỊNH 6 cột ⇒ [ĐO] *Kính* ở khung 2×3 (267 px): nút 32 px, nhãn `Kính lái` thành `Kí/n…`.
+    // Không còn ô chèn trống (bẫy `View.getDefaultSize` + `WRAP` — xem bài canh): lưới tự đặt vị trí, hàng ngắn canh giữa (R22).
+    return GroupActionGrid(context, ACTIONS_PER_ROW, dpi(context, Sp.XS), dpi(context, Sp.TOUCH)).apply {
         setPadding(0, dpi(context, Sp.S), 0, 0)
-        val rows = GroupTileView.rowsOf(m.actions, ACTIONS_PER_ROW)
-        val cols = rows.maxOfOrNull { it.size } ?: 0
-        rows.forEach { rowActions ->
-            val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-            rowActions.forEach { a ->
-                val tile = ActionMacros.byId(a.id)?.let { factory.macroTile(it) }
-                    ?: ControlRegistry.byId(a.id)?.let { factory.actionTile(it).view }
-                    ?: View(context)
-                row.addView(tile, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).also { it.setMargins(dpi(context, Sp.XS), 0, dpi(context, Sp.XS), 0) })
-            }
-            // Chèn tới số nút THỰC TẾ của hàng dài nhất — KHÔNG tới [ACTIONS_PER_ROW]. Cùng lỗi đã sửa ở
-            // [gridRows]: nhóm 4 nút bị chèn 2 ô trống ⇒ 1/3 bề ngang hàng nút bỏ không.
-            //
-            // ⚠⚠ CHIỀU CAO Ô CHÈN PHẢI LÀ 0, KHÔNG ĐƯỢC `WRAP` — bẫy này đã ăn mất CẢ dải mục đọc.
-            // `View.getDefaultSize` trả về TRỌN `specSize` khi spec là `AT_MOST`, nên một `View` trơ khai
-            // `WRAP_CONTENT` lại **giãn hết** chỗ còn lại thay vì cao 0. Hàng nút (`WRAP`) vì thế báo cao
-            // **648px**, ăn hết phần của thân ô (`weight = 1`) ⇒ thân ô cao **0** ⇒ 9 ô con của nhóm *Đèn*
-            // vẫn được DỰNG (log `bodyChildren=2`) mà không hiện một pixel. [ĐO] sau khi sửa: thân ô
-            // **0 → 498px**, hàng nút **648 → 125px**.
-            repeat(cols - rowActions.size) { row.addView(View(context), LinearLayout.LayoutParams(0, 0, 1f)) }
-            addView(row, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        m.actions.forEach { a ->
+            val tile = ActionMacros.byId(a.id)?.let { factory.macroTile(it) }
+                ?: ControlRegistry.byId(a.id)?.let { factory.actionTile(it).view }
+                ?: View(context)
+            addView(tile, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }
 }

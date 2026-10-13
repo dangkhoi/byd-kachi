@@ -21,14 +21,21 @@ enum class MutationPriority(val drainRank: Int) {
 
     /** Thao tác thường: mở app, resize ô, reflow workspace, cast thường. Rút CUỐI. */
     NORMAL(2),
+
+    /**
+     * 3.01 LAMPLIVE — việc nền KHÔNG ai đang chờ trên màn: đẩy jar + khởi HAL helper (`HalHelperLauncher`). Rút SAU mọi [NORMAL]
+     * ⇒ helper không bao giờ chen trước một lệnh đặt-cửa-sổ/cast đã xếp hàng. Vẫn một-lúc-một-lệnh: lệnh BACKGROUND ĐANG chạy
+     * không bị cắt (mỗi lệnh của helper đều ngắn — `wc`/`echo`/`base64`/`nohup … &` trả ngay).
+     */
+    BACKGROUND(3),
     ;
 
     /** true nếu là ưu tiên cao ([STOP] hoặc [RESCUE]) — rút trước mọi [NORMAL]. */
-    val isHighPriority: Boolean get() = this != NORMAL
+    val isHighPriority: Boolean get() = drainRank < NORMAL.drainRank
 
     companion object {
         /**
-         * So sánh theo THỨ TỰ RÚT (drain order): [drainRank] tăng dần ⇒ [STOP] < [RESCUE] < [NORMAL].
+         * So sánh theo THỨ TỰ RÚT (drain order): [drainRank] tăng dần ⇒ [STOP] < [RESCUE] < [NORMAL] < [BACKGROUND].
          * Dùng cho hàng đợi ưu tiên hợp nhất ở B2b (sort ổn định giữ nguyên thứ tự nạp trong cùng mức).
          */
         val DRAIN_ORDER: Comparator<MutationPriority> = compareBy { it.drainRank }

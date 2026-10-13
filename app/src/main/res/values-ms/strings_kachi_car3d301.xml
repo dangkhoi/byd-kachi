@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R25 — widget xe 3D: tên widget (contentDescription) + hàng "Màu xe 3D" (Cài đặt › Giao diện › Hình xe; ô màu
+     chỉ có chữ cho trợ năng). Tên màu theo tên dòng `car_body_color.csv` của AVM; dòng lạ ⇒ kcar3d_paint_other. Cùng khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kcar3d_title">Kereta 3D</string>
+    <string name="kcar3d_paint_row">Warna kereta 3D</string>
+    <string name="kcar3d_paint_white">Putih</string>
+    <string name="kcar3d_paint_black">Hitam</string>
+    <string name="kcar3d_paint_grey">Kelabu</string>
+    <string name="kcar3d_paint_darkblue">Biru gelap</string>
+    <string name="kcar3d_paint_purple">Ungu</string>
+    <string name="kcar3d_paint_red">Merah</string>
+    <string name="kcar3d_paint_smartblue">Biru</string>
+    <string name="kcar3d_paint_green">Hijau</string>
+    <string name="kcar3d_paint_blue">Biru</string>
+    <string name="kcar3d_paint_orange">Oren</string>
+    <string name="kcar3d_paint_pink">Merah jambu</string>
+    <string name="kcar3d_paint_silvery">Perak</string>
+    <string name="kcar3d_paint_mountain_grey">Kelabu gunung</string>
+    <string name="kcar3d_paint_tianshan_white">Putih Tianshan</string>
+    <string name="kcar3d_paint_other">Warna %1$s</string>
+    <string name="kcar3d_bg_row">Latar kereta 3D</string>
+    <string name="kcar3d_bg_none">Tiada imej</string>
+    <string name="kcar3d_bg_align">Laraskan latar</string>
+    <string name="kcar3d_bg_align_note">Tutup Tetapan, seret untuk alih dan cubit untuk zum imej di belakang kereta 3D, kemudian ketik Selesai.</string>
+    <string name="kcar3d_bg_empty">Belum ada imej dalam folder kertas dinding: %1$s</string>
+    <string name="kcar3d_paint_steel">Biru kelabu keluli</string>
+    <string name="kcar3d_tyres_row">Tunjuk bacaan tayar</string>
+    <string name="kcar3d_tyres_sub">Tekanan dan suhu di bawah setiap roda kereta 3D</string>
+    <string name="kcar3d_step_down">%1$s: turunkan</string>
+    <string name="kcar3d_step_up">%1$s: naikkan</string>
+</resources>

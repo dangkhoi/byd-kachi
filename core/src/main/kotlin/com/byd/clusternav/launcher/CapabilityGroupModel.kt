@@ -38,6 +38,14 @@ package com.byd.clusternav.launcher
  *   [contentLine]. Nếu chép tay *"4 bánh"* thì ngày ai đó thêm/bớt một thành viên, dòng phụ nói sai mà **không
  *   test nào đỏ** — đúng họ lỗi hai-bản-sao mà dự án đã trả giá nhiều lần (`unitPrefs` từng có 4 bản).
  */
+/**
+ * 3.01 R22·B — cách bày thân ô nhóm, KHAI ở [CapabilityGroup.layout] (owner 13/10: *"visual thiết kế, icon… không chỉ
+ * sắp xếp lại"*; *"lưới nút chữ lặp nhìn rối"*). [AUTO] = đường cũ (theo [WidgetShape] + bảng vật × việc nếu nút có
+ * dạng đó). [ICONS] = BẢNG ICON: mỗi thứ một ô icon, sáng (nền nhấn mềm) khi đang bật, CHẠM ô = nút cùng icon nếu có
+ * ([GroupIconBoard]). Nhóm khác muốn dạng này chỉ cần khai — tầng vẽ không có `if` theo tên nhóm.
+ */
+enum class GroupLayout { AUTO, ICONS }
+
 data class CapabilityGroup(
     val id: String,
     override val label: String,
@@ -56,6 +64,8 @@ data class CapabilityGroup(
      * [reads]/[writes] qua [contentLine], không phải chép tay ở đây rồi lệch khi ai đó thêm/bớt một thành viên.
      */
     val subEn: String? = null,
+    /** 3.01 R22·B — cách BÀY thân ô do nhóm KHAI (không do tầng vẽ đoán theo mã nhóm) — xem [GroupLayout]. */
+    val layout: GroupLayout = GroupLayout.AUTO,
 ) : Localized {
     /** Mọi thành viên: phần XEM trước, phần BẤM sau — đúng thứ tự trình bày của §4.3. */
     val members: List<String> get() = reads + writes

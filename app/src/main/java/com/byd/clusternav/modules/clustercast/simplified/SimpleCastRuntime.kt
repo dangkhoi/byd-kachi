@@ -312,6 +312,14 @@ private class SharedPrefsSimpleCastPrefs(context: Context) : SimpleCastPrefs {
     override fun saveDisplayConfig(pkg: String, config: DisplayConfig) =
         saveDisplayConfig(pkg, CastProfile.FULL, config)
 
+    /** 3.1 · R6 — phán quyết ĐO "app nhận dịch nội dung" (phạm vi XE, `CastContentShift.VERDICT_KEY_PREFIX`). */
+    override fun contentShiftVerdict(pkg: String): Boolean? =
+        when (sp.all[CastContentShift.VERDICT_KEY_PREFIX + pkg] as? String) { "ok" -> true; "no" -> false; else -> null }
+
+    override fun setContentShiftVerdict(pkg: String, effective: Boolean) {
+        sp.edit().putString(CastContentShift.VERDICT_KEY_PREFIX + pkg, if (effective) "ok" else "no").apply()
+    }
+
     /**
      * Ghi bản ghi hình học — CHUẨN HOÁ trước ([CastGeometryGuard.sanitizeForSave]): lưu đúng thứ đã áp (DPI ngoài dải ⇒
      * lệnh đã chạy là `wm density reset` ⇒ lưu `"reset"`, không lưu `"700"`), và không bao giờ lưu một chuỗi mà lượt đọc

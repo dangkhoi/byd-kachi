@@ -90,18 +90,13 @@ internal class VoiceControlDispatch(
         // cốp lúc đang chạy là việc nên làm, chặn nó lại là chặn đúng đường chữa. Tập mã ở
         // [CtlSafetyPolicy.REQUIRES_STATIONARY] (KDoc ở đó giải thích vì sao kính/cửa sổ trời KHÔNG vào).
         //
-        // ## Đọc TƯƠI, và `null` ⇒ CHO PHÉP (fail-open) — một lựa chọn có chủ ý
-        // Hỏi [freshCar] trước vì vòng poll chỉ đọc datum **đang hiện trên màn** (`CarDataDemand`), nên ảnh chụp
-        // có thể mang tốc độ của lần cuối cái ô ấy còn trên màn — dùng nó để gate là gate bằng một con số cũ.
-        //
-        // Không đọc được (`null`) thì **cho mở**: [ĐO] `speed` ở mức PROVEN (`TelemetryRegistry`), tức trên xe
-        // thật gate này có số để chạy; `null` gần như chỉ xảy ra off-car/máy ảo, và ở đó chẳng có cốp nào để bung.
-        // Chọn fail-CLOSED thì mọi lần đọc hụt trên xe đỗ sẽ thành một lời từ chối cho một việc hoàn toàn an toàn
-        // (mở cốp lúc đỗ là ca dùng **thường nhất** của nút này) — tức một gate an toàn tự biến thành lỗi.
-        //
-        // 2.87 · SOÁT vòng 1 · P1: phép chặn là [CtlSafetyPolicy.blockedAtSpeed] — CÙNG phép mà Đảo/Kế tiếp từ trí nhớ
-        // (`KeyCtlPlan`) hỏi trước để lùi về hướng luôn được phép, nên hai chỗ không thể lệch nhau.
-        if (CtlSafetyPolicy.blockedAtSpeed(def.id, arg, ::speedKmh)) { say(VoiceReply.notWhileMoving(shown, l)); done(); return }
+        // ## Đọc TƯƠI, và KHÔNG chứng minh được xe đứng ⇒ CHẶN (fail-safe) — owner 13/10 *"làm theo luật mới hết đi"*
+        // Tới 3.01 nhánh này fail-OPEN (`blockedAtSpeed`: không đọc được tốc độ ⇒ cho mở). Nay CÙNG phép với cổng chạm
+        // ([CtlSafetyPolicy.blocked]): tốc độ `== 0` hoặc (không tốc độ) số P mới cho mở; mất số liệu khi đỗ thì số P vẫn
+        // mở được — nên cái giá của fail-safe chỉ còn ở ca không đọc được CẢ HAI (off-car/máy ảo). Đọc qua [motion] —
+        // [CtlSafetyPolicy.readMotion], CÙNG phép đọc của cổng chạm. Câu từ chối = câu của cổng chạm (`notWhileMoving`).
+        // Đảo/Kế tiếp từ trí nhớ (`KeyCtlPlan`) hỏi CÙNG phép trước để lùi về hướng luôn được phép.
+        if (CtlSafetyPolicy.blocked(def.id, arg, ::motion)) { say(VoiceReply.notWhileMoving(shown, l)); done(); return }
         // ═══ [SOÁT 2.74 · P2] Cú ghi RỜI AUTO chờ 400 ms ⇒ đuôi *"nói gì"* phải là một LỜI GỌI LẠI ═════════════
         //
         // `VoiceSession` gọi lớp này trên luồng VẼ, nên nhánh hai-lệnh của [VoiceClimateStep] trả lời từ luồng nền
@@ -190,10 +185,9 @@ internal class VoiceControlDispatch(
     }
 
     /**
-     * Vận tốc TƯƠI cho cổng [CtlSafetyPolicy.blockedAtSpeed]: [freshCar] trước (vòng poll chỉ đọc datum đang hiện trên
-     * màn — ảnh chụp có thể mang tốc độ cũ hàng phút), ảnh chụp chỉ là đường lùi; `null` = không biết (fail-open).
-     * 2.87 · SOÁT vòng 1 · P1: cũng là nguồn vận tốc của `KeyCtlRunner` cho Đảo/Kế tiếp giải từ trí nhớ — một phép đọc.
+     * Chuyển động TƯƠI cho cổng [CtlSafetyPolicy.blocked]: [CtlSafetyPolicy.readMotion] — [freshCar] trước (vòng poll chỉ đọc
+     * datum đang hiện trên màn — ảnh chụp có thể cũ hàng phút), ảnh chụp là đường lùi; số chỉ đọc khi không có tốc độ.
+     * CÙNG phép đọc của cổng chạm (`TileSafetyGate.motion`) và nguồn của `KeyCtlRunner` cho Đảo/Kế tiếp từ trí nhớ.
      */
-    fun speedKmh(): Int? = runCatching { freshCar("speed") }.getOrNull()?.drivetrain?.speedKmh
-        ?: state().carStatus.drivetrain.speedKmh
+    fun motion(): CtlSafetyPolicy.Motion = CtlSafetyPolicy.readMotion(fresh = freshCar, snapshot = { state().carStatus })
 }

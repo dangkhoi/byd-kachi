@@ -232,6 +232,11 @@ internal object FitProbe {
         // Số bị BẺ ĐÔI qua hai dòng (`100` → `10`/`0`, chữ `WRAP` không `maxLines` hẹp hơn chính nó) — không cắt, không
         // tràn, nhưng không đọc được (soát vòng 2, P1; [FitRules.splitsNumber]).
         for (i in 1 until shown) if (FitRules.splitsNumber(l.text, l.getLineStart(i))) return true
+        // 3.01 R20: một TỪ bị bẻ qua hai dòng (`(bar` / `)`, `Th` / `ời`) cũng không đọc được — [FitRules.splitsWord].
+        for (i in 1 until shown) if (FitRules.splitsWord(l.text, l.getLineStart(i))) return true
+        // 3.01 R20: chữ KHÔNG khai `maxLines` (chú thích tự do) vẫn chỉ được tới [FitRules.FREE_LINES] dòng — [ĐO] `w_board`
+        // khung 2×6: chú thích `Áp suất lốp (bar)` 4 dòng trong ô 55 px vì dạng ngang 4 ô một hàng vẫn "vừa".
+        if (FitRules.tooManyLines(tv.maxLines, shown)) return true
         // `getLineMax` (KHÔNG tính khoảng trắng cuối dòng — bộ ngắt dòng cũng không tính nó, `Layout.java:1387-1401`
         // r47), không `getLineWidth`: dòng "Sấy kính " vỡ sau dấu cách không bị báo cắt oan (soát vòng 1, P3).
         for (i in 0 until shown) if (l.getLineMax(i) > availW + 1f) return true

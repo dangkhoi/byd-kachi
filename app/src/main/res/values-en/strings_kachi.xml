@@ -63,7 +63,6 @@
     <!-- ── ProfileBar — avatar hồ sơ tài xế ── -->
     <string name="kachi_profile_chip_desc">Current profile: %1$s. Tap to switch profile.</string>
     <string name="kachi_profile_pick_title">Switch driver profile</string>
-    <string name="kachi_profile_pick_active">%1$s · in use</string>
     <string name="kachi_profile_manage">Manage profiles…</string>
     <string name="kachi_profile_none">No profiles yet — open Settings → Driver profiles to add one.</string>
     <string name="kachi_profile_switched">Profile: %1$s</string>
@@ -411,7 +410,7 @@
     <string name="kachi_nav_auto_gps_on">waits for GPS</string>
     <string name="kachi_nav_auto_gps_off">no GPS needed</string>
     <string name="kachi_nav_auto_enabled">Enable this schedule</string>
-    <string name="kachi_nav_auto_window">Time window (HH:mm)</string>
+    <string name="kachi_nav_auto_window">Time window</string>
     <string name="kachi_nav_auto_days">Days of the week</string>
     <string name="kachi_nav_auto_gps">Only navigate once GPS is available (wait until out of the car park)</string>
     <string name="kachi_nav_auto_place">Navigate to</string>
@@ -577,11 +576,11 @@
     <string name="kachi_sub_keys_bindings">Button bindings</string>
     <string name="kachi_keys_no_bindings">No buttons bound yet. Tap “Add binding…” to link a physical button to an app or a car control.</string>
     <string name="kachi_keys_add">Add binding…</string>
-    <string name="kachi_keys_pick_button">Step 1 — choose a button</string>
-    <string name="kachi_keys_pick_target">Step 3 — choose the app / assistant</string>
-    <string name="kachi_keys_pick_kind">Step 2 — what this button does</string>
+    <string name="kachi_keys_pick_button">Choose a button</string>
+    <string name="kachi_keys_pick_target">Choose the app / assistant</string>
+    <string name="kachi_keys_pick_kind">What this button does</string>
     <string name="kachi_keys_kind_apps">Open an app · assistant</string>
-    <string name="kachi_keys_pick_action">Step 3 — %1$s: choose the action</string>
+    <string name="kachi_keys_pick_action">%1$s: choose the action</string>
     <string name="kachi_keys_no_buttons">There is no button to bind yet.</string>
     <string name="kachi_keys_no_targets">No app on this device can be opened from a button yet.</string>
     <string name="kachi_sub_keys_custom">Self-learned buttons</string>
@@ -1041,9 +1040,13 @@
     <string name="kachi_camera_rot_own_row">Rotate</string>
     <string name="kachi_camera_mirror_own_title">Mirror video</string>
     <string name="kachi_keys_kind_camera">Camera on demand</string>
-    <string name="kachi_keys_pick_camera">Step 3 — which camera</string>
+    <string name="kachi_keys_pick_camera">Which camera</string>
     <string name="kachi_key_cam_toggle">%1$s — on/off</string>
     <string name="kachi_key_cam_off">Camera off</string>
     <!-- 2.97 · R3 — đổi hồ sơ tắt dẫn đường lên cụm -->
     <string name="kachi_profile_nav_off">Profile «%1$s» has navigation on the cluster/HUD turned OFF. Turn it on in Settings › Navigation + HUD.</string>
+    <!-- 3.1 · kachi-301 R2/R4/R7 — bước khung chiếu cụm -->
+    <string name="kachi_cast_frame_step">Step</string>
+    <string name="kachi_cast_geom_resize_failed">Couldn\'t apply the frame to the cluster — the numbers are back to the real frame.</string>
+    <string name="kachi_cast_geom_overflow_note" formatted="false">The right/bottom edge may go past the cluster (up to +50 %) to hide an app\'s bottom bar; left/top can\'t go negative (Android blocks it).</string>
 </resources>

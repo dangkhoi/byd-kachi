@@ -1,0 +1,31 @@
+--------- beginning of main
+--------- beginning of system
+10-13 10:04:43.160 I/KachiVoiceTiming( 1314): sẵn sàng nghe sau 151 ms kể từ lúc bấm
+10-13 10:04:43.178 I/KachiVoiceDuck( 1314): hạ nhạc khi nghe: 10 → 2 (đích 2)
+10-13 10:04:43.178 I/KachiVoiceTiming( 1314): hạ nhạc 8 ms
+10-13 10:04:43.193 I/KachiVoiceTiming( 1314): mic mở sau 33 ms
+10-13 10:04:51.204 I/KachiVoiceTiming( 1314): hết trần: duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=8000ms cat_con=8000ms bo_dau=0ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_im=600ms)
+10-13 10:04:51.204 I/KachiVoiceTiming( 1314): nghe 8011 ms
+10-13 10:04:51.204 I/KachiVoiceTiming( 1314): bỏ giải mã: lượt này không có tiếng nào (duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=8000ms cat_con=8000ms bo_dau=0ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_im=600ms))
+10-13 10:04:51.229 I/KachiVoiceDuck( 1314): không trả nhạc (release): KEEP_USER — hiện 6, đã đặt 2, gốc 10
+10-13 10:04:51.229 I/KachiVoiceTiming( 1314): trả nhạc 3 ms
+10-13 10:04:51.229 I/KachiVoiceTiming( 1314): đóng mic: stop 18 ms · release 4 ms · trả nhạc 3 ms (bíp chạy nền)
+10-13 10:04:51.235 I/KachiVoiceTiming( 1314): nền: bíp 0 ms · âm báo ĐÃ TẮT (cầu chì)
+10-13 10:04:58.060 I/KachiVoiceTiming( 1314): sẵn sàng nghe sau 129 ms kể từ lúc bấm
+10-13 10:04:58.090 I/KachiVoiceDuck( 1314): hạ nhạc khi nghe: 10 → 2 (đích 2)
+10-13 10:04:58.090 I/KachiVoiceTiming( 1314): hạ nhạc 19 ms
+10-13 10:04:58.098 I/KachiVoiceTiming( 1314): mic mở sau 38 ms
+10-13 10:05:06.131 I/KachiVoiceTiming( 1314): hết trần: duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=8000ms cat_con=8000ms bo_dau=0ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_im=600ms)
+10-13 10:05:06.131 I/KachiVoiceTiming( 1314): nghe 8033 ms
+10-13 10:05:06.131 I/KachiVoiceTiming( 1314): bỏ giải mã: lượt này không có tiếng nào (duong=vad vad doan=0 tieng_bat_dau=-1ms tieng_dut=-1ms cua_so=8000ms cat_con=8000ms bo_dau=0ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_im=600ms))
+10-13 10:05:06.230 I/KachiVoiceDuck( 1314): không trả nhạc (release): KEEP_USER — hiện 6, đã đặt 2, gốc 10
+10-13 10:05:06.230 I/KachiVoiceTiming( 1314): trả nhạc 1 ms
+10-13 10:05:06.230 I/KachiVoiceTiming( 1314): đóng mic: stop 88 ms · release 10 ms · trả nhạc 1 ms (bíp chạy nền)
+10-13 10:05:06.231 I/KachiVoiceTiming( 1314): nền: bíp 0 ms · âm báo ĐÃ TẮT (cầu chì)
+10-13 10:05:13.207 I/KachiVoiceTiming( 1314): sẵn sàng nghe sau 86 ms kể từ lúc bấm
+10-13 10:05:13.246 I/KachiVoiceDuck( 1314): hạ nhạc khi nghe: 10 → 2 (đích 2)
+10-13 10:05:13.246 I/KachiVoiceTiming( 1314): hạ nhạc 18 ms
+10-13 10:05:13.253 I/KachiVoiceTiming( 1314): mic mở sau 45 ms
+10-13 10:05:15.180 I/KachiVoiceDuck( 9573): trả nhạc (orphan pid=1314 startup): 2 → 10
+10-13 10:05:21.469 I/KachiVoiceTiming( 9573): nạp sherpa zipformer-vi-int8-2025-04-20 trong 3205 ms (biasing=true · luồng=2 · lõi=4 · beam=4 · diem_hotword=3.0)
+10-13 10:05:21.469 I/KachiVoiceTiming( 9573): nạp sẵn mô hình 3208 ms (ok=true)

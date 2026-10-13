@@ -103,6 +103,21 @@ class ColorChoiceTest {
     }
 
     @Test
+    fun `mau son xe 3D - truong mang nhan car=, mac dinh khong ghi, ban cu khong vo`() {
+        assertEquals("TEAL;NEUTRAL", ColorChoice(AccentChoice.TEAL).encode(), "chưa chọn ⇒ chuỗi giữ từng byte")
+        val red = ColorChoice(AccentChoice.TEAL, carPaint = "red")
+        assertEquals("TEAL;NEUTRAL;car=red", red.encode())
+        assertEquals(red, ColorChoice.decode(red.encode()))
+        val both = ColorChoice(AccentChoice.VIOLET, CardTone.WARM, 40, "smartblue")
+        assertEquals(both, ColorChoice.decode(both.encode()))
+        assertEquals(40, ColorChoice.decode("VIOLET;WARM;car=smartblue;o40").surfaceOpacity, "thứ tự trường tự do")
+        // Dạng cũ `ACCENT;TONE;paint;model` (chữ trần ở vị trí 3) KHÔNG bị hiểu thành màu sơn; tên lạ/hoa/ký tự ⇒ bỏ.
+        assertEquals(null, ColorChoice.decode("TEAL;NEUTRAL;RED;SEDAN").carPaint)
+        listOf("car=", "car=Red", "car=a b", "car=../x").forEach { assertEquals(null, ColorChoice.decode("TEAL;NEUTRAL;$it").carPaint, it) }
+        assertEquals("TEAL;NEUTRAL", ColorChoice(AccentChoice.TEAL, carPaint = "Bad Name").encode(), "tên không hợp lệ không ghi")
+    }
+
+    @Test
     fun `nhan tung lua chon khong rong va khong trung`() {
         listOf(Lang.VI, Lang.EN).forEach { lang ->
             val a = AccentChoice.values().map { Strings.t(it.label(), it.label(), lang) }

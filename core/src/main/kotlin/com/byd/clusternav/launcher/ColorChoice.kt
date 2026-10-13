@@ -62,21 +62,40 @@ data class ColorChoice(
     val accent: AccentChoice = AccentChoice.KACHI_BLUE,
     val tone: CardTone = CardTone.NEUTRAL,
     val surfaceOpacity: Int = ChromeOpacity.DEFAULT,
+    /**
+     * 3.01 R25 — MÀU SƠN của widget xe 3D: tên một dòng `car_body_color.csv` của AVM ([Car3dPaint]); `null` = mặc định của
+     * AVM (`Car3DColor`). Đúng "chỗ để sẵn màu sơn P3" của khoá `color_choice` ⇒ theo hồ sơ + xuất/nhập sẵn, không khoá mới.
+     * Không phải màu giao diện ⇒ `KachiPaletteDerive` không đọc. Chỉ nhận `[a-z0-9_]` (tên dòng tệp ngoài).
+     */
+    val carPaint: String? = null,
+    /** 3.01 R25 — ảnh nền sau xe 3D + phép căn ([Car3dBackdrop], trường mang nhãn `bg=`); `null` = không ảnh. */
+    val carBackdrop: Car3dBackdrop? = null,
+    /** 3.01 R28 — số lốp dưới từng bánh của xe 3D (owner: *"cho option ẩn hiện"*); mặc định BẬT, chỉ ghi `tyre=0` khi TẮT. */
+    val carTyres: Boolean = true,
 ) {
     /**
      * `ACCENT;TONE` — thêm `;o<pct>` CHỈ khi độ đục khác mặc định, nên chuỗi của người chưa chỉnh gì giữ đúng từng byte
      * như ≤ 2.86. Trường độ đục mang NHÃN `o` chứ không là số trần ở vị trí 3: dạng cũ `ACCENT;TONE;paint;model` có
      * chữ ở đó, và một số trần thì không phân biệt được với một trường lạ của bản khác.
      */
-    fun encode(): String =
-        if (surfaceOpacity == ChromeOpacity.DEFAULT) "${accent.name};${tone.name}"
-        else "${accent.name};${tone.name};$OPACITY_TAG$surfaceOpacity"
+    fun encode(): String = buildString {
+        append("${accent.name};${tone.name}")
+        if (surfaceOpacity != ChromeOpacity.DEFAULT) append(";$OPACITY_TAG$surfaceOpacity")
+        // Trường MANG NHÃN `car=` (không phải chữ trần ở vị trí 3 — dạng cũ `ACCENT;TONE;paint;model` có chữ ở đó); chỉ ghi
+        // khi đã chọn ⇒ chuỗi của người chưa chọn giữ đúng từng byte. Bản cũ bỏ qua mọi trường từ vị trí 3.
+        carPaint?.takeIf { PAINT_FIELD.matches("$PAINT_TAG$it") }?.let { append(";$PAINT_TAG$it") }
+        carBackdrop?.takeIf { Car3dBackdrop.validName(it.file) }?.let { append(";${it.encode()}") }
+        if (!carTyres) append(";$TYRES_OFF")
+    }
 
     companion object {
         val DEFAULT = ColorChoice()
 
         private const val OPACITY_TAG = "o"
         private val OPACITY_FIELD = Regex("""o(\d{1,3})""")
+        private const val PAINT_TAG = "car="
+        private const val TYRES_OFF = "tyre=0"
+        private val PAINT_FIELD = Regex("""car=([a-z0-9_]{1,32})""")
 
         /**
          * Giải mã; thiếu/rác ⇒ mặc định cho phần đó, KHÔNG sập. Chuỗi cũ `ACCENT;TONE;paint;model` ⇒ bỏ qua trường dư.
@@ -89,10 +108,14 @@ data class ColorChoice(
             if (s.isNullOrBlank()) return DEFAULT
             val p = s.split(";")
             val opacity = p.drop(2).firstNotNullOfOrNull { OPACITY_FIELD.matchEntire(it.trim())?.groupValues?.get(1)?.toIntOrNull() }
+            val paint = p.drop(2).firstNotNullOfOrNull { PAINT_FIELD.matchEntire(it.trim())?.groupValues?.get(1) }
             return ColorChoice(
                 accent = p.getOrNull(0)?.trim()?.let { n -> AccentChoice.values().firstOrNull { it.name == n } } ?: DEFAULT.accent,
                 tone = p.getOrNull(1)?.trim()?.let { n -> CardTone.values().firstOrNull { it.name == n } } ?: DEFAULT.tone,
                 surfaceOpacity = opacity?.let(ChromeOpacity::snap) ?: ChromeOpacity.DEFAULT,
+                carPaint = paint,
+                carBackdrop = p.drop(2).firstNotNullOfOrNull { Car3dBackdrop.decode(it) },
+                carTyres = p.drop(2).none { it.trim() == TYRES_OFF },
             )
         }
     }

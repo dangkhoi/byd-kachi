@@ -37,7 +37,6 @@
     <string name="kachi_photos_hint">Letak foto dalam folder foto Kachi</string>
     <string name="kachi_profile_chip_desc">Profil semasa: %1$s. Ketik untuk tukar profil.</string>
     <string name="kachi_profile_pick_title">Tukar profil pemandu</string>
-    <string name="kachi_profile_pick_active">%1$s · sedang digunakan</string>
     <string name="kachi_profile_manage">Urus profil…</string>
     <string name="kachi_profile_none">Belum ada profil — buka Tetapan → Profil pemandu untuk menambah.</string>
     <string name="kachi_profile_switched">Profil: %1$s</string>
@@ -329,7 +328,7 @@
     <string name="kachi_nav_auto_gps_on">tunggu GPS</string>
     <string name="kachi_nav_auto_gps_off">tanpa GPS</string>
     <string name="kachi_nav_auto_enabled">Dayakan jadual ini</string>
-    <string name="kachi_nav_auto_window">Julat masa (HH:mm)</string>
+    <string name="kachi_nav_auto_window">Julat masa</string>
     <string name="kachi_nav_auto_days">Hari dalam minggu</string>
     <string name="kachi_nav_auto_gps">Mulakan navigasi hanya apabila GPS tersedia (tunggu sehingga keluar dari tempat letak kereta)</string>
     <string name="kachi_nav_auto_place">Navigasi ke</string>
@@ -488,11 +487,11 @@
     <string name="kachi_sub_keys_bindings">Pemetaan butang</string>
     <string name="kachi_keys_no_bindings">Belum ada butang dipetakan. Ketik “Tambah pemetaan…” untuk memautkan butang fizikal kepada apl atau kawalan kereta.</string>
     <string name="kachi_keys_add">Tambah pemetaan…</string>
-    <string name="kachi_keys_pick_button">Langkah 1 — pilih butang</string>
-    <string name="kachi_keys_pick_target">Langkah 3 — pilih apl / pembantu</string>
-    <string name="kachi_keys_pick_kind">Langkah 2 — fungsi butang ini</string>
+    <string name="kachi_keys_pick_button">Pilih butang</string>
+    <string name="kachi_keys_pick_target">Pilih apl / pembantu</string>
+    <string name="kachi_keys_pick_kind">Fungsi butang ini</string>
     <string name="kachi_keys_kind_apps">Buka apl · pembantu</string>
-    <string name="kachi_keys_pick_action">Langkah 3 — %1$s: pilih tindakan</string>
+    <string name="kachi_keys_pick_action">%1$s: pilih tindakan</string>
     <string name="kachi_keys_no_buttons">Belum ada butang untuk dipetakan.</string>
     <string name="kachi_keys_no_targets">Belum ada apl pada peranti ini yang boleh dibuka dari butang.</string>
     <string name="kachi_sub_keys_custom">Butang dipelajari</string>
@@ -914,9 +913,13 @@
     <string name="kachi_camera_rot_own_row">Putar</string>
     <string name="kachi_camera_mirror_own_title">Cerminkan video</string>
     <string name="kachi_keys_kind_camera">Kamera atas permintaan</string>
-    <string name="kachi_keys_pick_camera">Langkah 3 — kamera mana</string>
+    <string name="kachi_keys_pick_camera">Kamera mana</string>
     <string name="kachi_key_cam_toggle">%1$s — hidup/mati</string>
     <string name="kachi_key_cam_off">Matikan kamera</string>
     <!-- 2.97 · R3 — đổi hồ sơ tắt dẫn đường lên cụm -->
     <string name="kachi_profile_nav_off">Profil «%1$s» mematikan navigasi pada panel instrumen/HUD. Hidupkan semula di Tetapan › Navigasi + HUD.</string>
+    <!-- 3.1 · kachi-301 R2/R4/R7 — bước khung chiếu cụm -->
+    <string name="kachi_cast_frame_step">Langkah</string>
+    <string name="kachi_cast_geom_resize_failed">Bingkai tidak dapat dikenakan pada panel instrumen — nombor kembali ke bingkai sebenar.</string>
+    <string name="kachi_cast_geom_overflow_note" formatted="false">Tepi kanan/bawah boleh melepasi panel instrumen (sehingga +50 %) untuk menyembunyikan bar bawah aplikasi; kiri/atas tidak boleh negatif (disekat Android).</string>
 </resources>

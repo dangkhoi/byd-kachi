@@ -18,6 +18,8 @@ import android.view.View
  */
 class CarImageView(context: Context) : View(context) {
     private val car = CarImageLayer(context) { invalidate() }
+    // R22·R: móc `onImage` (R22·B, cho bảng kính trên ảnh) đã gỡ — bảng kính nay tự vẽ xe nét ([CarLevelsLayer]), không
+    // còn đè lên lớp ảnh nên không còn ai cần biết lúc ảnh nạp xong ngoài chính view này.
     private val carDst = RectF()
 
     /** Neo bố cục: cùng công thức [TyreBoardView] để hai lớp khớp. `null` = dùng mặc định cột giữa. */
@@ -38,6 +40,9 @@ class CarImageView(context: Context) : View(context) {
         if (rc != null) rc(w, h, carDst) else carDst.set(w * 0.30f, h * 0.02f, w * 0.70f, h * 0.88f)
         car.contentRect(carDst, out)
     }
+
+    /** R23 — hình học của ảnh đang vẽ (neo bánh theo ảnh BYD đã đo; ảnh khác ⇒ neo chung [CarLayout]). */
+    val art: CarArt get() = car.art
 
     fun release() = car.release()
 

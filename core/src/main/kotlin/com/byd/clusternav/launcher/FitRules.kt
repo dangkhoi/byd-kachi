@@ -118,6 +118,42 @@ object FitRules {
      * (soát vòng 2, P1). Chỉ xét SỐ (chữ số; `.`/`,`/`:` kẹp giữa hai chữ số): mọi ngôn ngữ đều không xuống dòng giữa
      * một con số, còn chữ Thái/Hán xuống dòng giữa hai chữ cái là bình thường.
      */
+    /**
+     * 3.01 R20 — dòng mới bắt đầu ở [at] có BẺ MỘT TỪ của chữ viết CÓ DẤU CÁCH không (Latinh — gồm tiếng Việt/Mã Lai/Anh —
+     * Kirin, Hy Lạp; chữ số; dấu câu dính từ). [ĐO uiautomator 13/10] ô `w_board` khung 2×6: chú thích `Áp suất lốp (bar)`
+     * vỡ 5 dòng `Áp/suất/lốp/(bar/)`, `PM2.5` thành `PM2/.5` — phép kiểm cắt cũ chỉ thấy chữ bị cắt/tràn/số bị bẻ nên
+     * coi đó là vừa và bộ giải chọn dạng ngang 4 ô một hàng. Ngắt ở khoảng trắng hoặc sau `-`/`/`/gạch dài là ngắt hợp lệ.
+     * Chữ Thái/Hán/… (không dùng dấu cách giữa từ) ⇒ không bao giờ tính là bẻ (cùng lý do KDoc [splitsNumber]).
+     */
+    /** Số dòng tối đa của chữ KHÔNG khai `maxLines` — cùng trần 2 dòng của nhãn ô ([FitProbe.OPTIONS], `TileSize`). */
+    const val FREE_LINES = 2
+
+    /**
+     * 3.01 R20 — chữ không giới hạn dòng ([maxLines] = `Int.MAX_VALUE`, mặc định của `TextView`) đang hiện [lines] dòng có quá
+     * [FREE_LINES] không. Chữ đã khai `maxLines` thì phép kiểm `…`/dòng bị bỏ lo — ở đây không xét.
+     */
+    fun tooManyLines(maxLines: Int, lines: Int): Boolean = maxLines == Int.MAX_VALUE && lines > FREE_LINES
+
+    fun splitsWord(text: CharSequence, at: Int): Boolean {
+        if (at !in 1 until text.length) return false
+        val a = text[at - 1]
+        val b = text[at]
+        if (a.isWhitespace() || b.isWhitespace() || a in BREAK_AFTER) return false
+        return spaced(a) && spaced(b)
+    }
+
+    /** Ký tự sau nó được xuống dòng mà không tính là bẻ từ. */
+    private const val BREAK_AFTER = "-\u2010\u2011\u2013\u2014/"
+
+    /** Ký tự thuộc chữ viết dùng DẤU CÁCH giữa từ (hoặc không phải chữ cái: chữ số, dấu câu dính từ). */
+    private fun spaced(c: Char): Boolean {
+        if (!c.isLetter()) return true
+        return when (Character.UnicodeScript.of(c.code)) {
+            Character.UnicodeScript.LATIN, Character.UnicodeScript.CYRILLIC, Character.UnicodeScript.GREEK -> true
+            else -> false
+        }
+    }
+
     fun splitsNumber(text: CharSequence, at: Int): Boolean {
         fun numeric(i: Int): Boolean {
             if (i !in text.indices) return false

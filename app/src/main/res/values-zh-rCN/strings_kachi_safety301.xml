@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 (owner 13/10): câu báo khi cổng chạm chặn MỞ cốp lúc xe chưa đứng (toast + đọc to) · bước kế đọc to của
+     điểm đèn trên hình xe (R24, contentDescription — không hiện chữ trên màn). Cùng tập khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kctl_stop_to_open_trunk">请停车后再打开后备箱</string>
+    <string name="klight_tap_on">点按：打开</string>
+    <string name="klight_tap_off">点按：关闭</string>
+    <string name="klight_view_only">仅查看</string>
+</resources>

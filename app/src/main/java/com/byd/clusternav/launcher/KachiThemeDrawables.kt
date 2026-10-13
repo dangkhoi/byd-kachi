@@ -1,7 +1,9 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 
@@ -58,20 +60,22 @@ fun KachiTheme.gradient(ctx: Context, radius: Int, from: String = GRAD_FROM, to:
     }
 
 /**
- * Tile DOCK BẬT — gradient accent **BÁN TRONG SUỐT**, khớp prototype `.dtile.on` (accent 50% → accent2 40%).
+ * Ô điều khiển BẬT — **nền TÔNG nhạt**: bề mặt trung tính của ô ([KachiTheme.surface]) + một lớp nhấn mỏng
+ * ([KachiTheme.TILE_ON_FROM], ~14–16 % màu nhấn). Icon tô mực nhấn, chữ mực trung tính (xem `ControlTileFactory.tint`).
  *
- * ## WP1 · R1.1 — viền accent đã GỠ, trạng thái BẬT đọc bằng FILL
- * Prototype có thêm `viền accent 55%`. [ĐO] bỏ viền thì trạng thái vẫn đọc ra rõ **chỉ bằng nền**: ô BẬT so với ô
- * TẮT (nền `KachiTheme.surface`) chênh **1.98×** (bảng tối, đầu chuyển sắc) / **1.59×** (bảng sáng); so với chính
- * thanh nút chênh **2.19×** / **1.57×**. Ngưỡng nhìn-ra-được của một mảng lớn là ~1.15× ⇒ dư sức.
+ * ## 3.01 R22·R — gradient chàm→tím đã GỠ (owner 13/10: *"mấy cái miếng xanh xanh đó xấu và thô"*; brief Kim §2.7)
+ * Bản trước (`gradientSoft`) là chuyển sắc nhấn 50 % → tím 40 % (`#4B4FB0→#5A4CC0` đo trên ảnh) ⇒ ô bật như cục kẹo,
+ * lệch tông với ô đèn của bảng icon (nền nhấn mềm 15 %). Nay một tô phẳng; "bật" đọc bằng nền tông + icon nhấn — cùng
+ * ngôn ngữ ô Đèn. Đổi ở VAI MÀU (`tileOnFrom/To` trong [KachiPalette]) + bộ dựng này, không ở từng ô.
  *
- * ⚠ Vai màu [KachiTheme.TILE_ON_LINE] **giữ lại** trong bảng màu (nó còn đi qua `KachiPaletteDerive.rc` khi người
- * dùng đổi màu nhấn) nhưng **không còn chỗ vẽ nào** — nó là dữ liệu màu, không phải một cái viền đang hiện.
+ * Không viền (WP1 · R1.1). Hai lớp tạo khi ô đổi trạng thái (không mỗi khung).
  */
-fun KachiTheme.gradientSoft(ctx: Context, radius: Int): GradientDrawable =
-    GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(c(TILE_ON_FROM), c(TILE_ON_TO))).apply {
-        cornerRadius = KachiSpace.dpf(ctx, radius)
-    }
+fun KachiTheme.tonalOn(ctx: Context, radius: Int): Drawable = LayerDrawable(
+    arrayOf(
+        surface(ctx, radius),
+        GradientDrawable().apply { cornerRadius = KachiSpace.dpf(ctx, radius); setColor(c(TILE_ON_FROM)) },
+    ),
+)
 
 /**
  * Fade dưới nhãn ô (slot-head) — khớp prototype `linear-gradient(180deg, rgba(0,0,0,.55), transparent)`.

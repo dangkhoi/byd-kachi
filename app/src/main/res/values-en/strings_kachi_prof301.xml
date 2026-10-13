@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R10 — chữ của bộ chọn hồ sơ + hộp Xoá hồ sơ (ProfileChip / SettingsSectionsProfiles). Tệp riêng, tiền tố
+     kprof_ (KHÔNG phải kachi_: bài khoá mồ côi của LauncherI18nContractTest chỉ đọc values/strings_kachi.xml); cùng tập
+     khoá ở cả 5 thư mục (ProfileDialog301ContractTest canh). -->
+<resources>
+    <string name="kprof_pick_subtitle">Switching applies layout, cluster, keys and appearance</string>
+    <string name="kprof_delete_title">Delete profile “%1$s”?</string>
+    <string name="kprof_delete_message">Everything this profile holds is lost: layout and tiles, button bar, appearance, saved places, steering-wheel keys, cluster casting (per-app frame/DPI), camera, navigation schedule. This cannot be undone — export the profile first to keep it.</string>
+    <string name="kprof_delete_confirm">Delete profile</string>
+</resources>

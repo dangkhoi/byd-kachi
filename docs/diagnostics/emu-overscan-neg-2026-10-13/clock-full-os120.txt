@@ -1,0 +1,43 @@
+### 2026-10-13 09:29:53 case=clock-full pkg=com.google.android.deskclock cmd: wm overscan 0,-120,0,0 -d 1
+rc=0
+--- wm size/overscan readback
+Physical size: 1920x720
+Physical density: 240
+--- DisplayFrames d1
+  DisplayFrames w=1920 h=720 r=0
+    mStable=[0,-120][1920,720]
+    mStableFullscreen=[0,-120][1920,720]
+    mDock=[0,-120][1920,720]
+    mCurrent=[0,-120][1920,720]
+    mSystem=[0,0][1920,720]
+    mContent=[0,-120][1920,720]
+    mVoiceContent=[0,-120][1920,720]
+    mOverscan=[0,0][1920,720]
+    mRestrictedOverscan=[0,0][1920,720]
+    mRestricted=[0,-120][1920,720]
+    mUnrestricted=[0,-120][1920,720]
+    mDisplayInfoOverscan=[0,-120][0,0]
+    mRotatedDisplayInfoOverscan=[0,-120][0,0]
+--- am stack list (display 1)
+Stack id=10 bounds=[0,0][1920,720] displayId=1 userId=0
+  taskId=69: com.google.android.deskclock/com.android.deskclock.DeskClock bounds=[0,0][1920,720] userId=0 visible=true topActivity=ComponentInfo{com.google.android.deskclock/com.android.deskclock.DeskClock}
+--
+Stack id=9 bounds=[0,0][1920,720] displayId=1 userId=0
+  taskId=67: com.google.android.apps.maps/com.google.android.maps.MapsActivity bounds=[0,0][1920,720] userId=0 visible=false topActivity=ComponentInfo{com.google.android.apps.maps/com.google.android.maps.MapsActivity}
+--
+Stack id=8 bounds=[0,0][1920,720] displayId=1 userId=0
+  taskId=68: com.android.settings/com.android.settings.Settings bounds=[0,0][1920,720] userId=0 visible=false topActivity=ComponentInfo{com.android.settings/com.android.settings.Settings}
+--- windows of com.google.android.deskclock on display 1
+  Window #0 Window{58859ea u0 com.google.android.deskclock/com.android.deskclock.DeskClock}:
+    mDisplayId=1 stackId=10 mSession=Session{d3a2bbf 12689:u0a10139} mClient=android.os.BinderProxy@be6edd5
+    mAttrs={(0,0)(fillxfill) sim={adjust=pan forwardNavigation} ty=BASE_APPLICATION wanim=0x10302fe
+      fl=LAYOUT_IN_SCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+      pfl=FORCE_DRAW_STATUS_BAR_BACKGROUND
+      vsysui=LAYOUT_STABLE LAYOUT_FULLSCREEN}
+    mViewVisibility=0x0 mHaveFrame=true mObscured=false
+    mSeq=0 mSystemUiVisibility=0x500
+    Frames: containing=[0,0][1920,720] parent=[0,0][1920,720]
+        content=[0,0][1920,720] visible=[0,0][1920,720]
+        decor=[0,0][1920,720]
+    mFrame=[0,0][1920,720] last=[0,0][1920,720]
+    Cur insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] outsets=[0,0][0,0]    Lst insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] outset=[0,0][0,0]

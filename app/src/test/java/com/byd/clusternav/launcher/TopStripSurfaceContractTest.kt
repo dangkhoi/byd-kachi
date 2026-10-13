@@ -165,9 +165,11 @@ class TopStripSurfaceContractTest {
             "cú chạm chip hồ sơ KHÔNG được xoay vòng: nó phải mở bộ chọn có TÊN từng hồ sơ (ProfileChip.picker)",
         )
         assertTrue(chip.contains("fun picker("), "và bộ chọn đó phải tồn tại")
+        // KACHI-301 R10 — khuôn Chọn dùng chung nay là `KachiDialogs.pick` (thẻ + chữ cái đầu + lưới 2 cột + lối chân);
+        // `SettingsDialogs.pick` chỉ nhận nhãn trần nên không chở được R10. Lời hứa không đổi: dùng LẠI khuôn chung.
         assertTrue(
-            chip.contains("SettingsDialogs.pick("),
-            "bộ chọn phải dùng LẠI hộp thoại danh sách dùng chung, không dựng AlertDialog thứ hai",
+            chip.contains("KachiDialogs.pick(") && !chip.contains("AlertDialog"),
+            "bộ chọn phải dùng LẠI khuôn Chọn dùng chung (KachiDialogs.pick), không dựng AlertDialog thứ hai",
         )
         assertTrue(
             chip.contains("R.string.kachi_profile_manage"),

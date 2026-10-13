@@ -378,7 +378,9 @@ class SettingsScreenWiringContractTest {
         // phải hồ sơ đang dùng VÀ còn hồ sơ khác. Ẩn hẳn thì không có affordance để bấm nhầm trên màn xe, nên không
         // cần toast giải thích (khác ca P9: không có kỳ vọng bị chặn im lặng — người dùng đơn giản không thấy nút).
         assertTrue(fn.contains("if (!active && total > 1)"), "nút Xoá phải bọc trong điều kiện xoá-được-thật")
-        assertTrue(fn.contains("deps.onDeleteProfile("), "và chỉ trong nhánh đó mới đi tới intent xoá")
+        // KACHI-301 R10 — nhánh đó nay mở hộp Xác nhận; intent xoá chỉ chạy trong lambda xác nhận
+        // (ProfileDialog301ContractTest khoá phần đó).
+        assertTrue(fn.contains("confirmDelete(name)"), "và chỉ trong nhánh đó mới đi tới (hộp xác nhận) xoá")
         // [ĐO] nơi lưu đã tự chặn ca "hồ sơ cuối cùng" (UI ẩn nút chỉ là lớp ngoài, KHÔNG được là lớp duy nhất).
         assertTrue(
             SourceRoots.body(prefs, "fun deleteProfile(").contains("list.size <= 1"),

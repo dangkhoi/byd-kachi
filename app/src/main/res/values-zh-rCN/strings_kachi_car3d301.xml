@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R25 — widget xe 3D: tên widget (contentDescription) + hàng "Màu xe 3D" (Cài đặt › Giao diện › Hình xe; ô màu
+     chỉ có chữ cho trợ năng). Tên màu theo tên dòng `car_body_color.csv` của AVM; dòng lạ ⇒ kcar3d_paint_other. Cùng khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kcar3d_title">3D 车辆</string>
+    <string name="kcar3d_paint_row">3D 车身颜色</string>
+    <string name="kcar3d_paint_white">白色</string>
+    <string name="kcar3d_paint_black">黑色</string>
+    <string name="kcar3d_paint_grey">灰色</string>
+    <string name="kcar3d_paint_darkblue">深蓝</string>
+    <string name="kcar3d_paint_purple">紫色</string>
+    <string name="kcar3d_paint_red">红色</string>
+    <string name="kcar3d_paint_smartblue">蓝色</string>
+    <string name="kcar3d_paint_green">绿色</string>
+    <string name="kcar3d_paint_blue">蓝色</string>
+    <string name="kcar3d_paint_orange">橙色</string>
+    <string name="kcar3d_paint_pink">粉色</string>
+    <string name="kcar3d_paint_silvery">银色</string>
+    <string name="kcar3d_paint_mountain_grey">山峦灰</string>
+    <string name="kcar3d_paint_tianshan_white">天山白</string>
+    <string name="kcar3d_paint_other">颜色 %1$s</string>
+    <string name="kcar3d_bg_row">3D 车辆背景</string>
+    <string name="kcar3d_bg_none">无图片</string>
+    <string name="kcar3d_bg_align">调整背景</string>
+    <string name="kcar3d_bg_align_note">关闭设置，在 3D 车辆后拖动移动、双指缩放图片，然后点“完成”。</string>
+    <string name="kcar3d_bg_empty">壁纸文件夹中还没有图片：%1$s</string>
+    <string name="kcar3d_paint_steel">钢青灰</string>
+    <string name="kcar3d_tyres_row">显示轮胎数据</string>
+    <string name="kcar3d_tyres_sub">在 3D 车辆每个车轮下方显示胎压和温度</string>
+    <string name="kcar3d_step_down">%1$s：降低</string>
+    <string name="kcar3d_step_up">%1$s：升高</string>
+</resources>

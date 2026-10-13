@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R6 — hàng "Dịch nội dung" (SettingsCastShiftRow). Tệp riêng, tiền tố kshift_ — cùng tập khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kshift_label">Anjakan kandungan (negatif = naik)</string>
+    <string name="kshift_a11y">Anjak kandungan peta pada panel instrumen ke atas atau ke bawah, dalam piksel; negatif menarik ke atas</string>
+    <string name="kshift_note">Menarik peta ke atas apabila aplikasi meninggalkan jalur kosong di atas panel instrumen. Kachi mengukurnya sendiri: jika aplikasi tidak menurut, ia dipulihkan serta-merta.</string>
+    <string name="kshift_ineffective">Aplikasi ini tidak menerima anjakan kandungan pada kereta ini — dipulihkan seperti asal.</string>
+    <string name="kshift_failed">Anjakan kandungan tidak dapat diukur — tiada apa-apa diubah.</string>
+</resources>

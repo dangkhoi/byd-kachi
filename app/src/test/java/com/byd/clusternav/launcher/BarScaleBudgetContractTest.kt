@@ -76,9 +76,16 @@ class BarScaleBudgetContractTest {
         bases.forEach { base ->
             positions.forEach { p ->
                 val d = density(base, p)
-                val chrome = 2 * px(dock.padDp, d) + px(dock.iconDp, d) + px(KachiSpace.XS, d)
-                val twoLines = chrome + 2 * line(dock.labelSp, d)                                   // TOGGLE/COVER/BUTTON (reserveTwoLines)
-                val step = chrome + maxOf(px(KachiSpace.TOUCH_TIGHT, d).toFloat(), line(dock.valueSp, d))  // hàng [−][giá trị][+]
+                val pad2 = 2 * px(dock.padDp, d)
+                val chrome = pad2 + px(dock.iconDp, d) + px(KachiSpace.XS, d)
+                // R22·R (owner 13/10 "giảm text đi em, làm các icon"): ô thanh nút CHỈ icon — nhãn GONE khi có icon
+                // (`ControlTileFactory`: `size.iconOnly && icons`), nhãn 2 dòng chỉ còn ở kiểu "không icon". Luật cũ
+                // "icon + nhãn 2 dòng" bị owner thay ⇒ khoá cả hai kiểu thật đang có.
+                val twoLines = if (dock.iconOnly) maxOf(chrome.toFloat(), pad2 + 2 * line(dock.labelSp, d))
+                else chrome + 2 * line(dock.labelSp, d)                                            // TOGGLE/COVER/BUTTON (reserveTwoLines)
+                // Ô STEP giữ icon [TileSize.stepIconDp] (R23: ICON_M + hàng −/+ = 63 dp tràn ô dọc 60 dp — đỏ thật, đã sửa ở mã).
+                val step = pad2 + px(dock.stepIconDp, d) + px(KachiSpace.XS, d) +
+                    maxOf(px(KachiSpace.TOUCH_TIGHT, d).toFloat(), line(dock.valueSp, d))            // hàng [−][giá trị][+]
                 listOf(KachiBars.DOCK_TILE_H to "ngang", KachiBars.DOCK_TILE_H_VERTICAL to "dọc").forEach { (h, side) ->
                     val have = px(h, d) + ROUND_PX
                     assertTrue(twoLines <= have, "@$base dpi $p % ô $side: nhãn 2 dòng ${twoLines}px > ô ${px(h, d)}px")

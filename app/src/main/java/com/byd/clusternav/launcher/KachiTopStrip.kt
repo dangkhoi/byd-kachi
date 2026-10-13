@@ -269,7 +269,8 @@ class KachiTopStrip(
         scaleType = ImageView.ScaleType.FIT_CENTER
         minimumWidth = dp(Bars.HEADER_BTN); minimumHeight = dp(Bars.HEADER_BTN)
         dp(Bars.HEADER_BTN_PAD).let { setPadding(it, it, it, it) }
-        themed { if (primary) { background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setColorFilter(c(KachiTheme.ON_ACCENT)) } else { background = KachiTheme.pill(context); setColorFilter(c(KachiTheme.INK)) } }
+        // R22·R (owner 13/10): nút chính = đĩa TÔNG nhạt + icon mực nhấn, không còn đĩa gradient chàm→tím.
+        themed { if (primary) { background = KachiTheme.pill(context, KachiTheme.ACCENT_SOFT); setColorFilter(c(KachiTheme.ACCENT_INK)) } else { background = KachiTheme.pill(context); setColorFilter(c(KachiTheme.INK)) } }
         setOnClickListener { onClick() }
     }
 

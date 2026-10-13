@@ -15,16 +15,23 @@ import android.widget.FrameLayout
  *
  * FrameLayout xếp 2 lớp cùng cỡ:
  *  • **NỀN** [CarImageView] — chỉ vẽ hình xe; `invalidate` DUY NHẤT khi ảnh vừa nạp xong, KHÔNG theo nhịp số.
- *  • **ĐÈ** [CellsView] (trong suốt) — 4 ô giá trị + số + chấm; `invalidate` khi số đổi. Số đổi ⇒ chỉ lớp này
+ *  • **ĐÈ** [CellsView] (trong suốt) — 4 cụm số; `invalidate` khi số đổi. Số đổi ⇒ chỉ lớp này
  *    vẽ lại, HÌNH XE ĐỨNG YÊN (hết nháy). Lớp đè tính `content` (letterbox) từ [CarImageView.contentRect] để
  *    ô bám đúng bánh — hai lớp cùng công thức bố cục ([carDstIn]).
  *
  * ## 2.74 · R2 — ba lỗi hình học đã sửa (hình học thuần nằm ở [CellTextLayout], kiểm off-car)
  *  • thẻ đục KHÔNG còn đè lên thân xe: mép trong kẹp theo khung ảnh THẬT ([CellTextLayout.cardSpanX]);
  *  • khối 2 dòng canh giữa ô bằng SỐ ĐO PHÔNG ([CellTextLayout.twoLineTopBaseline]) — hết hằng `0.10`/`0.60`;
- *  • con số nằm đúng trục ô, dòng phụ cùng trục, cả hai co cho vừa thẻ ([CellTextLayout.lineStartX]/`fitScale`).
+ *  • cụm `số + đơn vị` cân giữa trục ô (owner 13/10), dòng phụ cùng trục, cả hai co cho vừa thẻ
+ *    ([CellTextLayout.lineStartX]/`fitScale`).
  *
  * Ranh giới vẫn giữ: ô vẽ 0 ngưỡng (màu + lý do + số + đơn vị do [TyreBoard]/chỗ gọi), 0 viền/blur/shadow.
+ *
+ * ## 3.01 R22·R — hết "hộp trong hộp" (owner 13/10: *"xấu và thô"*; brief Kim §2.2)
+ * Bốn thẻ nền đục quanh xe đã GỠ (cùng chấm cảnh báo trên bánh): áp suất là số nét LIGHT đứng thẳng trên thẻ ô, ở cột
+ * ngoài thân xe ngang hàng bánh, canh mép về phía xe (cột trái canh phải, cột phải canh trái) ⇒ hai cột thẳng hàng. Owner
+ * 13/10 *"giảm text"*: CHỈ con số — không "bar" lặp (đơn vị suy ra được), không "TT/TP/ST/SP" (vị trí nói bánh nào); dòng
+ * phụ nhỏ lùi màu = nhiệt (+ lý do khi xe báo). Cảnh báo CHỈ tô màu chữ (hổ phách/đỏ). Hình xe = ảnh như cũ.
  *
  * ## 2.88 — màu theo LỜI PHÁN CỦA XE ([TyreReading.severity], luật M của [TyreJudge]), không còn số ngưỡng nào
  * Đỏ/vàng = xe báo; số thường = xe nói bình thường; xám mờ = chưa phán được (xe chưa trả mã nào — thay đổi thấy được:
@@ -106,10 +113,9 @@ class TyreBoardView(context: Context) : FrameLayout(context), MinUsefulHeight {
         private var unitLabel: String = ""
         private var temps: List<String?> = emptyList()
 
-        private val cellFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-        private val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+        /** Số = nét LIGHT (vai số chính của widget, [KachiWidgetType.heroFace]) — không đậm giả (brief Kim §2.4). */
         private val bigP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textAlign = Paint.Align.LEFT; isFakeBoldText = true; color = Color.parseColor(KachiTheme.INK)
+            textAlign = Paint.Align.LEFT; typeface = KachiWidgetType.heroFace; color = Color.parseColor(KachiTheme.INK)
         }
         private val unitP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textAlign = Paint.Align.LEFT; color = Color.parseColor(KachiTheme.MUT)
@@ -125,7 +131,6 @@ class TyreBoardView(context: Context) : FrameLayout(context), MinUsefulHeight {
 
         private val colInk = Color.parseColor(KachiTheme.INK)
         private val colMut = Color.parseColor(KachiTheme.MUT)
-        private val colMut2 = Color.parseColor(KachiTheme.MUT2)
         private val colRed = Color.parseColor(KachiTheme.RED)
         private val colAmber = Color.parseColor(KachiTheme.AMBER)
 
@@ -149,7 +154,9 @@ class TyreBoardView(context: Context) : FrameLayout(context), MinUsefulHeight {
             TyreSeverity.ALERT -> colRed
             TyreSeverity.WARN -> colAmber
             TyreSeverity.OK -> colInk
-            TyreSeverity.NONE -> colMut2
+            // R22·R: số giờ đứng TRÊN mặt ô (hết thẻ card2) ⇒ MUT2 chỉ còn 4,48:1 trên kính bảng sáng [ĐO máy ảo] ⇒ dùng MUT
+            // (5,05:1) — vẫn "lùi" so với số đã phán (INK), chỉ không chạm sàn.
+            TyreSeverity.NONE -> colMut
         }
 
         override fun onDraw(canvas: Canvas) {
@@ -158,7 +165,8 @@ class TyreBoardView(context: Context) : FrameLayout(context), MinUsefulHeight {
             val m = minOf(w, h)
             carView.contentRect(w, h, content)   // khung hình xe THẬT — bám bánh theo lớp nền
 
-            val wheelSpanY = (CarLayout.wheel(TyreCorner.REAR_LEFT).y - CarLayout.wheel(TyreCorner.FRONT_LEFT).y) * content.height()
+            val art = carView.art   // R23: bánh theo ẢNH đang vẽ
+            val wheelSpanY = (art.wheel(TyreCorner.REAR_LEFT).y - art.wheel(TyreCorner.FRONT_LEFT).y) * content.height()
             val cellH = minOf(h * CELL_RATIO, wheelSpanY - m * 0.035f).coerceAtLeast(m * 0.10f)
 
             floorBig = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, MIN_VALUE_SP, resources.displayMetrics)
@@ -170,58 +178,37 @@ class TyreBoardView(context: Context) : FrameLayout(context), MinUsefulHeight {
             val pad = w * 0.02f
             val rows = if (readings.size < 4) PLACEHOLDER_CORNERS else readings.map { it.corner }
             rows.forEachIndexed { i, corner ->
-                val a = CarLayout.wheel(corner)
+                val a = art.wheel(corner)
                 val wheelX = content.left + a.x * content.width()
-                val wheelY = content.top + a.y * content.height()
-                // Mép TRONG của thẻ kẹp ra ngoài khung ảnh thật ⇒ thẻ đục không bao giờ ăn vào thân xe (R2·b).
+                // R22·R (owner 13/10 "hộp trong hộp"): KHÔNG còn thẻ nền — số đứng thẳng trên thẻ ô, cột ngoài thân xe,
+                // canh mép về phía xe (trái canh phải · phải canh trái) ⇒ hai cột thẳng hàng, cùng hàng với bánh.
                 val span = CellTextLayout.cardSpanX(a.x < 0.5f, w, pad, content.left, content.right, wheelX, gap)
-                val rd = readings.getOrNull(i)
                 if (span.usable) {
-                    // OQ7 (2.76): thẻ dịch theo [CarLayout.tyreCardShift] để KHỐI 4 thẻ có tâm = tâm ảnh xe; chấm
-                    // cảnh báo (bên dưới) vẫn ở `wheelY` = bánh thật. Hình học thuần ở `:core`, `TyreCardBlockTest`.
-                    val cardY = CarLayout.tyreCardCenterY(corner, content.top, content.height())
-                    cell.set(span.start, cardY - cellH / 2f, span.end, cardY + cellH / 2f)
-                    drawCell(canvas, m, corner, rd, values.getOrNull(i), temps.getOrNull(i))
-                }
-                val sev = rd?.severity ?: TyreSeverity.NONE
-                if (sev.alert) {
-                    // Chấm vẫn ở neo bánh THẬT: chấm nói "bánh nào", thẻ chỉ cần nằm cạnh.
-                    dot.color = colorFor(sev)
-                    canvas.drawCircle(wheelX, wheelY, minOf(content.width(), content.height()) * DOT_RATIO, dot)
+                    val cy = content.top + a.y * content.height()
+                    cell.set(span.start, cy - cellH / 2f, span.end, cy + cellH / 2f)
+                    drawCell(canvas, m, a.x < 0.5f, readings.getOrNull(i), values.getOrNull(i), temps.getOrNull(i))
                 }
             }
         }
 
-        private fun drawCell(canvas: Canvas, m: Float, corner: TyreCorner, rd: TyreReading?, value: String?, temp: String?) {
+        private fun drawCell(canvas: Canvas, m: Float, toRight: Boolean, rd: TyreReading?, value: String?, temp: String?) {
             val st = rd?.severity ?: TyreSeverity.NONE   // 2.88: MỨC NẶNG (lời phán của xe), không còn trạng thái theo ngưỡng
+            // R22·R: cảnh báo chỉ tô MÀU CHỮ (số + lý do, hổ phách/đỏ ngữ nghĩa) — không nền, không chấm.
             val col = colorFor(st)
-            val radius = m * 0.035f
-            // R-OP (2.88, soát Pass 10 [P3]): thẻ bánh THƯỜNG là nền trung tính như "ô con nhóm thường" ⇒ mờ cùng hệ số
-            // độ đục nền chung (cùng phép `modulateAlpha`, [ChromeOpacity.drawnAlpha]; f = 1 ⇒ đúng byte cũ). Thẻ CẢNH BÁO
-            // giữ đục — màu nền là thông tin (R-OP2). Đọc lúc vẽ, không cấp phát; đổi hệ số ⇒ `applyThemeInPlace` dựng
-            // lại ô widget ([WorkspaceView.restyle]) nên lượt vẽ kế đọc số mới.
-            val card2 = Color.parseColor(KachiTheme.CARD2)
-            cellFill.color = if (st.alert) ColorMath.mix(card2, col, SEMANTIC_MIX)
-            else ColorMath.withAlpha(card2, ChromeOpacity.drawnAlpha(ColorMath.alpha(card2), KachiChrome.fraction))
-            canvas.drawRoundRect(cell, radius, radius, cellFill)
-
-            val inset = m * TEXT_INSET_RATIO
-            val room = cell.width() - inset * 2f
-            // Ô hẹp tới mức không còn chỗ cho một chữ nào: vẽ thẻ trơn rồi dừng. Vẽ tiếp = chữ tràn khỏi thẻ, mà
-            // ngay bên cạnh thẻ là thân xe ⇒ lại đúng cái lỗi (C) vừa vá.
+            val room = cell.width()
             if (room <= 0f) return
 
             // ── dòng SỐ + ĐƠN VỊ ───────────────────────────────────────────────────────────────────────────
-            val hasValue = value != null
             val numText = value ?: TelemetryView.PLACEHOLDER
-            val unit = if (hasValue) unitLabel else ""
+            // R22·R (owner 13/10 "giảm text"): CHỈ con số — đơn vị (bar/psi/kPa) suy ra được từ độ lớn, và nằm trong nhãn
+            // trợ năng của cả bảng ([set] `summary`). Bốn chữ "bar" lặp là chữ thừa.
+            val unit = ""
             bigP.textSize = baseBig
             unitP.textSize = baseBig * UNIT_RATIO
             var gapU = if (unit.isEmpty()) 0f else m * UNIT_GAP_RATIO
             var numW = bigP.measureText(numText)
             var unitW = if (unit.isEmpty()) 0f else unitP.measureText(unit)
-            // Thẻ hẹp hơn hẳn sau khi kẹp mép (mất 10–20 % bề rộng đang mượn của thân xe) và đơn vị "psi"/"kPa"
-            // dài hơn "bar" ⇒ phải co cho vừa, không thì cụm số tràn ra ngoài thẻ (= lại vẽ lên xe).
+            // Cột hẹp (ô 2×3) và đơn vị "psi"/"kPa" dài hơn "bar" ⇒ co cho vừa, không thì cụm số tràn lên thân xe.
             val scale = CellTextLayout.fitScale(numW + gapU + unitW, room)
             if (scale < 1f) {
                 bigP.textSize = (baseBig * scale).coerceAtLeast(floorBig)
@@ -234,8 +221,9 @@ class TyreBoardView(context: Context) : FrameLayout(context), MinUsefulHeight {
             // ── dòng PHỤ (viết tắt bánh · lý do · nhiệt) ────────────────────────────────────────────────────
             subP.textSize = baseSub
             // Lý do lấy từ `:core` (mã lạ ⇒ "mã N" đúng con số — kênh 1 của spec 2.88 §4.4: ảnh chụp mang mã thô).
-            val why = if (rd != null) rd.reason else null
-            var sub = listOfNotNull(corner.displayShortLabel, why, temp).joinToString(SEP)
+            // R22·R "giảm text": bánh nào = VỊ TRÍ cạnh bánh (bỏ "TT/TP/ST/SP"); lý do chỉ hiện khi xe BÁO (một chữ ngắn).
+            val why = if (rd != null && st.alert) rd.reason else null
+            var sub = listOfNotNull(why, temp).joinToString(SEP)
             var subW = subP.measureText(sub)
             val subScale = CellTextLayout.fitScale(subW, room)
             if (subScale < 1f) {
@@ -247,16 +235,7 @@ class TyreBoardView(context: Context) : FrameLayout(context), MinUsefulHeight {
                 }
             }
 
-            // Baseline khối 2 dòng từ SỐ ĐO PHÔNG (hết hằng 0.10/0.60 — xem KDoc CellTextLayout).
-            // Đo ink của chữ số MẪU, không của chuỗi đang vẽ: bốn thẻ phải cùng một baseline (bảng mà mỗi ô một
-            // baseline thì đọc ra như lỗi), và bánh chưa đọc được ("—", hộp mực mỏng nằm giữa dòng) không được kéo
-            // baseline của chính nó lên so với ba bánh bên cạnh.
-            // ⚠ [SOÁT Opus 2026-09-27] Đo ở cỡ chữ **GỐC** (`baseBig`/`baseSub`), KHÔNG ở cỡ đã co riêng cho thẻ này.
-            // Phép co là quyết định của TỪNG thẻ (bốn chuỗi dài khác nhau), nên lấy cỡ đã co vào baseline là bốn thẻ
-            // bốn baseline — đúng thứ ba dòng ngay trên vừa hứa là không được xảy ra. Hôm nay lỗi này **latent**
-            // ([ĐO] cả năm bố cục hiện có đều ra `fitScale == 1`, thẻ hẹp nhất 289 px vs cụm số dài nhất ≈ 95 px), và
-            // vì `scale == 1` nên bản vá này KHÔNG đổi một pixel nào ở mọi bố cục đang dùng; nó chỉ chặn đường lùi
-            // khi có một bố cục hẹp hơn, hoặc đơn vị `psi`/`kPa` (dài hơn `bar`).
+            // Baseline khối 2 dòng từ SỐ ĐO PHÔNG, đo ở cỡ GỐC (bốn cột cùng một baseline — xem lịch sử SOÁT 2026-09-27).
             val drawnBig = bigP.textSize
             val drawnSub = subP.textSize
             bigP.textSize = baseBig
@@ -268,13 +247,13 @@ class TyreBoardView(context: Context) : FrameLayout(context), MinUsefulHeight {
             subP.textSize = drawnSub
 
             bigP.color = col
-            val x = CellTextLayout.lineStartX(cell.centerX(), numW, numW + gapU + unitW, cell.left, cell.right, inset)
+            val groupW = numW + gapU + unitW
+            val x = if (toRight) cell.right - groupW else cell.left
             canvas.drawText(numText, x, numBase, bigP)
             if (unit.isNotEmpty()) canvas.drawText(unit, x + numW + gapU, numBase, unitP)
 
-            subP.color = if (st.alert) col else colMut
-            val subX = CellTextLayout.lineStartX(cell.centerX(), subW, subW, cell.left, cell.right, inset)
-            canvas.drawText(sub, subX, numBase + lineGap, subP)
+            subP.color = if (st.alert) col else colMut   // lý do cảnh báo đi cùng MỘT màu với số (không màu thứ hai)
+            canvas.drawText(sub, if (toRight) cell.right - subW else cell.left, numBase + lineGap, subP)
         }
 
         /** Cắt đuôi dòng phụ cho vừa [room] (chỉ chạy ở ca đã tới sàn cỡ chữ — không cấp phát ở ca thường). */
@@ -286,7 +265,6 @@ class TyreBoardView(context: Context) : FrameLayout(context), MinUsefulHeight {
     }
 
     private companion object {
-        const val SEMANTIC_MIX = 0.20
         /** Cao thẻ bánh theo cao bảng — số của bản trước (0.24), tách hằng cho [minUsefulHeightPx] dùng chung. */
         const val CELL_RATIO = 0.24f
         const val MIN_VALUE_SP = 13f
@@ -297,10 +275,8 @@ class TyreBoardView(context: Context) : FrameLayout(context), MinUsefulHeight {
         /** Mép DƯỚI khung ảnh — task 3 (owner 2026-09-25): dùng gần hết chiều cao, bớt dải trống đáy (~66 px).
          *  Tên cũ `FOOTER_TOP` là di sản dòng kết luận đã gỡ ở `84f91e6`; SỐ giữ nguyên (CLAUDE.md §6). */
         const val CAR_BOTTOM = 0.98f
-        const val DOT_RATIO = 0.05f
         const val UNIT_RATIO = 0.45f
         const val UNIT_GAP_RATIO = 0.018f
-        const val TEXT_INSET_RATIO = 0.02f
         // Nhịp 2 dòng (`SUB_GAP_RATIO = 1.35f`) đã dời sang [CellTextLayout.SUB_LINE_GAP] ở UX7: bốn ô vẽ Canvas
         // dùng CHUNG một nhịp chữ, nên nó không được là hằng riêng của một bảng nữa (số giữ nguyên).
         const val SEP = " · "

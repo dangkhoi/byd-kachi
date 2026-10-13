@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -134,18 +135,34 @@ class CtlSafetyPolicyTest {
     }
 
     /**
-     * 2.87 · SOÁT vòng 1 · P1 — [CtlSafetyPolicy.blockedAtSpeed] là MỘT phép cho cổng thi hành lẫn Đảo-từ-trí-nhớ: chặn
-     * đúng MỞ (`arg > 0`) nút thuộc REQUIRES_STATIONARY khi đang chạy; `null` ⇒ không chặn (fail-open); vận tốc đọc LƯỜI.
+     * 2.87 · SOÁT vòng 1 · P1 → 3.01 owner 13/10 *"làm theo luật mới hết đi"*: [CtlSafetyPolicy.blocked] là MỘT phép cho cổng
+     * chạm, cổng thi hành (giọng nói + phím) lẫn Đảo-từ-trí-nhớ: chặn đúng MỞ (`arg > 0`) nút thuộc REQUIRES_STATIONARY khi
+     * xe chưa CHỨNG MINH đứng yên. Tới 3.01 bài này khoá `null ⇒ cho mở` (fail-open) — owner đổi sang fail-safe.
      */
-    @Test fun `blockedAtSpeed chan dung MO cop luc chay, doc van toc luoi`() {
+    @Test fun `blocked chan dung MO cop khi chua chung minh xe dung, doc chuyen dong luoi`() {
         var reads = 0
-        val kmh = { v: Int? -> { reads++; v } }
-        assertTrue(CtlSafetyPolicy.blockedAtSpeed("trunk", 1, kmh(30)))
-        assertFalse(CtlSafetyPolicy.blockedAtSpeed("trunk", 1, kmh(0)))
-        assertFalse(CtlSafetyPolicy.blockedAtSpeed("trunk", 1, kmh(null)), "không đọc được ⇒ cho mở (fail-open)")
+        val m = { v: Int? -> { reads++; CtlSafetyPolicy.Motion(v, null) } }
+        assertTrue(CtlSafetyPolicy.blocked("trunk", 1, m(30)))
+        assertFalse(CtlSafetyPolicy.blocked("trunk", 1, m(0)))
+        assertTrue(CtlSafetyPolicy.blocked("trunk", 1, m(null)), "owner 13/10: không đọc được tốc độ lẫn số ⇒ CHẶN (fail-safe)")
         assertTrue(reads == 3)
-        assertFalse(CtlSafetyPolicy.blockedAtSpeed("trunk", CtlSafetyPolicy.STATIONARY_SAFE_ARG, kmh(120)), "ĐÓNG luôn được")
-        assertFalse(CtlSafetyPolicy.blockedAtSpeed("win_lf", 1, kmh(120)), "kính không bị gate theo vận tốc")
-        assertTrue(reads == 3, "ĐÓNG / nút ngoài tập không tốn lượt đọc vận tốc nào")
+        assertFalse(CtlSafetyPolicy.blocked("trunk", CtlSafetyPolicy.STATIONARY_SAFE_ARG, m(120)), "ĐÓNG luôn được")
+        assertFalse(CtlSafetyPolicy.blocked("win_lf", 1, m(120)), "kính không bị gate theo vận tốc")
+        assertTrue(reads == 3, "ĐÓNG / nút ngoài tập không tốn lượt đọc nào")
+    }
+
+    /** [CtlSafetyPolicy.readMotion] — MỘT phép đọc của cả ba đường: tươi trước, ảnh chụp lùi; số chỉ đọc khi không tốc độ. */
+    @Test fun `readMotion doc toc do tuoi, so chi khi khong toc do`() {
+        fun car(kmh: Int?, gear: String?) = CarStatus(drivetrain = CarStatus.Drivetrain(speedKmh = kmh, gear = gear))
+        val asked = mutableListOf<String>()
+        assertEquals(CtlSafetyPolicy.Motion(40, "D"),
+            CtlSafetyPolicy.readMotion(fresh = { asked += it; car(40, "D") }, snapshot = { car(0, "P") }))
+        assertEquals(listOf("speed"), asked, "có tốc độ ⇒ không tốn lượt đọc số")
+        asked.clear()
+        assertEquals(CtlSafetyPolicy.Motion(null, "P"),
+            CtlSafetyPolicy.readMotion(fresh = { asked += it; if (it == "gear") car(null, "P") else null }, snapshot = { car(null, null) }))
+        assertEquals(listOf("speed", "gear"), asked)
+        assertEquals(CtlSafetyPolicy.Motion(7, null),
+            CtlSafetyPolicy.readMotion(fresh = { error("HAL hỏng") }, snapshot = { car(7, null) }), "đọc tươi ném ⇒ lùi ảnh chụp")
     }
 }

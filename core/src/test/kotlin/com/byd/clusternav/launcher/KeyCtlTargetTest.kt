@@ -228,7 +228,9 @@ class KeyCtlTargetTest {
         assertTrue(groups.drop(capIds.size).all { it.id.startsWith(KeyCtlTargets.DOMAIN_GROUP_PREFIX) })
         val fanGroup = groups.first { g -> g.targets.any { it.controlId == "fan" } }
         assertEquals("d_climate", fanGroup.id, "gió nằm ở Khí hậu & không khí")
-        assertEquals("g_doors", groups.first { g -> g.targets.any { it.controlId == "trunk" } }.id)
+        // 3.01 R22·C (owner 13/10 "thêm cả cốp vào đó luôn"): cốp vào nhóm Kính (đứng trước Cửa & khoang) ⇒ hộp chọn phím xếp cốp
+        // ở nhóm ĐẦU khai nó — luật "mỗi nút đúng một nhóm" không đổi.
+        assertEquals("g_windows", groups.first { g -> g.targets.any { it.controlId == "trunk" } }.id)
     }
 
     // ══ 4 · Nhãn vi/en ═════════════════════════════════════════════════════════════════════════════════════

@@ -7,7 +7,8 @@
  },
  "strokes": {
   "main": 1.8,
-  "sub": 1.2
+  "sub": 1.2,
+  "fine": 1.25
  },
  "pathCap": {
   "24": 6,
@@ -467,6 +468,21 @@
    "domain": "BODY",
    "note": "MỞ HẾT KÍNH (macro)",
    "large": true
+  },
+  "win_open_all_g": {
+   "domain": "COCKPIT",
+   "weight": "fine",
+   "note": "MỞ TẤT CẢ KÍNH (chân widget Kính R22·C; tint mực/nhấn)"
+  },
+  "win_close_all_g": {
+   "domain": "COCKPIT",
+   "weight": "fine",
+   "note": "ĐÓNG TẤT CẢ KÍNH (chân widget Kính R22·C; tint mực/nhấn)"
+  },
+  "win_half_all_g": {
+   "domain": "COCKPIT",
+   "weight": "fine",
+   "note": "HÉ TẤT CẢ KÍNH 50% (chân widget Kính 3.01 POLISH; tint mực/nhấn)"
   }
  }
 }

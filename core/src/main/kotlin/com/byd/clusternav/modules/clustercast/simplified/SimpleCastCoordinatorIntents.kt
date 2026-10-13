@@ -57,6 +57,7 @@ internal fun SimpleCastCoordinator.handleCastFull(intent: SimpleCastIntent.CastF
         setState(SimpleCastState.CastingFull(intent.pkg, intent.appType, pin.config, pinned = pin.pinned))
         if (intent.appType == AppType.NORMAL) {
             applySessionPin(intent.pkg, pin.pinned)   // B1b: Chữ nhật ⇒ + đọc lại khung (CastStyleSessionOps.kt)
+            applySavedContentShift(intent.pkg, pin.shift, reconcile = true)   // 3.1 · R6: dịch CUỐI + tự đo (CastContentShiftOps.kt)
         }
         return
     }
@@ -87,6 +88,7 @@ internal fun SimpleCastCoordinator.handleCastFull(intent: SimpleCastIntent.CastF
                 // B1b: Chữ nhật ⇒ + đọc lại khung từ `am stack list`, lệch thì thử lại MỘT lần rồi log.
                 if (intent.appType == AppType.NORMAL) {
                     applySessionPin(intent.pkg, pin.pinned)
+                    applySavedContentShift(intent.pkg, pin.shift)   // 3.1 · R6: CUỐI, sau khung + DPI, kèm phép đo
                 }
             }
             else -> {
@@ -210,6 +212,7 @@ internal fun SimpleCastCoordinator.handleStop(intent: SimpleCastIntent.Stop) {
                 }
             } else {
                 refreshCluster()
+                undoContentShift()   // 3.1 · R6 — đường mới CUỐI nhánh (§6): TOP overscan cụm về 0 nếu đang dịch (đọc sự thật)
             }
             setState(SimpleCastState.Idle)
         }

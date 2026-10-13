@@ -25,7 +25,7 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * không cấp phát, không đụng `ConstantState`.
  *
  * ## Vì sao màu vạch là [KachiTheme.INK_ON_ACCENT]
- * Vạch sáng chỉ xuất hiện khi ô **đang bật**, mà nền ô lúc đó là `gradientSoft` (nhấn bán trong suốt) và
+ * Vạch sáng chỉ xuất hiện khi ô **đang bật**, mà nền ô lúc đó là `tonalOn` (bề mặt + nhấn mỏng) và
  * icon/nhãn của ô dùng đúng vai này — [ĐO] `ThemePaletteContractTest` đã chứng minh vai đó đủ tương phản trên nền
  * `tileOn*` ở **cả hai** bảng màu (tối `#e7ecff`, sáng `#14224d`). Dùng một vai khác là mở một cặp màu thứ hai mà
  * chưa ai đo. Khi ô tắt thì mọi vạch nằm ở [TICK_OFF_ALPHA] nên chúng đọc ra một dấu gạch mờ trên nền trung tính.

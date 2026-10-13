@@ -34,7 +34,7 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  *  • [readTile] — **ĐỌC** (KHÔNG bấm): icon + nhãn + số + đơn vị, cập nhật tại chỗ qua [ReadTile.bind].
  *
  * Tier OVERDRIVE/DASHCAST ⇒ chấm mờ "chưa kiểm trên xe" (cả hai loại; U10 — vẽ bằng [PickerBadge.dot], xem
- * [withBadge]). **KHÔNG gate an toàn** — mọi ô bấm được bất kể tốc độ/số (owner bỏ gate 2026-09-10).
+ * [withBadge]). Gate an toàn DUY NHẤT: MỞ cốp khi chưa chứng minh xe đứng ([gated] — owner 13/10; bỏ gate chung 2026-09-10).
  *
  * **Luồng (P1-main · 2026-09-25):** cú chạm đổi UI lạc quan NGAY trên luồng chính, còn lượt ghi HAL (và lượt đọc
  * của STEP) đi qua [writer] xuống làn tuần tự nền; hỏng ⇒ về giá trị cũ. Xem KDoc [ControlTileWrite].
@@ -51,6 +51,8 @@ class ControlTileFactory(
     private val icons: Boolean = true,
     /** Đường ghi HAL của ô đơn — nền, tuần tự (test tiêm bản đồng bộ). */
     private val writer: ControlTileWrite = ControlTileWrite(warn = { m, t -> Log.w(TAG_WRITE, m, t) }),
+    /** Chuyển động TƯƠI cho cổng chạm ([gated]) — chỉ đọc khi MỞ cốp; test tiêm số. */
+    private val motion: () -> CtlSafetyPolicy.Motion = { TileSafetyGate.motion(ctx) },
 ) {
 
     // ── HÀNH ĐỘNG ───────────────────────────────────────────────────────────────────────────────────────
@@ -61,57 +63,59 @@ class ControlTileFactory(
      * poll ([CarStatus.controls]) và cập nhật TẠI CHỖ — không dựng lại ô (ràng buộc C5). `refresh` là no-op cho
      * COVER/BUTTON (chúng không mang một con số/trạng-thái bền để đọc lại).
      */
-    fun actionTile(def: ControlDef): ActionTile {
+    fun actionTile(def: ControlDef, label: String? = null): ActionTile {   // [label]: R22 bảng vật × việc ghi ĐỘNG TỪ thay nhãn
         val content = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             val p = dpi(ctx, size.padDp); setPadding(p, p, p, p)
         }
         val icon = ImageView(ctx).apply {
             val r = iconRes(def); if (r != 0) { setImageResource(r); tag = r }   // tag = id đang vẽ (KachiIcons.byLevel)
-            layoutParams = LinearLayout.LayoutParams(dpi(ctx, size.iconDp), dpi(ctx, size.iconDp))
+            val dp = if (def.kind == ControlKind.STEP) size.stepIconDp else size.iconDp   // R23: ô STEP còn hàng −/+
+            layoutParams = LinearLayout.LayoutParams(dpi(ctx, dp), dpi(ctx, dp))
                 .also { it.bottomMargin = dpi(ctx, Sp.XS) }
         }
+        val labelText = label
         val label = TextView(ctx).apply {
-            // [SOÁT P3] `maxLines = 1` mà KHÔNG ellipsize ⇒ chữ bị cắt CỨNG, không có "…": trong ô 84dp thì 4 ô kính
-            // ("Kính trước-trái/phải", "Kính sau-trái/phải") trông gần như y hệt nhau. Ô ĐỌC đã sửa từ gói 2, ô hành
-            // động thì chưa.
-            //
-            // ⚠ [KIỂM TOÁN 2026-09-12 mục 4] Hai dòng vẫn KHÔNG đủ cho ô hẹp: [ĐO] ô 82px của hàng nút nhóm cắt
-            // `"Window front-right"` thành `"Window front-ri…"` và `"Kính trước-phải"` thành `"Kính trước-p…"` ⇒ hai
-            // kính TRƯỚC đọc ra y hệt nhau, đúng lỗi mà `short` đã chữa cho ô ĐỌC. Ở vùng hẹp dùng bản NGẮN; vùng
-            // rộng giữ nhãn đầy (không thu chữ ở nơi không cần) + KHAI bản ngắn cho lưới widget (J1 — FitLabels).
-            text = if (size.narrow) def.displayShortLabel else def.displayLabel
+            // [SOÁT P3] + [KIỂM TOÁN 2026-09-12 mục 4]: 2 dòng + "…"; vùng hẹp dùng nhãn NGẮN (ô 82px cắt "Kính trước-p…" ⇒ hai kính
+            // trước đọc y hệt), vùng rộng giữ nhãn đầy + KHAI bản ngắn cho lưới widget (J1 — FitLabels).
+            text = labelText ?: if (size.narrow) def.displayShortLabel else def.displayLabel
             if (!size.narrow) FitScale.named(this, def.displayLabel, def.displayShortLabel)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp); gravity = Gravity.CENTER
             maxLines = 2; ellipsize = TextUtils.TruncateAt.END
         }
         if (icons) content.addView(icon)
+        if (size.iconOnly && icons) { label.visibility = View.GONE; content.contentDescription = def.displayLabel }   // R22·R
 
+        var set: ((Int) -> Unit)? = null   // R22·C: đích TƯỜNG MINH (chấm kính), cùng đường ghi với cú chạm ô
+        var nudge: ((Int) -> Unit)? = null; var value: TextView? = null   // R28: bộ chỉnh nhiệt/gió của xe 3D
         val refresh: (CarStatus) -> Unit = when (def.kind) {
-            ControlKind.TOGGLE -> tileToggle(def, content, icon, label)
-            ControlKind.STEP -> tileStep(def, content, icon, label)
+            ControlKind.TOGGLE -> tileToggle(def, content, icon, label) { set = it }
+            ControlKind.STEP -> tileStep(def, content, icon, label) { n, v -> nudge = n; value = v }
             // WP2 · R2.3 — COVER nay CÓ đường đọc lại (cốp/kính mở ⇒ màu nhấn); trước WP2 nhánh này trả no-op.
             ControlKind.COVER -> tileCover(def, content, icon, label)
             ControlKind.SELECT -> tileSelect(def, content, icon, label)
             ControlKind.BUTTON -> { tileButton(def, content, icon, label); {} }
         }
         val outer = if (ControlTileLogic.needsBadge(def)) withBadge(content) else content
-        return ActionTile(outer, refresh)
+        return ActionTile(outer, refresh, set, nudge, value)
     }
 
-    private fun tileToggle(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView): (CarStatus) -> Unit {
+    private fun tileToggle(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView, setter: ((Int) -> Unit) -> Unit): (CarStatus) -> Unit {
         tile.addView(reserveTwoLines(label))
         // WP2 · R2.1 — trạng thái nói bằng ICON + MÀU, KHÔNG bằng chữ "Bật/Tắt" (xem KDoc [ControlVisual]).
         look(def, tile, icon, label, on(def))
-        tile.setOnClickListener {
+        fun write(nv: Boolean) {
             state.touch(def.id)   // ân hạn: đừng để nhịp poll nháy ngược ngay sau khi vừa bấm
-            val old = state.isOn(def.id); val nv = !old; state.setOn(def.id, nv)
+            val old = state.isOn(def.id); state.setOn(def.id, nv)
             look(def, tile, icon, label, on(def))
             // Ghi HAL xuống nền; hỏng ⇒ về giá trị cũ — CHỈ khi cú bấm sau chưa đè (xem KDoc ControlTileWrite).
-            writer.submit(def.id, { control().toggle(def.id, nv) }, { state.isOn(def.id) == nv }, { control().writeFailureIsReal(def.id) }) {
+            val undo = { state.setOn(def.id, old); look(def, tile, icon, label, on(def)); Unit }
+            writer.submit(def.id, gated(def, if (nv) 1 else 0, tile, undo) { control().toggle(def.id, nv) }, { state.isOn(def.id) == nv }, { control().writeFailureIsReal(def.id) }) {
                 state.setOn(def.id, old); tile.post { look(def, tile, icon, label, on(def)) }
             }
         }
+        tile.setOnClickListener { write(!state.isOn(def.id)) }
+        setter { write(it > 0) }
         // Đọc lại trạng thái THẬT của xe (0/1) — bỏ qua trong cửa sổ ân hạn, và chỉ đổi khi khác để không vẽ thừa.
         return refresh@{ car ->
             if (state.touchedWithin(def.id)) return@refresh
@@ -120,10 +124,19 @@ class ControlTileFactory(
         }
     }
 
+    /**
+     * 3.01 · owner 13/10 *"Chặn MỞ cốp khi xe chạy"* — lượt ghi [act] của ô [def] với lệnh [arg], qua cổng CHẠM
+     * [CtlSafetyPolicy.blocked] (đọc chuyển động trên làn nền). Bị chặn ⇒ KHÔNG gửi lệnh, [undo] hình lạc quan + báo
+     * ([TileSafetyGate.refuse]); trả `true` để làn ghi không coi là hỏng. Mọi đường chạm (ô · chấm trên hình xe) đi qua đây.
+     */
+    private fun gated(def: ControlDef, arg: Int, tile: View, undo: () -> Unit, act: () -> Boolean): () -> Boolean = {
+        if (CtlSafetyPolicy.blocked(def.id, arg, motion)) { tile.post { undo(); TileSafetyGate.refuse(tile, def) }; true } else act()
+    }
+
     /** Cờ bật/tắt đang giữ, quy về con số mà [ControlVisuals.of] nhận cho mọi kiểu ô. */
     private fun on(def: ControlDef): Int = if (state.isOn(def.id)) 1 else 0
 
-    private fun tileStep(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView): (CarStatus) -> Unit {
+    private fun tileStep(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView, expose: ((Int) -> Unit, TextView) -> Unit): (CarStatus) -> Unit {
         // UX4 — *"đang TỰ ĐỘNG không"* ([ControlDef.autoId]); `null` = CHƯA BIẾT ⇒ y như trước UX4. Luật: [ClimateAuto].
         var auto: Boolean? = null
         val vtext = TextView(ctx).apply {
@@ -182,7 +195,7 @@ class ControlTileFactory(
         }, LinearLayout.LayoutParams(MATCH, WRAP))
         // [R7] Đích chạm: nới VÙNG NHẬN CHẠM ra nửa ô (≥ Sp.TOUCH bề dọc), KHÔNG nới cái nút — nới nút thì
         // 2×48 > 68dp dùng được của ô và chữ giá trị xuống hai dòng ([ĐO] ghi ở KDoc Sp.TOUCH_TIGHT).
-        StepTouchTarget.attach(tile, minus, plus); say(state.value(def), auto)
+        StepTouchTarget.attach(tile, minus, plus); say(state.value(def), auto); expose({ nudge(it) }, vtext)
         // Đọc lại con số THẬT của xe (nhiệt/gió/âm lượng) — bỏ qua trong ân hạn, chỉ đổi chữ khi khác.
         return refresh@{ car ->
             if (state.touchedWithin(def.id)) return@refresh
@@ -219,7 +232,7 @@ class ControlTileFactory(
             state.touch(def.id)
             val old = state.sel(def.id); val next = ControlTileLogic.nextSelectIndex(old, levels)
             state.setSel(def.id, next); show(next)
-            writer.submit(def.id, { control().coverLevel(def.id, next) }, { state.sel(def.id) == next }, { control().writeFailureIsReal(def.id) }) {
+            writer.submit(def.id, gated(def, next, tile, { state.setSel(def.id, old); show(old) }) { control().coverLevel(def.id, next) }, { state.sel(def.id) == next }, { control().writeFailureIsReal(def.id) }) {
                 state.setSel(def.id, old); tile.post { show(old) }
             }
         }
@@ -256,7 +269,7 @@ class ControlTileFactory(
             state.touch(def.id)
             val old = state.sel(def.id); val next = ControlTileLogic.nextSelectIndex(old, def.args.size)
             state.setSel(def.id, next); show(next)
-            writer.submit(def.id, { control().select(def.id, next) }, { state.sel(def.id) == next }, { control().writeFailureIsReal(def.id) }) {
+            writer.submit(def.id, gated(def, next, tile, { state.setSel(def.id, old); show(old) }) { control().select(def.id, next) }, { state.sel(def.id) == next }, { control().writeFailureIsReal(def.id) }) {
                 state.setSel(def.id, old); tile.post { show(old) }
             }
         }
@@ -410,13 +423,10 @@ class ControlTileFactory(
     }
 
     private fun tint(icon: ImageView, label: TextView, active: Boolean) {
-        // ⚠ [T1 · ĐO TỪ PIXEL] Icon lúc BẬT dùng [KachiTheme.INK_ON_ACCENT], KHÔNG dùng `ON_ACCENT`. Hai vai này
-        // khác nhau đúng ở chỗ nền: `ON_ACCENT` (trắng) dành cho nền nhấn **ĐẶC** (gradient của pill/nút); còn ô này
-        // dùng `gradientSoft` = nền nhấn **BÁN TRONG SUỐT**, nên ở bảng sáng nó trộn ra tím nhạt (214,217,248) và
-        // icon trắng chỉ còn **1.39:1** — [ĐO] trên ảnh thanh nút xe, glyph ổ khoá gần như biến mất. Ở bảng tối
-        // `INK_ON_ACCENT` = `#e7ecff` nên icon vẫn gần như trắng ⇒ bản tối không đổi hình.
-        // P2 · AC2.6 — hợp đồng cỡ/chủ đề/trạng thái ở [KachiIcons.tint] (mặt nhỏ + bảng sáng vẫn tint mực như trước).
-        KachiIcons.tint(icon, size.iconDp, active, if (active) KachiTheme.INK_ON_ACCENT else KachiTheme.ICON)
+        // R22·R (owner 13/10 "thô"): BẬT = icon MỰC NHẤN trên nền tông nhạt [KachiTheme.tonalOn], chữ `INK_ON_ACCENT` (mực
+        // trung tính của nền tông) — cùng ngôn ngữ ô Đèn. KHÔNG `ON_ACCENT` (trắng — chỉ cho nền nhấn ĐẶC; [ĐO T1] trên
+        // nền nhấn nhạt bảng sáng icon trắng còn 1.39:1). P2 · AC2.6 — hợp đồng cỡ/chủ đề/trạng thái ở [KachiIcons.tint].
+        KachiIcons.tint(icon, size.iconDp, active, if (active) KachiTheme.ACCENT_INK else KachiTheme.ICON)
         label.setTextColor(c(if (active) KachiTheme.INK_ON_ACCENT else KachiTheme.INK2))
         // WP2 · R2.1 *"icon active/mờ"* — trạng thái TẮT hạ độ đục của ICON. NHÃN giữ nguyên độ đục: nó trả lời
         // *"ô này là cái gì"*, câu đó không phụ thuộc bật/tắt (cùng lẽ [ReadTile.bind]/[CellBinder] chỉ làm mờ GIÁ
@@ -424,16 +434,7 @@ class ControlTileFactory(
         KachiIcons.fadeOff(icon, size.iconDp, active, ICON_OFF_ALPHA)   // 2.93 WIDGET-ICON-OFF-FAINT: mờ theo tương phản đo được
     }
 
-    /**
-     * Nút −/+ của ô kiểu STEP.
-     *
-     * **Bề ngang do WEIGHT quyết định, KHÔNG phải `minWidth`** — đó là bài học [ĐO] trên máy ảo: đặt
-     * `minWidth = 36dp` làm hai nút chiếm 72dp trong ô chỉ có 68dp bề ngang dùng được, nên chữ giá trị bị bóp và
-     * `"22°"` **xuống hai dòng**. Với weight, hai nút tự chia phần còn lại sau khi chữ giá trị lấy đủ chỗ ⇒ không
-     * bao giờ bóp chữ, mà vẫn to hết mức ô cho phép.
-     *
-     * Chỉ [Sp.TOUCH_TIGHT] cho bề DỌC — chiều duy nhất còn nới được trong ô 84×86dp (xem KDoc của hằng đó).
-     */
+    /** Nút −/+ của ô STEP: bề ngang do WEIGHT (không `minWidth` — [ĐO] 2×36dp bóp `"22°"` xuống 2 dòng), bề dọc [Sp.TOUCH_TIGHT]. */
     private fun stepBtn(s: String) = TextView(ctx).apply {
         text = s; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp); gravity = Gravity.CENTER
         minHeight = dpi(ctx, Sp.TOUCH_TIGHT); maxLines = 1
@@ -441,10 +442,10 @@ class ControlTileFactory(
     }
 
     private fun applyBg(v: View, active: Boolean) {
-        // ⚠ Nhánh BẬT giữ [KachiTheme.gradientSoft] — KHÔNG đổi sang `surface(ACTIVE)`: chữ/icon của ô đang bật tô
-        // bằng `INK_ON_ACCENT`, và bài canh `ThemePaletteContractTest` đo vai đó **trên nền `tileOn*`**. Đổi nền mà
-        // giữ mực là làm số đo trong bài nói về một nền không còn tồn tại.
-        v.background = if (active) KachiTheme.gradientSoft(ctx, size.radius) else KachiChrome.fade(KachiTheme.surface(ctx, size.radius))   // R-OP: chỉ TẮT
+        // ⚠ Nhánh BẬT dùng [KachiTheme.tonalOn] (R22·R: bề mặt + lớp nhấn mỏng `tileOn*`) — KHÔNG `surface(ACTIVE)`: chữ
+        // của ô đang bật tô `INK_ON_ACCENT`, icon `ACCENT_INK`, và `ThemePaletteContractTest` đo hai vai đó **trên nền
+        // `tileOn*`**. Đổi nền mà giữ mực là làm số đo trong bài nói về một nền không còn tồn tại.
+        v.background = if (active) KachiTheme.tonalOn(ctx, size.radius) else KachiChrome.fade(KachiTheme.surface(ctx, size.radius))   // R-OP: chỉ TẮT
     }
 
     /**

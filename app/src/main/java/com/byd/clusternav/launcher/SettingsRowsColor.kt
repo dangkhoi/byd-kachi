@@ -44,9 +44,13 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  */
 internal class Swatch(val code: String, val color: Int?, val title: String, val color2: Int? = null)
 
-internal fun SettingsRows.swatchRow(label: String, options: List<Swatch>, current: String, onPick: (String) -> Unit): View {
+/** [withCaption] `false` ⇒ không dòng tên dưới hàng (ô KHÔNG chữ — tên chỉ cho trợ năng; hàng màu xe 3D, owner 13/10). */
+internal fun SettingsRows.swatchRow(
+    label: String, options: List<Swatch>, current: String, withCaption: Boolean = true, onPick: (String) -> Unit,
+): View {
     val dots = HashMap<String, TextView>()
     var chosen = current
+
     val caption = TextView(context).apply {
         setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION)
         gravity = Gravity.CENTER_VERTICAL
@@ -86,7 +90,7 @@ internal fun SettingsRows.swatchRow(label: String, options: List<Swatch>, curren
             // Ô tròn = đích chạm 48dp; khe [KachiSpace.S] giữa các ô — cùng nhịp với chip của `chipRow`.
             addView(dot, LinearLayout.LayoutParams(dpi(context, Sp.TOUCH), dpi(context, Sp.TOUCH)).also { it.marginStart = dpi(context, Sp.S) })
         }
-        addView(caption, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        if (withCaption) addView(caption, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         paint()
     }
 }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KACHI-301 R6 — hàng "Dịch nội dung" (SettingsCastShiftRow). Tệp riêng, tiền tố kshift_ — cùng tập khoá ở cả 5 thư mục. -->
+<resources>
+    <string name="kshift_label">Content shift (negative = up)</string>
+    <string name="kshift_a11y">Shift the map content on the cluster up or down, in pixels; negative pulls it up</string>
+    <string name="kshift_note">Pulls the map up when an app leaves a spare strip at the top of the cluster. Kachi measures it: if the app ignores it, it is undone at once.</string>
+    <string name="kshift_ineffective">This app ignores content shift on this car — restored as before.</string>
+    <string name="kshift_failed">Couldn\'t measure the content shift — nothing changed.</string>
+</resources>

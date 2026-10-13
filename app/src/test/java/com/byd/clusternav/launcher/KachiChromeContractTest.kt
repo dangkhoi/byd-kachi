@@ -53,8 +53,9 @@ class KachiChromeContractTest {
             callers("KachiChrome.fade("),
         )
         assertEquals(
-            listOf("TyreBoardView.kt", "WallGlass.kt", "WallView.kt"), callers("KachiChrome.fraction"),
-            "hệ số chỉ đọc thẳng ở ba chỗ vẽ Canvas: cửa kính trên ảnh · thẻ bánh thường · hai dải che hình nền",
+            listOf("WallGlass.kt", "WallView.kt"), callers("KachiChrome.fraction"),
+            "hệ số chỉ đọc thẳng ở hai chỗ vẽ Canvas: cửa kính trên ảnh · hai dải che hình nền " +
+                "(thẻ bánh thường đã GỠ ở R22·R — owner 13/10, số lốp đứng thẳng trên thẻ ô)",
         )
         assertEquals(listOf("ThemeHost.kt"), callers("KachiChrome.apply("), "một chỗ ghi")
         assertTrue("KachiChrome.fade(KachiTheme.surface(ctx, size.radius))" in code(file("ControlTileFactory.kt")))
@@ -88,8 +89,8 @@ class KachiChromeContractTest {
         val tiles = code(file("ControlTileFactory.kt"))
         val applyBg = SourceRoots.body(tiles, "private fun applyBg(")
         assertTrue("KachiChrome.fade(KachiTheme.surface(ctx, size.radius))" in applyBg, "nhánh TẮT mờ")
-        assertTrue(Regex("""if \(active\) KachiTheme\.gradientSoft\(ctx, size\.radius\) else""").containsMatchIn(applyBg), "nhánh BẬT trần")
-        assertFalse("KachiChrome.fade(KachiTheme.gradientSoft" in tiles, "ô BẬT mang trạng thái — không mờ")
+        assertTrue(Regex("""if \(active\) KachiTheme\.tonalOn\(ctx, size\.radius\) else""").containsMatchIn(applyBg), "nhánh BẬT trần")
+        assertFalse("KachiChrome.fade(KachiTheme.tonalOn" in tiles, "ô BẬT mang trạng thái — không mờ")
         // Ô con nhóm WARN/ALERT: màu nền là thông tin.
         val group = code(file("GroupTileViews.kt"))
         val surfaceOf = SourceRoots.body(group, "fun surfaceOf(")
@@ -198,8 +199,9 @@ class KachiChromeContractTest {
         assertFalse("chipRow" in slider)
         assertTrue("positions = ChromeOpacity.POSITIONS" in slider, "số nấc = của :core, không con số thứ hai")
         assertTrue("current = ChromeOpacity.position(choice.surfaceOpacity)" in slider, "vị trí đọc từ độ đục ĐANG LƯU (theo hồ sơ)")
-        assertTrue("choice.copy(surfaceOpacity = ChromeOpacity.ofPosition(pos))" in slider, "ghi lại qua phép nghịch của :core")
-        assertTrue("deps.onColorChoice(choice)" in slider, "đi cùng intent màu ⇒ theo hồ sơ, lưu bền, ThemeHost")
+        assertTrue("colorChoice.copy(surfaceOpacity = ChromeOpacity.ofPosition(pos))" in slider, "ghi lại qua phép nghịch của :core")
+        // 3.01 R25: ghi từ state SỐNG (`deps.state().colorChoice`), không bản chép lúc dựng — bản chép cũ ghi đè màu sơn xe 3D.
+        assertTrue("deps.onColorChoice(deps.state().colorChoice.copy(" in slider, "đi cùng intent màu ⇒ theo hồ sơ, lưu bền, ThemeHost")
         assertTrue("ChromeOpacity.transparencyPct(ChromeOpacity.ofPosition(pos))" in slider, "số hiện = độ TRONG SUỐT")
         assertTrue("R.string.kachi_bg_opacity_a11y" in slider, "trợ năng đọc phần trăm")
         // Bước 5 %: 21 vị trí, đầu = như cũ, cuối = trong hẳn — chính phép ánh xạ thanh kéo dùng.
@@ -254,11 +256,10 @@ class KachiChromeContractTest {
         val render = code(file("KachiHomeRender.kt"))
         assertTrue("wall.restyle()" in SourceRoots.body(render, "internal fun KachiHomeActivity.applyThemeInPlace("))
 
+        // R22·R (owner 13/10 "hộp trong hộp"): thẻ bánh đã GỠ ⇒ ô lốp không còn nền nào để mờ theo hệ số.
         val tyre = SourceRoots.body(code(file("TyreBoardView.kt")), "private fun drawCell(")
-        assertTrue("if (st.alert) ColorMath.mix(card2, col, SEMANTIC_MIX)" in tyre, "thẻ cảnh báo: màu nền là thông tin — không mờ")
-        assertTrue("else ColorMath.withAlpha(card2, ChromeOpacity.drawnAlpha(ColorMath.alpha(card2), KachiChrome.fraction))" in tyre,
-            "thẻ bánh thường mờ cùng hệ số, cùng phép")
-        assertEquals(1, Regex("""KachiChrome\.fraction""").findAll(tyre).count(), "chỉ nhánh thường đọc hệ số")
+        assertFalse("drawRoundRect(" in tyre, "không còn thẻ nền sau số lốp")
+        assertEquals(0, Regex("""KachiChrome\.fraction""").findAll(tyre).count(), "không nền ⇒ không đọc hệ số")
     }
 
     /**

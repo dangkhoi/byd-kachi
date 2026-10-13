@@ -11,6 +11,7 @@ import java.util.Locale
 import com.byd.clusternav.R
 import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
+import com.byd.clusternav.modules.clustercast.simplified.geometryKey
 import com.byd.clusternav.modules.clustercast.simplified.statusKey
 import com.byd.clusternav.ui.ClusterPreviewView
 import com.byd.clusternav.launcher.KachiSpace as Sp
@@ -358,6 +359,7 @@ class SettingsCastSection(
      * khung/vị trí tới khi mở lại trang, vì [refreshStatus] chỉ chạy sau thao tác của người dùng. Gắn bộ nghe khi dòng trạng thái lên
      * màn, gỡ khi rời màn; bộ nghe chạy trên luồng coordinator ⇒ `post` về luồng chính, và chỉ dựng lại khi thứ trang HIỆN đổi
      * ([statusKey]: loại trạng thái · gói · tỉ lệ · câu lỗi) — không dựng lại trang theo mỗi lần phát trùng / cập nhật bản ghim.
+     * 3.1 · R2: bản ghim KHUNG đổi ([geometryKey]) ⇒ chỉ `geometryBlock.sync()` (đặt lại số, không dựng lại).
      */
     private fun liveStatus(anchor: View) {
         val watcher = object : View.OnAttachStateChangeListener {
@@ -365,13 +367,17 @@ class SettingsCastSection(
             // Khoá của lần dựng GẦN NHẤT (castNow vừa refreshStatus() ngay trước) — không đặt lại lúc gắn: trang rời màn rồi quay
             // lại (trang được nhớ) phải bắt kịp trạng thái đổi trong lúc vắng — bộ nghe phát trạng thái hiện tại ngay khi gắn.
             private var shown: String? = bridge.castState().statusKey()
+            // 3.1 · R2 — khoá NHẸ riêng cho bản ghim khung: đổi ⇒ chỉ đặt lại số của bốn thanh −/+ (không dựng lại trang).
+            private var geometry: String = bridge.castState().geometryKey()
 
             override fun onViewAttachedToWindow(v: View) {
                 unsubscribe?.invoke()
                 unsubscribe = bridge.observeCastState { state ->
                     v.post {
+                        if (!v.isAttachedToWindow) return@post
                         val key = state.statusKey()
-                        if (v.isAttachedToWindow && key != shown) {
+                        geometry = state.geometryKey().also { if (key == shown && it != geometry) geometryBlock.sync() }
+                        if (key != shown) {
                             shown = key
                             refreshStatus()
                         }
@@ -443,12 +449,14 @@ class SettingsCastSection(
         body.addView(rows.button(context.getString(R.string.kachi_cast_deep)) {
             bridge.deepRescue(
                 onConfirm = { proceed ->
-                    SettingsDialogs.confirm(
+                    // kachi-301 R9: dừng app trên cụm là việc phá huỷ ⇒ khuôn Xác nhận nút đỏ.
+                    KachiDialogs.confirm(
                         context,
                         context.getString(R.string.kachi_cast_deep),
                         context.getString(R.string.kachi_cast_deep_confirm),
                         context.getString(R.string.kachi_cast_deep_ok),
-                        proceed,
+                        destructive = true,
+                        onConfirm = proceed,
                     )
                 },
                 onDone = { stopped ->

@@ -129,8 +129,9 @@ internal object LauncherI18nAllowlists {
         // S4 · R12 thêm `ic-apps`/`ic-settings`: hai pill của thanh trên nay CHỈ có icon, và tên hình được truyền
         // thẳng vào `pill(...)` (chữ đã chuyển sang `contentDescription` lấy từ `R.string`).
         // V1 pha NGHE thêm `ic-mic`: nút thứ ba của thanh trên, cùng khuôn chỉ-icon với hai nút kia.
+        // 3.01 R25 thêm `ic-car`: ô nén của widget xe 3D (`miniCard`, cùng khuôn ô nén `w_car`).
         *listOf("ic-sun", "ic-grid", "ic-bolt", "ic-leaf", "ic-speed", "ic-tire", "ic-music", "ic-lock",
-            "ic-apps", "ic-settings", "ic-mic")
+            "ic-apps", "ic-settings", "ic-mic", "ic-car")
             .map { it to "mã icon tra trong `KachiTheme.iconRes`, không phải chữ" }.toTypedArray(),
         // Ký hiệu đơn vị SI + tên chuẩn của chỉ số bụi — viết y hệt ở mọi ngôn ngữ, dịch là làm sai.
         *listOf("km/h", " km/h", " km", "µg", "µg · ", "µg/m³", "PM2.5 · ", "PM2.5 ")

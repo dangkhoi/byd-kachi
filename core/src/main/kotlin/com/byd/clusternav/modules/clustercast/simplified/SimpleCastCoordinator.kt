@@ -69,8 +69,12 @@ class SimpleCastCoordinator(
         castTimeoutMs = castTimeoutMs,
         stopTimeoutMs = stopTimeoutMs,
         onTimeout = { tag -> log("TIMEOUT: $tag") },
-        onDiscard = { tag, why -> log("DISCARDED: $tag — $why") },   // 2.96 · R5: không bỏ thao tác nào im lặng
+        onDiscard = { tag, why -> log("DISCARDED: $tag — $why"); resizeQueue.dropped(tag); shiftQueue.dropped(tag) },   // 2.96 · R5 · 3.1 R3/R6: báo hàng gộp
     )
+
+    /** 3.1 · R2/R3 — hàng GỘP lệnh −/+ khung (một việc xả/ô, kết cục về màn). Thân áp: `CastSessionPin.runResize`. */
+    val resizeQueue: CastResizeQueue = CastResizeQueue({ tag, body -> executor.submit(tag) { body() } }, { runResize(it) }, castTimeoutMs, log = { log(it) })
+    val shiftQueue: CastCoalescingQueue<Unit, CastShiftRequest, CastShiftResult> = CastCoalescingQueue(CastContentShift.TAG, { }, /* 3.1 · R6 "Dịch nội dung", thân: CastContentShiftOps */ { tag, body -> executor.submit(tag) { body() } }, { runContentShift(it) }, CastShiftResult.FAILED, CastShiftResult.DROPPED, castTimeoutMs, log = { log(it) })
 
     internal val verifier = CastPostconditionVerifier(
         shell = shell,
@@ -113,7 +117,7 @@ class SimpleCastCoordinator(
     internal val geometry = CastGeometryController(
         shell, prefs, { this.displayId },
         redetect = { detectClusterDisplay() },   // 2.90 · R5: `wm size -d` thấy display đã mất ⇒ dò lại id cụm
-        readGlobalSetting = globalSettingReader,  // 2.96 · R13 (soát Pass 1): cờ freeform đọc trong tiến trình, 0 shell
+        readGlobalSetting = globalSettingReader, onTaskResized = { releaseDisplayGeometry() },  // 2.96 R13 · 3.1 R26 (CastFreeformGeometry.kt)
     ) { msg -> log(msg) }
 
     /**
@@ -159,7 +163,6 @@ class SimpleCastCoordinator(
     }
 
     // `undoTargetDisplay` (đường HOÀN TÁC: id đã xác minh hoặc dò tươi một lần) → `SimpleCastCoordinatorOps.kt` (tách THUẦN, trần 500).
-
     // TRIAL watchdog state (owner 2026-08-14): re-pin a cast app that an external trigger (e.g. Kiki
     // starting GMaps navigation) pulled off the cluster. Debounce + cooldown so driving is never
     // yanked on a transient am-stack parse gap.
@@ -344,19 +347,17 @@ class SimpleCastCoordinator(
     /**
      * Resize the currently casting full app to the given bounds (R5/R6). NORMAL-only.
      * Persistence (FULL profile) happens ONLY on shell success — see [CastGeometryController].
-     * Thread-safe — queued on serial executor.
+     * Thread-safe — gộp qua [resizeQueue] (3.1 R3: chỉ khung cuối của một chuỗi bấm được áp).
      */
     fun resizeActiveTarget(left: Int, top: Int, right: Int, bottom: Int) =
-        executor.submit("resize") { resizeFullBody(left, top, right, bottom) }
+        resizeQueue.offer(CastResizeRequest(null, CastBounds(left, top, right, bottom)))
 
     /**
-     * Resize one split slot's app to the given bounds (R5/R6). Only valid in
-     * [SimpleCastState.CastingSplit]; targets the app currently in [side]. Persists to the
-     * matching profile ([CastProfile.of] on the SESSION's split ratio) ONLY on shell success.
-     * Thread-safe — queued on serial executor.
+     * Resize one split slot's app (R5/R6). Only valid in [SimpleCastState.CastingSplit]; targets the app in [side]. Persists to
+     * the matching profile ([CastProfile.of] on the SESSION's split ratio) ONLY on shell success. Gộp qua [resizeQueue] (3.1 R3).
      */
     fun resizeActiveSlot(side: ClusterSlotSide, left: Int, top: Int, right: Int, bottom: Int) =
-        executor.submit("resize-slot") { resizeSlotBody(side, left, top, right, bottom) }
+        resizeQueue.offer(CastResizeRequest(side, CastBounds(left, top, right, bottom)))
 
     /**
      * Apply a new split ratio ([leftPercent]) live (Feature 2 · split-ratio buttons).

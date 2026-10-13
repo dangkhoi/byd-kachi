@@ -78,6 +78,12 @@ data class GroupActionCell(
     val label: String,
     val icon: String,
     val needsBadge: Boolean,
+    /** 3.01 R22 — động từ ngắn theo ngôn ngữ đang dùng ([ControlDef.displayVerb]); rỗng ⇒ nút không vào bảng vật × việc. */
+    val verb: String = "",
+    /** Mã ô XEM nói trạng thái của vật mà nút này điều khiển ([ControlDef.readKey]); rỗng nếu chưa có đường đọc. */
+    val readKey: String = "",
+    /** 3.01 R22·B — mức (%) việc này đặt cho vật ([ControlDef.verbLevel]); `null` = không phải một mức. */
+    val level: Int? = null,
 )
 
 /**
@@ -93,6 +99,8 @@ data class GroupBoardModel(
     val shape: WidgetShape,
     val cells: List<GroupCell>,
     val actions: List<GroupActionCell>,
+    /** 3.01 R22·B — cách bày nhóm khai ([CapabilityGroup.layout]). */
+    val layout: GroupLayout = GroupLayout.AUTO,
 ) {
     /** Số chính của bộ vẽ CARD = ô con ĐẦU TIÊN (thứ tự khai trong nhóm là thứ tự trình bày). */
     val lead: GroupCell? get() = cells.firstOrNull()
@@ -177,8 +185,14 @@ data class GroupBoardModel(
  * giữa chúng là lỗi **im lặng** — bảng vẫn vẽ đủ bốn vạt, chỉ là vạt sau-trái mang trạng thái của cửa trước-trái.
  * Tên hằng ở đây bám đúng chữ trong mã datum để chỗ nối đọc ra được bằng mắt.
  */
-enum class CarPart {
-    DOOR_LF, DOOR_RF, DOOR_LR, DOOR_RR, TAILGATE, SUNROOF, SUNSHADE;
+enum class CarPart(
+    /**
+     * 3.01 R22·C — hậu tố khoá vật trong tên icon thân xe (`ic-car-top-window-lf`, `ic-car-top-trunk`) — quy ước SẴN CÓ của
+     * [ControlRegistry]; [GroupActionMatrix.placeOf] đọc nó để đặt nút lên đúng chỗ của hình xe (không bảng tra theo nhóm).
+     */
+    val key: String,
+) {
+    DOOR_LF("lf"), DOOR_RF("rf"), DOOR_LR("lr"), DOOR_RR("rr"), TAILGATE("trunk"), SUNROOF("sunroof"), SUNSHADE("sunshade");
 
     /**
      * Có phải một trong **bốn cửa** không.

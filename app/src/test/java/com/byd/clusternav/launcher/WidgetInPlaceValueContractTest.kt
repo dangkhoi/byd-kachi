@@ -129,8 +129,8 @@ class WidgetInPlaceValueContractTest {
                 missing,
         )
         // Chốt CHÍNH BÀI TEST: phép đọc nguồn hụt (đổi tên hàm, đổi dạng `when`) thì nó kiểm 0 widget và xanh vô
-        // nghĩa. 8 = 9 widget dựng tay trừ `w_photos`.
-        assertEquals(8, checked, "chỉ soi được $checked bộ vẽ — phép đọc nguồn đã hụt, không phải mã đúng")
+        // nghĩa. 9 = 11 widget dựng tay trừ hai widget tự lo nội dung (`w_photos` · `w_apps`) — 3.01 R25 thêm `w_car3d`.
+        assertEquals(9, checked, "chỉ soi được $checked bộ vẽ — phép đọc nguồn đã hụt, không phải mã đúng")
     }
 
     /** Ô NÉN cũng vậy: mọi nhánh `w_*` của `mini()` phải đi qua một bộ dựng CÓ đăng ký đường đổ. */

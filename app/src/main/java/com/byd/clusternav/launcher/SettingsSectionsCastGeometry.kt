@@ -1,9 +1,16 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
+import android.view.View
 import android.widget.LinearLayout
+import android.widget.Toast
 import com.byd.clusternav.R
 import com.byd.clusternav.modules.clustercast.simplified.CastBounds
+import com.byd.clusternav.modules.clustercast.simplified.CastEdge
+import com.byd.clusternav.modules.clustercast.simplified.CastGeometryIntent
+import com.byd.clusternav.modules.clustercast.simplified.CastGeometrySteps
+import com.byd.clusternav.modules.clustercast.simplified.CastResizeOutcome
+import com.byd.clusternav.modules.clustercast.simplified.CastResizeResult
 import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 
 /**
@@ -29,6 +36,12 @@ import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
  * Bốn thanh và chip DPI đọc bản GHIM của phiên (`ClusterNavBridgeGeometry`), không đọc prefs: đổi hồ sơ giữa lúc chiếu
  * thì prefs đã mang giá trị của hồ sơ mới mà cụm chưa đổi (VC-R5). Giá trị của hồ sơ chỉ hiện ở một dòng phụ, và chỉ
  * khi nó khác — một dòng phụ luôn hiện là một dòng người lái học cách bỏ qua.
+ *
+ * ## 3.1 · R1–R4, R7 — ý định ở màn, sự thật ở phiên (spec `kachi-301-cast-steps-dialog-ia.html` §4.1)
+ * Lệnh áp chạy bất đồng bộ (hàng gộp `CastResizeQueue` trên executor của coordinator); bản ghim chỉ đổi khi `am task resize` xong.
+ * Màn giữ [intent] mỗi ô, cộng dồn ±[step] trên đó và kẹp ĐỒNG BỘ bằng `bridge.geometryClamp` ⇒ số đổi ngay, đúng bước. Khi
+ * hàng gộp báo ô đã rảnh ([onOutcome]) hoặc bản ghim đổi ([sync], gọi từ bộ nghe trang qua `geometryKey`) thì bỏ ý định ⇒ số về
+ * sự thật; lệnh HỎNG thêm một dòng báo. Nhấn giữ lặp bước ([SettingsRepeatTouch]); bước 5/20/50 theo hồ sơ (`cast_frame_step`).
  */
 class SettingsCastGeometryBlock(
     private val context: Context,
@@ -48,20 +61,94 @@ class SettingsCastGeometryBlock(
     /** Nửa đang chỉnh khi cụm chia đôi (`null` = toàn cụm). Nhớ lại giữa hai lần dựng để không nhảy về ô trái. */
     private var side: ClusterSlotSide? = null
 
+    /** 3.1 · R1 — ý định của từng ô (sống qua các lần [rebuild]: ô còn lệnh chờ thì không mất các bước vừa bấm). */
+    private val intent = CastGeometryIntent<CastGeometryTarget>()
+
+    /** Ô đang vẽ bốn thanh (`null` = khối đang ẩn) + bốn thanh của nó — [sync] đặt lại SỐ tại chỗ, không dựng lại. */
+    private var shown: CastGeometryTarget? = null
+    private val steppers = HashMap<CastEdge, SettingsRows.Stepper>()
+
+    /** 3.1 · R4 — bước hiện tại (px), đọc lại từ hồ sơ mỗi lần [rebuild]. */
+    private var step = CastGeometrySteps.DEFAULT
+
+    /** 3.1 · R6 — hàng "Dịch nội dung" (cùng chip Bước với bốn mép; chỉ hiện khi đo được — [SettingsCastShiftRow]). */
+    private val shiftRow = SettingsCastShiftRow(context, rows, deps, { step }, { rebuild() })
+
     fun build(body: LinearLayout) {
         val box = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
         holder = box
         body.addView(box)
+        watchOutcomes(box)
         rebuild()
+    }
+
+    /**
+     * 3.1 · R2 — nghe kết cục lệnh khung khi khối ĐANG trên màn (gắn lúc lên màn, gỡ lúc rời — không rò người nghe theo trang
+     * được nhớ). Kết cục tới trên luồng coordinator ⇒ `post` về luồng chính.
+     */
+    private fun watchOutcomes(anchor: View) {
+        val watcher = object : View.OnAttachStateChangeListener {
+            private var unsubscribe: (() -> Unit)? = null
+            private var unsubscribeShift: (() -> Unit)? = null
+            override fun onViewAttachedToWindow(v: View) {
+                unsubscribe?.invoke()
+                unsubscribeShift?.invoke()
+                unsubscribe = bridge.observeGeometryOutcome { outcome -> v.post { if (v.isAttachedToWindow) onOutcome(outcome) } }
+                // 3.1 · R6 — kết cục hàng "Dịch nội dung" (cùng vòng đời gắn/gỡ).
+                unsubscribeShift = bridge.observeContentShift { _, r -> v.post { if (v.isAttachedToWindow) shiftRow.onOutcome(r) } }
+            }
+            override fun onViewDetachedFromWindow(v: View) {
+                unsubscribe?.invoke()
+                unsubscribeShift?.invoke()
+                unsubscribe = null
+                unsubscribeShift = null
+            }
+        }
+        anchor.addOnAttachStateChangeListener(watcher)
+        if (anchor.isAttachedToWindow) watcher.onViewAttachedToWindow(anchor)
+    }
+
+    /** Kết cục của MỘT yêu cầu khung: hỏng ⇒ một dòng báo; rồi đồng bộ số về sự thật nếu ô đã rảnh. */
+    private fun onOutcome(outcome: CastResizeOutcome) {
+        val target = shown ?: return
+        if (outcome.request.side != target.side) return
+        if (outcome.result == CastResizeResult.FAILED) {
+            Toast.makeText(context, R.string.kachi_cast_geom_resize_failed, Toast.LENGTH_SHORT).show()
+        }
+        sync()
+    }
+
+    /**
+     * 3.1 · R2 — số của bốn thanh = sự thật của phiên, KHÔNG dựng lại khối. Ô còn lệnh chờ/đang áp ⇒ giữ ý định (sự thật sắp đổi
+     * — đồng bộ lúc này là kéo số lùi về giữa chuỗi bấm). Gọi từ bộ nghe trang (`SettingsCastSection.liveStatus`, khi `geometryKey`
+     * đổi) và từ [onOutcome].
+     */
+    fun sync() {
+        shiftRow.sync()   // 3.1 · R6 — độ dịch theo bản ghim của phiên (geometryKey mang cả overscan)
+        val target = shown ?: return
+        if (bridge.geometryTargets().none { it == target }) return   // ô không còn — trang tự dựng lại theo statusKey
+        if (bridge.geometryResizeBusy(target)) return
+        intent.forget(target)
+        show(bridge.geometryBounds(target))
+    }
+
+    private fun show(b: CastBounds) {
+        CastEdge.values().forEach { edge -> steppers[edge]?.setValue(px(edge.read(b))) }
     }
 
     fun rebuild() {
         val holder = holder ?: return
         holder.removeAllViews()
+        steppers.clear()
+        shiftRow.detach()
+        shown = null
         val targets = bridge.geometryTargets()
         if (targets.isEmpty()) return
         val target = targets.firstOrNull { it.side == side } ?: targets.first()
         side = target.side
+        shown = target
+        step = bridge.geometryStep()
+        if (!bridge.geometryResizeBusy(target)) intent.forget(target)
 
         holder.addView(rows.subHeader(context.getString(R.string.kachi_sub_cast_geometry)))
         if (targets.size > 1) {
@@ -74,7 +161,17 @@ class SettingsCastGeometryBlock(
                 rebuild()
             })
         }
+        holder.addView(rows.chipRow(
+            label = context.getString(R.string.kachi_cast_frame_step),
+            options = CastGeometrySteps.OPTIONS.map { it.toString() to px(it) },
+            current = step.toString(),
+        ) { code ->
+            step = CastGeometrySteps.normalize(code.toIntOrNull())
+            bridge.setGeometryStep(step)
+        })
         addEdgeSteppers(holder, target)
+        holder.addView(rows.note(context.getString(R.string.kachi_cast_geom_overflow_note)))
+        shiftRow.addTo(holder, target)   // 3.1 · R6 — "Dịch nội dung" (âm = lên), ẩn khi không đo được/không nhận
         holder.addView(rows.chipRow(
             label = context.getString(R.string.kachi_cast_geom_dpi),
             options = bridge.geometryDensityOptions().map { it.toString() to it.toString() },
@@ -83,8 +180,8 @@ class SettingsCastGeometryBlock(
         holder.addView(rows.note(context.getString(R.string.kachi_cast_geom_dpi_note)))
         profileNote(target)?.let { holder.addView(rows.note(it)) }
         holder.addView(rows.button(context.getString(R.string.kachi_cast_geom_reset)) {
-            bridge.resetGeometry(target)
-            rebuild()
+            intent.set(target, bridge.resetGeometry(target))
+            show(intent.shown(target, bridge.geometryBounds(target)))
         })
     }
 
@@ -104,33 +201,35 @@ class SettingsCastGeometryBlock(
     /**
      * Bốn mép của ô, mỗi mép một hàng −/+.
      *
-     * Giá trị hiển thị đọc **lại từ cầu** sau mỗi lần bấm (cầu kẹp vào dải của ô), chứ không cộng dồn một biến
-     * trong màn: kẹp im lặng mà màn vẫn đếm tiếp thì hai bên lệch nhau ngay ở cú bấm thứ hai — đúng bệnh mà
-     * `syncBadge` ở nhóm *Dẫn đường* đã phải chữa.
+     * 3.1 · R1: cú bấm cộng dồn trên Ý ĐỊNH ([intent]) rồi kẹp ĐỒNG BỘ bằng `bridge.geometryClamp` — cùng phép kẹp cầu áp trước
+     * khi gửi ⇒ số trên màn = số gửi, kể cả khi kẹp ở biên (bài học `syncBadge` của nhóm *Dẫn đường*: không đếm tiếp sau khi bị
+     * kẹp). Bản cũ đọc lại bản ghim NGAY sau lệnh bất đồng bộ ⇒ trễ một nhịp, nhảy đôi, nuốt bước (spec §2.1).
      */
     private fun addEdgeSteppers(holder: LinearLayout, target: CastGeometryTarget) {
-        data class Edge(val labelRes: Int, val read: (CastBounds) -> Int, val write: (CastBounds, Int) -> CastBounds)
-        val edges = listOf(
-            Edge(R.string.kachi_cast_geom_edge_left, { it.left }, { b, v -> b.copy(left = v) }),
-            Edge(R.string.kachi_cast_geom_edge_top, { it.top }, { b, v -> b.copy(top = v) }),
-            Edge(R.string.kachi_cast_geom_edge_right, { it.right }, { b, v -> b.copy(right = v) }),
-            Edge(R.string.kachi_cast_geom_edge_bottom, { it.bottom }, { b, v -> b.copy(bottom = v) }),
+        val labels = mapOf(
+            CastEdge.LEFT to R.string.kachi_cast_geom_edge_left,
+            CastEdge.TOP to R.string.kachi_cast_geom_edge_top,
+            CastEdge.RIGHT to R.string.kachi_cast_geom_edge_right,
+            CastEdge.BOTTOM to R.string.kachi_cast_geom_edge_bottom,
         )
-        val steppers = HashMap<Int, SettingsRows.Stepper>()
-        fun nudge(edge: Edge, delta: Int) {
-            val now = bridge.geometryBounds(target)
-            bridge.setGeometryBounds(target, edge.write(now, edge.read(now) + delta))
-            val after = bridge.geometryBounds(target)
-            edges.forEach { steppers[it.labelRes]?.setValue(px(it.read(after))) }
-        }
-        edges.forEach { edge ->
-            val stepper = rows.stepperRow(
-                context.getString(edge.labelRes), px(edge.read(bridge.geometryBounds(target))),
-                onMinus = { nudge(edge, -GEOMETRY_STEP_PX) }, onPlus = { nudge(edge, GEOMETRY_STEP_PX) },
-            )
-            steppers[edge.labelRes] = stepper
+        val now = intent.shown(target, bridge.geometryBounds(target))
+        CastEdge.values().forEach { edge ->
+            val minus = { nudge(edge, -1) }
+            val plus = { nudge(edge, 1) }
+            val stepper = rows.stepperRow(context.getString(labels.getValue(edge)), px(edge.read(now)), onMinus = minus, onPlus = plus)
+            SettingsRepeatTouch.attachToStepper(stepper.view, minus, plus)   // R3: nhấn giữ lặp bước
+            steppers[edge] = stepper
             holder.addView(stepper.view)
         }
+    }
+
+    /** Một bước ([sign] = ±1 × [step]) trên mép [edge] của ô đang vẽ: hiện ngay, gửi khung đã kẹp; đứng ở biên ⇒ không gửi. */
+    private fun nudge(edge: CastEdge, sign: Int) {
+        val target = shown ?: return
+        val truth = bridge.geometryBounds(target)
+        val next = intent.nudge(target, truth, edge, sign * step) { bridge.geometryClamp(target, it) } ?: return
+        show(next)
+        bridge.setGeometryBounds(target, next)
     }
 
     private fun slotLabel(side: ClusterSlotSide?): String = context.getString(

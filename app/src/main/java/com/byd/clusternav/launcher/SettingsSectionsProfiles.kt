@@ -279,10 +279,30 @@ class SettingsProfilesSection(
                 // cùng công thức `amberSoft`) + chữ đỏ giữ nguyên — [ĐO] nền tách thẻ 1.45×/1.40×, chữ 4.57/4.65.
                 background = KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.RED_SOFT)
                 layoutParams = sideBtnLp()   // CÙNG lp với nút Đổi tên ⇒ thẳng hàng, có khe
-                setOnClickListener { deps.onDeleteProfile(name) }
+                setOnClickListener { confirmDelete(name) }
             })
             if (!active) setOnClickListener { deps.onSwitchProfile(name) }
         }
+
+    /**
+     * KACHI-301 R10 — **Xoá hồ sơ = hộp Xác nhận phá huỷ** (trước đây một chạm là mất: `deps.onDeleteProfile` gọi thẳng
+     * từ nút). Huỷ / chạm ngoài / phím Back ⇒ không có gì xảy ra; `deps.onDeleteProfile` CHỈ chạy trong lambda xác nhận.
+     *
+     * Câu "mất gì" kê theo [ĐO source] thứ `WorkspacePrefs.deleteProfile` thật sự dọn — `profileKeys(name)` =
+     * `ProfileScope.LAUNCHER_SUFFIXES`: bố cục + ô + thanh nút/thanh trên (`LAUNCHER_LAYOUT_SUFFIXES`) · giao diện/
+     * hình nền/đơn vị/ngôn ngữ/sổ địa chỉ/tên app đã dạy (`LAUNCHER_PERSONAL_SUFFIXES`) · ảnh chụp ClusterNav
+     * (`SNAPSHOT_SUFFIXES` — chiếu cụm + khung/DPI từng app `cast_geometry`, camera, phím vô-lăng, lịch dẫn đường).
+     * Không kê thứ nó không xoá; không hoàn tác được (không có thùng rác) ⇒ câu gợi ý Xuất hồ sơ trước.
+     */
+    private fun confirmDelete(name: String) {
+        KachiDialogs.confirm(
+            context,
+            context.getString(R.string.kprof_delete_title, ProfileNames.display(name)),
+            context.getString(R.string.kprof_delete_message),
+            context.getString(R.string.kprof_delete_confirm),
+            destructive = true,
+        ) { deps.onDeleteProfile(name) }
+    }
 
     /**
      * V3 · R13 — đổi tên, và **NÓI RA khi bị từ chối**.

@@ -30,7 +30,8 @@ import android.util.Log
  *     `AudioRecord` `STATE_UNINITIALIZED` **mà không ném**, nên vẫn phải kiểm trạng thái rồi mới lùi nguồn sau.
  *  2. **KHÔNG tắt nhạc — hạ âm lượng nhạc xuống 20 % trong lúc mic mở** (3.0 R4, owner 11/10; [VoiceMusicDuck]). Dừng
  *     hẳn nhạc cho một câu 3 giây là cắt ngang thứ người ta đang nghe; `MAY_DUCK` (≤ 2.99) thì [ĐO xe 10/10] vẫn để micro
- *     thu lời bài hát. Hạ chỉ số `STREAM_MUSIC` rồi trả đúng mức cũ khi mic đóng.
+ *     thu lời bài hát. Hạ `STREAM_MUSIC` rồi trả đúng mức cũ khi mic đóng. 3.1: "20 %" = 20 % độ to (−14 dB), hạ SAU khi
+ *     micro đã thu, trên luồng nền (spec kachi-301 R14–R17).
  *  3. **Âm báo, không phải giọng nói.** Tiếng "bíp" đầu/cuối trả lời đúng câu hỏi duy nhất người lái có lúc ấy
  *     (*"nó bắt đầu/kết thúc nghe chưa"*) trong 80 ms, không cần nhìn màn hình, và **không cần TTS** — thứ còn
  *     [CHƯA BIẾT] trên xe này.
@@ -209,9 +210,7 @@ internal class VoiceCapture(private val ctx: Context) {
         // khi micro đã mở: nó tốn vài chục–vài trăm ms nạp ONNX, và trả cái giá ấy trước khi biết có mở được
         // micro hay không là trả cho một lượt có thể không bao giờ chạy.
         val ep = VoiceTurnEndpoint.open(ctx, endpointer)
-        // 3.0 R4 (owner 11/10): hạ nhạc 20 % trong lúc mic mở, KHÔNG xin tiêu điểm — trả lại ở [closeRecord] (`finally`
-        // ngay dưới ⇒ mọi đường thoát: xong · hết giờ · lỗi · huỷ). Dấu bền + vì sao theo lượt: KDoc [VoiceMusicDuck].
-        VoiceMusicDuck.acquire(ctx)
+        var ducked = false   // 3.0 R4 hạ nhạc khi nghe — chỉ trả ở `finally` nếu lượt này đã thuê (KDoc [VoiceMusicDuck])
         try {
             runCatching { record.startRecording() }.onFailure {
                 Log.w(TAG, "startRecording hỏng", it); return Heard("", kept, keptN)
@@ -221,6 +220,9 @@ internal class VoiceCapture(private val ctx: Context) {
                 return Heard("", kept, keptN)
             }
             Log.i(VoiceEngine.TIMING_TAG, "mic mở sau ${System.currentTimeMillis() - tOpen} ms")
+            // 3.1 R14 (spec kachi-301 §2.4 V1): hạ nhạc SAU khi micro đã thu — 3.0 đặt nó giữa bíp và `startRecording`
+            // (khoá tệp + fsync + binder) ⇒ mất đầu câu ⇒ "Không nghe rõ". `acquire` chỉ xếp hàng, không chặn.
+            VoiceMusicDuck.acquire(ctx); ducked = true
             // [P0-2] Bíp **SAU** cửa sổ đo nền của đường lùi, không phải trước — lý do + số đo ở KDoc
             // [VoiceTurnEndpoint.floorWindowOpen]. Đường VAD không có cửa sổ ấy nên nó bíp ngay như cũ.
             // ⚠ 1.70: [tone] trả về NGAY (luồng riêng, xem [VoiceChime]) — [ĐO xe 2026-09-17] bản cũ chặn 3,0 s
@@ -341,8 +343,16 @@ internal class VoiceCapture(private val ctx: Context) {
                 micSource = opened.source,
             )
         } finally {
-            ep.close()
-            closeRecord(record, tailBeep = beep)
+            try {
+                ep.close()
+                closeRecord(record, tailBeep = beep)
+            } finally {
+                // Trả nhạc SAU khi micro đã đóng, TRƯỚC khi câu đi thi hành/đọc trả lời: giọng đọc (`USAGE_ASSISTANT`) chung
+                // núm `STREAM_MUSIC` với nhạc, và lệnh đổi âm lượng bằng giọng phải chạy SAU việc trả (chờ có trần — R15).
+                // Review 3.1 Pass 1 [P1]: nằm trong `finally` RIÊNG — `ep.close()`/`closeRecord` ném thì lượt thuê vẫn được
+                // nhả; không thì `leases` kẹt ≥ 1 ⇒ mọi lượt sau không hạ nữa và nhạc đã hạ không ai trả tới khi tiến trình chết.
+                if (ducked) VoiceMusicDuck.release(ctx)
+            }
         }
     }
 
@@ -369,13 +379,7 @@ internal class VoiceCapture(private val ctx: Context) {
         val tStop = System.currentTimeMillis()
         runCatching { record.release() }
         val tRelease = System.currentTimeMillis()
-        // 3.0 R4 — trả nhạc ĐỒNG BỘ, trước khi câu đi thi hành/đọc trả lời: giọng đọc (`USAGE_ASSISTANT`) chung núm
-        // `STREAM_MUSIC` với nhạc, và lệnh đổi âm lượng bằng giọng phải chạy SAU khi mức gốc đã về (KDoc [VoiceMusicDuck]).
-        VoiceMusicDuck.release(ctx)
-        Log.i(
-            VoiceEngine.TIMING_TAG,
-            "đóng mic: stop ${tStop - t0} ms · release ${tRelease - tStop} ms · trả nhạc ${System.currentTimeMillis() - tRelease} ms (bíp chạy nền)",
-        )
+        Log.i(VoiceEngine.TIMING_TAG, "đóng mic: stop ${tStop - t0} ms · release ${tRelease - tStop} ms (bíp chạy nền)")
         Thread({
             val t1 = System.currentTimeMillis()
             // ═══ [P0-2] Tiếng bíp CUỐI chỉ còn ở lượt CHÍNH ═══════════════════════════════════════════

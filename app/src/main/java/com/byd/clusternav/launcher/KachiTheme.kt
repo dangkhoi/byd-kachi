@@ -203,7 +203,7 @@ object KachiTheme {
     fun dp(ctx: Context, v: Float): Float = v * ctx.resources.displayMetrics.density
     fun dpi(ctx: Context, v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
-    // ⚠ [P1b] Năm bộ dựng drawable KHÔNG-chất-liệu (`card` · `gradient` · `gradientSoft` · `topFade` · `pill`) nay là
+    // ⚠ [P1b] Năm bộ dựng drawable KHÔNG-chất-liệu (`card` · `gradient` · `tonalOn` · `topFade` · `pill`) nay là
     // hàm mở rộng ở `KachiThemeDrawables.kt` — cùng chữ ký, cùng cách gọi `KachiTheme.card(...)`; tách vì trần 500
     // dòng (CLAUDE.md §4.1) khi P1b thêm phép suy bảng màu + `surfacePair`. Bảng tra icon ở lại đây: bốn bài canh
     // icon đọc chính tệp này.

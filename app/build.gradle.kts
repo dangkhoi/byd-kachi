@@ -110,8 +110,8 @@ android {
         // 2.98 (201) — "hả" ≠ "hạ" · liên từ "xong" · câu "đã rời ô" khi hai màn chính · lối tắt nhớ vị trí trôi · tên màn ảo ô cố định
         // (display_settings.xml không phình) · rà hiệu năng 4 trạng thái: log shell chỉ đọc theo thay đổi, dọn khung app đã gỡ, trần log nav,
         // dọn chẩn đoán lúc khởi động, xoá APK OTA đã cài (spec kachi-298-plan).
-        versionCode = 204
-        versionName = "3.0"
+        versionCode = 206
+        versionName = "3.1.1"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:
@@ -325,6 +325,15 @@ dependencies {
     // `getResult(stream).getText()`. KHÔNG dùng lớp mic/VAD tự-dựng-AudioRecord của gói — Kachi giữ
     // `AudioRecord` cho mình (`VoiceCapture`) để đường ghi âm nằm trong tầm bài canh "không gửi audio ra mạng".
     implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.8")
+
+    // ─── 3.01 R25 · WIDGET XE 3D — Filament (Google, Apache-2.0) ─────────────────────────────────────────────
+    // Kiểm 2026-10-13 (rule global G3): Maven Central `maven-metadata.xml` ⇒ `<release>1.77.3</release>` cho CẢ hai gói;
+    // API đối chiếu bằng `javap` trên chính AAR 1.77.3 (UiHelper.attachTo(TextureView) · AssetLoader(Engine, MaterialProvider,
+    // EntityManager) · UbershaderProvider · ResourceLoader.loadResources · Scene.remove · Renderer.ClearOptions.setClearColor).
+    // CHỈ hai gói: filament-android (lõi) + gltfio-android (nạp .glb + ubershader PBR, ảnh PNG nhúng) — KHÔNG filament-utils
+    // (ModelViewer/KTX/IBL) và KHÔNG filamat (biên dịch vật liệu lúc chạy). `abiFilters` arm64-v8a lọc lib native.
+    implementation("com.google.android.filament:filament-android:1.77.3")
+    implementation("com.google.android.filament:gltfio-android:1.77.3")
 
     // — JVM unit + property tests (off-device, chạy bằng ./gradlew testDebugUnitTest) —
     testImplementation(platform("org.junit:junit-bom:6.1.2"))

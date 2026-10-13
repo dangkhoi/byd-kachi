@@ -97,7 +97,7 @@ class ControlLastSentTest {
         wake.record("trunk", 1)                                   // "mở cốp" thành công trong `:wake`
         assertEquals(1, main.index("trunk"), "tiến trình chính thấy lệnh của `:wake`")
         assertEquals(KeyCtlPlan.Outcome.Run(com.byd.clusternav.launcher.voice.VoiceIntent.Control("trunk", 0), KeyCtlPlan.Basis.MEMORY),
-            KeyCtlPlan.of(ControlRegistry.byId("trunk")!!, KeyCtlTarget("trunk", KeyCtlAction.FLIP), memory = main, speedKmh = { 0 }) { null },
+            KeyCtlPlan.of(ControlRegistry.byId("trunk")!!, KeyCtlTarget("trunk", KeyCtlAction.FLIP), memory = main, motion = { CtlSafetyPolicy.Motion(0, null) }) { null },
             "phím Đảo ở tiến trình chính ⇒ ĐÓNG (không MỞ lần nữa)")
         wake.record("readl", 1); wake.record("seatc", 2)
         assertEquals(1, main.index("readl")); assertEquals(2, main.index("seatc"))

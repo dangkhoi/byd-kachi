@@ -184,15 +184,19 @@ class Goi2FeatureWiringContractTest {
         assertTrue(draw.contains("CellTextLayout.cardSpanX("), "mép thẻ phải kẹp theo khung ảnh thật, không theo neo bánh")
         val cell = SourceRoots.body(board, "private fun drawCell(")
         assertTrue(cell.contains("CellTextLayout.twoLineTopBaseline("), "baseline khối 2 dòng phải tính từ số đo phông")
-        assertTrue(cell.contains("CellTextLayout.lineStartX("), "con số phải nằm đúng trục ô (đơn vị treo bên phải)")
+        // R22·R (owner 13/10 "xấu và thô", bỏ thẻ nền): cụm số canh MÉP về phía xe — cột trái canh phải, cột phải canh
+        // trái — để hai cột thẳng hàng (thay cho cân giữa trục thẻ khi còn thẻ). Không còn nền thẻ nào sau số.
+        assertTrue(cell.contains("if (toRight) cell.right - groupW else cell.left"), "cụm số canh mép về phía xe")
+        assertFalse(cell.contains("drawRoundRect("), "R22·R: không còn thẻ nền sau số lốp (hộp trong hộp)")
         assertTrue(cell.contains("CellTextLayout.fitScale("), "thẻ hẹp đi sau khi kẹp ⇒ chữ phải co cho vừa")
         for (magic in listOf("* 0.10f", "* 0.60f")) {
             assertFalse(cell.contains(magic), "hằng ma thuật '$magic' đã quay lại — đó chính là lỗi (A) của owner")
         }
-        // Thẻ vẽ SAU ảnh xe (FrameLayout xếp lớp) nên nó KHÔNG được lấn vào khung ảnh; chấm thì vẫn ở neo thật.
-        assertTrue(draw.contains("canvas.drawCircle(wheelX, wheelY"), "chấm trạng thái vẫn ở neo bánh thật")
-        // Nhãn ngắn của bánh phải đi qua lớp ngôn ngữ (cùng luật đã áp cho ô nhóm: 'Lốp TT' không được lọt sang EN).
-        assertTrue(cell.contains("corner.displayShortLabel"), "viết tắt bánh phải theo ngôn ngữ đang dùng")
+        // R22·R: chấm cảnh báo trên bánh đã gỡ — cảnh báo chỉ tô màu số (ngay cạnh bánh), không thêm mảng màu nào.
+        assertFalse(draw.contains("drawCircle("), "R22·R: cảnh báo chỉ tô màu số, không chấm")
+        // R22·R (owner 13/10 "giảm text đi em … chữ nó làm xấu lắm"): bánh nào = VỊ TRÍ số cạnh bánh, không còn viết tắt
+        // "TT/TP/ST/SP" trên mặt bảng (trước đây khoá: viết tắt phải qua lớp ngôn ngữ — nay không còn chữ để dịch).
+        assertFalse(cell.contains("displayShortLabel"), "R22·R: không vẽ viết tắt bánh — vị trí đã nói bánh nào")
     }
 
     @Test

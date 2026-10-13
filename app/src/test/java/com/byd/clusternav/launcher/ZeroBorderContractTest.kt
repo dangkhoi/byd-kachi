@@ -148,6 +148,12 @@ class ZeroBorderContractTest {
             // dùng FILL + PorterDuff feather, KHÔNG stroke). "DoorBoardView.kt" cũng bỏ khỏi đây: bản mới không còn
             // đường tách vùng tô (chấm màu FILL trên ảnh), nên nó hết dùng STROKE — để lại là "mục chết".
             "SeatDiagramView.kt" to "đường bao thân xe + đệm/ốp/tựa của ghế — nét LÀ hình cái ghế",
+            // 3.01 DOT (owner 13/10 "vẽ chấm tròn thôi, như bọn kinex, kimlauncher"): lớp "kính hạ" của CarLevelsLayer
+            // (nét quanh mảnh kính + mép kính hạ) đã GỠ ⇒ mục cũ gỡ; nét nay chỉ còn trong bộ tô chấm dùng chung.
+            "StateDotPainter.kt" to "3.01 DOT: vòng rỗng của chấm trạng thái trên ảnh xe (đóng = vòng mảnh, chưa đọc = vòng " +
+                "đứt nét, mở một phần = vòng quanh quạt) — nét LÀ trạng thái (dữ liệu), không khung bề mặt",
+            // ⚠ 3.01 R22·C: "ActionMatrixCompact.kt" RỜI danh sách — icon chân nay là VectorDrawable sinh (`ic_win_*_all_g`),
+            // không còn vẽ nét bằng Canvas (WindowGlyph đã gỡ).
             "DatumIconView.kt" to "chấm MỨC rỗng dưới icon (viền tròn) = trạng thái datum (mức 1/2) — nét LÀ cái chấm chưa đầy, gỡ là mất mức",
             "VoiceWaveView.kt" to "hai vòng ripple mờ (STROKE) quanh vòng tròn khi ĐANG NGHE = tín hiệu 'máy đang nghe' (voice-ux R2) — nét LÀ waveform, không phải khung",
             "GridEditorView.kt" to "LƯỚI ô của trình vẽ bố cục — thứ người dùng canh theo khi kéo khung " +

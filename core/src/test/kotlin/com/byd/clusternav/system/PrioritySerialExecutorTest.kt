@@ -116,4 +116,28 @@ class PrioritySerialExecutorTest {
         assertEquals("ok", exec.submit(MutationPriority.STOP) { "ok" })
         assertTrue(exec.isIdle)
     }
+
+    /**
+     * 3.01 LAMPLIVE — lệnh khởi HAL helper (`BACKGROUND`) xếp TRƯỚC vẫn rút SAU lệnh cửa sổ/cast `NORMAL` xếp sau nó: helper do bảng
+     * Đèn khởi không bao giờ chen trước việc người dùng đang chờ. Thử ĐỎ: đặt `BACKGROUND(1)` ⇒ ĐỎ.
+     */
+    @Test
+    fun `BACKGROUND drains after an already-queued NORMAL`() {
+        val exec = PrioritySerialExecutor("test-bg")
+        val order = CopyOnWriteArrayList<String>()
+        val release = CountDownLatch(1)
+        val started = CountDownLatch(1)
+        val blocker = Thread {
+            exec.submit(MutationPriority.NORMAL) { started.countDown(); release.await(5, TimeUnit.SECONDS) }
+        }.apply { start() }
+        assertTrue(started.await(2, TimeUnit.SECONDS))
+        val b = Thread { exec.submit(MutationPriority.BACKGROUND) { order += "helper" } }.apply { start() }
+        awaitPending(exec, 1)
+        val n = Thread { exec.submit(MutationPriority.NORMAL) { order += "window" } }.apply { start() }
+        awaitPending(exec, 2)
+        release.countDown()
+        blocker.join(2000); b.join(2000); n.join(2000)
+        assertEquals(listOf("window", "helper"), order)
+        assertTrue(!MutationPriority.BACKGROUND.isHighPriority, "BACKGROUND không phải ưu tiên cao")
+    }
 }

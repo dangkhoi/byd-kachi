@@ -86,9 +86,12 @@ object CapabilityGroups {
         icon = "ic-group-windows", domain = Domain.BODY, shape = WidgetShape.STRIP,
         reads = listOf("window_lf", "window_rf", "window_lr", "window_rr"),
         writes = listOf("win_lf", "win_rf", "win_lr", "win_rr", "windows_all",
-            "win_half_lf", "win_half_rf", "win_half_lr", "win_half_rr", "win_half_all", "windows_close_all"),
-        sub = "mở/đóng và mở nửa từng kính · đóng cả cụm",
-        subEn = "open/close and half-open each window · close all",
+            "win_half_lf", "win_half_rf", "win_half_lr", "win_half_rr", "win_half_all", "windows_close_all",
+            // 3.01 R22·C (owner 13/10 *"thêm cả cốp vào đó luôn… đóng mở cả xe"*): nút cốp SẴN CÓ (cùng ô, cùng đường ghi
+            // `voiceCtlBackDoor` như nhóm Cửa & khoang) — lên hình xe gọn thành chấm ở đuôi xe (`ActionMatrix.onCar`).
+            "trunk"),
+        sub = "từng kính: hé, mở hẳn, đóng · cốp sau · mở/đóng tất cả",
+        subEn = "each window: half, full, close · tailgate · open/close all",
     )
 
     /**
@@ -162,6 +165,8 @@ object CapabilityGroups {
         // ⚠ 1.90 · bỏ chữ "chế độ pha" vì nút chọn chế độ đã xoá — nay là bật/tắt đèn pha.
         sub = "đèn ngoài, đèn pha, đèn đọc trong xe",
         subEn = "exterior lights, headlights, interior reading light",
+        // R22·B — mỗi đèn đã có HÌNH riêng (U7) ⇒ bày thành bảng icon sáng/tắt, chạm icon có nút = bật/tắt đèn đó.
+        layout = GroupLayout.ICONS,
     )
 
     // ⚠ UX-OVERHAUL · WP8 2026-09-20 — nhóm `g_ambient` (*"Đèn viền"*) GỠ HẲN. Cả 5 datum đọc (#39-43) và cả 4

@@ -30,6 +30,11 @@ internal class CastGeometryController(
      * 0 shell); `null` = đọc qua shell `settings get` (JVM/test). Đứng TRƯỚC [log] để lambda cuối của các chỗ gọi cũ vẫn là [log].
      */
     private val readGlobalSetting: ((String) -> String?)? = null,
+    /**
+     * 3.1 · R26 — gọi sau MỖI lượt `am task resize` ăn (task tự quản khung ⇒ freeform sống): coordinator gỡ ép hình học mức display
+     * (`wm size`/`overscan` reset, giữ DPI — luật V1 `CastShell.resetDisplayGeometry`). Mặc định: không làm gì (test cũ).
+     */
+    private val onTaskResized: () -> Unit = {},
     private val log: (String) -> Unit = { println("[CastGeometry] $it") },
 ) {
     private val displayId: Int get() = displayIdProvider()
@@ -59,6 +64,7 @@ internal class CastGeometryController(
         val result = shell.execute("am task resize $taskId $left $top $right $bottom")
         if (result.success) {
             persistBounds(pkg, profile, left, top, right, bottom)
+            onTaskResized()   // 3.1 · R26: task tự quản khung ⇒ gỡ ép hình học của màn
             return true
         }
         // Review 2.89 Pass 2 · cluster-r1-3: Chữ nhật cần toạ độ cụm 1:1 (khung vùng trống + hộp km/h) ⇒ KHÔNG đường lùi `wm size`
@@ -66,6 +72,13 @@ internal class CastGeometryController(
         // nhật sau của app mất km/h. Hỏng ⇒ không lưu gì, người lái thử lại sau khi freeform sống (sau một lần tắt/mở nguồn).
         if (style == CastStyle.RECT) {
             log("resizeActiveTarget (Chữ nhật): am task resize bị từ chối cho $pkg — KHÔNG lùi wm size, không lưu")
+            return false
+        }
+        // 3.1 · R26 — màn cụm FREEFORM (đo `am stack list`): `am task resize` hỏng ở đây là lỗi của lệnh/khung (vd `bad top arg`,
+        // [ĐO xe 13/10 `05-waze-top-neg40.txt`]), KHÔNG phải freeform chết ⇒ không lùi `wm size` (nó nhốt app vào màn nhỏ và bị lưu
+        // theo app cho mọi lần chiếu sau — gốc Waze kẹt 520). Không lưu gì.
+        if (displayFacts().freeform == true) {
+            log("resizeActiveTarget: am task resize hỏng cho $pkg trên màn FREEFORM — KHÔNG lùi wm size, không lưu")
             return false
         }
         // Fallback: change logical display size, keeping height to avoid letterbox.
@@ -101,6 +114,7 @@ internal class CastGeometryController(
         val result = shell.execute("am task resize $taskId $left $top $right $bottom")
         if (result.success) {
             persistBounds(pkg, profile, left, top, right, bottom)
+            onTaskResized()   // 3.1 · R26
             return true
         }
         log("resizeActiveSlot FAILED — am task resize rejected for $pkg ($profile); freeform likely not alive")
@@ -136,12 +150,14 @@ internal class CastGeometryController(
         if (bounds != null) {
             // 2.90 · R5: đo kích TRƯỚC khi tra task — lượt đo tự dò lại id nếu display hiện tại đã mất, nên lượt tra task và
             // lệnh resize sau đó chạy trên id mới.
-            val size = queryDisplaySize(preferOverride = true)
+            // 3.1 · R26: màn freeform ⇒ kẹp theo kích VẬT LÝ (Override có thể là `wm size` cũ sắp bị gỡ, vd 1920×520).
+            val size = queryDisplaySize(preferOverride = knownFacts?.freeform != true)   // [knownFacts]: chỉ bản của display SỐNG
             val taskId = findTaskIdForPkg(pkg)
             if (taskId != null) {
                 val (w, h) = size ?: (1920 to 720)
-                val b = CastGeometryGuard.clampBounds(bounds, 0, w, h)
-                shell.execute("am task resize $taskId ${b.left} ${b.top} ${b.right} ${b.bottom}")
+                // 3.1 · R7: cùng trần TRÀN phải/dưới mà −/+ cho phép — kẹp về 0..W×0..H là repin tự gỡ khung người lái vừa chỉnh.
+                val b = CastGeometryGuard.clampBounds(bounds, 0, w, 0, h, CastGeometryGuard.overflowMax(w), CastGeometryGuard.overflowMax(h))
+                if (shell.execute("am task resize $taskId ${b.left} ${b.top} ${b.right} ${b.bottom}").success) onTaskResized()   // R26
                 asked = b
             }
         }
@@ -243,13 +259,47 @@ internal class CastGeometryController(
         return true
     }
 
+    // ─── 3.1 · R26 — sự thật hình học của màn cụm, đọc MỘT lần mỗi (phiên × display) ────────────────────────────────────
+
+    @Volatile private var cachedFacts: ClusterDisplayFacts.Facts? = null
+
+    /** Bản đã đọc cho display SỐNG hiện tại (`null` = chưa đọc / display đã đổi). CHỈ ĐỌC RAM — an toàn cho luồng vẽ. */
+    val knownFacts: ClusterDisplayFacts.Facts?
+        get() = cachedFacts?.takeIf { it.displayId == displayId }
+
+    /** Quên bản đã đọc — đầu mỗi lượt mở chiếu (màn ảo cụm có thể đã dựng lại). */
+    fun forgetDisplayFacts() { cachedFacts = null }
+
+    /**
+     * Chế độ cửa sổ của màn cụm (`am stack list` → [ClusterDisplayFacts.displayFreeform]) + kích vật lý (`wm size -d`, dòng
+     * *Physical*). Hai lệnh ĐỌC, ĐÚNG MỘT lượt mỗi (phiên × display) — kể cả khi đọc hụt (`null` = chưa biết ⇒ người gọi giữ hành
+     * vi cũ cả phiên; không đọc lại mỗi lần chiếu/repin — chi phí có trần). Chạy trên executor chiếu (không bao giờ trên luồng vẽ).
+     */
+    fun displayFacts(): ClusterDisplayFacts.Facts {
+        val id = displayId
+        cachedFacts?.takeIf { it.displayId == id }?.let { return it }
+        // Soát 3.1 Pass 2: display cụm CHƯA xác minh (`< 1`) ⇒ không đọc (sẽ đọc nhầm chế độ của display 0 — màn chính — rồi
+        // làm sạch `wmSize` theo kích màn chính), không cache (lượt sau với id thật phải đọc thật). CLAUDE.md §4 câu 1.
+        if (id < 1) { log("màn cụm $id chưa xác minh ⇒ không đọc sự thật hình học"); return ClusterDisplayFacts.Facts(id, null, null) }
+        val freeform = shell.execute("am stack list").let { r ->
+            if (r.success) ClusterDisplayFacts.displayFreeform(r.stdout, id) else null
+        }
+        val physical = queryDisplaySize(preferOverride = false)
+        return ClusterDisplayFacts.Facts(id, freeform, physical).also {
+            cachedFacts = it
+            log("màn cụm $id: freeform=${it.freeform ?: "?"} · vật lý=${it.physical?.let(ClusterDisplayFacts::sizeString) ?: "?"}")
+        }
+    }
+
     private companion object {
         /** Sai số đọc lại khung — cùng 2 px của `AppMover.isWindowedOnMain` (làm tròn của WM). */
         const val SLOP_PX = 2
     }
 
     private fun persistBounds(pkg: String, profile: CastProfile, left: Int, top: Int, right: Int, bottom: Int) {
-        val existing = prefs.displayConfigFor(pkg, profile) ?: DisplayConfig.NORMAL_DEFAULT
+        val stored = prefs.displayConfigFor(pkg, profile) ?: DisplayConfig.NORMAL_DEFAULT
+        // 3.1 · R26: resize ăn trên màn freeform ⇒ dọn luôn `wmSize` cũ của bản ghi (bản ghi sạch dần theo lần chỉnh, không cần tay).
+        val existing = ClusterDisplayFacts.sanitize(stored, knownFacts)
         prefs.saveDisplayConfig(pkg, profile, existing.copy(bounds = CastBounds(left, top, right, bottom)))
     }
 
