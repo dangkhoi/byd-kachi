@@ -10,12 +10,16 @@ import kotlin.math.abs
 class Car3dSeatTest {
 
     @Test
-    fun `chi mot widget 3D giu cho, tra cho thi widget khac lay duoc`() {
-        val seat = Car3dSeat(); val a = Any(); val b = Any()
-        assertTrue(seat.claim(a)); assertTrue(seat.claim(a), "chủ xin lại vẫn được")
-        assertFalse(seat.claim(b), "ô thứ hai ⇒ bảng 2D")
-        seat.release(b); assertFalse(seat.claim(b), "không phải chủ thì không trả được chỗ")
-        seat.release(a); assertTrue(seat.claim(b))
+    fun `nguoi moi thang - chu cu bi day ve 2D truoc khi nguoi moi dung Engine`() {
+        // [ĐO xe 14/10 08:01:38] bật màn ⇒ HOME dựng lại ô: widget mới xin chỗ khi widget cũ còn giữ ⇒ luật cũ đẩy widget ĐANG HIỆN về 2D.
+        val seat = Car3dSeat(); val a = Any(); val b = Any(); val log = ArrayList<String>()
+        assertTrue(seat.claim(a) { log += "a evicted" }); assertTrue(seat.claim(a), "chủ xin lại vẫn được, không tự đuổi")
+        assertTrue(log.isEmpty())
+        assertTrue(seat.claim(b) { log += "b evicted" }); log += "b builds Engine"
+        assertEquals(listOf("a evicted", "b builds Engine"), log, "chủ cũ huỷ Engine TRƯỚC khi người mới dựng ⇒ tối đa một Engine")
+        assertTrue(seat.holds(b)); assertFalse(seat.holds(a))
+        seat.release(a); assertTrue(seat.holds(b), "không phải chủ thì không trả được chỗ")
+        seat.release(b); assertFalse(seat.holds(b))
     }
 
     @Test

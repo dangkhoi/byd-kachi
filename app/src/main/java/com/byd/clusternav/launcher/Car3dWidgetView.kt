@@ -136,8 +136,8 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
         if (fallen != null) return
         if (width > 0 && !slotFits()) return fallBack("slot ${width}x$height px < minSlotDp ${WidgetRegistry.byId(WIDGET_ID)?.minSlotDp} dp")
         if (renderer != null) return
-        // Soát O-3D-O1: tối đa MỘT widget 3D (một Engine) — ô thứ hai chọn `w_car3d` ⇒ bảng 2D.
-        if (!Car3dSeat.shared.claim(this)) return fallBack("another 3D widget is live (one Filament engine at a time)")
+        // Tối đa MỘT Engine; người mới thắng (3.1.4, đo xe 14/10) — widget cũ lùi 2D + huỷ Engine ngay trong lời xin.
+        Car3dSeat.shared.claim(this) { fallBack("replaced by a newer 3D widget (one Filament engine at a time)") }
         if (!Car3dDevice.capable(context)) return fallBack("low-RAM device or GLES < 3.0")
         if (!Car3dRenderer.init()) return fallBack("Filament native libs failed to load")
         night = KachiTheme.night

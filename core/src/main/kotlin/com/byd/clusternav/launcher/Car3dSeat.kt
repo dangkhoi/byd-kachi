@@ -7,15 +7,30 @@ package com.byd.clusternav.launcher
  */
 class Car3dSeat {
     private var holder: Any? = null
+    private var evictHolder: (() -> Unit)? = null
 
-    /** [who] xin chỗ; `true` nếu chỗ trống hoặc đã là của nó. */
-    @Synchronized fun claim(who: Any): Boolean {
-        if (holder == null || holder === who) { holder = who; return true }
-        return false
+    /**
+     * [who] xin chỗ — NGƯỜI MỚI THẮNG. 3.1.4 [ĐO xe 14/10 08:01:38]: bật màn ⇒ HOME dựng lại ô ⇒ widget 3D MỚI xin chỗ trong
+     * khi widget CŨ (vẫn bám cây view, không bao giờ `dừng`) còn giữ ⇒ luật cũ "người giữ thắng" đẩy widget ĐANG HIỆN về 2D vĩnh
+     * viễn, còn Engine nằm ở view ẩn. Nay chủ cũ nhận [evict] của nó (lùi 2D + huỷ Engine) NGAY TRONG lời gọi này, TRƯỚC khi người
+     * mới dựng Engine ⇒ vẫn tối đa một Engine. Chủ cũ đã lùi 2D thì không xin lại (không giành qua lại).
+     */
+    fun claim(who: Any, evict: () -> Unit = {}): Boolean {
+        val old: (() -> Unit)?
+        synchronized(this) {
+            if (holder === who) return true   // chủ xin lại: giữ [evict] đã đăng ký
+            old = if (holder != null) evictHolder else null
+            holder = who; evictHolder = evict
+        }
+        old?.invoke()
+        return true
     }
 
     /** Trả chỗ (chỉ chủ trả được). */
-    @Synchronized fun release(who: Any) { if (holder === who) holder = null }
+    @Synchronized fun release(who: Any) { if (holder === who) { holder = null; evictHolder = null } }
+
+    /** Chủ hiện tại là [who]? */
+    @Synchronized fun holds(who: Any): Boolean = holder === who
 
     companion object {
         val shared = Car3dSeat()
