@@ -42,7 +42,7 @@ internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(
     private val tyreViews = LinkedHashMap<TyreCorner, LinearLayout>()
     private var seats: Map<Car3dHero.Seat, V3> = emptyMap()
     private var wheels: Map<TyreCorner, V3> = emptyMap()
-    private val touch = dpi(context, Sp.TOUCH)
+    private val touch = dpi(context, Sp.TOUCH) * SEAT_PCT / 100   // owner 14/10: icon ghế còn ~70 % (48 → 34 dp)
     private val icon = dpi(context, Sp.ICON_M)
 
     init {
@@ -194,5 +194,8 @@ internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(
         const val ON_DISC_ALPHA = 0x66
         /** Icon chiếm ~1/2 đĩa (lề = 1/4 đĩa mỗi bên) — [ĐO máy ảo] icon 24 dp cố định trong đĩa phóng 104 px trông lọt thỏm. */
         const val ICON_PAD_DIV = 5
+
+        /** Cỡ đĩa icon ghế theo % đích chạm chuẩn [Sp.TOUCH] — owner 14/10 *"bé lại tầm 70%"*. */
+        const val SEAT_PCT = 70
     }
 }
