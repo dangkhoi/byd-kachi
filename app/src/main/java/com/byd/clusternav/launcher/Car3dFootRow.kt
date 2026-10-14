@@ -97,7 +97,9 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
         val t = tileOf(RECIRC) ?: return null
         val img = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER }
         recircIcon = img
-        return disc(img).apply {
+        // Bọc như các nhóm khác: hàng đo con theo CAO HÀNG (EXACTLY) ⇒ đĩa đặt thẳng sẽ thành bầu dục, icon lệch khỏi vòng.
+        val box = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+        box.addView(disc(img).apply {
             contentDescription = def.displayLabel
             setOnClickListener {
                 val on = !ControlTileState.shared.isOn(RECIRC)
@@ -105,8 +107,9 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
                 t.set?.invoke(if (on) 1 else 0) ?: t.view.performClick()
                 drawRecirc()
             }
-            drawRecirc()
-        }
+        }, LinearLayout.LayoutParams(touch, touch))
+        drawRecirc()
+        return box
     }
 
     /** Hình lấy gió theo lệnh/số đọc của ô (`recirc` 1 = gió trong) — cùng bảng hình chip `ac_cycle`. */
@@ -128,7 +131,7 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
         val oval = { color: Int -> GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) } }
         background = RippleDrawable(ColorStateList.valueOf(ColorMath.withAlpha(c(KachiTheme.ACCENT), RIPPLE_ALPHA)),
             oval(ColorMath.withAlpha(c(KachiTheme.INK), REST_ALPHA)), oval(c(KachiTheme.INK)))
-        addView(child, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        addView(child, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.CENTER))
         isClickable = true; isFocusable = true; minimumWidth = touch; minimumHeight = touch
     }
 
