@@ -70,6 +70,10 @@ internal class Car3dRenderer private constructor(
         ui.renderCallback = this
         ui.isOpaque = false
         ui.attachTo(tv)
+        // PERF 3.1.5 (cổng sống — dựng lại khi widget HIỆN lại): [ĐO bytecode filament-android 1.77.3 `UiHelper$TextureViewHandler.<init>`]
+        // bề mặt CÓ SẴN ⇒ `onSurfaceTextureAvailable(st, mDesiredWidth, mDesiredHeight)` = 0×0 khi không `setDesiredSize` ⇒ viewport 0,
+        // camera không đặt ⇒ ô trống ([ĐO máy ảo 14/10] 3/4 lượt rời-HOME-rồi-về). Không `setDesiredSize` (nó ghim cỡ đệm khi ô đổi cỡ).
+        if (tv.isAvailable && width == 0 && tv.width > 0 && tv.height > 0) onResized(tv.width, tv.height)
     }
 
     /**
@@ -127,6 +131,7 @@ internal class Car3dRenderer private constructor(
         resources.loadResources(a)
         a.releaseSourceData()
         scene.addEntities(a.entities)
+        names.clear(); groups.clear(); ownBox.clear(); hinges.clear(); hits.clear()   // PERF 3.1.5: nhớ theo tài sản — tài sản mới thì quên
         asset = a
         return true
     }
@@ -187,6 +192,17 @@ internal class Car3dRenderer private constructor(
         is Car3dAnchor.Node -> nodeBox(a.pattern, posed)
     }
 
+    /** Hộp THẾ GIỚI (min, max) của neo [a]: 8 góc hộp mô hình qua phép đặt [pl]. [posed] = cửa/nắp quay theo bản lề đang vẽ (kính TRƯỢT không dời hộp — xem [nodeBox]). */
+    fun worldBox(pl: Car3dOrient.Placement, a: Car3dAnchor, posed: Boolean = false): Pair<V3, V3>? {
+        val (bmn, bmx) = box(a, posed) ?: return null
+        val wc = (0 until CORNERS).map { i -> pl.apply(V3(if (i and 1 == 0) bmn.x else bmx.x, if (i and 2 == 0) bmn.y else bmx.y, if (i and 4 == 0) bmn.z else bmx.z)) }
+        return V3(wc.minOf { it.x }, wc.minOf { it.y }, wc.minOf { it.z }) to V3(wc.maxOf { it.x }, wc.maxOf { it.y }, wc.maxOf { it.z })
+    }
+
+    /** Hộp thế giới của bộ phận neo [h] → đích chạm ([Car3dPick]). */
+    fun target(pl: Car3dOrient.Placement, h: Car3dHotspot, a: V3, posed: Boolean): Car3dPick.Target? =
+        worldBox(pl, h.anchor, posed)?.let { (lo, hi) -> Car3dPick.Target(h.id, lo, hi, a) }
+
     /**
      * POLISH2 — đèn khoang (đèn đọc): nội thất hắt sáng ấm khi [on] — đổi `emissiveFactor` (nhân ảnh nội thất) của vật liệu nội thất
      * tại chỗ. `true` = có đổi (chủ xin vẽ lại).
@@ -217,8 +233,15 @@ internal class Car3dRenderer private constructor(
      * Nút khớp [pattern] theo TÊN hoặc theo NHÓM diễn hoạt (`extras.grp`): nắp cốp cắt từ thân ([Car3dLid]) giữ tên gốc
      * (`body_paint`…) để biến thể sơn/đèn theo tên vẫn đúng, còn neo/diễn hoạt cốp tìm nó qua nhóm `trunk`.
      */
-    private fun hit(pattern: String, e: Int): Boolean =
-        Car3dNames.matches(pattern, nameOf(e)) || Car3dNames.matches(pattern, groups.getOrPut(e) { Car3dBox.group(asset?.getExtras(e)) })
+    private fun hit(pattern: String, e: Int): Boolean = e in hitsOf(pattern)
+
+    /** PERF 3.1.5 — tập thực thể khớp [pattern] (tên/nhóm bất biến theo tài sản) tính MỘT lần mỗi mẫu; [ĐO] `Car3dNames.matches` 56 % sau lượt nhớ đầu. */
+    private fun hitsOf(pattern: String): Set<Int> = hits.getOrPut(pattern) {
+        renderables().filterTo(HashSet()) { e ->
+            Car3dNames.matches(pattern, nameOf(e)) || Car3dNames.matches(pattern, groups.memo(e) { Car3dBox.group(asset?.getExtras(e)) })
+        }
+    }
+    private val hits = HashMap<String, Set<Int>>()
 
     private val groups = HashMap<Int, String?>()
     private val ownBox = HashMap<Int, FloatArray?>()
@@ -235,7 +258,7 @@ internal class Car3dRenderer private constructor(
             // cùng bộ đỉnh trùng hộp [ĐO máy ảo 13/10]. Không có extras (tệp glTF khác) ⇒ hộp của Filament.
             // ⚠ KHÔNG gọi `Box.set(...)`: [ĐO máy ảo 13/10 19:43] `Box.set` → native `nSet` abort cả tiến trình HOME
             // ("JNI DETECTED ERROR … invalid jobject") — lỗi CheckJNI không bắt được bằng try/catch. Tính tâm/nửa cạnh bằng tay.
-            val own = ownBox.getOrPut(e) { Car3dBox.parse(asset?.getExtras(e)) }   // POLISH2: một lần/thực thể (đích cốp đi theo nắp mỗi khung)
+            val own = ownBox.memo(e) { Car3dBox.parse(asset?.getExtras(e)) }   // POLISH2: một lần/thực thể (đích cốp đi theo nắp mỗi khung)
             val c: FloatArray; val h: FloatArray
             if (own != null) {
                 c = cBuf; h = hBuf
@@ -245,6 +268,9 @@ internal class Car3dRenderer private constructor(
                 c = box.getCenter(cBuf); h = box.getHalfExtent(hBuf)
             }
             // Hộp NGHỈ trong khung mô hình: không cộng biến đổi cục bộ của nút (kính đang trượt) — nút GLB không có biến đổi riêng.
+            // 3.1.5 (owner 14/10 *"cửa không có chấm"* — [ĐO máy ảo] chấm kính tụt theo kính lên DA CỬA: `win-lr` 100 % ⇒ y 412 px,
+            // cửa 466): tư thế chỉ gồm BẢN LỀ (cửa/nắp quay — bộ phận rời chỗ cũ). Kính TRƯỢT vào trong cửa thì phần đã tụt bị da cửa
+            // che ⇒ đích chạm + chấm của kính ở lại Ô KÍNH (chấm nói mức bằng hình chấm), không theo phần kính đã khuất.
             val pose = if (posed) swingOf[e] else null
             repeat(CORNERS) { i ->
                 var p = floatArrayOf(c[0] + h[0] * (if (i and 1 == 0) -1 else 1), c[1] + h[1] * (if (i and 2 == 0) -1 else 1), c[2] + h[2] * (if (i and 4 == 0) -1 else 1))
@@ -292,7 +318,7 @@ internal class Car3dRenderer private constructor(
 
     fun hasHinge(pattern: String): Boolean = renderables().any { hit(pattern, it) && hingeOf(it) != null }
 
-    private fun hingeOf(e: Int): Car3dHinge.Hinge? = hinges.getOrPut(e) { Car3dHinge.parse(asset?.getExtras(e)) }
+    private fun hingeOf(e: Int): Car3dHinge.Hinge? = hinges.memo(e) { Car3dHinge.parse(asset?.getExtras(e)) }
 
     /** Biến đổi cục bộ = bản lề(s) · dịch kính(dy) — kính trên cánh cửa vừa tụt vừa quay theo cửa. */
     private fun compose(e: Int) {
@@ -347,6 +373,9 @@ internal class Car3dRenderer private constructor(
     override fun onNativeWindowChanged(surface: Surface) {
         swap?.let { engine.destroySwapChain(it) }
         swap = engine.createSwapChain(surface, ui.swapChainFlags)
+        // 3.1.5 [ĐO máy ảo 14/10, 2/2]: tắt/bật màn ⇒ bề mặt dựng lại CÙNG cỡ ⇒ không có onResized ⇒ không ai xin khung ⇒ xe
+        // không vẽ (lớp phủ vẫn hiện) tới khi vuốt. Bề mặt mới ⇒ xin khung như lúc đổi cỡ.
+        if (width > 0 && height > 0) onSize(width, height)
     }
 
     override fun onDetachedFromSurface() {
@@ -384,14 +413,29 @@ internal class Car3dRenderer private constructor(
         }
     }
 
-    private fun renderables(): IntArray = asset?.renderableEntities ?: IntArray(0)
+    /**
+     * PERF 3.1.5 [ĐO simpleperf máy ảo 14/10: 10 lượt mở/đóng cửa = 2,36 s CPU luồng chính, 72 % trong `hit`] — dữ liệu BẤT BIẾN của
+     * tài sản (danh sách thực thể · tên · extras) đọc qua JNI MỖI LẦN hỏi, mà [hit]/[nodeBox] hỏi cho mọi thực thể ở mọi khung diễn hoạt.
+     * Một tài sản cho cả đời renderer ([load] một lần) ⇒ nhớ theo tài sản/thực thể. [memo] nhớ cả kết quả `null` (`getOrPut` coi `null`
+     * là "chưa có" ⇒ thực thể không nhóm/không bản lề bị phân tích lại extras JSON mỗi lần — gốc của 33 % trong `Car3dBox.group`).
+     */
+    private fun renderables(): IntArray {
+        val a = asset ?: return IntArray(0)
+        if (renderableOf !== a) { renderableIds = a.renderableEntities; renderableOf = a }
+        return renderableIds
+    }
+    private var renderableOf: FilamentAsset? = null
+    private var renderableIds = IntArray(0)
+    private val names = HashMap<Int, String?>()
+    private inline fun <T> HashMap<Int, T?>.memo(e: Int, f: () -> T?): T? = if (containsKey(e)) get(e) else f().also { put(e, it) }
 
-    private fun nameOf(e: Int): String? {
+    private fun nameOf(e: Int): String? = names.memo(e) {
         val a = asset ?: return null
-        a.getName(e)?.takeIf { it.isNotEmpty() }?.let { return it }
-        val tm = engine.transformManager
-        val parent = tm.getParent(tm.getInstance(e))
-        return if (parent != 0) a.getName(parent) else null
+        a.getName(e)?.takeIf { it.isNotEmpty() } ?: run {
+            val tm = engine.transformManager
+            val parent = tm.getParent(tm.getInstance(e))
+            if (parent != 0) a.getName(parent) else null
+        }
     }
 
     companion object {

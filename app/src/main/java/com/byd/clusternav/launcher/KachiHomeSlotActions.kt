@@ -60,12 +60,17 @@ internal class KachiHomeSlotActions(
         // Kênh dùng được NGAY + khung có bộ chiếu màn ảo chưa nhả. Lượt mở app chưa bắt đầu ⇒ *tắt* vẫn làm được (thả host, 0
         // lệnh); *chạy nền* lúc app chưa mở xong ⇒ 0 lệnh + log (hiếm) — thà vậy còn hơn nút kẹt ẩn ở chế độ "luôn hiện".
         // 2.89-thử1 (ô 7): *chạy nền* = ĐỖ trong màn ảo của ô — không đi qua BEHIND-HOME ⇒ không phụ thuộc [behindUsable].
-        SlotHeadActions.of(kind, projector, ShellAccessUi.usableNow() && hostLive, behind = true)
+        // R30: *Bung to* chỉ cần bố cục ≥ 2 ô (đổi khung, 0 lệnh — không phụ thuộc kênh).
+        SlotHeadActions.of(kind, projector, ShellAccessUi.usableNow() && hostLive, behind = true, multi = workspace().slotViews.size > 1)
+
+    /** R30 — ô [index] đang bung (glyph *Thu về*). */
+    override fun expanded(index: Int): Boolean = workspace().expand.expanded == index
 
     override fun onAction(index: Int, button: Button) {
         when (button) {
             Button.CLOSE -> close(index)
             Button.BACKGROUND -> park(index)
+            Button.EXPAND -> if (index !in busy) workspace().expand.toggle(index)   // R30: bung / thu — 0 lệnh, không ghi hồ sơ
             Button.SWAP -> Unit   // ⇄ có đường riêng (`WorkspaceView.slotHead` → ngăn kéo)
         }
     }

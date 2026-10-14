@@ -54,12 +54,18 @@ class BydAvmMesh(val buffers: List<Buffer>, val parts: List<Part>, val skipped: 
          * `open`; tô theo tên bộ ĐỈNH ⇒ vật liệu `open` = SƠN trắng đục. Tô theo vật liệu khai ⇒ kính.
          */
         val material: String = buffer,
+        /**
+         * 3.01 (owner 14/10, [Car3dCabin]) — vẽ MỘT mặt: [single] ⇒ vật liệu một mặt (mặt sau bị loại); [flip] ⇒ đảo chiều quấn + đảo
+         * pháp tuyến khi ghi GLB (mặt trước = mặt sau cũ). Cặp (sơn một mặt hướng ngoài + đen một mặt hướng trong) thay một tam giác
+         * sơn hai mặt mà mặt sau lộ qua kính. Mặc định: hai mặt như lưới gốc.
+         */
+        val single: Boolean = false, val flip: Boolean = false,
     ) {
         val indexed: Boolean get() = src != null
         fun index(i: Int): Int = src?.getInt(at + i * 4) ?: i
         /** Bản chép ra mảng — CHỈ cho test. */
         val indices: IntArray get() = IntArray(indexCount) { index(it) }
-        internal fun withBuffer(b: String) = Part(name, b, pivot, indexCount, src, at, material)
+        internal fun withBuffer(b: String) = Part(name, b, pivot, indexCount, src, at, material, single, flip)
     }
 
     class Malformed(msg: String) : IllegalArgumentException(msg)

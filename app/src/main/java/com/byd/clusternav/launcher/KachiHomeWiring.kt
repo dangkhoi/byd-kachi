@@ -421,8 +421,7 @@ internal fun collectHome(
                 // H1 (PERF 2026-09-16) — công bố NHU CẦU trước khi vẽ: vòng poll HAL chạy trên coroutine khác và
                 // chỉ đọc hộp này, nên đặt ở đây là *mọi* đường đổi state (đổi hồ sơ · gắn widget · đổi chip · đổi
                 // bố cục) tự động cập nhật nhu cầu — không có đường thứ hai nào phải nhớ gọi.
-                container.carDemand.set(CarDataDemand.of(it))
-                container.carDemand.setControls(CarDataDemand.controlsOf(it))
+                WidgetFallbacks.shared.let { w -> container.carDemand.publish(it, w.degraded(), w.hidden()) }   // PERF 3.1.5: ô/thanh hiện · lùi 2D · khuất
                 render(it)
             }
         }

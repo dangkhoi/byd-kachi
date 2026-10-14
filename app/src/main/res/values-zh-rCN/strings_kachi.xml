@@ -222,6 +222,8 @@
     <string name="kachi_slot_close_app">关闭格位%1$d的应用</string>
     <string name="kachi_slot_close_widget">关闭格位%1$d的小组件</string>
     <string name="kachi_slot_close_confirm">再次点按即可关闭</string>
+    <string name="kachi_slot_expand">放大格位%1$d</string>
+    <string name="kachi_slot_collapse">将格位%1$d还原</string>
     <string name="kachi_slot_close_failed">无法关闭%1$s</string>
     <string name="kachi_slot_head_autohide_title">自动隐藏⇄按钮</string>
     <string name="kachi_slot_head_autohide_sub">框上的应用/小组件切换按钮自动隐藏，画面更清爽；点按该框（或屏幕空白处）即可显示几秒</string>

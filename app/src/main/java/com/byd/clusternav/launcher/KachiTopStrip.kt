@@ -121,11 +121,11 @@ class KachiTopStrip(
             background = KachiChrome.fade(KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.BAR_TOP))   // R-OP: độ đục nền chung
             setPadding(dp(Sp.L), dp(Sp.XS), dp(Sp.L), dp(Sp.XS))
         }
-        stripRow = strip
+        stripRow = strip; themed { AdaptiveInk.fill(strip) { intArrayOf(c(KachiTheme.BAR_TOP)) } }   // R29 T29-7: mặt thanh = BAR_TOP × độ đục
         clock = TextView(activity).apply {
-            themed { setTextColor(c(KachiTheme.INK)) }; KachiType.apply(this, KachiType.SECTION, bold = true); letterSpacing = 0.02f
+            themed { AdaptiveInk.text(this, KachiTheme.INK) }; KachiType.apply(this, KachiType.SECTION, bold = true); letterSpacing = 0.02f
         }
-        dateText = TextView(activity).apply { themed { setTextColor(c(chipInk(ChipTone.NEUTRAL))) }; KachiType.apply(this, KachiType.BODY); setPadding(dp(Sp.M), 0, 0, 0) }
+        dateText = TextView(activity).apply { themed { AdaptiveInk.text(this, chipInk(ChipTone.NEUTRAL)) }; KachiType.apply(this, KachiType.BODY); setPadding(dp(Sp.M), 0, 0, 0) }
         // WP4 — đồng hồ + ngày là MỘT vật ([HeaderItem.CLOCK], xem KDoc ở đó): chúng đọc liền nhau, tách ra chỉ
         // mời người dùng dựng những thứ tự không ai muốn. 2.99 · R2: ngày = mực + cỡ chip trung tính (MUT cũ chìm — owner 10/10).
         items[HeaderItem.CLOCK] = LinearLayout(activity).apply {
@@ -270,7 +270,8 @@ class KachiTopStrip(
         minimumWidth = dp(Bars.HEADER_BTN); minimumHeight = dp(Bars.HEADER_BTN)
         dp(Bars.HEADER_BTN_PAD).let { setPadding(it, it, it, it) }
         // R22·R (owner 13/10): nút chính = đĩa TÔNG nhạt + icon mực nhấn, không còn đĩa gradient chàm→tím.
-        themed { if (primary) { background = KachiTheme.pill(context, KachiTheme.ACCENT_SOFT); setColorFilter(c(KachiTheme.ACCENT_INK)) } else { background = KachiTheme.pill(context); setColorFilter(c(KachiTheme.INK)) } }
+        // R29: đĩa pill = MẶT (màu đĩa trên nền thanh đo được) ⇒ icon giải vai ACCENT_INK/INK trên đúng đĩa ([ĐO] Sáng 1,11 trước R29).
+        themed { val fill = if (primary) KachiTheme.ACCENT_SOFT else KachiTheme.CARD_FILL; background = KachiTheme.pill(context, fill); AdaptiveInk.fill(this, fades = false, variant = fill) { intArrayOf(c(fill)) }; AdaptiveInk.icon(this, if (primary) KachiTheme.ACCENT_INK else KachiTheme.INK) }
         setOnClickListener { onClick() }
     }
 
@@ -293,11 +294,11 @@ class KachiTopStrip(
      * TRƯỚC khi đặt chữ, và khoá `tag` giữ nguyên kết quả sai đó mãi. Phép cộng ở KDoc [Bars.CHIP_ICON_GAP].
      */
     private fun applyChipFace(v: TextView, iconName: String?, color: String, label: String) {
-        v.setTextColor(c(color))
+        val ink = AdaptiveInk.text(v, color, compound = true)   // R29 T29-7: chip giữ vai ngữ nghĩa, mực theo nền đo được
         val r = iconName?.let { KachiTheme.iconRes(it) } ?: 0
         if (r != 0) {
             val d = activity.resources.getDrawable(r, activity.theme)
-                .apply { setBounds(0, 0, dp(Sp.ICON_XS), dp(Sp.ICON_XS)); setTint(c(color)) }
+                .apply { setBounds(0, 0, dp(Sp.ICON_XS), dp(Sp.ICON_XS)); setTint(ink) }
             v.setCompoundDrawablesRelative(d, null, null, null)
             // B6 (owner 2026-09-22): chip CHỈ-ICON (vd trạng thái sấy) không đệm — để nguyên thì icon thừa lề phải.
             v.compoundDrawablePadding = if (label.isEmpty()) 0 else dp(Bars.CHIP_ICON_GAP)

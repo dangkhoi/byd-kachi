@@ -32,8 +32,8 @@ data class Car3dHotspot(
     val id: String, val anchor: Car3dAnchor, val group: String, val target: String, val read: String? = null,
     /**
      * Owner 13/10: *"cái nào chuyển động được trên 3D thì không cần chấm trạng thái"*. Mẫu tên bộ phận mà khi CÓ trong mô hình
-     * thì chính hình 3D nói trạng thái (kính tụt xuống · cánh cửa/nắp cốp mở · đèn sáng) ⇒ KHÔNG vẽ chấm, chạm thẳng vào bộ
-     * phận ([Car3dPick]). `null` hoặc không bộ phận nào khớp ⇒ giữ chấm (vd đèn đọc sách — không có hình đèn).
+     * thì chính hình 3D nói trạng thái (kính tụt xuống · cánh cửa/nắp cốp mở · đèn sáng) ⇒ chạm thẳng vào bộ phận ([Car3dPick]).
+     * Owner 14/10: điểm CÓ VIỆC lại có chấm ([Car3dHotspots.shows]) — chấm chỉ là dấu "nhấn được", đi theo bộ phận; cửa không chấm.
      */
     val shownBy: String? = null,
     /**
@@ -60,6 +60,17 @@ data class Car3dMaterialStyle(
     val blend: Boolean = false, val texture: String? = null, val emissive: List<Double>? = null,
     /** `KHR_materials_emissive_strength`: phát sáng × hệ số này (đèn sáng phải nổi trên thân dưới ánh nắng 55 k lux). */
     val emissiveStrength: Double = 1.0,
+    /**
+     * 3.1.5 — bản TRƠN khi KHÔNG gắn được [texture] cho một bộ phận (ảnh vắng ở đời đó · `attr` không phải UV · ảnh đen dưới UV
+     * của đèn — [Car3dMaterials.textured]). Nền 1,0 chỉ đúng khi nhân ảnh; `null` ⇒ [Car3dMaterials.NEUTRAL] (tối) — không bao giờ trắng.
+     */
+    val plain: Car3dMaterialStyle? = null,
+    /**
+     * 3.1.5 #45 — KHÔNG CHIẾU SÁNG (`KHR_materials_unlit`): màu ra = [rgba], không khuếch tán, KHÔNG PHẢN XẠ GƯƠNG. Cho mặt đen sâu
+     * "chỉ là chiều sâu" (mặt sơn chỉ thấy qua kính — [Car3dCabin]). Vật liệu PBR nền đen gần 0 vẫn giữ phản xạ điện môi F0 = 0,04
+     * (Fresnel → 1 ở góc sượt) ⇒ dưới nắng 55 k lux mặt trong khung kính sượt hiện thành vạch XÁM trung tính [ĐO máy ảo — diagnostics §14 #45].
+     */
+    val unlit: Boolean = false,
 )
 
 sealed class Car3dSource {
@@ -70,8 +81,8 @@ sealed class Car3dSource {
 data class Car3dModel(
     val id: String,
     val source: Car3dSource,
-    /** Yaw camera mặc định (độ, +: vòng sang trái xe) — 40° = ¾ trước-trái như ảnh tham chiếu owner. */
-    val yawDeg: Double = 40.0, val yawMin: Double = -120.0, val yawMax: Double = 200.0,
+    /** Yaw camera mặc định (độ, +: vòng sang trái xe) — 40° = ¾ trước-trái như ảnh tham chiếu owner. Xoay ngang không biên ([Car3dOrbit]). */
+    val yawDeg: Double = 40.0,
     val pitchDeg: Double = 16.0, val fovDeg: Double = 30.0, val zoom: Double = 0.78,
     /** Neo đầu/đuôi xe để [Car3dOrient] tự tìm chiều đầu xe; `null` ⇒ [frontSign]. */
     val front: Car3dAnchor? = null, val rear: Car3dAnchor? = null, val frontSign: Int = 1,
@@ -106,8 +117,16 @@ object Car3dCatalog {
      */
     private const val GLOW_WHITE = 4.0
     private const val GLOW_COLOR = 5.0
+    /**
+     * Phát sáng của bản TRƠN (không ảnh): ×4–5 trên là hệ số NHÂN ẢNH (ảnh đèn phần lớn tối ⇒ hiệu dụng ~1); không ảnh mà ×5 ⇒
+     * PBR-Neutral kẹp trắng (QA 14/10 [ĐO] đuôi Seal 90,8 % ≥ 250). Một chỗ: [Car3dMaterials.PLAIN_GLOW_MAX] (cũng kẹp ở [Car3dMaterials.plain]).
+     */
+    private const val GLOW_PLAIN = Car3dMaterials.PLAIN_GLOW_MAX
     /** Phát sáng nền của mâm (× ảnh mâm) — đủ nâng mép dưới, không làm mâm "tự phát sáng" (≪ đèn ×4–5). */
     private const val WHEEL_FILL = 0.8
+
+    /** Bản trơn của nẹp/chi tiết dùng ảnh (`texture*`) khi ảnh không gắn được — tối trung tính. */
+    private val TRIM_PLAIN = Car3dMaterialStyle(listOf(0.05, 0.05, 0.055, 1.0), roughness = 0.6)
 
     /** Sơn mặc định (trắng — `Car3DColor=white` của `config.csv` Seal); `:app` thay bằng [Car3dPaint] từ tệp của AVM. */
     val PAINT = Car3dMaterialStyle(listOf(0.86, 0.87, 0.89, 1.0), metallic = 0.1, roughness = 0.3)
@@ -160,30 +179,54 @@ object Car3dCatalog {
             "metal" to Car3dMaterialStyle(listOf(0.035, 0.035, 0.04, 1.0), metallic = 0.2, roughness = 0.45),
             // Ảnh vật liệu theo độ phủ UV [SUY — đo: tỉ lệ đỉnh rơi vào điểm ảnh không đen, bộ chạy thử 13/10]: lamp→car_lamp 0,98.
             // Vai đèn (trắng/đỏ đuôi/xi-nhan, tắt/sáng) suy bằng ĐO vị trí — [Car3dLamps]. Màu nền NHÂN ảnh đèn ⇒ giữ hoa văn LED.
-            Car3dLamps.WHITE to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.1, texture = LAMP_PNG),
-            Car3dLamps.WHITE_ON to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.1, texture = LAMP_PNG, emissive = listOf(1.0, 0.95, 0.85), emissiveStrength = GLOW_WHITE),
-            Car3dLamps.REAR to Car3dMaterialStyle(listOf(0.42, 0.03, 0.03, 1.0), roughness = 0.15, texture = LAMP_PNG),
-            Car3dLamps.REAR_ON to Car3dMaterialStyle(listOf(0.85, 0.05, 0.04, 1.0), roughness = 0.15, texture = LAMP_PNG, emissive = listOf(1.0, 0.03, 0.02), emissiveStrength = GLOW_COLOR),
-            Car3dLamps.TURN_ON to Car3dMaterialStyle(listOf(1.0, 0.5, 0.05, 1.0), roughness = 0.1, texture = LAMP_PNG, emissive = listOf(1.0, 0.42, 0.02), emissiveStrength = GLOW_COLOR),
+            // 3.1.5 — `plain` = bản khi ảnh đèn không gắn được (đời không có `car_lamp.png` · UV rơi vào vùng đen của ảnh — [ĐO SL6]):
+            // tắt = kính khói tối / đỏ sẫm; sáng = màu đèn + phát sáng (không nhân ảnh) — đèn chỉ sáng theo trạng thái, không trắng đặc.
+            Car3dLamps.WHITE to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.1, texture = LAMP_PNG,
+                plain = Car3dMaterialStyle(listOf(0.12, 0.12, 0.13, 1.0), roughness = 0.1)),
+            Car3dLamps.WHITE_ON to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.1, texture = LAMP_PNG, emissive = listOf(1.0, 0.95, 0.85), emissiveStrength = GLOW_WHITE,
+                plain = Car3dMaterialStyle(listOf(0.6, 0.6, 0.6, 1.0), roughness = 0.1, emissive = listOf(1.0, 0.95, 0.85), emissiveStrength = GLOW_PLAIN)),
+            Car3dLamps.REAR to Car3dMaterialStyle(listOf(0.42, 0.03, 0.03, 1.0), roughness = 0.15, texture = LAMP_PNG,
+                plain = Car3dMaterialStyle(listOf(0.3, 0.02, 0.02, 1.0), roughness = 0.15)),
+            Car3dLamps.REAR_ON to Car3dMaterialStyle(listOf(0.85, 0.05, 0.04, 1.0), roughness = 0.15, texture = LAMP_PNG, emissive = listOf(1.0, 0.03, 0.02), emissiveStrength = GLOW_COLOR,
+                plain = Car3dMaterialStyle(listOf(0.85, 0.05, 0.04, 1.0), roughness = 0.15, emissive = listOf(1.0, 0.03, 0.02), emissiveStrength = GLOW_PLAIN)),
+            Car3dLamps.TURN_ON to Car3dMaterialStyle(listOf(1.0, 0.5, 0.05, 1.0), roughness = 0.1, texture = LAMP_PNG, emissive = listOf(1.0, 0.42, 0.02), emissiveStrength = GLOW_COLOR,
+                plain = Car3dMaterialStyle(listOf(1.0, 0.5, 0.05, 1.0), roughness = 0.1, emissive = listOf(1.0, 0.42, 0.02), emissiveStrength = GLOW_PLAIN)),
+            // 3.1.5 [ĐO 10 lưới, SL6 = dải đèn đuôi + mép nắp cốp]: kính đèn đuôi `glasstail` — trước rơi vào xám 0,6 đục (gần trắng dưới
+            // nắng). Đỏ sẫm trong mờ: đèn tắt đọc như kính đỏ, bóng sáng bên dưới vẫn lộ. Kính che đèn pha `glasslamp`: trong, khói nhẹ.
+            Car3dMaterials.LENS_REAR to Car3dMaterialStyle(listOf(0.25, 0.015, 0.015, 0.8), roughness = 0.08, blend = true),
+            Car3dMaterials.LENS_CLEAR to Car3dMaterialStyle(listOf(0.05, 0.055, 0.06, 0.3), roughness = 0.05, blend = true),
+            // Sơn phụ `paint1` [ĐO em_3ui — 3 lưới]: bên vẽ chỉ tô `paint`/`open` ⇒ tối trung tính ánh nhẹ (không đoán màu phối).
+            Car3dMaterials.PAINT_ACCENT to Car3dMaterialStyle(listOf(0.06, 0.06, 0.065, 1.0), metallic = 0.1, roughness = 0.35),
+            Car3dMaterials.NEUTRAL_KEY to Car3dMaterials.NEUTRAL,
             // POLISH2: phát sáng KHAI SẴN = 0 (tắt) — bên vẽ đổi `emissiveFactor` khi đèn đọc bật (nội thất hắt sáng ấm, Car3dRenderer.glow).
-            "interior" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.7, texture = "car_texture1.png", emissive = listOf(0.0, 0.0, 0.0)),
-            "texture" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.6, texture = "car_texture.png"),
-            "texture1" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.7, texture = "car_door.png"),
-            "texture2" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.7, texture = "car_control.png"),
-            "texture3" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.6, texture = "car_texture.png"),
+            // 3.1.5 [ĐO]: `car_texture1.png` chỉ có ở eke/paha; SL6 `interior` còn không mang UV (u tới 2 252) ⇒ bản trơn đen sâu như
+            // khoang Seal (ảnh Seal dưới UV nội thất: độ sáng TB 46/255), GIỮ `emissiveFactor` khai (đèn đọc hắt sáng vẫn đổi được).
+            "interior" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.7, texture = "car_texture1.png", emissive = listOf(0.0, 0.0, 0.0),
+                plain = Car3dMaterialStyle(listOf(0.045, 0.045, 0.05, 1.0), roughness = 0.7, emissive = listOf(0.0, 0.0, 0.0))),
+            "texture" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.6, texture = "car_texture.png", plain = TRIM_PLAIN),
+            "texture1" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.7, texture = "car_door.png", plain = TRIM_PLAIN),
+            "texture2" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.7, texture = "car_control.png", plain = TRIM_PLAIN),
+            "texture3" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.6, texture = "car_texture.png", plain = TRIM_PLAIN),
             // POLISH2 (owner 13/10 *"mâm xe phía dưới mất màu, nan hoa màu đen"*): [ĐO] ảnh mâm áp ĐÚNG (độ sáng TB nửa trên 61 · nửa dưới
             // 63 trên ảnh theo UV đã lật); gốc tối = kim loại 0,3 dưới đèn chỉ có SH khuếch tán (không bản đồ phản chiếu) ⇒ phần
             // kim loại mất phần khuếch tán, nửa dưới (pháp tuyến chúi xuống, khuất nắng) thành đen. Mâm vẽ ĐIỆN MÔI (kim loại 0).
             // R28 (owner 13/10 "mép vành dưới tối hơn mép trên", ĐO ~65 vs ~172): mặt chúi xuống của mâm chỉ nhận đèn dội ⇒ thêm phát sáng
             // YẾU nhân chính ảnh mâm (cùng khuôn `emissiveTexture` của đèn) — cộng đều một nền sáng cho mọi hướng mặt, giữ hoa văn nan/lốp.
+            // 3.1.5: hc/sa20/stf không có `wheel_texture.png` [ĐO] ⇒ trước là mâm trắng tự phát sáng; bản trơn = mâm xám tối, không phát sáng.
             "wheel" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), metallic = 0.0, roughness = 0.5, texture = "wheel_texture.png",
-                emissive = listOf(1.0, 1.0, 1.0), emissiveStrength = WHEEL_FILL),
+                emissive = listOf(1.0, 1.0, 1.0), emissiveStrength = WHEEL_FILL,
+                plain = Car3dMaterialStyle(listOf(0.1, 0.1, 0.11, 1.0), metallic = 0.0, roughness = 0.45)),
             // Bánh của đời khác tách vành/lốp [ĐO `wheel.mesh` hc/sa20/stf/hx/paha]: `wheel*_metal` · `*_tire` · `metal_black`.
             "tire" to Car3dMaterialStyle(listOf(0.03, 0.03, 0.03, 1.0), roughness = 0.85),
             "metal_black" to Car3dMaterialStyle(listOf(0.08, 0.08, 0.09, 1.0), metallic = 0.0, roughness = 0.45),
             // POLISH2 — khoang cốp tổng hợp ([Car3dLid.CAVITY]). Owner 13/10: *"trong lòng cốp chỉ làm 1 màu thôi, đen luôn sâu vào cho
             // giống cốp"* ⇒ MỘT màu đen sâu (≈ #050505), nhám hoàn toàn, không phát sáng — đọc như chiều sâu, không chi tiết.
             Car3dLid.CAVITY to Car3dMaterialStyle(listOf(0.0015, 0.0015, 0.0015, 1.0), roughness = 1.0),
+            // Owner 14/10 *"trong kính chỗ đó phải cho đen luôn, trên xe không có khung cửa xe màu đỏ"*: mặt sơn chỉ thấy QUA KÍNH
+            // ([Car3dCabin]) — cùng đen sâu nhám của khoang, không theo màu sơn (bên vẽ chỉ tô `paint`/`open`).
+            // 3.1.5 #45 [ĐO máy ảo]: vạch xám đôi trong khung kính trước-phải = phản xạ gương (F0 0,04, Fresnel góc sượt) của CHÍNH các
+            // mặt này ⇒ không chiếu sáng: đen sâu ở mọi hướng nắng/góc nhìn.
+            Car3dCabin.MATERIAL to Car3dMaterialStyle(listOf(0.0015, 0.0015, 0.0015, 1.0), roughness = 1.0, unlit = true),
         ),
         uvOriginBottom = true,
         partStyles = listOf(

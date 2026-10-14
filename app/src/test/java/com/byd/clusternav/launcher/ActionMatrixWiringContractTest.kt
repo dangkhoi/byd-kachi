@@ -120,7 +120,8 @@ class ActionMatrixWiringContractTest {
         val zone = SourceRoots.body(compact, "private fun zoneView(")
         assertFalse(zone.contains("background") || zone.contains("ripple("), "vùng chạm còn nền nhấn (mảng xanh): $zone")
         assertTrue(zone.contains("levels.pulse(p)"), "phản hồi chạm = chấm nảy")
-        assertTrue(SourceRoots.body(compact, "private fun barButton(").contains("GradientDrawable.OVAL"), "nút chân: sóng chỉ trong đĩa tròn")
+        assertTrue(SourceRoots.body(compact, "private fun barButton(").contains("KachiButtonInks.background()") &&
+            SourceRoots.body(code("KachiButtonInks.kt"), "fun background(").contains("GradientDrawable.OVAL"), "nút chân: sóng chỉ trong đĩa tròn")
         // Đặt tường minh dùng CÙNG hàm ghi với cú chạm ô — không đường HAL thứ hai.
         val toggle = SourceRoots.body(code("ControlTileFactory.kt"), "private fun tileToggle(")
         assertTrue(toggle.contains("tile.setOnClickListener { write(!state.isOn(def.id)) }") && toggle.contains("setter { write(it > 0) }"), toggle)

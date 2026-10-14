@@ -38,9 +38,13 @@ internal object WallDefault {
             ?: return null.also { shown.recycle() }
         val px = IntArray(w * h)
         blurred.getPixels(px, 0, w, 0, 0, w, h)
+        // R29: ảnh hiện = ảnh "mờ" (nền chỉ có chuyển sắc mượt) ⇒ MỘT lưới hộp màu cho cả hai lớp; phủ trọn màn, không làm tối.
+        val field = LumaField.of(px, w, h)
         val art = WallArt(
             blurred, WallArtBuilder.SCALE, WallArtBuilder.COLS, WallArtBuilder.ROWS,
             WallArtBuilder.luminanceGrid(px, w, h), DominantColors.of(px, 3), screenW, screenH,
+            sharp = field, sharpDst = android.graphics.Rect(0, 0, screenW, screenH), sharpScale = w.toDouble() / screenW,
+            glass = field, dimPercent = 0,
         )
         return shown to art
     }

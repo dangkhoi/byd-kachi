@@ -91,12 +91,12 @@ object CameraViewMode {
     /** Kiểu lấy **trọn dải** làm nội dung (vùng cắt nội dung ≠ vùng cắt khung được). */
     fun fullView(mode: String): Boolean = mode == WIDE || mode == FISHEYE
 
-    /**
-     * Hình KHUNG thật sự dùng: *Theo cụm* + kiểu trọn dải ⇒ [CameraSignalPolicy.SHAPE_RECT] — bám đường cong kính
-     * là PHẢI phóng rồi cắt ([CameraClusterBand.place]), trái với lời hứa "thấy hết" (spec R7). Kiểu khác ⇒ y nguyên.
-     */
-    fun frameShape(mode: String, shape: String): String =
-        if (fullView(mode) && shape == CameraSignalPolicy.SHAPE_CLUSTER) CameraSignalPolicy.SHAPE_RECT else shape
+    // ⚠ 3.1.5 · CAMERA-STYLE-CLUSTER-RECT: hàm `frameShape(mode, shape)` (2.92 spec R7 — *Theo cụm* + kiểu trọn dải ⇒ ÉP
+    // chữ nhật) ĐÃ GỠ. [ĐO log xe 06/10–14/10] mọi phiên đều `kiểu=WIDE` ⇒ người lái chọn *Theo cụm* thì KHÔNG BAO GIỜ
+    // thấy theo cụm, mà chip vẫn sáng *Theo cụm* (silent-wrong). Owner 27/09 *"user vẫn có thể chọn chữ nhật/tròn/theo
+    // cụm nhé, không ép"* + 14/10 *"chọn … theo cụm nó vẫn chữ nhật"* ⇒ hình khung = ĐÚNG lựa chọn, ở MỌI kiểu hình.
+    // Cái giá (phóng-cắt ~18 % để bám cong) là cái giá owner đã chốt cho *Theo cụm* (KDoc [CameraClusterBand.place]).
+    // Bài khoá: `CameraViewPlanTest.theo cum giu theo cum o moi kieu`. Không thêm lại một phép ép hình ở đây.
 
     // ── THU PHÓNG (`camera_zoom`) — % tuyệt đối, MỘT khoá cho cả ba kiểu ────────────────────────────────────────
 

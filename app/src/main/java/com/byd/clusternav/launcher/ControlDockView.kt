@@ -78,6 +78,7 @@ class ControlDockView(
         background = KachiChrome.fade(GradientDrawable().apply {
             cornerRadius = dpi(ui, Sp.RADIUS_XL).toFloat(); setColor(c(KachiTheme.BAR))
         })
+        AdaptiveInk.fill(this) { intArrayOf(c(KachiTheme.BAR)) }   // R29 T29-7: mặt thanh nút = BAR × độ đục chung
         rebuild()
     }
 

@@ -282,6 +282,8 @@
     <string name="kachi_slot_close_app">Close the slot %1$d app</string>
     <string name="kachi_slot_close_widget">Close the slot %1$d widget</string>
     <string name="kachi_slot_close_confirm">Tap again to close</string>
+    <string name="kachi_slot_expand">Expand slot %1$d</string>
+    <string name="kachi_slot_collapse">Restore slot %1$d</string>
     <string name="kachi_slot_close_failed">Couldn\'t close %1$s</string>
     <string name="kachi_slot_head_autohide_title">Auto-hide the ⇄ button</string>
     <string name="kachi_slot_head_autohide_sub">The app/widget switch on each frame hides for a cleaner screen; tap a frame (or any empty spot) to show it for a few seconds</string>

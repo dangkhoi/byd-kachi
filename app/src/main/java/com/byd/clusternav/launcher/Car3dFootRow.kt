@@ -2,9 +2,6 @@ package com.byd.clusternav.launcher
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.ColorStateList
-import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.RippleDrawable
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
@@ -33,6 +30,10 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * Ô ẩn nhận số đọc ở [fill] (mã nút vào [CarDataDemand.HOSTED] ⇒ vòng poll đọc `readState` khi widget có trên màn).
  *
  * Không đủ ngang ([Car3dHero.fits], bề rộng ĐO) ⇒ ẩn HAI bộ chỉnh trước, giữ ba nút kính + lấy gió — không bao giờ đè nhau.
+ *
+ * 3.1.5 R29 T29-6 — [ĐO máy ảo 14/10] Sáng: chữ 1,16 · icon 1,02 (mực một hằng trên ảnh nền xe). Nay hàng là một mặt không lớp
+ * riêng ([inkRegion]) ⇒ số nhiệt/gió + icon gió giải trên nền dưới CHÍNH hàng (ảnh nền xe — không cộng màu sơn: xe không vẽ
+ * xuống chân); mỗi đĩa tự chọn mực theo nền dưới nó ([KachiButtonInks.adapt]).
  */
 @SuppressLint("ViewConstructor")
 internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<View>) : ViewGroup(context) {
@@ -48,6 +49,7 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
     private val groups = ArrayList<View>()
 
     init {
+        inkRegion("car3d-foot")   // R29 T29-6
         stepper("temp", null)?.let { steppers += it; groups += it }
         groups += LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
@@ -69,7 +71,7 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
         val nudge = t.nudge ?: return null
         val shown = TextView(context).apply {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiWidgetType.VALUE_SP + 2f); typeface = KachiWidgetType.heroFace
-            setTextColor(c(KachiTheme.INK)); gravity = Gravity.CENTER; maxLines = 1; minWidth = value
+            AdaptiveInk.text(this, KachiTheme.INK); gravity = Gravity.CENTER; maxLines = 1; minWidth = value   // R29 T29-6
             text = t.value?.text
             contentDescription = def.displayLabel
         }
@@ -99,7 +101,7 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
         recircIcon = img
         // Bọc như các nhóm khác: hàng đo con theo CAO HÀNG (EXACTLY) ⇒ đĩa đặt thẳng sẽ thành bầu dục, icon lệch khỏi vòng.
         val box = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
-        box.addView(disc(img).apply {
+        box.addView(disc(img, glyph = false).apply {
             contentDescription = def.displayLabel
             setOnClickListener {
                 val on = !ControlTileState.shared.isOn(RECIRC)
@@ -119,26 +121,30 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
         val name = CapabilityIcons.forState(CYCLE, if (inner) 1 else 0) ?: return
         val r = KachiIcons.res(name, Sp.ICON_M)
         if (r != 0 && img.tag != r) { img.setImageResource(r); img.tag = r }
-        KachiIcons.tint(img, Sp.ICON_M, inner, if (inner) KachiTheme.ACCENT_INK else KachiTheme.ICON)
+        val ink = KachiButtonInks.at(img.parent as? View ?: img)   // R29: mực của CHÍNH đĩa này (đo theo nền dưới nó)
+        KachiIcons.tint(img, Sp.ICON_M, inner, if (inner) ink.glyphOn else ink.glyph)
         (img.parent as? View)?.isActivated = inner
     }
 
     /** Đổ số xe vào các ô ẩn (đọc lại thật) rồi vẽ lại hình lấy gió. */
     fun fill(d: WidgetData) { hidden.forEach { it.refresh(d.car) }; drawRecirc() }
 
-    /** Nút tròn cùng dáng chân bảng Kính 2D / ba nút kính (đĩa mực 8 %, sóng nhấn). */
-    private fun disc(child: View): FrameLayout = FrameLayout(context).apply {
-        val oval = { color: Int -> GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) } }
-        background = RippleDrawable(ColorStateList.valueOf(ColorMath.withAlpha(c(KachiTheme.ACCENT), RIPPLE_ALPHA)),
-            oval(ColorMath.withAlpha(c(KachiTheme.INK), REST_ALPHA)), oval(c(KachiTheme.INK)))
+    /**
+     * Nút tròn cùng dáng chân bảng Kính 2D / ba nút kính — mực đĩa/glyph theo bảng ([KachiButtonInks]), sóng nhấn. R29: đĩa/glyph
+     * theo nền ĐO dưới nút ([KachiButtonInks.adapt]); [glyph] = `false` ⇒ con tự tô (icon lấy gió — vẽ lại qua [drawRecirc]).
+     */
+    private fun disc(child: View, glyph: Boolean = true): FrameLayout = FrameLayout(context).apply {
+        background = KachiButtonInks.background()
         addView(child, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.CENTER))
         isClickable = true; isFocusable = true; minimumWidth = touch; minimumHeight = touch
+        if (glyph) KachiButtonInks.adapt(this, child) else KachiButtonInks.adapt(this, null) { drawRecirc() }
     }
 
     /** −/+ nét mảnh (chữ LIGHT), đĩa như nút kính. */
     private fun sign(s: String, say: String, onTap: () -> Unit): View = disc(TextView(context).apply {
         text = s; gravity = Gravity.CENTER; typeface = KachiWidgetType.heroFace
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiWidgetType.VALUE_SP + 4f); setTextColor(c(KachiTheme.ICON))
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiWidgetType.VALUE_SP + 4f); setTextColor(KachiButtonInks.glyphTint())
+        isDuplicateParentStateEnabled = true
     }).apply { contentDescription = say; setOnClickListener { onTap() } }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -164,7 +170,5 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
         const val TAG = "Car3d"
         const val RECIRC = "recirc"
         const val CYCLE = "ac_cycle"
-        const val RIPPLE_ALPHA = 0x33
-        const val REST_ALPHA = 0x14
     }
 }

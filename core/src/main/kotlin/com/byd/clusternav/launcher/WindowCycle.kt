@@ -32,6 +32,21 @@ object WindowCycle {
         else -> HALF
     }
 
+    /**
+     * 3.1.5 — CHẠM ĐÚP mở hẳn (owner 14/10 *"double click thì mở all được ko"*). Cú chạm ĐƠN không bị hoãn (gửi ngay bước [next]);
+     * cú chạm thứ hai lên CÙNG kính trong thời hạn chạm đúp ([isDouble]) ⇒ đích [FULL] thay cho bước kế của vòng. Đích lạc quan
+     * [pending] (cú trước vừa gửi) đã là [FULL] ⇒ `null` = không gửi thêm gì (kính đã/đang mở hẳn). Kết quả cuối luôn là mở hẳn: từ
+     * đóng ⇒ 50 rồi 100 (xe nhận thêm đúng một lệnh); từ 50 ⇒ 100 rồi thôi; từ mở hẳn ⇒ cú đầu gửi đóng, cú hai trả về mở hẳn.
+     */
+    fun tapTarget(level: Int?, double: Boolean, pending: Int?): Int? = when {
+        !double -> next(level)
+        pending == FULL -> null
+        else -> FULL
+    }
+
+    /** Cú chạm lúc [now] (ms) có phải cú thứ hai của một chạm đúp (cú trước lúc [last], thời hạn [timeoutMs]). */
+    fun isDouble(last: Long?, now: Long, timeoutMs: Long): Boolean = last != null && now >= last && now - last <= timeoutMs
+
     /** Một lệnh: bật/tắt ô [action]. */
     data class Step(val action: GroupActionCell, val on: Boolean)
 

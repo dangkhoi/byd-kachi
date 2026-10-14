@@ -45,6 +45,21 @@ class Car3dMathTest {
     }
 
     @Test
+    fun `xoay khong doi co xe - khoang cach co dinh, du vua khung o moi goc`() {
+        // owner 14/10: "khi xoay … cứ thu nhỏ phóng to cái xe" ⇒ khoảng cách không phụ thuộc yaw/pitch hiện tại.
+        val b = Car3dBounds(V3(0.0, 0.7, 0.1), V3(1.07, 0.74, 2.39))   // hộp xe Seal [ĐO log xe 14/10]
+        val d = Car3dMath.steadyDistance(b, 30.0, 1882, 800, Car3dOrbit.PITCH_MIN, Car3dOrbit.PITCH_MAX)
+        assertEquals(d, Car3dMath.steadyDistance(b, 30.0, 1882, 800, Car3dOrbit.PITCH_MIN, Car3dOrbit.PITCH_MAX), 0.0)
+        var y = 0.0
+        while (y < 360.0) {
+            for (p in listOf(Car3dOrbit.PITCH_MIN, Car3dOrbit.PITCH_MAX)) {
+                assertTrue(d + 1e-9 >= Car3dMath.fitDistance(b, V3.ZERO, y, p, 30.0, 1882, 800), "góc $y/$p bị cắt")
+            }
+            y += 7.0
+        }
+    }
+
+    @Test
     fun `xe vua khung theo goc hep hon`() {
         val b = Car3dBounds(V3.ZERO, V3(1.0, 1.0, 1.0))
         val wide = Car3dMath.frameDistance(b, 30.0, 1600, 800, 1.0)
@@ -54,35 +69,45 @@ class Car3dMathTest {
     }
 
     @Test
-    fun `xoay co gioi han, quan tinh tat dan va dung o bien`() {
-        var o = Car3dOrbit(40.0, 0.0, -120.0, 200.0)
+    fun `xoay tron tu do - keo qua bien cu van di tiep, yaw vong qua 360 do, quan tinh khong dung o bien`() {
+        // Owner 14/10 "cho xoay tròn": biên cũ −120..200° kẹp kéo/quán tính ⇒ chỉ tới "max trái" rồi phải quay ngược. Khoá: không còn biên.
+        var o = Car3dOrbit(40.0, 0.0)
         o = o.drag(-400f, 800)   // kéo sang TRÁI nửa khung ⇒ +100°
         assertEquals(140.0, o.yaw, 1e-9)
-        assertEquals(200.0, o.drag(-8000f, 800).yaw, 1e-9)   // kẹp biên
-        o = Car3dOrbit(0.0, 0.0, -120.0, 200.0).fling(-800f, 800)
+        assertEquals(-140.0, o.drag(-320f, 800).yaw, 1e-9)    // 140 + 80 = 220 ≡ −140 (biên cũ 200 đã kẹp ở đây)
+        assertEquals(-120.0, Car3dOrbit(40.0, 0.0).drag(-8000f, 800).yaw, 1e-9)   // 40 + 2000 = 2040 = 5 vòng + 240 ≡ −120
+        assertEquals(120.0, Car3dOrbit(-100.0, 0.0).drag(560f, 800).yaw, 1e-9)    // chiều kia qua biên cũ −120: −100 − 140 = −240 ≡ 120
+        // Nhiều vòng một chiều: yaw luôn trong (−180, 180], không trôi số.
+        var w = Car3dOrbit(40.0, 0.0)
+        repeat(500) { w = w.drag(-300f, 800) }   // +75° mỗi lần ⇒ 37 500° tổng
+        assertTrue(w.yaw > -180.0 && w.yaw <= 180.0, "yaw ${w.yaw}")
+        assertEquals(Car3dOrbit.wrap(40.0 + 500 * 75.0), w.yaw, 1e-6)
+        // Quán tính qua biên cũ (195° + 300°/s) KHÔNG dừng ở 200°.
+        val past = Car3dOrbit(195.0, 300.0).step(0.1)
+        assertTrue(past.moving); assertEquals(Car3dOrbit.wrap(225.0), past.yaw, 1e-9)
+        o = Car3dOrbit(0.0, 0.0).fling(-800f, 800)
         assertTrue(o.moving)
         repeat(200) { o = o.step(1.0 / 24) }
         assertFalse(o.moving)
-        assertTrue(o.yaw in 0.0..200.0)
-        val hit = Car3dOrbit(195.0, 300.0, -120.0, 200.0).step(0.1)
-        assertEquals(200.0, hit.yaw, 1e-9); assertFalse(hit.moving)
+        assertTrue(o.yaw > -180.0 && o.yaw <= 180.0)
+        assertEquals(180.0, Car3dOrbit.wrap(-180.0), 1e-9); assertEquals(0.0, Car3dOrbit.wrap(720.0), 1e-9)
     }
 
     @Test
     fun `nghieng len xuong - keo doc doi goc ngang, keo cheo ca hai, quan tinh hai truc, kep bien`() {
-        var o = Car3dOrbit(40.0, 0.0, -120.0, 200.0, pitch = 16.0)
+        var o = Car3dOrbit(40.0, 0.0, pitch = 16.0)
         o = o.drag(0f, 400f, 800, 800)   // kéo XUỐNG nửa khung ⇒ camera lên +45°
         assertEquals(61.0, o.pitch, 1e-9); assertEquals(40.0, o.yaw, 1e-9)
         assertEquals(Car3dOrbit.PITCH_MAX, o.drag(0f, 8000f, 800, 800).pitch, 1e-9)
         assertEquals(Car3dOrbit.PITCH_MIN, o.drag(0f, -8000f, 800, 800).pitch, 1e-9)
-        val diag = Car3dOrbit(40.0, 0.0, -120.0, 200.0, pitch = 16.0).drag(-80f, 80f, 800, 800)
+        val diag = Car3dOrbit(40.0, 0.0, pitch = 16.0).drag(-80f, 80f, 800, 800)
         assertEquals(60.0, diag.yaw, 1e-9); assertEquals(25.0, diag.pitch, 1e-9)
-        var f = Car3dOrbit(40.0, 0.0, -120.0, 200.0, pitch = 16.0).fling(0f, 600f, 800, 800)
+        var f = Car3dOrbit(40.0, 0.0, pitch = 16.0).fling(0f, 600f, 800, 800)
         assertTrue(f.moving)
         repeat(200) { f = f.step(1.0 / 24) }
         assertFalse(f.moving); assertTrue(f.pitch in Car3dOrbit.PITCH_MIN..Car3dOrbit.PITCH_MAX); assertTrue(f.pitch > 16.0)
         // Chạm biên ngẩng ⇒ trục ngẩng dừng, trục xoay vẫn quán tính.
-        val hit = Car3dOrbit(40.0, 100.0, -120.0, 200.0, pitch = 64.0, pitchVelocity = 300.0).step(0.1)
+        val hit = Car3dOrbit(40.0, 100.0, pitch = 64.0, pitchVelocity = 300.0).step(0.1)
         assertEquals(Car3dOrbit.PITCH_MAX, hit.pitch, 1e-9); assertEquals(0.0, hit.pitchVelocity); assertTrue(hit.moving)
     }
 

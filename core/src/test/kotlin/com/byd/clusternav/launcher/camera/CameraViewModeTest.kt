@@ -44,15 +44,8 @@ class CameraViewModeTest {
         assertEquals(CameraViewMode.FISHEYE, CameraViewMode.effective(CameraViewMode.WIDE, "rác"), "mã kết xuất lạ ⇒ TV")
     }
 
-    @Test fun `Theo cum o kieu tron dai ve chu nhat, con lai giu nguyen`() {
-        val cluster = CameraSignalPolicy.SHAPE_CLUSTER
-        assertEquals(CameraSignalPolicy.SHAPE_RECT, CameraViewMode.frameShape(CameraViewMode.FISHEYE, cluster))
-        assertEquals(CameraSignalPolicy.SHAPE_RECT, CameraViewMode.frameShape(CameraViewMode.WIDE, cluster))
-        assertEquals(cluster, CameraViewMode.frameShape(CameraViewMode.STRAIGHT, cluster), "Nắn thẳng y nguyên")
-        CameraSignalPolicy.SHAPES.filter { it != cluster }.forEach {
-            CameraViewMode.MODES.forEach { m -> assertEquals(it, CameraViewMode.frameShape(m, it)) }
-        }
-    }
+    // 3.1.5 · CAMERA-STYLE-CLUSTER-RECT: bài `Theo cum o kieu tron dai ve chu nhat` (khoá phép ép R7) đã gỡ CÙNG hàm
+    // `CameraViewMode.frameShape`. Hành vi mới (hình khung = lựa chọn, mọi kiểu) khoá ở `CameraViewPlanTest`.
 
     @Test fun `thu phong 50 den 150 buoc 5, nac va phan tram khu hoi`() {
         assertEquals(20, CameraViewMode.ZOOM_POSITIONS)

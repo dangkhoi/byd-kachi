@@ -18,7 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 class CastFreeformGeometryTest : SimpleCastCoordinatorHarness() {
 
     private fun fixture(name: String): String =
-        requireNotNull(javaClass.getResourceAsStream("/diagnostics/oncar-2026-10-13/$name")) { "thiếu fixture $name" }
+        requireNotNull(javaClass.getResourceAsStream("/diagnostics/cluster-freeform-2026-10-13/$name")) { "thiếu fixture $name" }
             .bufferedReader().readText()
 
     /** Dòng cấu hình stack cụm NGUYÊN VĂN từ `01-read.txt` (dòng 40, stack ClusterBlack trên display 1). */

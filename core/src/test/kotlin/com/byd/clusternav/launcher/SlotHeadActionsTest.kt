@@ -55,17 +55,34 @@ class SlotHeadActionsTest {
     @Test
     fun `BEHIND-HOME da tat thi o app mat nut chay nen, giu nut tat`() {
         assertEquals(listOf(Button.SWAP, Button.CLOSE), SlotHeadActions.of(Kind.APP, Projector.VD, channel = true, behind = false))
-        assertEquals(setOf(Button.BACKGROUND, Button.CLOSE), SlotHeadActions.possible(Kind.APP, Projector.VD), "vẫn DỰNG nút (BEHIND-HOME có thể bật lại ở tiến trình sau)")
+        // R30 — ĐỔI GHIM có lý do: tập dựng nay có thêm *Bung to*.
+        assertEquals(setOf(Button.BACKGROUND, Button.CLOSE, Button.EXPAND), SlotHeadActions.possible(Kind.APP, Projector.VD), "vẫn DỰNG nút (BEHIND-HOME có thể bật lại ở tiến trình sau)")
     }
 
+    /**
+     * R30 (owner 14/10) — ĐỔI GHIM có lý do: tập "có thể dựng" nay gồm nút *Bung to* ([Button.EXPAND]) cho ô có thứ để bung
+     * (widget sống · ô App vẽ trong khung — màn ảo hoặc ActivityView). Ô trống, ô App không bộ chiếu, widget chết: như cũ.
+     */
     @Test
     fun `nut can dung cho moi loai o - khong bao gio dung nut ngoai tap`() {
         assertEquals(emptySet<Button>(), SlotHeadActions.possible(Kind.EMPTY, Projector.VD))
-        assertEquals(setOf(Button.BACKGROUND, Button.CLOSE), SlotHeadActions.possible(Kind.APP, Projector.VD))
-        assertEquals(emptySet<Button>(), SlotHeadActions.possible(Kind.APP, Projector.ACTIVITY_VIEW), "ROM ký nền tảng: chưa có id màn ảo")
+        assertEquals(setOf(Button.BACKGROUND, Button.CLOSE, Button.EXPAND), SlotHeadActions.possible(Kind.APP, Projector.VD))
+        assertEquals(setOf(Button.EXPAND), SlotHeadActions.possible(Kind.APP, Projector.ACTIVITY_VIEW), "ROM ký nền tảng: chưa có id màn ảo — chỉ bung được")
         assertEquals(emptySet<Button>(), SlotHeadActions.possible(Kind.APP, Projector.NONE))
-        listOf(Kind.WIDGET, Kind.APPWIDGET_LIVE, Kind.APPWIDGET_DEAD).forEach { k ->
-            Projector.values().forEach { p -> assertEquals(setOf(Button.CLOSE), SlotHeadActions.possible(k, p), "$k · $p") }
+        listOf(Kind.WIDGET, Kind.APPWIDGET_LIVE).forEach { k ->
+            Projector.values().forEach { p -> assertEquals(setOf(Button.CLOSE, Button.EXPAND), SlotHeadActions.possible(k, p), "$k · $p") }
         }
+        Projector.values().forEach { p -> assertEquals(setOf(Button.CLOSE), SlotHeadActions.possible(Kind.APPWIDGET_DEAD, p), "widget chết · $p") }
+    }
+
+    /** R30 — nút bung đứng NGOÀI CÙNG bên phải, chỉ khi bố cục ≥ 2 ô; không cần kênh (đổi khung, 0 lệnh). */
+    @Test
+    fun `R30 nut bung o ben phai, chi khi nhieu o, khong can kenh`() {
+        assertEquals(listOf(Button.BACKGROUND, Button.SWAP, Button.CLOSE, Button.EXPAND), SlotHeadActions.of(Kind.APP, Projector.VD, true, true, multi = true))
+        assertEquals(listOf(Button.SWAP, Button.EXPAND), SlotHeadActions.of(Kind.APP, Projector.VD, channel = false, behind = true, multi = true))
+        assertEquals(listOf(Button.SWAP, Button.CLOSE, Button.EXPAND), SlotHeadActions.of(Kind.WIDGET, Projector.NONE, false, false, multi = true))
+        assertEquals(listOf(Button.SWAP, Button.CLOSE), SlotHeadActions.of(Kind.WIDGET, Projector.NONE, false, false, multi = false), "bố cục 1 ô")
+        assertEquals(listOf(Button.SWAP), SlotHeadActions.of(Kind.EMPTY, Projector.NONE, true, true, multi = true))
+        assertEquals(listOf(Button.SWAP), SlotHeadActions.of(Kind.APP, Projector.NONE, true, true, multi = true), "thẻ Chạm để mở: không có gì để bung")
     }
 }

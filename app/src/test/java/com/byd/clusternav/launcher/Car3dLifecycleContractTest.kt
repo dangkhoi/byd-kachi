@@ -18,6 +18,31 @@ class Car3dLifecycleContractTest {
     private val source = src("Car3dModelSource.kt")
 
     @Test
+    fun `be mat dung lai cung co thi van xin khung - tat bat man khong mat xe`() {
+        // [ĐO máy ảo 14/10, 2/2] tắt/bật màn ⇒ swap chain mới, cùng cỡ ⇒ không onResized ⇒ xe không vẽ tới khi vuốt.
+        val body = renderer.substringAfter("override fun onNativeWindowChanged(").substringBefore("override fun onDetachedFromSurface")
+        assertTrue(body.contains("createSwapChain(") && body.indexOf("onSize(") > body.indexOf("createSwapChain("), "swap chain mới ⇒ xin khung")
+    }
+
+    @Test
+    fun `cua so hien lai thi xin mot dot khung - tat bat man khong goi onVisibilityAggregated`() {
+        // [ĐO máy ảo 14/10, 3/3 sau vá] tắt/bật màn: không vis-aggregated, không đổi bề mặt; chỉ có onWindowVisibilityChanged.
+        // PERF 3.1.5: hai sự kiện độ hiện đi qua MỘT cổng [syncLive] — hiện lại (renderer còn) ⇒ xin khung; khuất ⇒ nhả (bài `Car3dLiveGateContractTest`).
+        val body = widget.substringAfter("override fun onWindowVisibilityChanged(").substringBefore("override fun ") +
+            widget.substringAfter("private fun syncLive()").substringBefore("\n    }\n")
+        assertTrue(body.contains("VISIBLE") && body.contains("syncLive()") && body.contains("requestFrames("), "cửa sổ hiện ⇒ xin khung")
+    }
+
+    @Test
+    fun `hop tu the cua kinh khong theo phan kinh da tut - cham va dich o lai o kinh`() {
+        // 3.1.5 [ĐO máy ảo 14/10] `win-lr` 100 % ⇒ chấm y 412 px trên da cửa (cửa 466): hộp tư thế cộng độ trượt kính ⇒ đích chạm
+        // + chấm đi xuống theo phần kính đã khuất trong cửa. Hộp tư thế chỉ gồm bản lề.
+        val body = renderer.substringAfter("private fun nodeBox(").substringBefore("\n    }\n")
+        assertFalse(body.contains("slideOf"), "nodeBox không được cộng độ trượt kính")
+        assertTrue(body.contains("swingOf"), "vẫn theo bản lề (cửa/nắp mở)")
+    }
+
+    @Test
     fun `khong goi Box set - native nSet abort ca HOME`() {
         // [ĐO máy ảo 13/10 19:43] Box.set → static native nSet ⇒ "JNI DETECTED ERROR … invalid jobject" ⇒ tiến trình chết.
         // nUnionSelf / nTranslateTo cùng dạng static-native-trả-jobject ⇒ cấm luôn. Đọc hộp bằng getter/getAxisAlignedBoundingBox.

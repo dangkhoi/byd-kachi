@@ -44,18 +44,24 @@ class BubbleGestureContractTest {
     @Test
     fun `dispatcher tap toggles full via the pure planner`() {
         val onTap = body(dispatcher, "fun onTap()")
-        assertTrue(onTap.contains("BubbleGesturePlanner.tapOutcome(coordinator.state)"), "tap reads the planner outcome")
+        assertTrue(onTap.contains("BubbleGesturePlanner.tapOutcome(state, foreground)"), "tap reads the planner outcome WITH the foreground (R31)")
+        assertTrue(onTap.contains("BubbleGesturePlanner.tapNeedsForeground(state)"), "probes the foreground only when the outcome depends on it")
+        assertTrue(onTap.contains("dismissPip = state is SimpleCastState.Idle"), "casting ⇒ read-only probe (no PiP removal on a tap that may only return)")
         assertTrue(onTap.contains("SimpleCastIntent.Stop()"), "RETURN → slot-less Stop (return to gauges)")
-        assertTrue(onTap.contains("detectForeground(coordinator) ?: return"), "CAST_FULL bails on the launcher guard")
+        assertTrue(onTap.contains("foreground ?: return toastLauncherGuard()"), "CAST_FULL bails on the launcher guard")
         assertTrue(onTap.contains("SimpleCastIntent.CastFull("), "CAST_FULL casts the foreground full")
+        assertTrue(onTap.contains("BubbleTapOutcome.REPLACE_FULL") && onTap.contains("replacingToast(pkg)"),
+            "R31: REPLACE_FULL dispatches CastFull (coordinator returns the old app first) with the replacing toast")
     }
 
     @Test
     fun `dispatcher preserves the Wave-1 launcher exclusion guard`() {
-        val detect = body(dispatcher, "private fun detectForeground(")
+        val detect = body(dispatcher, "private fun castableForeground(")
         assertTrue(detect.contains("homePackages()"), "unions the full CATEGORY_HOME resolver list")
         assertTrue(detect.contains("AppMover.isLauncher(foreground)"), "also rejects dudu/launcher by name")
-        assertTrue(detect.contains("Không cast màn hình chính"), "posts the won't-cast-home toast")
+        // R31: the probe itself is silent (home in front while casting = RETURN quietly); only the cast branches toast.
+        assertTrue(!detect.contains("toast("), "probe posts no toast")
+        assertTrue(body(dispatcher, "private fun toastLauncherGuard()").contains("Không cast màn hình chính"), "guard toast kept")
         val home = body(dispatcher, "private fun homePackages()")
         assertTrue(home.contains("CATEGORY_HOME"), "queries every home package, not just default")
     }
@@ -73,8 +79,11 @@ class BubbleGestureContractTest {
     @Test
     fun `dispatcher casts the foreground into the chosen slot with the guard`() {
         val onCastSlot = body(dispatcher, "fun onCastSlot(")
-        assertTrue(onCastSlot.contains("detectForeground(coordinator) ?: return"), "slot cast also honours the guard")
-        assertTrue(onCastSlot.contains("SimpleCastIntent.CastSlot(foreground, side)"), "casts into LEFT/RIGHT")
+        assertTrue(onCastSlot.contains("foreground ?: return toastLauncherGuard()"), "slot cast also honours the guard")
+        assertTrue(onCastSlot.contains("SimpleCastIntent.CastSlot(pkg, side)"), "casts into LEFT/RIGHT")
+        assertTrue(onCastSlot.contains("BubbleGesturePlanner.slotOutcome(state, side, foreground)"), "pure outcome with the foreground (R31)")
+        assertTrue(onCastSlot.contains("SimpleCastIntent.CastSlot(pkg, side, replace = true)"), "R31: occupied half swaps in one press")
+        assertTrue(onCastSlot.contains("dismissPip = !occupied"), "occupied half ⇒ read-only probe")
     }
 
     @Test

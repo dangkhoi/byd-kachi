@@ -235,8 +235,12 @@ sealed interface SimpleCastIntent {
     /** Cast the given app to full cluster. */
     data class CastFull(val pkg: String, val appType: AppType) : SimpleCastIntent
 
-    /** Cast app to a specific slot (left or right). */
-    data class CastSlot(val pkg: String, val side: ClusterSlotSide) : SimpleCastIntent
+    /**
+     * Cast app to a specific slot (left or right). [replace] (3.1.5 · R31, only the bubble's one-press swap sets it): the side
+     * may already hold a DIFFERENT app — the coordinator returns that app first, then pins [pkg]. Default `false` keeps the
+     * `SLOT_OCCUPIED` guard that stops two autostart drivers racing for one half.
+     */
+    data class CastSlot(val pkg: String, val side: ClusterSlotSide, val replace: Boolean = false) : SimpleCastIntent
 
     /** Stop everything (full mode) or stop a specific slot (split mode). */
     data class Stop(val slot: ClusterSlotSide? = null) : SimpleCastIntent
@@ -281,6 +285,7 @@ object CastSlotValidator {
         side: ClusterSlotSide,
         currentState: SimpleCastState,
         projectionOpen: Boolean,
+        replace: Boolean = false,
     ): CastRejectReason? {
         if (!projectionOpen) return CastRejectReason.DISPLAY_UNAVAILABLE
         if (!isValidPackage(pkg)) return CastRejectReason.INVALID_PACKAGE
@@ -295,7 +300,10 @@ object CastSlotValidator {
                 ClusterSlotSide.LEFT -> currentState.left
                 ClusterSlotSide.RIGHT -> currentState.right
             }
-            if (occupied != null) return CastRejectReason.SLOT_OCCUPIED
+            // 3.1.5 · R31 — `replace` only lifts the guard for a DIFFERENT app that is not already on the cluster: the same app
+            // (or the other half's app) stays SLOT_OCCUPIED, so a replace can never move a correctly placed app.
+            val onCluster = setOfNotNull(currentState.left?.pkg, currentState.right?.pkg)
+            if (occupied != null && (!replace || pkg in onCluster)) return CastRejectReason.SLOT_OCCUPIED
         }
         return null
     }

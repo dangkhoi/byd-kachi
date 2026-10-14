@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.os.SystemClock
 import android.util.Log
 import java.io.File
 
@@ -42,7 +43,45 @@ class WallArt(
     val dominant: IntArray,
     val screenW: Int,
     val screenH: Int,
+    /**
+     * 3.1.5 R29 — lưới hộp màu p10/p90 ([LumaField]) của ảnh SẮC, CHƯA làm tối, đo ở độ phân giải ảnh đã giải mã, trên đúng vùng
+     * ảnh [WallFit] cắt ra; [sharpDst] = vùng màn nó phủ, [sharpScale] = điểm ảnh lưới / điểm ảnh màn (phủ/vừa khung giữ tỉ lệ).
+     */
+    val sharp: LumaField,
+    val sharpDst: Rect,
+    val sharpScale: Double,
+    /** 3.1.5 R29 — lưới hộp màu của ảnh MỜ [blurred] (đã làm tối), toạ độ của chính ảnh mờ (màn ÷ [scale]). */
+    val glass: LumaField,
+    /** Mức làm tối đã nấu (cùng số `WallView.setPhoto` nhận) — lớp làm tối của [backdropAt]. */
+    val dimPercent: Int,
 ) {
+    /**
+     * 3.1.5 R29 (T29-3) — hộp màu ảnh SẮC dưới vùng màn `[l, t, r, b)`; phần vùng nằm NGOÀI ảnh (viền "vừa khung") là nền [bg]
+     * mà `WallView` tô trước ảnh. Không bao giờ là một con số giả (khác [luminanceOf]).
+     */
+    fun toneAt(l: Int, t: Int, r: Int, b: Int, bg: Int): ToneBox {
+        val d = sharpDst
+        val il = maxOf(l, d.left); val iu = maxOf(t, d.top); val ir = minOf(r, d.right); val ib = minOf(b, d.bottom)
+        val inside = if (ir > il && ib > iu) sharp.range(il - d.left, iu - d.top, ir - d.left, ib - d.top, sharpScale) else null
+        val border = if (inside == null || l < d.left || t < d.top || r > d.right || b > d.bottom) ToneBox.span(bg) else null
+        return when {
+            inside == null -> border!!
+            border == null -> inside
+            else -> inside.union(border)
+        }
+    }
+
+    /** Hộp màu ảnh MỜ (đã làm tối) dưới vùng màn — thứ thẻ kính vẽ ở chỉ số 0; `null` nếu vùng nằm ngoài màn. */
+    fun glassAt(l: Int, t: Int, r: Int, b: Int): ToneBox? = glass.range(l, t, r, b, 1.0 / scale)
+
+    /**
+     * 3.1.5 R29 (T29-3) — NỀN THẬT dưới vùng màn: ảnh sắc ([toneAt]) → lớp làm tối theo [dimPercent] (bảng [p], cùng phép
+     * `WallView`) → [layers] của bên gọi. Chồng của thẻ/thanh do [AdaptiveInk] ghép tiếp.
+     */
+    fun backdropAt(l: Int, t: Int, r: Int, b: Int, p: KachiPalette, layers: List<ContrastBackdrop.Layer> = emptyList()): ContrastBackdrop =
+        ContrastBackdrop(toneAt(l, t, r, b, ColorMath.withAlpha(ColorMath.parse(p.bg), 255)), listOfNotNull(InkModel.scrim(p, dimPercent)) + layers)
+
+
     /** Độ chói trung bình của vùng màn `[l, t, r, b]` (điểm ảnh màn) — trung bình các ô lưới bị vùng đó phủ. */
     fun luminanceOf(l: Int, t: Int, r: Int, b: Int): Double {
         if (cols == 0 || rows == 0 || screenW <= 0 || screenH <= 0) return 0.5
@@ -132,17 +171,32 @@ object WallArtBuilder {
     const val RADIUS = 6
     const val PASSES = 3
     const val CACHE_DIR = ".kachi-art"
+    /** R29: lưới ảnh MỜ 32 cột (ảnh đã mờ σ≈10 px màn ⇒ ô 60 px màn đủ mịn; đệm nhỏ một nửa so với 64 cột). */
+    const val GLASS_COLS = 32
 
     /**
      * Nấu [WallArt] cho ảnh [source] (đã giảm cỡ theo màn) ở [path]. Chạy trên **thread nền**. Lỗi đĩa ⇒ vẫn trả
      * kết quả tính được (đệm chỉ là tiết kiệm, không phải điều kiện). Trả `null` chỉ khi không dựng được bitmap.
      */
     fun build(ctx: Context, path: String, source: Bitmap, fit: ImageFit, dimPercent: Int, screenW: Int, screenH: Int): WallArt? {
+        val file = File(path)
+        val dir = WallpaperStore.folder(ctx)?.let { File(it, CACHE_DIR) }
+        return build(ArtCache(dir, file.name, file.lastModified(), file.length()) { dir?.parentFile?.list()?.toSet() },
+            source, fit, dimPercent, screenW, screenH)
+    }
+
+    /**
+     * Ô bộ đệm đĩa của một ảnh nguồn: thư mục đệm · tên ảnh · tem (mtime) · cỡ tệp · [sources] = tên các ảnh nguồn còn sống
+     * (cho bộ dọn; `null` = không đọc được ⇒ không dọn). 3.1.5: ảnh nền đóng gói dùng ô RIÊNG ([DefaultWallpapers.artCache]).
+     */
+    class ArtCache(val dir: File?, val name: String, val stamp: Long, val size: Long, val sources: () -> Set<String>?)
+
+    /** Như [build] theo đường dẫn, với ô đệm [cache] cho sẵn. */
+    fun build(cache: ArtCache, source: Bitmap, fit: ImageFit, dimPercent: Int, screenW: Int, screenH: Int): WallArt? {
         if (screenW <= 0 || screenH <= 0 || source.isRecycled) return null
         val w = maxOf(1, screenW / SCALE); val h = maxOf(1, screenH / SCALE)
-        val file = File(path)
-        val key = "${file.name}-${file.lastModified()}-${file.length()}-${screenW}x$screenH-${fit.name}-$dimPercent"
-        val dir = WallpaperStore.folder(ctx)?.let { File(it, CACHE_DIR) }
+        val key = "${cache.name}-${cache.stamp}-${cache.size}-${screenW}x$screenH-${fit.name}-$dimPercent"
+        val dir = cache.dir
         loadCached(dir, key, w, h, screenW, screenH)?.let { return it }
 
         val bmp = runCatching { Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888) }.getOrNull() ?: return null
@@ -150,6 +204,11 @@ object WallArtBuilder {
         canvas.drawColor(Color.parseColor(KachiTheme.BG))
         val src = Rect(); val dst = Rect()
         WallFit.map(source.width, source.height, screenW.toFloat(), screenH.toFloat(), fit, src, dst)
+        val t0 = SystemClock.elapsedRealtimeNanos()
+        val sharp = sharpField(source, src)   // R29: ảnh SẮC, theo hàng, trên đúng vùng sẽ hiện
+        val sharpDst = Rect(dst)
+        val sharpScale = src.width().toDouble() / maxOf(1, dst.width())
+        val t1 = SystemClock.elapsedRealtimeNanos()
         dst.set(dst.left / SCALE, dst.top / SCALE, dst.right / SCALE, dst.bottom / SCALE)
         canvas.drawBitmap(source, src, dst, Paint(Paint.FILTER_BITMAP_FLAG))
         val px = IntArray(w * h)
@@ -165,10 +224,31 @@ object WallArtBuilder {
         val lum = luminanceGrid(px, w, h)
         boxBlur(px, w, h, RADIUS, PASSES)
         bmp.setPixels(px, 0, w, 0, 0, w, h)
-        val art = WallArt(bmp, SCALE, COLS, ROWS, lum, dominant, screenW, screenH)
-        saveCached(dir, key, art)
-        prune(dir, keep = key)   // 2.93 WALLART-CACHE-BOUND — chỉ khi vừa ghi khoá MỚI (đệm chỉ lớn lên ở đây)
+        val t2 = SystemClock.elapsedRealtimeNanos()
+        val glass = LumaField.of(px, w, h, GLASS_COLS)   // R29: ảnh MỜ sau làm tối + làm mờ (đúng thứ thẻ kính vẽ)
+        val t3 = SystemClock.elapsedRealtimeNanos()
+        val art = WallArt(bmp, SCALE, COLS, ROWS, lum, dominant, screenW, screenH, sharp, sharpDst, sharpScale, glass, dim)
+        val kb = saveCached(dir, key, art)
+        // R29 chi phí (perf-every-fix): một dòng mỗi lần NẤU (không mỗi lần đọc đệm) — lưới sắc · lưới mờ · cỡ đệm.
+        Log.i(TAG, "R29 đo nền: lưới sắc ${sharp.cols}×${sharp.rows} %.1f ms · lưới mờ ${glass.cols}×${glass.rows} %.1f ms · đệm %.1f KB"
+            .format((t1 - t0) / 1e6, (t3 - t2) / 1e6, kb / 1024.0))
+        prune(dir, keep = key, cache.sources)   // 2.93 WALLART-CACHE-BOUND — chỉ khi vừa ghi khoá MỚI (đệm chỉ lớn lên ở đây)
         return art
+    }
+
+    /**
+     * R29 (T29-2) — lưới hộp màu của ảnh SẮC [source] trên vùng [src]: đọc MỘT hàng mỗi lần (`getPixels` 1 hàng ⇒
+     * [LumaField.Builder.addRow]), không chép cả ảnh ra mảng (1920×1080 ⇒ 8 MB). Thread nền, cùng lượt nấu.
+     */
+    private fun sharpField(source: Bitmap, src: Rect): LumaField {
+        val w = maxOf(1, src.width()); val h = maxOf(1, src.height())
+        val b = LumaField.Builder(w, h)
+        val row = IntArray(w)
+        for (y in 0 until h) {
+            source.getPixels(row, 0, w, src.left, src.top + y, w, 1)
+            b.addRow(y, row)
+        }
+        return b.build()
     }
 
     /**
@@ -177,11 +257,11 @@ object WallArtBuilder {
      * Chỉ đụng tệp TRONG [dir] (`.kachi-art/`, tên lấy từ chính danh sách thư mục ⇒ không ra ngoài); khoá [keep] vừa nấu
      * không bao giờ bị xoá. Thread nền (cùng lượt nấu). Không đọc được thư mục ⇒ thôi, lần nấu sau dọn.
      */
-    private fun prune(dir: File?, keep: String) {
+    private fun prune(dir: File?, keep: String, liveSources: () -> Set<String>?) {
         if (dir == null) return
         try {
             val files = dir.listFiles()?.filter { it.isFile && (it.name.endsWith(".png") || it.name.endsWith(".txt")) } ?: return
-            val sources = dir.parentFile?.list()?.toSet() ?: return
+            val sources = liveSources() ?: return
             val entries = files.groupBy { it.name.substringBeforeLast('.') }
                 .map { (k, fs) -> WallArtCachePolicy.Entry(k, fs.maxOf { it.lastModified() }) }
             val gone = WallArtCachePolicy.victims(entries, sources, protect = keep)
@@ -247,19 +327,30 @@ object WallArtBuilder {
             val lines = meta.readLines()
             val lum = lines.first { it.startsWith("lum:") }.removePrefix("lum:").split(',').map { it.toFloat() }.toFloatArray()
             val dom = lines.first { it.startsWith("dom:") }.removePrefix("dom:").split(',').filter { it.isNotBlank() }.map { it.toInt() }.toIntArray()
-            if (lum.size != COLS * ROWS) { bmp.recycle(); return null }
-            WallArt(bmp, SCALE, COLS, ROWS, lum, dom, screenW, screenH)
+            // R29: đệm cũ (trước 3.1.5) không có ba dòng lưới ⇒ nấu lại, KHÔNG đoán hộp màu.
+            val sharp = LumaField.decode(lines.firstOrNull { it.startsWith("sharp:") }?.removePrefix("sharp:"))
+            val glass = LumaField.decode(lines.firstOrNull { it.startsWith("glass:") }?.removePrefix("glass:"))
+            val fitNums = lines.firstOrNull { it.startsWith("sfit:") }?.removePrefix("sfit:")?.split(',').orEmpty()
+            if (lum.size != COLS * ROWS || sharp == null || glass == null || fitNums.size != 6) { bmp.recycle(); return null }
+            val d = Rect(fitNums[0].toInt(), fitNums[1].toInt(), fitNums[2].toInt(), fitNums[3].toInt())
+            WallArt(bmp, SCALE, COLS, ROWS, lum, dom, screenW, screenH, sharp, d, fitNums[4].toDouble(), glass, fitNums[5].toInt())
         }.getOrElse { Log.w(TAG, "bộ đệm ảnh mờ hỏng, tính lại: ${it.javaClass.simpleName}"); null }
     }
 
-    private fun saveCached(dir: File?, key: String, art: WallArt) {
-        if (dir == null) return
-        runCatching {
+    /** Ghi đệm; trả cỡ tệp `.txt` (byte, 0 nếu không ghi) — số đo R29 cho dòng log của lượt nấu. */
+    private fun saveCached(dir: File?, key: String, art: WallArt): Long {
+        if (dir == null) return 0
+        return runCatching {
             if (!dir.exists()) dir.mkdirs()
             File(dir, "$key.png").outputStream().use { art.blurred.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            File(dir, "$key.txt").writeText(
-                "lum:" + art.lum.joinToString(",") + "\n" + "dom:" + art.dominant.joinToString(",") + "\n",
+            val d = art.sharpDst
+            val meta = File(dir, "$key.txt")
+            meta.writeText(
+                "lum:" + art.lum.joinToString(",") + "\n" + "dom:" + art.dominant.joinToString(",") + "\n" +
+                    "sharp:" + art.sharp.encode() + "\n" + "glass:" + art.glass.encode() + "\n" +
+                    "sfit:${d.left},${d.top},${d.right},${d.bottom},${art.sharpScale},${art.dimPercent}\n",
             )
-        }.onFailure { Log.w(TAG, "không lưu được bộ đệm ảnh mờ: ${it.javaClass.simpleName}") }
+            meta.length()
+        }.onFailure { Log.w(TAG, "không lưu được bộ đệm ảnh mờ: ${it.javaClass.simpleName}") }.getOrDefault(0)
     }
 }

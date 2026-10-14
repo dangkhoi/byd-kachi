@@ -31,6 +31,10 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  *
  * Chi phí: 8 view nhỏ + 4 ô nút ẩn dựng MỘT lần; [project] chỉ chạy khi Filament vẽ một khung (rảnh = 0); [fill] theo nhịp đổ số
  * sẵn có. Không nhịp, không luồng mới.
+ *
+ * 3.1.5 R29 T29-6 — mực theo NỀN ĐO ([Car3dInk]): mỗi nhãn lốp là một mặt không lớp riêng ([inkRegion]) ⇒ số giải trên ảnh nền
+ * xe dưới CHÍNH nhãn; mỗi đĩa ghế là một mặt mang màu đĩa ([AdaptiveInk.fill]) ⇒ icon giải trên đĩa ∪ nền dưới đĩa. Giải lại khi
+ * xoay DỪNG ([Car3dInk.settle] — so vùng, chỉ nhãn đã dời), không trong [project] (mỗi khung).
  */
 @SuppressLint("ViewConstructor")
 internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(context) {
@@ -62,7 +66,7 @@ internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(
         }
         for (corner in TyreCorner.values()) tyreViews[corner] = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; visibility = INVISIBLE
-            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
+            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES; inkRegion("car3d-tyre")   // R29 T29-6
             addView(text(KachiWidgetType.VALUE_SP + 2f, light = true)); addView(text(KachiWidgetType.LABEL_SP - 1f, light = false))
             this@Car3dHeroLayer.addView(this, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
             addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ -> under[corner]?.let { place(v, it) } }
@@ -92,10 +96,10 @@ internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(
             val p = box.getChildAt(0) as TextView; val t = box.getChildAt(1) as TextView
             val pv = rd.pressureKpa?.let { WidgetViews.formatPressure(it, d.units) }
             if (p.text.toString() != (pv ?: "")) p.text = pv ?: ""
-            p.setTextColor(c(when (rd.severity) { TyreSeverity.ALERT -> KachiTheme.RED; TyreSeverity.WARN -> KachiTheme.AMBER; TyreSeverity.OK -> KachiTheme.INK; TyreSeverity.NONE -> KachiTheme.MUT }))
+            AdaptiveInk.text(p, when (rd.severity) { TyreSeverity.ALERT -> KachiTheme.RED; TyreSeverity.WARN -> KachiTheme.AMBER; TyreSeverity.OK -> KachiTheme.INK; TyreSeverity.NONE -> KachiTheme.MUT })
             val tv = rd.tempC?.let { WidgetViews.formatTemp(it.toDouble(), d.units) + tUnit }
             if (t.text.toString() != (tv ?: "")) t.text = tv ?: ""
-            t.setTextColor(c(KachiTheme.MUT)); t.visibility = if (tv == null) GONE else VISIBLE
+            AdaptiveInk.text(t, KachiTheme.MUT); t.visibility = if (tv == null) GONE else VISIBLE
             box.tag = pv != null   // không có áp suất ⇒ không nhãn (không bày bốn dấu "—" dưới bánh)
             box.contentDescription = listOfNotNull(rd.corner.displayLabel, pv?.let { "$it ${d.units.unitFor(Quantity.PRESSURE)}" }, tv, rd.reason).joinToString(" · ")
         }
@@ -107,7 +111,7 @@ internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(
     private var cam: Car3dCamera? = null; private var pw = 0; private var ph = 0
 
     /** Đặt lại icon/nhãn theo camera của khung vẽ cuối (đổi công tắc số lốp · số lốp mới có) — không vẽ lại xe. */
-    fun reproject() { cam?.let { project(it, pw, ph) } }
+    fun reproject() { cam?.let { project(it, pw, ph); (parent as? View)?.let(Car3dInk::settle) } }   // R29: đặt lại KHÔNG vẽ khung ⇒ giải lại
 
     /** Mức đã vẽ của từng icon ghế — nhịp đổ số chỉ vẽ lại khi khác (soát R28 P2). */
     private val drawn = HashMap<String, Int>()
@@ -123,10 +127,15 @@ internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(
         val def = ControlRegistry.byId(id) ?: return
         val lv = level(id); drawn[id] = lv
         KachiIcons.byLevel(v, def.icon, lv, Sp.ICON_M)
-        KachiIcons.tint(v, Sp.ICON_M, lv > 0, if (lv > 0) KachiTheme.ACCENT_INK else KachiTheme.ICON)
         // BẬT nói bằng đĩa tông nhấn + icon mực nhấn (như chip bật); TẮT = đĩa mờ + icon mực thường mờ nhẹ. [ĐO máy ảo 13/10, QA ảnh]
-        // bản đầu chỉ đổi màu icon ⇒ hai trạng thái khó phân biệt trên kính tối.
-        (v.background as? GradientDrawable)?.setColor(if (lv > 0) ColorMath.withAlpha(c(KachiTheme.ACCENT), ON_DISC_ALPHA) else c(KachiTheme.SCRIM_BTN))
+        // bản đầu chỉ đổi màu icon ⇒ hai trạng thái khó phân biệt trên kính tối. R29 T29-6: đĩa = MẶT (màu đĩa trên nền đo dưới nó)
+        // ⇒ đặt màu đĩa + khai mặt TRƯỚC khi tô icon (nền gốc qua [AdaptiveInk.base] — lớp đỡ có thể bọc nó).
+        val disc = if (lv > 0) ColorMath.withAlpha(c(KachiTheme.ACCENT), ON_DISC_ALPHA) else c(KachiTheme.SCRIM_BTN)
+        (AdaptiveInk.base(v) as? GradientDrawable)?.setColor(disc)
+        AdaptiveInk.fill(v, fades = false, variant = disc) { intArrayOf(disc) }
+        // TẮT: glyph [KachiTheme.ON_ACCENT] (trắng) — đĩa [KachiTheme.SCRIM_BTN] ĐEN 50 % cố định (không theo chủ đề, KDoc palette);
+        // [ĐO máy ảo 14/10, chủ đề SÁNG] mực `ICON` của bản sáng (79,91,109) trên đĩa (8,15,19) chỉ ~2,7:1 — icon "bạc màu" ban ngày.
+        KachiIcons.tint(v, Sp.ICON_M, lv > 0, if (lv > 0) KachiTheme.ACCENT_INK else KachiTheme.ON_ACCENT)
         v.contentDescription = "${def.displayLabel} · ${def.displayArgs.getOrElse(lv) { "" }}"
     }
 
@@ -136,6 +145,11 @@ internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(
         android.util.Log.i(TAG, "tap ghế $id mức=${level(id)} → ${Car3dHero.nextSeat(level(id), ControlRegistry.byId(id)?.displayArgs?.size ?: 3)}")
         t.view.performClick()
         draw(id)
+        // Sưởi ↔ mát cùng ghế loại trừ nhau trên xe (owner 14/10) ⇒ icon kia TẮT ngay, giữ trong ân hạn của ô (nhịp đọc chưa kịp
+        // thấy xe tự tắt thì không bật lại); sau ân hạn theo số đọc thật. Không gửi lệnh tắt thêm — xe tự làm.
+        Car3dHero.exclusive(id, level(id))?.takeIf { level(it) > 0 }?.let { o ->
+            ControlTileState.shared.setSel(o, 0); ControlTileState.shared.touch(o); draw(o)
+        }
         // Không phát lại ảnh số CŨ sau ân hạn (soát R28 P1: ô SELECT chung sẽ bị kéo về mức cũ) — nhịp đổ số kế tiếp tự đồng bộ.
     }
 

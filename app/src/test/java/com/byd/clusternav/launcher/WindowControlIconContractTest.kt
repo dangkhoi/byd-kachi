@@ -22,20 +22,29 @@ class WindowControlIconContractTest {
         }
     }
 
+    /**
+     * 3.1.x LIGHT-CONTRAST (owner 14/10 "mờ" ở chủ đề sáng): mực đĩa/glyph nay ở [KachiButtonInks] (một chỗ cho chân Kính 2D, nút
+     * xe 3D, hàng chân 3D). Glyph ≥ 4,5:1 trên đĩa (nghỉ + nhấn) trên mặt thẻ/ô — chi tiết theo nền ảnh ở `Widget301LightContrastTest`.
+     */
     @Test
-    fun `net icon dat 3 tren 1 tren dia nut o bang toi va sang, ca luc nhan`() {
-        assertTrue(compact.contains("REST_ALPHA = 0x$REST") && compact.contains("RIPPLE_ALPHA = 0x$RIPPLE"), "hằng số bài này soi đã đổi")
+    fun `net icon dat 4,5 tren 1 tren dia nut o bang toi va sang, ca luc nhan`() {
+        assertTrue(compact.contains("KachiButtonInks.background()") && compact.contains("KachiButtonInks.glyphTint()"), "chân Kính đi qua mực chung")
         listOf(KachiPalette.DARK to "Tối", KachiPalette.LIGHT to "Sáng").forEach { (p, name) ->
+            val k = KachiButtonInks.of(p)
             listOf(p.card, p.tile).forEach { surface ->
-                val bg = ColorMath.parse(surface)
-                val rest = ColorMath.over(ColorMath.withAlpha(ColorMath.parse(p.ink), REST.toInt(16)), bg)
-                val pressed = ColorMath.over(ColorMath.withAlpha(ColorMath.parse(p.accent), RIPPLE.toInt(16)), rest)
-                val idle = ColorMath.ratio(ColorMath.parse(p.icon), rest)
-                val down = ColorMath.ratio(ColorMath.parse(p.accentInk), pressed)
-                assertTrue(idle >= 3.0, "$name: icon nghỉ ${"%.2f".format(idle)}:1 < 3:1")
+                val rest = ColorMath.over(k.rest, ColorMath.parse(surface))
+                val pressed = ColorMath.over(k.ripple, rest)
+                val idle = ColorMath.ratio(ColorMath.parse(k.glyph), rest)
+                val down = ColorMath.ratio(ColorMath.parse(k.glyphOn), pressed)
+                assertTrue(idle >= 4.5, "$name: icon nghỉ ${"%.2f".format(idle)}:1 < 4,5:1")
                 assertTrue(down >= 3.0, "$name: icon nhấn ${"%.2f".format(down)}:1 < 3:1")
             }
         }
+        // Bảng tối giữ từng byte 3.1.4 (CLAUDE.md §6): đĩa mực 8 %, sóng nhấn 20 %.
+        val dark = KachiButtonInks.of(KachiPalette.DARK)
+        assertTrue(dark.rest == ColorMath.withAlpha(ColorMath.parse(KachiPalette.DARK.ink), REST.toInt(16)))
+        assertTrue(dark.ripple == ColorMath.withAlpha(ColorMath.parse(KachiPalette.DARK.accent), RIPPLE.toInt(16)))
+        assertTrue(dark.glyph == KachiPalette.DARK.icon && dark.glyphOn == KachiPalette.DARK.accentInk)
     }
 
     private companion object {

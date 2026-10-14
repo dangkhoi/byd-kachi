@@ -278,7 +278,8 @@ class TopStripWiringContractTest {
     @Test
     fun `mau chip to ca icon chu khong chi to chu`() {
         val face = SourceRoots.body(strip, "private fun applyChipFace(")
-        assertTrue(face.contains("setTextColor"), "phải đặt màu CHỮ")
+        // 3.1.5 R29 T29-7: màu chữ đi qua bộ giải mực thích ứng (vẫn đúng vai `color` của sắc thái) — AdaptiveContrastContractTest.
+        assertTrue(face.contains("AdaptiveInk.text(v, color"), "phải đặt màu CHỮ")
         assertTrue(face.contains("setTint"), "phải tint ICON — trạng thái bật/tắt nằm ở icon")
         // Và lượt làm mới phải đặt lại mặt chip khi MÀU đổi, không chỉ khi icon đổi: tone đổi mà icon giữ nguyên
         // (đúng ca bật→tắt) thì chip sẽ không bao giờ đổi màu.

@@ -1,9 +1,6 @@
 package com.byd.clusternav.launcher
 
-import android.content.res.ColorStateList
 import android.graphics.drawable.Drawable
-import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.RippleDrawable
 import android.os.SystemClock
 import android.util.Log
 import android.view.Gravity
@@ -11,7 +8,6 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
 import com.byd.clusternav.R
-import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -36,6 +32,9 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
     private val cells = HashMap<String, GroupCell>()
     /** Đích lạc quan của kính vừa gửi: (đích %, hạn `uptimeMillis`). */
     private val pending = HashMap<String, Pair<Int, Long>>()
+    /** Lúc chạm gần nhất từng điểm (chạm đúp — [WindowCycle.isDouble]) · thời hạn chạm đúp của hệ thống. */
+    private val lastTap = HashMap<String, Long>()
+    private val doubleMs = android.view.ViewConfiguration.getDoubleTapTimeout().toLong()
     private var groups: Map<String, GroupBoardModel> = emptyMap()
     private val touch = kit.px(Sp.TOUCH)
     private var down: String? = null
@@ -44,7 +43,7 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
     /** Cổng chạm vừa chặn mã [id] (cốp khi xe chưa chứng minh đứng yên) ⇒ chấm cốp lắc. */
     val refused: (String) -> Unit = { id ->
         hotspots.filter { h -> resolved[h.id]?.actions?.any { it.id == id } == true }.forEach { h ->
-            if (h.id in dotted) spots[h.id]?.let(dots::shake) else shakeHost()
+            spots[h.id]?.takeIf { it.shown }?.let(dots::shake) ?: shakeHost()
         }
     }
 
@@ -77,17 +76,16 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
 
     /** Đích chạm 3D (hộp thế giới của bộ phận) — [Car3dPick]. */
     private val targets = LinkedHashMap<String, Car3dPick.Target>()
-    /** Điểm VẪN có chấm (hình 3D không tự nói trạng thái — [Car3dHotspot.shownBy] không khớp bộ phận nào). */
-    private val dotted = HashSet<String>()
     private var cam: Car3dCamera? = null
     private var camBounds: Car3dBounds? = null
     private var camW = 0; private var camH = 0
 
-    fun bind(m: Car3dModel, placed: Set<String>, boxes: Map<String, Car3dPick.Target>, withDot: Set<String>) {
+    fun bind(m: Car3dModel, placed: Set<String>, boxes: Map<String, Car3dPick.Target>, rest: (Car3dHotspot) -> Pair<V3, V3>?) {
         model = m
         targets.clear(); targets += boxes
-        dotted.clear(); dotted += withDot
         hotspots.clear(); hotspots += m.hotspots.filter { it.id in placed }
+        restBox.clear(); dotAt.clear()
+        hotspots.forEach { h -> rest(h)?.let { restBox[h.id] = it } }
         lampOf.clear()
         hotspots.filter { it.group == Car3dCatalog.GROUPS[1] && it.target.isNotEmpty() && it.shownBy != null }.forEach { h ->
             m.variants.filter { v -> v.read.isNotEmpty() && (v.open == h.shownBy || Car3dNames.matches(h.shownBy!!, v.open)) }
@@ -107,13 +105,29 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
         dots.spots = spots.values.toList()
     }
 
+    /** Toạ độ khung (px) đang bị nút khác chiếm (icon ghế — [Car3dHeroLayer.owns]); chủ gán. Bán kính chấm để dời. */
+    var blocked: (Float, Float) -> Boolean = { _, _ -> false }
+    private val dotR = StateDotPainter.diameterPx(Float.MAX_VALUE, ctx.resources.displayMetrics.density) / 2f
+
+    /** Hộp NGHỈ (thế giới) của bộ phận mỗi điểm · chỗ đặt chấm theo tư thế đang vẽ ([Car3dPick.dotPoint]; vắng ⇒ điểm neo). */
+    private val restBox = HashMap<String, Pair<V3, V3>>()
+    private val dotAt = HashMap<String, V3>()
+
+    /** Cửa/nắp/kính vừa đổi tư thế ⇒ chấm đi theo bộ phận ([now] = hộp đang vẽ), kẹp trong đích chạm của chính nó. */
+    fun redot(now: (Car3dHotspot) -> Pair<V3, V3>?) {
+        for (h in hotspots) {
+            val rest = restBox[h.id] ?: continue; val t = targets[h.id] ?: continue
+            now(h)?.let { dotAt[h.id] = Car3dPick.dotPoint(t.anchor, rest, it, t) }
+        }
+    }
+
     /** POLISH2 — đích chạm của điểm [t] đổi theo tư thế bộ phận (nắp cốp đang/đã mở: chạm vào nắp ĐANG giơ lên để đóng). */
     fun retarget(t: Car3dPick.Target) { if (t.id in targets) targets[t.id] = t }
 
     /** POLISH2 — có đèn khoang ([Car3dHotspot.glow]) đang BẬT (đích lạc quan / lệnh cuối) ⇒ nội thất hắt sáng. */
     fun glowing(): Boolean = hotspots.any { it.glow && spots[it.id]?.dot?.kind == CarDots.Kind.OPEN }
 
-    fun clear() { model = null; hotspots.clear(); spots.clear(); nodes.clear(); hidden.clear(); targets.clear(); order = emptyList() }
+    fun clear() { model = null; hotspots.clear(); spots.clear(); restBox.clear(); dotAt.clear(); nodes.clear(); hidden.clear(); targets.clear(); order = emptyList() }
 
     /** Mức kính đang thấy của điểm [id] (lệnh vừa gửi thắng số đọc; chưa đọc ⇒ `null`) — kính 3D tụt theo nó. */
     fun level(id: String): Int? = live(id) ?: resolved[id]?.let(::read)
@@ -174,7 +188,7 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
     private fun ownerAt(x: Float, y: Float): String? {
         val c = cam ?: return null; val b = camBounds ?: return null
         val live = hotspots.mapNotNull { h -> targets[h.id] }
-        return Car3dPick.pick(c, live, b, camW, camH, x, y, touch.toFloat()) { id -> resolved[id]?.actions?.isNotEmpty() == true }
+        return Car3dPick.pick(c, live, b, camW, camH, x, y, touch.toFloat()) { id -> resolved[id]?.let(Car3dHotspots::actionable) == true }
     }
 
     fun down(x: Float, y: Float) { down = ownerAt(x, y) }
@@ -193,16 +207,21 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
         val s = spots[h.id]
         if (r.actions.isEmpty()) {
             Log.i(TAG, "tap ${h.id} → chỉ xem")
-            if (h.id in dotted) s?.let(dots::shake) else shakeHost()
+            s?.takeIf { it.shown }?.let(dots::shake) ?: shakeHost()   // chấm đang hiện thì chấm lắc, không thì cả khung
             host.announceForAccessibility("${label(h, r)} · ${ctx.getString(R.string.klight_view_only)}")
             return
         }
-        if (h.id in dotted) s?.let(dots::pulse)
+        s?.takeIf { it.shown }?.let(dots::pulse)
         val level = live(h.id) ?: read(r)
-        when (val t = Car3dHotspots.tap(r, level)) {   // `:core` quyết: vật có ô MỨC ⇒ bước kế WindowCycle; không thì bấm ô đầu
+        // 3.1.5 — chạm ĐÚP mở hẳn: cú đơn KHÔNG hoãn; cú thứ hai cùng điểm trong thời hạn chạm đúp ⇒ đích 100 % ([WindowCycle.tapTarget]).
+        val now = SystemClock.uptimeMillis()
+        val double = WindowCycle.isDouble(lastTap[h.id], now, doubleMs)
+        if (double) lastTap.remove(h.id) else lastTap[h.id] = now
+        val t = Car3dHotspots.tap(r, level, double, live(h.id))   // `:core` quyết: ô MỨC ⇒ bước kế WindowCycle / mở hẳn; không thì bấm ô đầu
+        when (t) {
             is Car3dHotspots.Tap.Set -> {
-                val target = WindowCycle.next(level)
-                Log.i(TAG, "tap ${h.id} mức=$level → ${t.action.id} ${if (t.on) "BẬT" else "TẮT"} (đích $target %)")
+                val target = WindowCycle.tapTarget(level, double, live(h.id)) ?: WindowCycle.next(level)
+                Log.i(TAG, "tap ${h.id}${if (double) " (đúp)" else ""} mức=$level → ${t.action.id} ${if (t.on) "BẬT" else "TẮT"} (đích $target %)")
                 if (!kit.set(t.action.id, if (t.on) 1 else 0)) tile(t.action)?.performClick()
                 pending[h.id] = target to SystemClock.uptimeMillis() + PENDING_MS
             }
@@ -213,7 +232,7 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
                 if (h.target == TRUNK || !kit.set(t.action.id, if (on) 0 else 1)) tile(t.action)?.performClick()
                 if (h.target != TRUNK) { LampHold.shared.put(t.action.id, !on, SystemClock.uptimeMillis()); host.postDelayed({ fill(last); changed() }, LampHold.HOLD_MS + 1) }
             }
-            Car3dHotspots.Tap.None -> Log.i(TAG, "tap ${h.id} → không có bước")
+            Car3dHotspots.Tap.None -> Log.i(TAG, "tap ${h.id}${if (double) " (đúp)" else ""} → không có bước")
         }
         fill(last)
         changed()
@@ -234,16 +253,21 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
     // ── Chiếu điểm + trợ năng ─────────────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Đặt chấm (chỉ điểm [dotted]) + nút trợ năng (MỌI điểm, phủ chữ nhật chạm của bộ phận) theo camera VỪA vẽ (cùng phép
+     * Đặt chấm (điểm có việc) + nút trợ năng (MỌI điểm, phủ chữ nhật chạm của bộ phận) theo camera VỪA vẽ (cùng phép
      * chiếu với Filament). Phía khuất thân xe ẩn. Nhớ camera cho [ownerAt].
      */
     fun project(cam: Car3dCamera, anchors: Map<String, V3>, bounds: Car3dBounds, w: Int, h: Int) {
         this.cam = cam; camBounds = bounds; camW = w; camH = h
-        for ((id, a) in anchors) {
+        for ((id, a0) in anchors) {
             val s = spots[id] ?: continue
-            val p = cam.project(a, w, h)
-            // Điểm chỉ-xem (cửa) chỉ vẽ khi MỞ ([Car3dHotspots.shows]) — owner 13/10 hỏi "chấm đen dưới cửa là gì".
-            s.shown = id in dotted && p != null && cam.facing(a, Car3dMath.outward(a, bounds)) && p.x in 0f..w.toFloat() &&
+            val a = dotAt[id] ?: a0
+            val p = cam.project(a, w, h)?.let { p0 ->
+                // Không để chấm nằm dưới icon ghế ([blocked]) — dời trong chữ nhật đích của chính nó, hết chỗ ⇒ ẩn.
+                val rect = targets[id]?.let { Car3dPick.dotRect(cam, it, w, h, dotR) } ?: return@let p0
+                Car3dPick.freeY(p0.x, p0.y, dotR, rect, blocked)?.let { p0.copy(y = it) }
+            }
+            // Chấm CHỈ ở điểm có việc ([Car3dHotspots.shows] = cờ nhường chạm của [Car3dPick]) — owner 14/10: cửa không chấm.
+            s.shown = p != null && cam.facing(a, Car3dMath.outward(a, bounds)) && p.x in 0f..w.toFloat() &&
                 p.y in 0f..h.toFloat() && resolved[id]?.let(Car3dHotspots::shows) != false
             if (p != null) { s.x = p.x; s.y = p.y }
         }
@@ -267,9 +291,9 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
 
     /** Một dòng log vị trí chấm hiện tại (gọi khi nạp xong và khi một đợt xoay dừng — không mỗi khung). */
     fun dump(head: String) = Log.i(TAG, "$head: " + order.joinToString { id ->
-        // `dot`/`dot-hidden` = điểm còn chấm (hiện/khuất) · `part`/`part-hidden` = chạm thẳng bộ phận, KHÔNG chấm (thấy/khuất).
+        // `dot` = chấm đang hiện · `part`/`part-hidden` = không chấm (chỉ xem / khuất), chạm thẳng bộ phận (thấy/khuất).
         val vis = cam?.let { c -> camBounds?.let { b -> targets[id]?.let { Car3dPick.visible(c, it, b) } } } == true
-        val kind = if (id in dotted) (if (spots[id]?.shown == true) "dot" else "dot-hidden") else (if (vis) "part" else "part-hidden")
+        val kind = if (spots[id]?.shown == true) "dot" else if (vis) "part" else "part-hidden"
         spots[id]?.let { "$id@${it.x.toInt()},${it.y.toInt()}:$kind" } ?: id
     })
 
@@ -302,16 +326,15 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
         icons.getOrPut(n) { KachiTheme.iconRes(n).takeIf { it != 0 }?.let { ctx.getDrawable(it)?.mutate() } }
     }
 
-    /** Nút tròn cùng dáng chân bảng Kính 2D (đĩa mực 8 %, sóng khi nhấn — đây là NÚT, không phải điểm trên xe). */
+    /** Nút tròn cùng dáng chân bảng Kính 2D (mực đĩa/glyph theo bảng — [KachiButtonInks]; đây là NÚT, không phải điểm trên xe). */
     private fun button(icon: Int, say: Int, onTap: () -> Unit): View = FrameLayout(ctx).apply {
-        val disc = { color: Int -> GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) } }
-        background = RippleDrawable(ColorStateList.valueOf(ColorMath.withAlpha(c(KachiTheme.ACCENT), RIPPLE_ALPHA)),
-            disc(ColorMath.withAlpha(c(KachiTheme.INK), REST_ALPHA)), disc(c(KachiTheme.INK)))
+        background = KachiButtonInks.background()
         addView(ImageView(ctx).apply {
             setImageResource(icon)
-            imageTintList = ColorStateList(arrayOf(intArrayOf(android.R.attr.state_pressed), intArrayOf()), intArrayOf(c(KachiTheme.ACCENT_INK), c(KachiTheme.ICON)))
+            imageTintList = KachiButtonInks.glyphTint()
             isDuplicateParentStateEnabled = true
         }, FrameLayout.LayoutParams(kit.px(Sp.ICON_M), kit.px(Sp.ICON_M), Gravity.CENTER))
+        KachiButtonInks.adapt(this, getChildAt(0))   // R29 T29-6: đĩa/glyph theo nền ĐO dưới nút (mặc định trên = lúc chưa đo)
         contentDescription = ctx.getString(say)
         isClickable = true; isFocusable = true
         setOnClickListener { onTap() }
@@ -320,8 +343,6 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
     private companion object {
         const val TAG = "Car3d"
         const val TRUNK = "trunk"
-        const val RIPPLE_ALPHA = 0x33
-        const val REST_ALPHA = 0x14
         /** Cùng hạn đích lạc quan với bảng Kính 2D (`ActionMatrixCompact.PENDING_MS`). */
         const val PENDING_MS = 12_000L
     }

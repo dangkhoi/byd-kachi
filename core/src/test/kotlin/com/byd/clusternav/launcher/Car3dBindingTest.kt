@@ -52,11 +52,11 @@ class Car3dBindingTest {
         // Off-car: chưa đọc ⇒ vòng đứt nét (không giấu "chưa biết" thành "đóng"), biến thể ở bản đóng.
         assertEquals(CarDots.Kind.UNKNOWN, Car3dHotspots.dot(door, null).kind)
         assertFalse(Car3dHotspots.active(door.cell))
-        // Owner 13/10 "chấm đen dưới cửa là gì": điểm CHỈ-XEM không vẽ khi chưa đọc/đóng; cửa MỞ ⇒ vẽ. Điểm có nút luôn vẽ.
+        // Owner 14/10 "cửa đâu có nhấn được nên ko cần chấm tròn": điểm CHỈ-XEM không bao giờ chấm (kể cả cửa MỞ). Điểm có nút luôn chấm.
         assertFalse(Car3dHotspots.shows(door)); assertTrue(Car3dHotspots.shows(trunk)); assertTrue(Car3dHotspots.shows(headl))
         val open = CarStatus().let { it.copy(body = it.body.copy(doorLfOpen = true, doorRfOpen = false, doorLrOpen = false, doorRrOpen = false)) }
         val doorOpen = Car3dHotspots.resolve(GroupBoard.of("g_doors", open)!!, Car3dCatalog.BYD_AVM.hotspots.first { it.id == "door-lf" })
-        assertTrue(Car3dHotspots.active(doorOpen.cell)); assertTrue(Car3dHotspots.shows(doorOpen))
+        assertTrue(Car3dHotspots.active(doorOpen.cell)); assertFalse(Car3dHotspots.shows(doorOpen))
         // Biến thể nhiều ô `a|b`: bật khi BẤT KỲ ô nào bật; rỗng ⇒ không bao giờ.
         val cells = GroupBoard.of("g_doors", open)!!.cells.associateBy { it.id }
         assertTrue(Car3dHotspots.activeAny("door_rf|door_lf") { cells[it] }); assertFalse(Car3dHotspots.activeAny("door_rf") { cells[it] })

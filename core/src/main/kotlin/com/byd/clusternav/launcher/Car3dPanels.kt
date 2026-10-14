@@ -56,11 +56,13 @@ object Car3dPanels {
         return members.indices.map { Panel(part, members[it].toArray(), mins[it], maxs[it]) }
     }
 
-    /** Bộ phận [p] chỉ còn các tam giác [tris] (thứ tự gốc), giữ tên + vật liệu (biến thể sơn/đèn theo tên vẫn áp). */
-    fun subset(p: BydAvmMesh.Part, tris: IntArray): BydAvmMesh.Part {
+    /** Bộ phận [p] chỉ còn các tam giác [tris] (thứ tự gốc), giữ tên (biến thể sơn/đèn theo tên vẫn áp); vật liệu/mặt mặc định giữ. */
+    fun subset(
+        p: BydAvmMesh.Part, tris: IntArray, material: String = p.material, single: Boolean = p.single, flip: Boolean = p.flip,
+    ): BydAvmMesh.Part {
         val bb = ByteBuffer.allocate(tris.size * 3 * 4).order(ByteOrder.LITTLE_ENDIAN)
         for (t in tris) for (c in 0..2) bb.putInt(p.index(t * 3 + c))
-        return BydAvmMesh.Part(p.name, p.buffer, p.pivot, tris.size * 3, bb, 0, p.material)
+        return BydAvmMesh.Part(p.name, p.buffer, p.pivot, tris.size * 3, bb, 0, material, single, flip)
     }
 
     private fun key(x: Float, y: Float, z: Float): Long {

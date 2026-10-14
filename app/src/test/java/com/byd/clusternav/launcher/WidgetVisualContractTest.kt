@@ -64,8 +64,10 @@ class WidgetVisualContractTest {
     @Test
     fun `nen mac dinh di qua duong anh nen va kinh`() {
         val ctrl = code("WallpaperController.kt")
-        assertTrue("showDefault()" in SourceRoots.body(ctrl, "fun reload()"), "tắt ảnh người dùng ⇒ nền mặc định")
-        assertTrue("showDefault()" in SourceRoots.body(ctrl, "fun step("), "bật mà chưa có ảnh ⇒ nền mặc định")
+        // 3.1.5: tắt ảnh người dùng ⇒ reload chọn nguồn qua applySource() (ảnh đóng gói > nền vẽ); không còn ảnh nào ⇒ step vẽ nền mã.
+        assertTrue("applySource()" in SourceRoots.body(ctrl, "fun reload()"), "tắt ảnh người dùng ⇒ chọn lại nguồn nền mặc định")
+        assertTrue("WallSourcePolicy.resolve(" in SourceRoots.body(ctrl, "private fun applySource()"), "nguồn chọn bằng chính sách thuần")
+        assertTrue("showDefault()" in SourceRoots.body(ctrl, "fun step("), "không có ảnh để chiếu ⇒ nền vẽ bằng mã")
         val show = SourceRoots.body(ctrl, "private fun showDefault()")
         assertTrue("WallArtStore.swap(" in show && "wall.setPhoto(" in show, "nền mặc định đi qua CÙNG kho kính + WallView")
         assertTrue("++wallDecodeGen" in show, "lượt dựng về muộn bị bỏ bằng thẻ giải mã")

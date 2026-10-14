@@ -114,6 +114,7 @@ internal fun SimpleCastCoordinator.handleCastSlot(intent: SimpleCastIntent.CastS
         side = intent.side,
         currentState = state,
         projectionOpen = projection.isOpen,
+        replace = intent.replace,
     )
     if (rejectReason != null) {
         log("CastSlot REJECTED: $rejectReason for ${intent.pkg} side=${intent.side}")
@@ -155,6 +156,24 @@ internal fun SimpleCastCoordinator.handleCastSlot(intent: SimpleCastIntent.CastS
         }
     }
 
+    // 3.1.5 · R31 — thay một nửa trong MỘT lượt (bóng nổi): trả app cũ của nửa này về màn chính TRƯỚC khi đặt app mới, cùng một
+    // thao tác trên executor nối tiếp (hai ý định Stop + CastSlot thì `submitStop` ngắt/dọn hàng và hàng 1 chỗ bỏ-cũ-nhất có thể
+    // vứt mất Stop ⇒ app cũ kẹt). Đường mới, đứng CUỐI ngay trước lệnh đặt (§6); không có `replace` ⇒ 0 lệnh thêm.
+    if (intent.replace && afterWait is SimpleCastState.CastingSplit) {
+        val replaced = if (intent.side == ClusterSlotSide.LEFT) afterWait.left else afterWait.right
+        if (replaced != null && replaced.pkg != intent.pkg) {
+            log("CastSlot replace ${intent.side}: ${replaced.pkg} → ${intent.pkg}")
+            returnApp(replaced.pkg, AppType.NORMAL)
+        }
+    }
+
+    // Pass 5 (senior review 3.1.5, `CAST-REPLACE-FAIL-STATE`): lượt đặt HỎNG trong một phiên chia đôi ⇒ nửa KIA vẫn ở trên VD cụm —
+    // trạng thái hồi về đúng phần còn lại (nửa này trống: app cũ đã trả / chưa từng có), KHÔNG về Idle (Idle = nửa kia mồ côi: Stop
+    // không trả nó nữa). Cả hai nửa trống ⇒ `null` = Idle như cũ.
+    val survivor = (afterWait as? SimpleCastState.CastingSplit)
+        ?.let { s -> if (intent.side == ClusterSlotSide.LEFT) s.copy(left = null) else s.copy(right = null) }
+        ?.takeIf { it.left != null || it.right != null }
+
     val ok = mover.castToCluster(
         pkg = intent.pkg,
         activity = null,
@@ -164,7 +183,7 @@ internal fun SimpleCastCoordinator.handleCastSlot(intent: SimpleCastIntent.CastS
         leftPercent = leftPercent,
     )
     if (ok == null) {
-        setError("Cast to slot failed")
+        setError("Cast to slot failed", survivor)
         return
     }
 
@@ -190,7 +209,7 @@ internal fun SimpleCastCoordinator.handleCastSlot(intent: SimpleCastIntent.CastS
         }
         else -> {
             log("CastSlot postcondition FAIL: $outcome")
-            setError("Slot cast failed: app did not land")
+            setError("Slot cast failed: app did not land", survivor)
         }
     }
 }

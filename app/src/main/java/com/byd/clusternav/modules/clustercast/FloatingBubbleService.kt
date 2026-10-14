@@ -242,7 +242,7 @@ class FloatingBubbleService : Service() {
 
     /**
      * Single tap on the icon = toggle full (cast the foreground / return to gauges). Token-gated so
-     * only one cast/stop runs at a time; a rejected duplicate shows a toast. [detectForeground] does
+     * only one cast/stop runs at a time; a rejected duplicate shows a toast. [BubbleActionDispatcher.castableForeground] does
      * shell I/O, so the work runs on the tap executor.
      */
     private fun onBubbleTap() {

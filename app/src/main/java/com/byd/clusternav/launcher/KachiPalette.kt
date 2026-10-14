@@ -474,7 +474,7 @@ data class KachiPalette(
             orange = "#9b430a",
             slate = "#535f6e",
             amberSoft = "#337d5200",
-            redSoft = "#33b32439",
+            redSoft = "#29b32439",   // 3.1.x: 20 % → 16 % — chữ RED trên nút nguy hiểm ở đáy thẻ hộp chỉ 4,39:1
             artTo = "#b91c37",
             glow1 = "#dbe6f7",
             glow2 = "#ece0f8",

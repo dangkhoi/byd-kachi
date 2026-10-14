@@ -6,7 +6,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
@@ -134,7 +133,7 @@ internal class CellBinder(
             value.requestLayout()   // chuỗi ĐỔI (không phải mỗi nhịp): TextView ellipsize không tự xin đo khi bề rộng giữ — [ĐO] `Bật` kẹt 19 px (bề rộng `—`)
         }
         KachiWidgetType.pending(value, cell.available, GroupTileView.tintOf(cell.tone))   // R22·B: chưa đọc ⇒ vai MUT, không alpha
-        icon?.setColorFilter(c(if (cell.tone == GroupTone.NEUTRAL) KachiTheme.MUT2 else GroupTileView.tintOf(cell.tone)))
+        icon?.let { AdaptiveInk.icon(it, if (cell.tone == GroupTone.NEUTRAL) KachiTheme.MUT2 else GroupTileView.tintOf(cell.tone)) }   // R29 T29-5
         // Ô số-chính không có nền riêng (nó nằm trên nền của cả ô nhóm) ⇒ chỉ ô con của lưới mới tô nền.
         // R22 (brief Kim §2.2 "hộp trong hộp"): giá trị CHỈ-ĐỌC là HÀNG trên thẻ — NEUTRAL/ACTIVE không còn phiến nền;
         // chỉ WARN/ALERT giữ nền màu vì ở đó MÀU NỀN LÀ thông tin (KDoc [GroupTileView.surfaceOf]).

@@ -32,6 +32,9 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * đổi): [centered] `disc = true` đặt icon lên một **đĩa kính** [Sp.SWAP_DISC] (cùng [KachiGlass] NEUTRAL như thẻ,
  * không viền); icon giữ `MUT` như mọi ⇄ khác — tương phản do hợp đồng lớp che kính bảo đảm, không đo theo từng ảnh.
  * Lòng ô vẫn trong suốt. Mọi nút có mô tả trợ năng.
+ *
+ * 3.1.5 R29 — vai `MUT` giữ nguyên, mực THẬT giải trên nền đo được ([AdaptiveInk.icon]): trên đĩa kính (anh em của icon ⇒
+ * [AdaptiveInk.ride]) hoặc trên mặt của ô chứa nút; ngoài mọi mặt ⇒ đúng `MUT` như cũ.
  */
 object SlotSwapButton {
 
@@ -43,7 +46,7 @@ object SlotSwapButton {
      */
     fun build(context: Context, onTap: () -> Unit): ImageView = ImageView(context).apply {
         val r = KachiTheme.iconRes("ic-swap")
-        if (r != 0) { setImageResource(r); setColorFilter(Color.parseColor(KachiTheme.MUT)) }
+        if (r != 0) { setImageResource(r); AdaptiveInk.icon(this, KachiTheme.MUT) }   // R29: vai MUT, mực theo nền đo được
         scaleType = ImageView.ScaleType.FIT_CENTER
         background = null
         setOnClickListener { onTap() }
@@ -72,6 +75,7 @@ object SlotSwapButton {
                 val d = View(context).apply { isClickable = false; isFocusable = false }
                 KachiGlass.apply(d, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL, fade = false)   // bán kính = nửa cạnh ⇒ đĩa tròn; NÚT, không mờ theo R-OP
                 addView(d, FrameLayout.LayoutParams(KachiTheme.dpi(context, Sp.SWAP_DISC), KachiTheme.dpi(context, Sp.SWAP_DISC), Gravity.CENTER))
+                AdaptiveInk.ride(visual, d)   // R29: icon nằm TRÊN đĩa (anh em, không phải con) ⇒ giải trên mặt kính của đĩa
             }
             addView(
                 visual,

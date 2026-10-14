@@ -138,7 +138,7 @@ internal object KachiFormControls {
                 box.text = if (value) GLYPH_CHECK else ""
                 box.background = GradientDrawable().apply {
                     cornerRadius = dpi(box.context, Sp.RADIUS_S).toFloat()
-                    setColor(c(if (value) KachiTheme.GRAD_FROM else KachiTheme.FIELD_SUNKEN))
+                    setColor(c(if (value) KachiTheme.GRAD_FROM else dialogBoxOff(KachiTheme.palette)))
                 }
             }
     }

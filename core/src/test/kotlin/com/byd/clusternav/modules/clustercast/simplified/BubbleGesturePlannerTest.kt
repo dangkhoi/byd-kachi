@@ -141,4 +141,92 @@ class BubbleGesturePlannerTest {
             assertEquals(BubbleGesturePlanner.BubbleSlotOutcome.CAST, BubbleGesturePlanner.slotOutcome(state, ClusterSlotSide.RIGHT), "$state RIGHT")
         }
     }
+
+    // ─── 5. R31 (3.1.5, owner 14/10 "ok nút chiếu") — one-tap REPLACE ───────────────────────────────────────────────────
+    // KHOÁ [ĐO xe 14/10]: GMaps trên cụm + Waze ở tiền cảnh ⇒ lần chạm đầu CHỈ trả GMaps, phải chạm lần hai mới chiếu Waze.
+    // Gỡ R31 (tapOutcome bỏ qua foreground) ⇒ các bài REPLACE dưới đây đỏ.
+
+    private val gmapsFull = SimpleCastState.CastingFull("com.maps.a", AppType.NORMAL, DisplayConfig.NORMAL_DEFAULT)
+
+    @Test
+    fun `R31 tap idle casts the foreground (unchanged)`() {
+        assertEquals(BubbleTapOutcome.CAST_FULL, BubbleGesturePlanner.tapOutcome(SimpleCastState.Idle, "com.nav.b"))
+        assertEquals(BubbleTapOutcome.CAST_FULL, BubbleGesturePlanner.tapOutcome(SimpleCastState.Idle, null))
+    }
+
+    @Test
+    fun `R31 tap casting A with a different castable foreground B replaces in one tap`() {
+        assertEquals(BubbleTapOutcome.REPLACE_FULL, BubbleGesturePlanner.tapOutcome(gmapsFull, "com.nav.b"))
+    }
+
+    @Test
+    fun `R31 tap casting A with the same app A in front returns`() {
+        assertEquals(BubbleTapOutcome.RETURN, BubbleGesturePlanner.tapOutcome(gmapsFull, "com.maps.a"))
+    }
+
+    @Test
+    fun `R31 tap casting with home or nothing castable in front returns`() {
+        // The dispatcher's launcher guard maps Kachi/home/launchers to null before the planner sees them.
+        assertEquals(BubbleTapOutcome.RETURN, BubbleGesturePlanner.tapOutcome(gmapsFull, null))
+    }
+
+    @Test
+    fun `R31 tap during a split still returns everything even with a new foreground`() {
+        // CastFull from a split is ignored by the coordinator ⇒ a "replace" here would be a silent no-op.
+        val split = SimpleCastState.CastingSplit(SlotState("com.left", DisplayConfig.NORMAL_DEFAULT), null)
+        assertEquals(BubbleTapOutcome.RETURN, BubbleGesturePlanner.tapOutcome(split, "com.nav.b"))
+    }
+
+    @Test
+    fun `R31 transient states stay PREPARING whatever is in front`() {
+        listOf(SimpleCastState.Opening, SimpleCastState.Stopping, SimpleCastState.Off).forEach {
+            assertEquals(BubbleTapOutcome.PREPARING, BubbleGesturePlanner.tapOutcome(it, "com.nav.b"), "$it")
+        }
+    }
+
+    @Test
+    fun `R31 the foreground is probed only for idle and full casts`() {
+        assertTrue(BubbleGesturePlanner.tapNeedsForeground(SimpleCastState.Idle))
+        assertTrue(BubbleGesturePlanner.tapNeedsForeground(gmapsFull))
+        assertEquals(false, BubbleGesturePlanner.tapNeedsForeground(
+            SimpleCastState.CastingSplit(SlotState("com.left", DisplayConfig.NORMAL_DEFAULT), null)))
+        assertEquals(false, BubbleGesturePlanner.tapNeedsForeground(SimpleCastState.Opening))
+    }
+
+    private val leftOnlySplit = SimpleCastState.CastingSplit(
+        left = SlotState("com.maps.a", DisplayConfig.NORMAL_DEFAULT), right = null,
+    )
+    private val bothSplit = SimpleCastState.CastingSplit(
+        left = SlotState("com.maps.a", DisplayConfig.NORMAL_DEFAULT),
+        right = SlotState("com.music.c", DisplayConfig.NORMAL_DEFAULT),
+    )
+
+    @Test
+    fun `R31 slot occupied by A with a different castable foreground B replaces that half`() {
+        assertEquals(BubbleGesturePlanner.BubbleSlotOutcome.REPLACE,
+            BubbleGesturePlanner.slotOutcome(leftOnlySplit, ClusterSlotSide.LEFT, "com.nav.b"))
+        assertEquals(BubbleGesturePlanner.BubbleSlotOutcome.REPLACE,
+            BubbleGesturePlanner.slotOutcome(bothSplit, ClusterSlotSide.RIGHT, "com.nav.b"))
+    }
+
+    @Test
+    fun `R31 slot occupied with the same app, home or the other half's app in front returns that half`() {
+        assertEquals(BubbleGesturePlanner.BubbleSlotOutcome.RETURN,
+            BubbleGesturePlanner.slotOutcome(leftOnlySplit, ClusterSlotSide.LEFT, "com.maps.a"))
+        assertEquals(BubbleGesturePlanner.BubbleSlotOutcome.RETURN,
+            BubbleGesturePlanner.slotOutcome(leftOnlySplit, ClusterSlotSide.LEFT, null))
+        // The other half's app is already on the cluster — never move it across halves.
+        assertEquals(BubbleGesturePlanner.BubbleSlotOutcome.RETURN,
+            BubbleGesturePlanner.slotOutcome(bothSplit, ClusterSlotSide.LEFT, "com.music.c"))
+    }
+
+    @Test
+    fun `R31 a free slot still casts and decides without the foreground`() {
+        assertEquals(BubbleGesturePlanner.BubbleSlotOutcome.CAST,
+            BubbleGesturePlanner.slotOutcome(leftOnlySplit, ClusterSlotSide.RIGHT, "com.nav.b"))
+        assertEquals(BubbleGesturePlanner.BubbleSlotOutcome.CAST,
+            BubbleGesturePlanner.slotOutcome(SimpleCastState.Idle, ClusterSlotSide.LEFT, "com.nav.b"))
+        assertEquals(false, BubbleGesturePlanner.slotNeedsForegroundToDecide(leftOnlySplit, ClusterSlotSide.RIGHT))
+        assertTrue(BubbleGesturePlanner.slotNeedsForegroundToDecide(leftOnlySplit, ClusterSlotSide.LEFT))
+    }
 }

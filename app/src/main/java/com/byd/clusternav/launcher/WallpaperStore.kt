@@ -59,11 +59,19 @@ object WallpaperStore {
      * Hai lượt đọc là cố ý: lượt đầu chỉ đọc **kích thước** (không nạp pixel), lượt sau nạp với tỉ lệ giảm. Nạp
      * nguyên bản rồi mới thu nhỏ là cách chắc chắn để hết bộ nhớ.
      */
-    fun loadScaled(path: String, reqW: Int, reqH: Int): Bitmap? {
+    fun loadScaled(path: String, reqW: Int, reqH: Int): Bitmap? =
+        decodeScaled(reqW, reqH) { opts -> BitmapFactory.decodeFile(path, opts) }
+
+    /**
+     * Hai lượt giải mã giảm cỡ, dùng CHUNG cho ảnh trong thư mục ([loadScaled]) và ảnh nền đóng gói trong asset
+     * ([DefaultWallpapers.loadScaled]) — một luật hạ cỡ, không hai bản lệch nhau. [decode] được gọi HAI lần với hai bộ
+     * `Options` (lượt đo cỡ rồi lượt nạp); kết quả lượt đo cỡ KHÔNG dùng làm điều kiện (nó luôn `null`).
+     */
+    internal fun decodeScaled(reqW: Int, reqH: Int, decode: (BitmapFactory.Options) -> Bitmap?): Bitmap? {
         if (reqW <= 0 || reqH <= 0) return null
         return runCatching {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeFile(path, bounds)
+            decode(bounds)
             if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
             val sample = sampleSize(bounds.outWidth, bounds.outHeight, reqW, reqH)
             val sampledW = bounds.outWidth / sample
@@ -79,7 +87,7 @@ object WallpaperStore {
                     inTargetDensity = targetW
                 }
             }
-            BitmapFactory.decodeFile(path, opts)
+            decode(opts)
         }.getOrElse {
             Log.w(TAG, "không giải mã được ảnh: ${it.javaClass.simpleName}")
             null

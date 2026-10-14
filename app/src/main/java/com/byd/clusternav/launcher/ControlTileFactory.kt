@@ -141,7 +141,7 @@ class ControlTileFactory(
         var auto: Boolean? = null
         val vtext = TextView(ctx).apply {
             text = ControlVisuals.stepText(def, state.value(def))
-            setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp)
+            AdaptiveInk.text(this, KachiTheme.INK); setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp)   // R29 T29-7
             typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER; maxLines = 1
             setPadding(dpi(ctx, Sp.XS), 0, dpi(ctx, Sp.XS), 0)
             // WP2 · R2.4 — SÀN bề ngang = chỗ cho con số DÀI NHẤT của **mọi** nút STEP
@@ -254,7 +254,7 @@ class ControlTileFactory(
         val ticks = ControlVisuals.tickCount(def)
         val bar = if (ticks > 0) ControlLevelBar.build(ctx, ticks) else null
         val optView = if (bar != null) null else TextView(ctx).apply {
-            setTextColor(c(KachiTheme.ACCENT_INK))
+            AdaptiveInk.text(this, KachiTheme.ACCENT_INK)   // R29 T29-7: chữ lựa chọn giữ vai nhấn, mực theo nền đo được
             setTextSize(TypedValue.COMPLEX_UNIT_SP, size.optionSp); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
             maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dpi(ctx, Sp.XS), 0, 0)
         }
@@ -427,7 +427,7 @@ class ControlTileFactory(
         // trung tính của nền tông) — cùng ngôn ngữ ô Đèn. KHÔNG `ON_ACCENT` (trắng — chỉ cho nền nhấn ĐẶC; [ĐO T1] trên
         // nền nhấn nhạt bảng sáng icon trắng còn 1.39:1). P2 · AC2.6 — hợp đồng cỡ/chủ đề/trạng thái ở [KachiIcons.tint].
         KachiIcons.tint(icon, size.iconDp, active, if (active) KachiTheme.ACCENT_INK else KachiTheme.ICON)
-        label.setTextColor(c(if (active) KachiTheme.INK_ON_ACCENT else KachiTheme.INK2))
+        AdaptiveInk.text(label, if (active) KachiTheme.INK_ON_ACCENT else KachiTheme.INK2)   // R29 T29-7
         // WP2 · R2.1 *"icon active/mờ"* — trạng thái TẮT hạ độ đục của ICON. NHÃN giữ nguyên độ đục: nó trả lời
         // *"ô này là cái gì"*, câu đó không phụ thuộc bật/tắt (cùng lẽ [ReadTile.bind]/[CellBinder] chỉ làm mờ GIÁ
         // TRỊ chứ không làm mờ cả ô — [ĐO] 2.33:1 của lượt kiểm toán UX).
@@ -436,9 +436,9 @@ class ControlTileFactory(
 
     /** Nút −/+ của ô STEP: bề ngang do WEIGHT (không `minWidth` — [ĐO] 2×36dp bóp `"22°"` xuống 2 dòng), bề dọc [Sp.TOUCH_TIGHT]. */
     private fun stepBtn(s: String) = TextView(ctx).apply {
-        text = s; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp); gravity = Gravity.CENTER
-        minHeight = dpi(ctx, Sp.TOUCH_TIGHT); maxLines = 1
+        text = s; setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp); gravity = Gravity.CENTER; minHeight = dpi(ctx, Sp.TOUCH_TIGHT); maxLines = 1
         background = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_S).toFloat(); setColor(c(KachiTheme.DIM)) }
+        AdaptiveInk.fill(this, fades = false, variant = "dim") { intArrayOf(c(KachiTheme.DIM)) }; AdaptiveInk.text(this, KachiTheme.INK)   // R29: nút = mặt DIM
     }
 
     private fun applyBg(v: View, active: Boolean) {
@@ -446,6 +446,7 @@ class ControlTileFactory(
         // của ô đang bật tô `INK_ON_ACCENT`, icon `ACCENT_INK`, và `ThemePaletteContractTest` đo hai vai đó **trên nền
         // `tileOn*`**. Đổi nền mà giữ mực là làm số đo trong bài nói về một nền không còn tồn tại.
         v.background = if (active) KachiTheme.tonalOn(ctx, size.radius) else KachiChrome.fade(KachiTheme.surface(ctx, size.radius))   // R-OP: chỉ TẮT
+        AdaptiveInk.tile(v, active)   // R29 T29-7: mặt ô = đúng hai nhánh nền trên
     }
 
     /**

@@ -6,8 +6,8 @@ import kotlin.math.min
 /**
  * ═══ 3.01 R25 — CHẠM THẲNG VÀO BỘ PHẬN trên xe 3D (thuần `:core`) ═══════════════════════════════════════════════════
  *
- * Owner 13/10: *"cái nào chuyển động được trên 3D thì không cần làm chấm trạng thái"* ⇒ kính/cửa/cốp/đèn có hình 3D nói
- * trạng thái thì KHÔNG chấm; chạm vào chính bộ phận. Mỗi đích = hộp THẾ GIỚI của bộ phận (hợp hộp `extras.bbox` của các nút
+ * Owner 13/10: *"cái nào chuyển động được trên 3D thì không cần làm chấm trạng thái"* ⇒ chạm vào chính bộ phận. Owner 14/10 đặt
+ * lại CHẤM trên mọi điểm CÓ VIỆC ([Car3dHotspots.shows]) — chỉ là dấu nhìn ([dotPoint]/[freeY]), vùng nhấn dưới đây không đổi. Mỗi đích = hộp THẾ GIỚI của bộ phận (hợp hộp `extras.bbox` của các nút
  * khớp neo, sau phép đặt [Car3dOrient.Placement]); đích còn chấm (đèn đọc sách…) = hộp suy biến tại điểm neo.
  *  • Hộp chiếu lên màn bằng CÙNG camera với Filament ([Car3dCamera.project] 8 góc ⇒ chữ nhật bao), nới tối thiểu [minPx]
  *    mỗi chiều quanh tâm (≥ 48 dp hiệu dụng — đèn mảnh, kính chiếu xiên vẫn chạm được).
@@ -66,5 +66,49 @@ object Car3dPick {
         return hits.firstOrNull { (id, r) -> actionable(id) && r.contains(best.second.cx, best.second.cy) }?.first ?: best.first
     }
 
+    /**
+     * Chỗ đặt CHẤM của điểm (owner 14/10 *"mấy chỗ action được thì cho 1 nút tròn như trước… diện tích nhấn thì như cũ"*): điểm
+     * neo [anchor] giữ đúng tỉ lệ vị trí trong hộp NGHỈ [rest] của bộ phận, chuyển sang hộp ĐANG VẼ [now] (cánh cửa/nắp cốp quay
+     * theo bản lề) ⇒ chấm đi theo bộ phận; rồi KẸP vào hộp đích chạm [hit] ⇒ chấm không bao giờ nằm ngoài vùng nhấn của chính nó.
+     * Kính TRƯỢT không dời hộp đang vẽ (`:app` `Car3dRenderer.nodeBox` — phần kính đã tụt bị da cửa che) ⇒ chấm kính ở lại ô kính.
+     * Trục suy biến (hộp dẹt) ⇒ giữ toạ độ tâm của [now].
+     */
+    fun dotPoint(anchor: V3, rest: Pair<V3, V3>, now: Pair<V3, V3>, hit: Target): V3 {
+        fun axis(a: Double, r0: Double, r1: Double, n0: Double, n1: Double, h0: Double, h1: Double): Double {
+            val f = if (r1 - r0 > EPS) ((a - r0) / (r1 - r0)).coerceIn(0.0, 1.0) else 0.5
+            return (n0 + f * (n1 - n0)).coerceIn(min(h0, h1), max(h0, h1))
+        }
+        val (r0, r1) = rest; val (n0, n1) = now
+        return V3(
+            axis(anchor.x, r0.x, r1.x, n0.x, n1.x, hit.min.x, hit.max.x),
+            axis(anchor.y, r0.y, r1.y, n0.y, n1.y, hit.min.y, hit.max.y),
+            axis(anchor.z, r0.z, r1.z, n0.z, n1.z, hit.min.z, hit.max.z),
+        )
+    }
+
+    /**
+     * Chấm (tâm [x],[y] px, bán kính [r]) không được nằm DƯỚI một nút khác ([blocked] — icon ghế nằm trên kính cửa trước, [ĐO máy ảo
+     * 14/10]: chấm kính trước-trái ở góc mặc định trùng đĩa "mát ghế", chạm vào chấm lại bật mát ghế). Dời theo chiều dọc trong
+     * chữ nhật đích [rect] (lên trước, rồi xuống) từng bước [r]; không còn chỗ trống ⇒ `null` (ẩn chấm — dấu nhìn sai còn tệ hơn).
+     */
+    fun freeY(x: Float, y: Float, r: Float, rect: Rect, blocked: (Float, Float) -> Boolean): Float? {
+        fun free(cy: Float) = !blocked(x, cy) && !blocked(x - r, cy) && !blocked(x + r, cy) && !blocked(x, cy - r) && !blocked(x, cy + r)
+        if (free(y)) return y
+        val step = maxOf(r, 1f)
+        var cy = y - step
+        while (cy - r >= rect.t) { if (free(cy)) return cy; cy -= step }
+        cy = y + step
+        while (cy + r <= rect.b) { if (free(cy)) return cy; cy += step }
+        return null
+    }
+
+    /**
+     * Chữ nhật được phép DỜI chấm ([freeY]): hình chiếu của chính hộp bộ phận, chỉ nới tới cỡ chấm (2 × [dotR]) — KHÔNG nới tới
+     * cỡ ngón tay như vùng nhấn ([rect] với `minPx`). 3.1.5 (owner 14/10 ảnh: chấm kính nằm trên DA CỬA dưới mép kính) — [ĐO máy
+     * ảo] chấm kính trước né icon ghế dời XUỐNG trong chữ nhật nới 48 dp ⇒ ra khỏi kính ~90 px, xuống da cửa (vốn không chấm).
+     */
+    fun dotRect(cam: Car3dCamera, t: Target, w: Int, h: Int, dotR: Float): Rect? = rect(cam, t, w, h, 2 * dotR)
+
     private const val CORNERS = 8
+    private const val EPS = 1e-9
 }

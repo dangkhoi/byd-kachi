@@ -94,6 +94,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
 
     /** 2.87 · R-AH — nút đầu ô tự ẩn ([SlotHeadAutoHide]; L6: + chạy nền/tắt qua `heads.actions`). Khai TRƯỚC `init`. */
     internal val heads = SlotHeadAutoHide(this)
+    internal val expand = WorkspaceExpand(this)   // R30 — bung ô (TẠM, RAM của cây này); khai TRƯỚC `init` (`rebuild` gọi `drop`)
 
     init { rebuild() }
 
@@ -169,6 +170,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
 
     private fun renderInternal(s: WorkspaceState, status: CarStatus, embedChanged: Boolean, swap: Set<Int> = emptySet(), profileSwitch: Boolean = false) {
         mediaCache = null      // lượt mới ⇒ đọc lại nhạc đúng MỘT lần cho cả lượt
+        if (profileSwitch) expand.drop(SlotExpand.Why.PROFILE)   // R30.3: đổi hồ sơ ⇒ bố cục cũ trước khi dựng
         val old = displayed
         val oldStatus = displayedStatus
         displayed = s; displayedStatus = status; carStatus = status
@@ -189,6 +191,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 if (onlyValues && nc is SlotContent.Widget &&
                     WidgetViews.refreshRead(slotViews[i], widgetData()) > 0
                 ) return@forEach          // refresh SỐ tại chỗ — widget tự invalidate, KHÔNG relayout workspace
+                expand.drop(SlotExpand.Why.REBUILD)   // R30.3: khung sắp dựng lại ⇒ thu TRƯỚC (khung mới không lọt lên trên ô bung)
                 parkLeaving(i, oc, nc, shown, profileSwitch)   // ô 7 (§4.6d): app rời ô còn dùng ⇒ ĐỖ; đổi hồ sơ ⇒ đỗ nếu còn hiện (2.97 R5)
                 releaseSlotHost(i)          // ô đổi nội dung ⇒ nhả màn ảo của ô TRƯỚC khi tháo view
                 removeView(slotViews[i])
@@ -230,6 +233,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      * dựng lại — nhờ vậy app đang chiếu trong ô **không bị nhả/gắn lại** (C5), chỉ đổi cỡ khung.
      */
     fun setCustomLayout(layout: GridLayout?) {
+        expand.drop(SlotExpand.Why.LAYOUT)   // R30.3
         val before = EffectiveLayout.slotCount(displayed.preset, customLayout)
         customLayout = layout
         val after = EffectiveLayout.slotCount(displayed.preset, customLayout)
@@ -238,7 +242,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
 
     /** Khung pixel đang hiệu lực — mọi chỗ trong view PHẢI đi qua đây (xem `EffectiveLayout`). */
     private fun effectiveRects(w: Int, h: Int) =
-        EffectiveLayout.rects(displayed.preset, customLayout, w, h, gapPx)
+        expand.rects(EffectiveLayout.rects(displayed.preset, customLayout, w, h, gapPx), w, h)   // R30: ô bung = trọn vùng ô
 
     /**
      * U4(b) — đặt nguồn ảnh cho widget trình chiếu. Dựng lại **chỉ ô widget** khi nguồn thật sự đổi.
@@ -256,6 +260,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         val n = EffectiveLayout.slotCount(displayed.preset, customLayout)
         // 2.97 · R5: app bố cục MỚI vẫn hiện ⇒ ĐỖ, ô mới nhận lại. CHỈ ô sẽ ĐƯỢC DỰNG (`take(n)`): ô ngoài bố cục (≥ n, state còn giữ) không ai nhận lại ⇒ nhả.
         parkStillShown(displayed.slots.take(n))
+        expand.drop(SlotExpand.Why.REBUILD)   // R30.3: đổi bố cục sẵn / số ô ⇒ bố cục cũ
         releaseAppHosts(); removeAllViews(); slotViews.clear()   // dựng lại TẤT CẢ ⇒ nhả màn ảo cũ trước, không để hai đời ô cùng giữ VD
         for (i in 0 until n) {
             val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
@@ -271,6 +276,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      * thay cho `recreate()` cả Activity. Nền/thẻ ô chrome lấy màu mới; app đang chiếu chạy tiếp.
      */
     fun restyle() {
+        expand.drop(SlotExpand.Why.REBUILD)   // R30.3: ô widget dựng lại
         for (i in slotViews.indices) {
             val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
             if (content is SlotContent.App) continue   // GIỮ ô App — không nhả VD, app chạy tiếp
@@ -284,6 +290,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
 
     /** Dựng lại CHỈ ô widget (đổi thứ chỉ widget đọc: đơn vị, ảnh) — ô App giữ view ⇒ bộ chiếu không bị nhả (C5). */
     private fun rebuildWidgetSlots(only: (List<String>) -> Boolean = { true }) {
+        expand.drop(SlotExpand.Why.REBUILD)   // R30.3
         for (i in slotViews.indices) {
             val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
             if (content !is SlotContent.Widget || !only(content.ids)) continue
@@ -455,6 +462,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             slotViews[i].layout(rect.left, rect.top, rect.right, rect.bottom)
             pushSlotSize(i, rect.width, rect.height)
         }
+        expand.laidOut()   // R30.5: một dòng "bung/thu ô N · ms" sau lượt đổi cỡ
     }
 
     /** V3 · R15 — đẩy cỡ ô THẬT xuống màn ảo; [VdAppHost.resize] no-op khi trùng cỡ ⇒ không phải cơ chế thứ hai. */
@@ -466,15 +474,10 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private var lastInsetSignature = Int.MIN_VALUE
 
     /**
-     * ═══ V3 · R15 — inset đổi ⇒ ĐO LẠI ═══════════════════════════════════════════════════════════════════
-     *
-     * [ĐO xe 2026-09-16] `carlog-0916/slot-insets-bug.png`: lúc khởi động, thanh trên/dưới của ROM **còn hiện**,
-     * ô dựng theo khung đã co, và ảnh trong ô giữ khung hụt tới khi bấm Home lần nữa. Cờ `LAYOUT_STABLE |
-     * LAYOUT_FULLSCREEN` nói cửa sổ **được phép** trải hết màn, KHÔNG hứa rằng lượt bố trí **ĐẦU TIÊN** xảy ra
-     * sau khi ROM đã gỡ thanh — mà lượt đầu tiên chính là lượt dựng màn ảo của ô.
-     *
-     * ⚠ **Không tiêu thụ** inset, không đổi một pixel nào của phép bố trí: hàm này chỉ *nghe*. Trừ inset ra khỏi
-     * khung ô ở đây là đổi hành vi đang chạy tốt cho ba bố cục (CLAUDE.md §6 — đường mới xuống cuối).
+     * ═══ V3 · R15 — inset đổi ⇒ ĐO LẠI ═══ [ĐO xe 2026-09-16] `carlog-0916/slot-insets-bug.png`: lúc khởi động thanh ROM **còn
+     * hiện**, ô dựng theo khung đã co và giữ khung hụt tới lần Home sau (cờ `LAYOUT_STABLE | LAYOUT_FULLSCREEN` không hứa lượt bố
+     * trí ĐẦU — lượt dựng màn ảo của ô — xảy ra sau khi ROM gỡ thanh). ⚠ **Không tiêu thụ** inset, không đổi một pixel nào của
+     * phép bố trí: hàm này chỉ *nghe* (trừ inset ở đây = đổi hành vi đang chạy tốt cho ba bố cục — CLAUDE.md §6).
      */
     override fun onApplyWindowInsets(insets: android.view.WindowInsets): android.view.WindowInsets {
         val sig = (insets.systemWindowInsetTop * PRIME + insets.systemWindowInsetBottom) * PRIME +
@@ -487,12 +490,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         return super.onApplyWindowInsets(insets)
     }
 
-    /** Bộ chiếu màn ảo của ô [i] (`null` = ô không có) — cho đường đặt tạm ở `WorkspaceViewSwap.kt`. */
-    internal fun hostAt(i: Int): VdAppHost? = (slotViews.getOrNull(i) as? ViewGroup)?.let { g ->
-        (0 until g.childCount).firstNotNullOfOrNull { g.getChildAt(it) as? VdAppHost }
-    }
-
-    /** `internal` (không `private`) vì các hàm dựng thẻ nay ở `WorkspaceViewCards.kt` — xem KDoc tệp ấy. */
+    /** `internal` (không `private`) vì các hàm dựng thẻ nay ở `WorkspaceViewCards.kt` — xem KDoc tệp ấy. `hostAt` → `WorkspaceViewSlotDomain.kt` (R30). */
     internal fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
     /** Số nguyên tố trộn chữ ký inset — chỉ cần *khác nhau thì khác*, không cần phân phối đẹp. */

@@ -145,12 +145,65 @@ class CameraViewPlanTest {
         assertTrue(CameraViewFit.contentInside(gl.fit, round = true), "Thẳng rộng trong khung tròn cũng vừa khung")
     }
 
-    /** *Theo cụm* + kiểu trọn dải ⇒ khung chữ nhật (bám cong = phóng = cắt, trái với "thấy hết") — R7. */
-    @Test fun `Theo cum o kieu tron dai ve chu nhat va khung = noi dung`() {
-        for (mode in listOf(CameraViewMode.FISHEYE, CameraViewMode.WIDE)) {
-            val c = crops(mode, true, CameraSignalPolicy.SPAN_STRIP, CameraSignalPolicy.SHAPE_CLUSTER)
-            assertEquals(CameraSignalPolicy.SHAPE_RECT, c.frameShape)
-            assertTrue(c.frame.contentEquals(c.content))
+    /** Mọi kiểu hình × mọi hình khung: hình của phiên = ĐÚNG hình người lái chọn (không một phép ép nào ở tầng kế hoạch). */
+    @Test fun `theo cum giu theo cum o moi kieu`() {
+        for (mode in CameraViewMode.MODES) for (shape in CameraSignalPolicy.SHAPES) for (left in listOf(true, false)) {
+            val c = crops(mode, left, CameraSignalPolicy.SPAN_STRIP, shape)
+            assertEquals(shape, c.frameShape, "$mode $shape left=$left")
+            if (CameraViewMode.fullView(mode) && shape != CameraSignalPolicy.SHAPE_ROUND) {
+                assertTrue(c.frame.contentEquals(c.content), "kiểu trọn dải: khung = nội dung (không viền) — $mode $shape")
+            }
+        }
+    }
+
+    /**
+     * ═══ CAMERA-STYLE-CLUSTER-RECT · hồi quy dựng từ LOG XE 14/10 (Seal, 3.1.4) ═══════════════════════════════════════
+     *
+     * Owner 14/10: *"camera xi nhan, chọn kiểu thể hiện theo cụm nó vẫn chữ nhật"*. [ĐO] mọi phiên camera trên xe từ 07/10
+     * tới 14/10 ghi `kiểu=WIDE` (logcat 14/10 08:00:34 · 08:03:20 · 08:05:29 …): với kiểu ấy, phép ép R7 cũ
+     * (`CameraViewMode.frameShape`) biến *Theo cụm* thành chữ nhật ⇒ chọn *Theo cụm* KHÔNG BAO GIỜ có tác dụng.
+     *
+     * Bộ số lấy nguyên văn từ dòng log: nguồn 5120×960 · `crop=0.25,0,0.5,1` rot −90 (trái) và `0.5,0,0.75,1` rot 90
+     * (phải) · `chỗ=TL` cho CẢ HAI camera · `dải=140,132-1780,560` · display 1920×720 · `kết xuất=GL` (letterbox =
+     * kiểu trọn dải). Chữ nhật phải ra đúng `cửa=321x428 tại=140,132 lớp=321x428` như log; *Theo cụm* phải NỚI ra kính
+     * (mép cong, x < 140) và phóng-cắt (lớp cao hơn cửa) — đúng hình đã chạy trên xe 06/10 với *Nắn thẳng*
+     * (`cửa=391x428 tại=19,132 lớp=391x521`). Bài này ĐỎ khi khôi phục phép ép (khung ra `RECT`).
+     */
+    @Test fun `log xe 14-10 - Thang rong + Theo cum tren cum ra theo cum, khong ra chu nhat`() {
+        val spec = ClusterBandSpec.SEAL_DL3
+        val band = CameraClusterBand.band(1920, 720, spec)
+        assertEquals(listOf(140, 132, 1780, 560), listOf(band.x0, band.y0, band.x1, band.y1), "dải = log `dải=140,132-1780,560`")
+        val leftEdge = CameraClusterBand.leftEdge(band, spec, 1920)
+        val rightEdge = CameraClusterBand.rightEdge(band, spec, 1920)
+        // (bên nguồn, dải, crop log, xoay log) — camera PHẢI đi nguồn MIRROR_LEFT dải 2 như log `→ MIRROR_LEFT camId=1`.
+        val cams = listOf(
+            Triple(true, 1, -90) to floatArrayOf(0.25f, 0f, 0.5f, 1f),
+            Triple(false, 2, 90) to floatArrayOf(0.5f, 0f, 0.75f, 1f),
+        )
+        for ((cam, logCrop) in cams) {
+            val (left, strip, rot) = cam
+            for (mode in listOf(CameraViewMode.WIDE, CameraViewMode.FISHEYE)) {
+                fun place(shape: String): CameraClusterBand.Placement {
+                    val c = CameraViewPlan.crops(mode, CamView.MIRROR_LEFT, left, strip, strip,
+                        CameraSignalPolicy.SPAN_STRIP, shape, pct)
+                    assertArrayEquals(logCrop, c.content, 1e-6f, "nội dung = `nội-dung=` của log")
+                    assertEquals(shape, c.frameShape, "hình của phiên = lựa chọn ($mode $shape)")
+                    val eff = CameraClusterBand.effectiveShape(c.frameShape, onCluster = true)
+                    // `chỗ=TL` ⇒ atLeft = true cho cả hai camera (CameraOverlayView: corner == TL).
+                    return CameraClusterBand.place(band, true, w, h, c.frame, rot, spec, 720, eff,
+                        leftEdge, rightEdge, fitInside = CameraViewMode.fullView(mode))
+                }
+                val rect = place(CameraSignalPolicy.SHAPE_RECT)
+                assertEquals(listOf(140, 132, 321, 428, 321, 428),
+                    listOf(rect.x, rect.y, rect.w, rect.h, rect.layerW, rect.layerH), "chữ nhật = log 14/10 ($mode left=$left)")
+                val clus = place(CameraSignalPolicy.SHAPE_CLUSTER)
+                assertEquals(CameraSignalPolicy.SHAPE_CLUSTER, clus.shape, "$mode left=$left")
+                assertTrue(clus.leftEdge.isNotEmpty(), "mép trái mang bảng cong ⇒ mặt nạ bám kính ($mode left=$left)")
+                assertTrue(clus.x < rect.x, "nới ra tới kính: x ${clus.x} < ${rect.x}")
+                assertEquals(rect.h, clus.h, "vẫn cao trọn dải")
+                assertTrue(clus.layerH > clus.h, "phóng-cắt (cover) để bám cong, không kéo giãn: lớp ${clus.layerH} > cửa ${clus.h}")
+                assertTrue(CameraClusterBand.fadePx(clus) > 0, "mép trong mờ dần — chỉ hình theo cụm có")
+            }
         }
     }
 

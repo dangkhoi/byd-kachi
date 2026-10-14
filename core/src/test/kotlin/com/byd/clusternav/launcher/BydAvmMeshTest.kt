@@ -137,8 +137,9 @@ class BydAvmMeshTest {
         val bin = 20 + jLen + 8
         assertEquals(listOf(0, 1, 2), (0..2).map { bb.getInt(bin + 3 * 12 + 3 * 12 + 3 * 8 + it * 4) })
         assertTrue(json.contains("\"extras\":{\"bbox\":["), "hộp riêng của bộ phận trong extras")
-        assertTrue(json.contains("\"name\":\"lamp_on\"") && json.contains("\"emissiveFactor\""), json)
-        assertTrue(json.contains("\"name\":\"lamp\""), json)
+        // Không truyền ảnh ⇒ bản TRƠN của kiểu đèn (3.1.5 [Car3dMaterials]: ảnh vắng không bao giờ thành nền trắng 1,0).
+        assertTrue(json.contains("\"name\":\"lamp_on${Car3dGlb.PLAIN}\"") && json.contains("\"emissiveFactor\""), json)
+        assertTrue(json.contains("\"name\":\"lamp${Car3dGlb.PLAIN}\""), json)
     }
 
     @Test

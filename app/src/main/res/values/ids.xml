@@ -24,4 +24,10 @@
     <item name="kachi_chip_text_key" type="id" />
     <!-- 2.98 · OTA-UPDATE-DOT: drawable chấm "có bản mới" gắn vào một view (UpdateDotBadge.bind — chặn gắn hai lần). -->
     <item name="kachi_update_dot" type="id" />
+    <!-- 3.1.5 R29 (mực thích ứng, AdaptiveInk): MẶT có nền riêng (lớp nó vẽ + kết quả giải) · dấu vai mực trên chữ/icon. -->
+    <item name="kachi_ink_surface" type="id" />
+    <item name="kachi_ink_mark" type="id" />
+    <!-- 3.1.5 R29 pha 2b (AdaptiveInk.ride): nét vẽ CẠNH một mặt (icon ⇄ trên đĩa kính anh em) — mặt ↔ người đi kèm. -->
+    <item name="kachi_ink_rider" type="id" />
+    <item name="kachi_ink_host" type="id" />
 </resources>

@@ -2,10 +2,8 @@ package com.byd.clusternav.launcher
 
 import android.text.SpannableString
 import android.text.Spanned
-import android.text.style.ForegroundColorSpan
 import android.widget.TextView
 import com.byd.clusternav.R
-import com.byd.clusternav.launcher.KachiTheme.c
 
 /**
  * ═══ MÀU CHỮ + ICON của một chip thanh trên theo SẮC THÁI — MỘT chỗ khai ═══════════════════════════════════════
@@ -41,15 +39,15 @@ internal fun chipInk(tone: ChipTone): String = when (tone) {
  * ═══ 2.88 · CHỮ CHIP CÓ ĐOẠN MÀU — mỗi con số của chip lốp một màu ([ChipView.runs]) ═══════════════════════════
  *
  * Không có đoạn nào ⇒ trả CHÍNH chuỗi thường: mọi chip cũ đi đúng đường cũ, không một `Spannable` nào. Có đoạn ⇒ mỗi
- * [ChipRun] một `ForegroundColorSpan` mang màu của sắc thái ấy (cùng bảng [chipInk]); phần ngoài đoạn (nhãn `"Lốp · "`,
- * khe) giữ màu chữ của cả chip (`applyChipFace`). Đoạn hỏng (ngoài chuỗi / rỗng) bị bỏ, không ném.
+ * [ChipRun] một [AdaptiveInk.InkSpan] mang VAI của sắc thái ấy (cùng bảng [chipInk]; 3.1.5 R29 — trước: `ForegroundColorSpan`
+ * màu cố định); phần ngoài đoạn (nhãn `"Lốp · "`, khe) giữ màu chữ của cả chip (`applyChipFace`). Đoạn hỏng (ngoài chuỗi / rỗng) bị bỏ, không ném.
  */
 internal fun chipText(chip: ChipView): CharSequence {
     if (chip.runs.isEmpty()) return chip.text
     val out = SpannableString(chip.text)
     chip.runs.forEach { r ->
         if (r.start < 0 || r.end > chip.text.length || r.start >= r.end) return@forEach
-        out.setSpan(ForegroundColorSpan(c(chipInk(r.tone))), r.start, r.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        out.setSpan(AdaptiveInk.InkSpan(chipInk(r.tone)), r.start, r.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)   // R29: vai của sắc thái, mực theo nền
     }
     return out
 }
@@ -71,5 +69,6 @@ internal fun applyChipText(v: TextView, chip: ChipView) {
     val key = chipTextKey(chip)
     if (v.getTag(R.id.kachi_chip_text_key) == key) return
     v.text = chipText(chip)
+    AdaptiveInk.spans(v)   // R29: chuỗi mới đặt SAU lượt tô mặt chip ⇒ tô đoạn màu ngay bằng kết quả đã lưu
     v.setTag(R.id.kachi_chip_text_key, key)
 }

@@ -34,13 +34,15 @@ object Car3dHotspots {
     }
 
     /**
-     * Cú chạm làm gì. Vật có ô MỨC ([GroupActionCell.level]) ⇒ bước kế của [WindowCycle] từ mức đọc được [level] (%);
-     * không thì bấm ô đầu tiên.
+     * Cú chạm làm gì. Vật có ô MỨC ([GroupActionCell.level]) ⇒ bước kế của [WindowCycle] từ mức đọc được [level] (%), hoặc
+     * mở hẳn khi [double] (cú thứ hai của chạm đúp — [pending] = đích lạc quan cú trước đã gửi); không thì bấm ô đầu tiên.
      */
-    fun tap(r: Resolved, level: Int?): Tap {
+    fun tap(r: Resolved, level: Int?, double: Boolean = false, pending: Int? = null): Tap {
         if (r.actions.isEmpty()) return Tap.None
         if (r.actions.any { it.level != null }) {
-            return WindowCycle.plan(r.actions, WindowCycle.next(level))?.let { Tap.Set(it.action, it.on) } ?: Tap.None
+            // Chạm đúp ⇒ mở hẳn ([WindowCycle.tapTarget]); đích vừa gửi đã là mở hẳn ⇒ không bước nào.
+            val target = WindowCycle.tapTarget(level, double, pending) ?: return Tap.None
+            return WindowCycle.plan(r.actions, target)?.let { Tap.Set(it.action, it.on) } ?: Tap.None
         }
         return Tap.Press(r.actions.first())
     }
@@ -69,10 +71,16 @@ object Car3dHotspots {
         }
 
     /**
-     * Điểm có được VẼ không. Điểm CHỈ-XEM (không ô nút — cửa) chỉ hiện khi vật đang "khác nghỉ" (cửa MỞ): owner 13/10 hỏi
-     * *"cái chấm đen bên dưới cửa là cái gì"* — vòng đóng/đứt nét trên nền tối ở chân cửa không nói gì (cửa đóng đã thấy bằng
-     * chính hình 3D) mà trông như nút bấm được rồi chạm chỉ lắc. Cửa mở ⇒ hình cánh cửa mở + chấm mở; chưa đọc ⇒ không chấm.
-     * Điểm có nút (kính/cốp/đèn) luôn vẽ.
+     * Điểm có VIỆC khi chạm (ghi được — có ô nút): CÙNG cờ mà [Car3dPick.pick] dùng để nhường cú chạm cho đích có việc.
+     * Kính/cốp/đèn ghi được/đèn đọc ⇒ có; cửa (không đường ghi) ⇒ chỉ xem.
      */
-    fun shows(r: Resolved): Boolean = r.actions.isNotEmpty() || active(r.cell)
+    fun actionable(r: Resolved): Boolean = r.actions.isNotEmpty()
+
+    /**
+     * Điểm có CHẤM không — owner 14/10: *"mấy chỗ mà action được, thì cho 1 nút tròn như trước… chỉ để hiểu là nhấn được"* rồi
+     * chỉnh *"cửa đâu có nhấn được nên ko cần chấm tròn, chỉ chấm tròn những chỗ action được thôi"* ⇒ chấm = ĐÚNG [actionable]
+     * (không bảng tay). Chấm chỉ là dấu nhìn: vùng nhấn + luật chọn đích ([Car3dPick]) không đổi; điểm chỉ-xem (cửa) không chấm —
+     * cửa mở đã thấy bằng chính hình 3D.
+     */
+    fun shows(r: Resolved): Boolean = actionable(r)
 }

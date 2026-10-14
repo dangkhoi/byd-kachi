@@ -1,0 +1,8 @@
+Physical size: 1920x720
+Override size: 1920x520
+Stack id=19 bounds=[0,0][1920,520] displayId=1 userId=0
+  taskId=14: com.waze/com.waze.FreeMapAppActivity bounds=[0,0][1920,520] userId=0 visible=true topActivity=ComponentInfo{com.waze/com.waze.MainActivity}
+Stack id=2 bounds=[0,0][1920,520] displayId=1 userId=0
+  taskId=6: com.byd.launcher/com.byd.clusternav.modules.clustercast.ClusterBlackActivity bounds=[0,0][1920,720] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.modules.clustercast.ClusterBlackActivity}
+    Frames: containing=[0,0][1920,520] parent=[0,0][1920,520]
+    mFrame=[0,0][1920,520] last=[0,0][1920,520]

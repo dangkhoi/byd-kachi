@@ -181,8 +181,9 @@ class WallpaperWiringContractTest {
             "nhánh 'nền đang tắt' không được thoát hàm, không thì widget trình chiếu mất nguồn ảnh")
         // Và trong khối chạy ở thread chính, nguồn ảnh phải đặt TRƯỚC chỗ bỏ qua phần nền.
         val ui = SourceRoots.body(fn, "onUi {")
-        assertTrue(ui.indexOf("onPhotoSource(") in 0 until ui.indexOf("if (!prefs().enabled) return@onUi"),
-            "nguồn ảnh cho widget phải đặt trước chỗ bỏ qua phần hình nền")
+        // 3.1.5: phần nền nay là `applySource()` (chọn nguồn ảnh người dùng / đóng gói / vẽ bằng mã) — widget vẫn phải đi TRƯỚC.
+        assertTrue(ui.indexOf("onPhotoSource(") in 0 until ui.indexOf("applySource()"),
+            "nguồn ảnh cho widget phải đặt trước phần hình nền")
     }
 
     @Test

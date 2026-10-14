@@ -132,4 +132,14 @@ class Car3dHeroTest {
         assertNull(ColorChoice.decode(off.encode()).carBackdrop)
         assertTrue(ColorChoice.decode("KACHI_BLUE;NEUTRAL").carTyres)
     }
+
+    @Test
+    fun `suoi va mat cung ghe loai tru nhau - bat cai nay thi cai kia hien tat, tat thi khong dung cai kia`() {
+        assertEquals("seatc", Car3dHero.exclusive("seath", 1))
+        assertEquals("seath", Car3dHero.exclusive("seatc", 2))
+        assertEquals("seatc_r", Car3dHero.exclusive("seath_r", 2))
+        assertEquals("seath_r", Car3dHero.exclusive("seatc_r", 1))
+        assertNull(Car3dHero.exclusive("seath", 0), "tắt ⇒ không đụng ghế kia")
+        assertNull(Car3dHero.exclusive("ac", 1), "mã không phải ghế")
+    }
 }

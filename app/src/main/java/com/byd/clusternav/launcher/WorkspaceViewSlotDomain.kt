@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import android.view.View
+import android.view.ViewGroup
 
 /**
  * ═══ Lĩnh vực của một ô + bắt đầu kéo ô — hai hàm nhỏ tách khỏi [WorkspaceView] ═══
@@ -22,3 +23,8 @@ internal fun WorkspaceView.startSlotDrag(index: Int, v: View) {
  */
 internal fun WorkspaceView.slotFrame(i: Int): Pair<Int, Int>? =
     slotViews.getOrNull(i)?.let { v -> (v.width to v.height).takeIf { it.first > 0 && it.second > 0 } }
+
+/** Bộ chiếu màn ảo của ô [i] (`null` = ô không có) — cho đường đặt tạm ở `WorkspaceViewSwap.kt` (chuyển nguyên văn từ `WorkspaceView.kt`, R30). */
+internal fun WorkspaceView.hostAt(i: Int): VdAppHost? = (slotViews.getOrNull(i) as? ViewGroup)?.let { g ->
+    (0 until g.childCount).firstNotNullOfOrNull { g.getChildAt(it) as? VdAppHost }
+}

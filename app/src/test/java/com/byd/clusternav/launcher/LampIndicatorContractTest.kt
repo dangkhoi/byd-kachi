@@ -26,7 +26,7 @@ class LampIndicatorContractTest {
         assertTrue(button.contains("if (kind != CarDots.Kind.CLOSED)"), "vòng chỉ khi bật/chưa biết")
         val lamp = SourceRoots.body(painter, "fun drawLamp(")
         assertFalse(lamp.contains("inks.backing") || lamp.contains("ring"), "đèn báo không đĩa nền, không vòng")
-        assertTrue(lamp.contains("inks.shadow") && lamp.contains("lamp ?: inks.accent"), "viền bóng tối + màu loại đèn")
+        assertTrue(lamp.contains("inks.lampEdge") && lamp.contains("inks.lampTone(lamp)"), "viền tương phản + màu loại đèn (theo bảng)")
         // Chữ ký bảng 3D (Car3dDotsLayer) giữ nguyên.
         assertTrue(painter.contains("tappable: Boolean = true,"))
         assertTrue(board.contains("LampTone.of(s.tile.cell?.id)?.argb"), "màu theo mã đọc (dữ liệu :core)")
@@ -38,12 +38,12 @@ class LampIndicatorContractTest {
             val k = StateDotPainter.Inks.of(p, night)
             listOf(MEDIAN_WORST, P95_WORST, PEAK).forEach { l ->
                 val photo = ColorMath.grayOfLuminance(l)
-                val shade = ColorMath.over(k.shadow, photo)
+                val shade = ColorMath.over(k.lampEdge, photo)
                 val face = ColorMath.over(k.tonal, ColorMath.over(k.shadow, photo))
-                val checks = LampTone.Tone.entries.associate { "đèn báo ${it.name}" to ColorMath.ratio(it.argb, shade) } + mapOf(
+                val checks = LampTone.Tone.entries.associate { "đèn báo ${it.name}" to ColorMath.ratio(k.lampTone(it.argb), shade) } + mapOf(
                     "đèn báo tắt" to ColorMath.ratio(ColorMath.over(k.lampOff, shade), shade),
-                    "đèn báo chưa biết" to ColorMath.ratio(ColorMath.over(k.unknown, shade), shade),
-                    "đèn báo nhấn (không màu loại)" to ColorMath.ratio(k.accent, shade),
+                    "đèn báo chưa biết" to ColorMath.ratio(ColorMath.over(k.lampUnknown, shade), shade),
+                    "đèn báo nhấn (không màu loại)" to ColorMath.ratio(k.lampTone(null), shade),
                     "nút tắt" to ColorMath.ratio(ColorMath.over(k.closed, face), face),
                     "nút bật" to ColorMath.ratio(k.accent, face),
                     "nút chưa biết" to ColorMath.ratio(ColorMath.over(k.unknown, face), face),

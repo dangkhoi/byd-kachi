@@ -34,6 +34,37 @@ class WindowCycleTest {
         assertNull(WindowCycle.plan(emptyList(), 50))
     }
 
+    /**
+     * 3.1.5 — owner 14/10 *"double click thì mở all được ko"*: chạm ĐƠN giữ vòng cũ (gửi ngay, không hoãn); cú thứ hai cùng kính
+     * trong thời hạn chạm đúp ⇒ mở hẳn; đích vừa gửi đã là mở hẳn ⇒ không gửi gì thêm. Đảo luật (cú hai đi theo vòng) ⇒ đỏ.
+     */
+    @Test
+    fun `cham dup mo han - cham don giu vong, da mo han thi khong gui them`() {
+        // Đơn: y hệt [WindowCycle.next].
+        assertEquals(50, WindowCycle.tapTarget(0, double = false, pending = null))
+        assertEquals(0, WindowCycle.tapTarget(100, double = false, pending = null))
+        // Đúp từ đóng: cú 1 gửi 50 (đích lạc quan 50) ⇒ cú 2 gửi 100 — xe nhận thêm đúng một lệnh, cuối cùng mở hẳn.
+        val first = WindowCycle.tapTarget(0, double = false, pending = null)
+        assertEquals(100, WindowCycle.tapTarget(first, double = true, pending = first))
+        // Đúp từ 50: cú 1 đã gửi 100 ⇒ cú 2 không gửi gì (vòng thường sẽ ĐÓNG — đó là lỗi chạm đúp phải tránh).
+        val f50 = WindowCycle.tapTarget(50, double = false, pending = null)
+        assertEquals(100, f50)
+        assertNull(WindowCycle.tapTarget(f50, double = true, pending = f50))
+        // Đúp từ mở hẳn: cú 1 gửi đóng ⇒ cú 2 trả về mở hẳn.
+        assertEquals(100, WindowCycle.tapTarget(0, double = true, pending = 0))
+        // Ô nút: cú đúp chọn đúng nút mở hẳn (BẬT `win_lf`), qua cùng đường [Car3dHotspots.tap] với xe 3D.
+        assertEquals(WindowCycle.Step(lf.slots.first { it?.id == "win_lf" }!!, true), WindowCycle.plan(lf.slots, WindowCycle.tapTarget(50, true, 50)!!))
+    }
+
+    @Test
+    fun `thoi han cham dup - chi cu thu hai trong han`() {
+        assertEquals(false, WindowCycle.isDouble(null, 1_000, 300), "cú đầu tiên không bao giờ là đúp")
+        assertEquals(true, WindowCycle.isDouble(1_000, 1_250, 300))
+        assertEquals(true, WindowCycle.isDouble(1_000, 1_300, 300))
+        assertEquals(false, WindowCycle.isDouble(1_000, 1_301, 300), "quá hạn ⇒ cú đơn (bước kế của vòng)")
+        assertEquals(false, WindowCycle.isDouble(1_000, 900, 300), "đồng hồ lùi ⇒ không đúp")
+    }
+
     @Test
     fun `muc tu o xem - chua doc la null`() {
         assertNull(WindowCycle.levelOf(false, 0.35f))

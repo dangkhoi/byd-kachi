@@ -222,6 +222,8 @@
     <string name="kachi_slot_close_app">Tutup apl petak %1$d</string>
     <string name="kachi_slot_close_widget">Tutup widget petak %1$d</string>
     <string name="kachi_slot_close_confirm">Ketik sekali lagi untuk tutup</string>
+    <string name="kachi_slot_expand">Besarkan petak %1$d</string>
+    <string name="kachi_slot_collapse">Pulihkan petak %1$d</string>
     <string name="kachi_slot_close_failed">Tidak dapat menutup %1$s</string>
     <string name="kachi_slot_head_autohide_title">Sembunyi butang ⇄ secara automatik</string>
     <string name="kachi_slot_head_autohide_sub">Butang tukar apl/widget pada bingkai disembunyikan supaya skrin lebih kemas; ketik bingkai (atau ruang kosong pada skrin) untuk memaparkannya seketika</string>

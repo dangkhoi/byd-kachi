@@ -53,9 +53,10 @@ class KachiChromeContractTest {
             callers("KachiChrome.fade("),
         )
         assertEquals(
-            listOf("WallGlass.kt", "WallView.kt"), callers("KachiChrome.fraction"),
+            listOf("AdaptiveInk.kt", "WallGlass.kt", "WallView.kt"), callers("KachiChrome.fraction"),
             "hệ số chỉ đọc thẳng ở hai chỗ vẽ Canvas: cửa kính trên ảnh · hai dải che hình nền " +
-                "(thẻ bánh thường đã GỠ ở R22·R — owner 13/10, số lốp đứng thẳng trên thẻ ô)",
+                "(thẻ bánh thường đã GỠ ở R22·R — owner 13/10, số lốp đứng thẳng trên thẻ ô) + chỗ ĐO lại đúng phép vẽ đó " +
+                "(3.1.5 R29 AdaptiveInk: nền ghép dưới chữ — không vẽ gì)",
         )
         assertEquals(listOf("ThemeHost.kt"), callers("KachiChrome.apply("), "một chỗ ghi")
         assertTrue("KachiChrome.fade(KachiTheme.surface(ctx, size.radius))" in code(file("ControlTileFactory.kt")))

@@ -82,11 +82,11 @@ class WallWindowDrawable(
      * `var veilAlpha` kèm KDoc *"để bảng đo/ảnh chụp đối chiếu"* nhưng [ĐO] **0 chỗ đọc** trong cả `app`, `core`,
      * `docs`, `scripts` ⇒ mã chết + một câu KDoc nói sai (cùng họ `LauncherRequirements.notice()` đã gỡ).
      */
-    fun relocate(view: View) {
+    fun relocate(view: View): Boolean {
         view.getLocationInWindow(loc)
         val w = maxOf(1, view.width)
         val h = maxOf(1, view.height)
-        if (loc[0] == lastX && loc[1] == lastY && w == lastW && h == lastH) return
+        if (loc[0] == lastX && loc[1] == lastY && w == lastW && h == lastH) return false
         lastX = loc[0]; lastY = loc[1]; lastW = w; lastH = h
         matrix.setScale(art.scale.toFloat(), art.scale.toFloat())
         matrix.postTranslate(-loc[0].toFloat(), -loc[1].toFloat())
@@ -94,7 +94,17 @@ class WallWindowDrawable(
         val lum = art.luminanceOf(loc[0], loc[1], loc[0] + w, loc[1] + h)
         veilPaint.color = veilColor(GlassVeil.alphaFor(lum, veilOpaque, surfaces, inks))
         invalidateSelf()
+        AdaptiveInk.update(view, force = true)   // R29 T29-4: vùng ảnh dưới thẻ đổi ⇒ giải lại mực trên nền ghép thật
+        return true
     }
+
+    /**
+     * R29 T29-4 — các lớp cửa sổ này VẼ dưới vùng màn [r] (đúng thứ tự [draw]: ảnh mờ × [fade] → lớp che đang vẽ → nhuộm) rồi
+     * bề mặt [drawnSurfaces] (hai đầu chuyển sắc, đã nhân độ đục) + sắc lĩnh vực [drawnDomain]. Đọc màu ĐANG VẼ của chính các
+     * `Paint` ⇒ chồng của bộ giải không thể lệch khỏi thứ trên màn.
+     */
+    internal fun inkGroups(r: android.graphics.Rect, drawnSurfaces: IntArray, drawnDomain: Int): List<List<List<ContrastBackdrop.Layer>>> =
+        listOf(ContrastStack.glassVariants(art.glassAt(r.left, r.top, r.right, r.bottom), fade, photo.alpha / 255.0, veilPaint.color, tintPaint.color, drawnSurfaces, drawnDomain))
 
     /** Màu lớp che cho độ đục [alpha] (0..1) bộ giải chọn — đúng byte hôm nay, rồi nhân [fade] (R-OP, `f = 1` ⇒ y nguyên). */
     private fun veilColor(alpha: Double): Int = ColorMath.withAlpha(veilOpaque, ChromeOpacity.drawnAlpha((alpha * 255).toInt(), fade))
@@ -171,6 +181,7 @@ object KachiGlass {
     fun plain(view: View, background: Drawable?) {
         view.setTag(R.id.kachi_glass_spec, null)
         unbind(view)
+        AdaptiveInk.clear(view)   // R29: nền mang thông tin ⇒ không còn là mặt kính; chữ trong nó theo mặt cha
         view.background = background
     }
 
@@ -180,6 +191,7 @@ object KachiGlass {
      */
     fun refresh(root: View) {
         (root.getTag(R.id.kachi_glass_spec) as? GlassSpec)?.let { paint(root, it) }
+        AdaptiveInk.onRefresh(root)   // R29: mặt THƯỜNG (thanh trên/thanh nút/ô nút) giải lại theo ảnh/chủ đề/độ đục mới
         if (root is ViewGroup) for (i in 0 until root.childCount) refresh(root.getChildAt(i))
     }
 
@@ -190,6 +202,8 @@ object KachiGlass {
             unbind(view)
             view.background = KachiTheme.surface(ctx, spec.radius, spec.tone, spec.domain)
             if (spec.fade) view.background?.let { KachiChrome.fade(it) }   // R-OP: 100 % ⇒ không chạm gì
+            // R29 T29-4: không ảnh ⇒ nền ghép = nền vẽ (bg + vầng sáng) + bề mặt × độ đục; không phụ thuộc vị trí.
+            AdaptiveInk.surface(view, listen = true) { listOf(ContrastStack.surfaceVariants(drawnPair(spec, overArt = false), drawnDomain(spec))) }
             return
         }
         // R-OP (2.88) — có ảnh: cửa sổ (ảnh mờ + lớp che + nhuộm) và bề mặt cùng nhân MỘT hệ số [KachiChrome.fraction];
@@ -206,7 +220,23 @@ object KachiGlass {
         val top = KachiTheme.surface(ctx, spec.radius, spec.tone, spec.domain, overArtwork = true)
         if (spec.fade) KachiChrome.fade(top)
         view.background = LayerDrawable(arrayOf(window, top))
+        val surf = drawnPair(spec, overArt = true); val dom = drawnDomain(spec)
+        AdaptiveInk.surface(view, listen = false) { r -> window.inkGroups(r, surf, dom) }   // R29 T29-4 (relocate gọi update)
         bind(view, window::relocate)
+    }
+
+    /** R29 — hai đầu chuyển sắc của bề mặt ĐÚNG như [paint] dựng nó (cùng [KachiTheme.surfacePair] + cùng phép làm mờ). */
+    private fun drawnPair(spec: GlassSpec, overArt: Boolean): IntArray {
+        val f = if (spec.fade) KachiChrome.fraction else 1.0
+        return KachiTheme.surfacePair(spec.tone, overArt).map { ColorMath.withAlpha(it, ChromeOpacity.drawnAlpha(ColorMath.alpha(it), f)) }.toIntArray()
+    }
+
+    /** R29 — sắc lĩnh vực mà [KachiTheme.surface] chồng lên bề mặt (0 = không có; ô LÕM không có lớp này). */
+    private fun drawnDomain(spec: GlassSpec): Int {
+        val t = KachiTheme.domainTint(spec.domain)
+        if (t == KachiTheme.CLEAR || spec.tone == SurfaceTone.SUNKEN) return 0
+        val f = if (spec.fade) KachiChrome.fraction else 1.0
+        return KachiTheme.c(t).let { ColorMath.withAlpha(it, ChromeOpacity.drawnAlpha(ColorMath.alpha(it), f)) }
     }
 
     /**
@@ -221,15 +251,16 @@ object KachiGlass {
     }
 
     /** Listener layout + cuộn — vị trí trong cửa sổ đổi thì cửa sổ nhìn xuống vùng khác của ảnh ([WallWindowDrawable.relocate]). */
-    private class Binding(val view: View, val relocate: (View) -> Unit) :
+    private class Binding(val view: View, val relocate: (View) -> Boolean) :
         View.OnLayoutChangeListener, View.OnAttachStateChangeListener, ViewTreeObserver.OnScrollChangedListener {
-        override fun onLayoutChange(v: View?, l: Int, t: Int, r: Int, b: Int, ol: Int, ot: Int, or: Int, ob: Int) = relocate(view)
-        override fun onScrollChanged() = relocate(view)
+        // R29: layout mà vùng GIỮ (con dựng lại) ⇒ tô lại mực bằng kết quả đã lưu; cuộn thì chỉ relocate (không đi cây con).
+        override fun onLayoutChange(v: View?, l: Int, t: Int, r: Int, b: Int, ol: Int, ot: Int, or: Int, ob: Int) { if (!relocate(view)) AdaptiveInk.reapply(view) }
+        override fun onScrollChanged() { relocate(view) }
         override fun onViewAttachedToWindow(v: View) { v.viewTreeObserver.addOnScrollChangedListener(this); relocate(view) }
         override fun onViewDetachedFromWindow(v: View) { v.viewTreeObserver.removeOnScrollChangedListener(this) }
     }
 
-    private fun bind(view: View, relocate: (View) -> Unit) {
+    private fun bind(view: View, relocate: (View) -> Boolean) {
         unbind(view)
         val b = Binding(view, relocate)
         view.setTag(R.id.kachi_glass_binding, b)

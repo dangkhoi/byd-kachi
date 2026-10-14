@@ -338,9 +338,8 @@ object KachiTheme {
         "ic-hood" -> R.drawable.ic_hood
         "ic-light" -> R.drawable.ic_light
         "ic-recirc" -> R.drawable.ic_recirc
-        // UX8 (owner 2026-09-27) — chip *Chế độ lấy gió* đổi HÌNH theo chế độ thay vì in chữ "Trong"/"Ngoài":
-        // `ic-recirc` (đã có) = lấy gió TRONG · `ic-air-fresh` = lấy gió NGOÀI · `ic-air-intake` = chưa đọc được
-        // chiều. Ba hình cùng một khoang xe nên đọc ra là một cặp ba. Bảng khai ở `CapabilityIcons.STATE`.
+        // UX8 (owner 2026-09-27) — chip *Chế độ lấy gió* đổi HÌNH theo chế độ thay vì in chữ "Trong"/"Ngoài": `ic-recirc` (đã có)
+        // = lấy gió TRONG · `ic-air-fresh` = NGOÀI · `ic-air-intake` = chưa đọc được chiều (một cặp ba, bảng ở `CapabilityIcons.STATE`).
         "ic-air-fresh" -> R.drawable.ic_air_fresh
         "ic-air-intake" -> R.drawable.ic_air_intake
         // Cùng lượt: cảm biến bụi mịn CHẾT (`pm25_online` = 0) — cảm biến còn sống dùng lại `ic-sensor`.
@@ -359,6 +358,7 @@ object KachiTheme {
         "ic-swap" -> R.drawable.ic_swap
         "ic-close" -> R.drawable.ic_close
         "ic-to-back" -> R.drawable.ic_to_back   // L6 — nút *chạy nền* cạnh ⇄ (SlotActionsCluster)
+        "ic-expand" -> R.drawable.ic_expand; "ic-collapse" -> R.drawable.ic_collapse   // R30 — nút *Bung to* / *Thu về* đầu ô (SlotActionsCluster)
         // U1: 6 icon MỚI cho khái niệm xuất hiện nhiều mà trước đây không có icon nào gần nghĩa
         "ic-road" -> R.drawable.ic_road
         "ic-battery" -> R.drawable.ic_battery

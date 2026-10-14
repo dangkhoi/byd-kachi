@@ -215,6 +215,9 @@ class LayeringRulesTest {
         // MÃ MÀU, đã ở danh sách này), đọc hạt giống hex của nó. Phép TÍNH thì đã ở :core (`ColorMath` ·
         // `ContrastGuard`); thứ ở lại :app là đúng phần chạm vào hex — cùng lẽ với chính `KachiPalette.kt`.
         "KachiPaletteDerive.kt" to "hàm mở rộng KachiPalette (bảng hex) — phép tính đã ở :core (ColorMath/ContrastGuard)",
+        // 3.1.5 R29 pha 2: vai mực + ứng viên + lớp làm tối/dải che ĐỌC THẲNG mã hex của KachiPalette — cùng lẽ với
+        // KachiPaletteDerive ngay trên. Phép ghép chồng lớp + bộ giải (không mã màu) đã ở :core (ContrastStack · ContrastInk).
+        "AdaptiveInkModel.kt" to "vai mực trên KachiPalette (bảng hex) — phép ghép/giải đã ở :core (ContrastStack/ContrastInk)",
         // VISUAL-REFRESH P3: phần CHỌN ĐƯỢC của bảng màu (hạt giống nhấn · tông · màu sơn) tách khỏi `KachiPalette.kt`
         // vì trần 500 dòng — cùng lẽ với chính `KachiPalette.kt`: nó LÀ hex, và hex chỉ được sống ở :app.
         "KachiPaletteSeeds.kt" to "nửa tách ra của KachiPalette (bảng hex) — hạt giống màu nhấn · tông thẻ",

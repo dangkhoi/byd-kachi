@@ -331,7 +331,9 @@ class SlotLifecycleWiringContractTest {
     fun `dia kinh sau ⇄ o App, cung hop dong tuong phan voi nut cum, to lai khi doi chu de`() {
         val attach = SourceRoots.body(cluster, "fun attach(")
         assertTrue("b == null && kind == SlotHeadRest.Kind.APP -> swapDisc(ctx)" in attach, "ô giữa của hàng (dưới ⇄) của ô App = đĩa")
-        order(attach, "listOf(Button.BACKGROUND, null, Button.CLOSE)", "slot.addView(row, slot.childCount - 1,")
+        // R30 (owner 14/10) — ĐỔI GHIM có lý do: hàng thêm *Bung to* ở CUỐI + một ô trống ở ĐẦU (đối xứng) ⇒ ⇄ vẫn đúng giữa.
+        order(attach, "row.addView(Space(ctx), LinearLayout.LayoutParams(touch, touch))",
+            "listOf(Button.BACKGROUND, null, Button.CLOSE, Button.EXPAND)", "slot.addView(row, slot.childCount - 1,")
         // 2.93 · SLOT-HEAD-OVERLAY-DISC (spec `kachi-293-slot.html` R6) — ĐỔI GHIM có lý do: ô App CÓ bộ chiếu mà không nút cụm nào
         // (đường ActivityView — nội dung app bên thứ ba dưới ⇄) vẫn dựng hàng chỉ mang đĩa. Ô App KHÔNG máy chiếu (thẻ của Kachi
         // dưới ⇄) và ⇄ nổi (OverlayHeads — từ R1.3 chỉ còn đè lên chính thẻ đó, lệch `Sp.XS`) giữ ⇄ trần: không hai đĩa chồng lệch.
@@ -346,7 +348,9 @@ class SlotLifecycleWiringContractTest {
         assertTrue("isClickable = false; isFocusable = false" in disc && "IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS" in disc,
             "đĩa không nhận chạm (cú chạm tới khung ⇄ phía trên), không vào cây trợ năng")
         assertFalse("swapDisc" in SourceRoots.body(cluster, "fun hits("), "đĩa không phải nút — không tính vùng nút")
-        assertTrue("setColorFilter(Color.parseColor(KachiTheme.MUT))" in code("SlotSwapButton.kt"), "icon ⇄ tô MUT — vai mà hợp đồng kính bảo đảm")
+        // 3.1.5 R29 (đổi ghim có lý do): vai MUT giữ nguyên, mực thật giải trên nền đo được của đĩa kính (AdaptiveInk.ride).
+        val swap = code("SlotSwapButton.kt")
+        assertTrue("AdaptiveInk.icon(this, KachiTheme.MUT)" in swap && "AdaptiveInk.ride(visual, d)" in swap, "icon ⇄ tô vai MUT — vai mà hợp đồng kính bảo đảm")
         val icon = SourceRoots.text("src/main/res/drawable/ic_to_back.xml")
         val main = Regex("""<path[^>]*android:strokeWidth="1.8"[^>]*/>""").findAll(icon).toList()
         assertTrue(main.isNotEmpty() && main.none { "strokeAlpha" in it.value }, "nét chính của icon chạy nền ở alpha 1.0: $icon")

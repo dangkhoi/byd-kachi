@@ -91,9 +91,9 @@ class Widget293WiringContractTest {
     fun `buoc, anh nen, ban ve, khe gia tri`() {
         val step = SourceRoots.body(code("ControlTileFactory.kt"), "private fun tileStep(")
         assertEquals(4, Regex("""\bsay\(""").findAll(step).count(), "khai + vẽ khi bấm + lần đầu + đọc lại xe")
-        val build = SourceRoots.body(code("WallArt.kt"), "fun build(ctx: Context, path: String, source: Bitmap")
-        assertTrue(build.indexOf("saveCached(dir, key, art)") < build.indexOf("prune(dir, keep = key)"), "dọn SAU khi ghi khoá mới")
-        val prune = SourceRoots.body(code("WallArt.kt"), "private fun prune(dir: File?, keep: String)")
+        val build = SourceRoots.body(code("WallArt.kt"), "fun build(cache: ArtCache, source: Bitmap")   // 3.1.5: thân nấu chung (đường dẫn + asset)
+        assertTrue(build.indexOf("saveCached(dir, key, art)") < build.indexOf("prune(dir, keep = key"), "dọn SAU khi ghi khoá mới")
+        val prune = SourceRoots.body(code("WallArt.kt"), "private fun prune(dir: File?, keep: String, liveSources")
         assertTrue("File(dir, \"\$k.png\").delete(); File(dir, \"\$k.txt\").delete()" in prune && "dir.listFiles()" in prune, "chỉ tệp trong .kachi-art")
         assertTrue("area = workspaceArea(rootFrame)" in code("HomePanels.kt") && "editor.area = area" in code("LayoutEditorPanel.kt"))
         assertTrue("GridEditorLogic.drawBox(" in SourceRoots.body(code("GridEditorView.kt"), "private fun place(w: Int, h: Int)"))

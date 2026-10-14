@@ -202,7 +202,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             // PERF — báo cáo tải mỗi phút ([KachiPerf]); dùng LẠI nhịp này vì nó chạy đúng lúc vòng poll HAL chạy.
             // ⚠ `elapsedRealtime`, KHÔNG phải giờ tường: [ĐO] xe 14/09 giờ tường của đầu xe bị chỉnh nhảy >5 s giữa
             // phiên (đúng lỗi đã làm hỏng cửa sổ 60 phút của cầu kiểm thử) ⇒ một cú nhảy là một dòng số bịa.
-            KachiPerf.dueLine(android.os.SystemClock.elapsedRealtime())?.let { Log.i("KachiPerf", it) }
+            KachiPerf.dueLine(android.os.SystemClock.elapsedRealtime())?.let { Log.i("KachiPerf", "$it · ${ContrastLedger.snapshot()}") }   // R29
             handler.postDelayed(this, 10_000)
         }
     }
@@ -361,6 +361,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     /** `singleTask` ⇒ lời gọi thứ hai về ĐÂY, không phải [onCreate] (bấm bong bóng khi Kachi đang mở sẵn). */
     override fun onNewIntent(intent: android.content.Intent?) {
         super.onNewIntent(intent)
+        if (intent?.hasCategory(android.content.Intent.CATEGORY_HOME) == true) workspace.expand.drop(SlotExpand.Why.HOME)   // R30.3: bấm HOME
         openSettingsGroup(intent, panels)
         startVoiceIfRequested(intent, voice)
     }
@@ -382,6 +383,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             panels.layoutOpen() -> panels.closeLayoutEditor()
             panels.settingsOpen() -> panels.closeSettings()
             drawerController.isOpen() -> drawerController.close()
+            workspace.expand.expanded != null -> workspace.expand.drop(SlotExpand.Why.BACK)   // R30.3: ô đang bung ⇒ về bố cục cũ
         }
     }
 

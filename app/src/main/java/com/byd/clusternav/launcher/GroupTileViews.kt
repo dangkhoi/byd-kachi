@@ -10,7 +10,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
@@ -474,8 +473,8 @@ class GroupTileView(context: Context) : LinearLayout(context) {
                 // Qua `KachiGlass.plain` chứ không gán thẳng `background`: ô con DÙNG LẠI view và đổi sắc thái theo
                 // nhịp trạng thái (1 Hz), nên nếu thẻ kính của lượt NEUTRAL/ACTIVE trước còn lại thì lượt
                 // `KachiGlass.refresh` khi ảnh nền đổi sẽ đắp kính đè lên nền cảnh báo (màu nền LÀ thông tin).
-                GroupTone.WARN, GroupTone.ALERT ->
-                    KachiGlass.plain(view, KachiTheme.card(view.context, radius, fillOf(t)))
+                GroupTone.WARN, GroupTone.ALERT ->   // R29: nền 35 % = MẶT ⇒ chữ trong ô con giải trên chính nền cảnh báo
+                    KachiGlass.plain(view, KachiTheme.card(view.context, radius, fillOf(t))).also { AdaptiveInk.fill(view, fades = false, variant = t) { intArrayOf(KachiTheme.c(fillOf(t))) } }
             }
         }
 
@@ -491,7 +490,7 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         /** TextView một dòng căn giữa — cùng khuôn với [WidgetViews] để nhóm không lệch phông với ô thường. */
         fun text(ctx: Context, s: String, sp: Float, color: String, bold: Boolean = false): TextView =
             TextView(ctx).apply {
-                text = s; setTextColor(c(color)); setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
+                text = s; AdaptiveInk.text(this, color); setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)   // R29 T29-5
                 gravity = Gravity.CENTER
                 if (bold) KachiWidgetType.value(this)   // R22: số = medium + tnum, KHÔNG còn DEFAULT_BOLD (brief Kim §2.4)
             }

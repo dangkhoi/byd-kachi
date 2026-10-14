@@ -296,6 +296,8 @@
     <string name="kachi_slot_close_app">Tắt ứng dụng ô %1$d</string>
     <string name="kachi_slot_close_widget">Tắt widget ô %1$d</string>
     <string name="kachi_slot_close_confirm">Chạm lần nữa để tắt</string>
+    <string name="kachi_slot_expand">Bung to ô %1$d</string>
+    <string name="kachi_slot_collapse">Thu ô %1$d về như cũ</string>
     <string name="kachi_slot_close_failed">Chưa tắt được %1$s</string>
     <string name="kachi_slot_head_autohide_title">Tự ẩn nút ⇄</string>
     <string name="kachi_slot_head_autohide_sub">Nút đổi app/widget của khung ẩn đi cho thoáng; chạm vào khung (hoặc chỗ trống trên màn) là hiện lại vài giây</string>

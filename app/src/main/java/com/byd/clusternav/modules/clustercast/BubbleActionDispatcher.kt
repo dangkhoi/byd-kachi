@@ -10,6 +10,7 @@ import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastIntent
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
+import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
 import com.byd.clusternav.system.PackageQueries
 
 /**
@@ -19,13 +20,14 @@ import com.byd.clusternav.system.PackageQueries
  * decisions to the coordinator plus the Android bits (foreground detection, toasts, startActivity).
  *
  * Gestures:
- *  - [onTap] — TOGGLE full: Idle → cast the foreground FULL (with the launcher guard); casting
- *    (full or split) → return everything (slot-less `Stop`).
- *  - [onSubmenuAction] — long-press submenu: Trái/Phải TOGGLE that half (return it if it is already
- *    cast, else cast the foreground into it), Cấu hình opens Kachi Settings › Cluster cast.
+ *  - [onTap] — Idle → cast the foreground FULL (with the launcher guard); a FULL cast + a different
+ *    castable foreground → replace it in one tap (3.1.5 · R31); otherwise casting → return everything.
+ *  - [onSubmenuAction] — long-press submenu: Trái/Phải on a free half casts the foreground into it, on
+ *    an occupied half replaces it (different castable foreground, R31) or returns it; Cấu hình opens
+ *    Kachi Settings › Cluster cast.
  *
  * The caller ([FloatingBubbleService]) invokes the cast paths on the tap executor (token-guarded,
- * off the main thread) because [detectForeground] performs shell I/O.
+ * off the main thread) because [castableForeground] performs shell I/O.
  */
 internal class BubbleActionDispatcher(
     private val context: Context,
@@ -33,23 +35,34 @@ internal class BubbleActionDispatcher(
     private val toast: (String) -> Unit,
 ) {
     /**
-     * TAP = toggle full. Reuses the existing CastFull path (with the Wave-1 launcher guard) when
-     * idle, and the existing slot-less `Stop` ("return to cluster gauges") when anything is casting.
-     * Called on the tap executor (already token-guarded).
+     * TAP. Idle → cast the foreground FULL (Wave-1 launcher guard); a FULL cast + a DIFFERENT castable foreground → REPLACE it in
+     * one tap (3.1.5 · R31 — `CastFull`, whose handler returns the old app before pinning the new one); otherwise anything
+     * casting → slot-less `Stop`. The decision is the pure [BubbleGesturePlanner.tapOutcome]; this only feeds it the foreground.
+     * Called on the tap executor (already token-guarded) because the foreground probe is shell I/O.
      */
     fun onTap() {
         val coordinator = SimpleCastRuntime.coordinator(context)
-        when (BubbleGesturePlanner.tapOutcome(coordinator.state)) {
+        val state = coordinator.state
+        // Idle = about to cast ⇒ the cast-path probe (dismisses a PiP first, as before). Casting ⇒ READ-ONLY probe: a tap that ends
+        // up returning must not change anything on display 0 (R31). Split/transient ⇒ no probe (the outcome does not depend on it).
+        val foreground = if (!BubbleGesturePlanner.tapNeedsForeground(state)) null
+        else castableForeground(coordinator, dismissPip = state is SimpleCastState.Idle)
+        when (BubbleGesturePlanner.tapOutcome(state, foreground)) {
             BubbleGesturePlanner.BubbleTapOutcome.RETURN -> {
+                // Home / Kachi in front while casting ⇒ RETURN quietly (no "won't cast home" toast — nothing was cast).
                 coordinator.dispatch(SimpleCastIntent.Stop())
                 handler.post { toast(Lang.t("Đang trả app về…", "Returning app…")) }
             }
             BubbleGesturePlanner.BubbleTapOutcome.CAST_FULL -> {
-                // detectForeground() posts the "won't cast home" guard toast when it returns null,
-                // so bailing here is enough (Wave-1 launcher exclusion, R2 — preserved unchanged).
-                val foreground = detectForeground(coordinator) ?: return
-                coordinator.dispatch(SimpleCastIntent.CastFull(foreground, AppMover.classifyApp(foreground)))
-                handler.post { toast(castingToast(foreground)) }
+                // Wave-1 launcher exclusion (R2): no castable foreground ⇒ the "won't cast home" toast, nothing dispatched.
+                val pkg = foreground ?: return toastLauncherGuard()
+                coordinator.dispatch(SimpleCastIntent.CastFull(pkg, AppMover.classifyApp(pkg)))
+                handler.post { toast(castingToast(pkg)) }
+            }
+            BubbleGesturePlanner.BubbleTapOutcome.REPLACE_FULL -> {
+                val pkg = foreground ?: return
+                coordinator.dispatch(SimpleCastIntent.CastFull(pkg, AppMover.classifyApp(pkg)))
+                handler.post { toast(replacingToast(pkg)) }
             }
             BubbleGesturePlanner.BubbleTapOutcome.PREPARING ->
                 handler.post { toast(Lang.t("Đang chuẩn bị cụm…", "Preparing cluster…")) }
@@ -68,23 +81,31 @@ internal class BubbleActionDispatcher(
     }
 
     /**
-     * A long-press submenu LEFT/RIGHT choice TOGGLES that half (owner 2026-08-12): if that side is
-     * already cast, RETURN it; otherwise CAST the current foreground app into it (reusing the
-     * launcher guard). Mirrors the in-app zone buttons. The occupancy decision is the pure
-     * [BubbleGesturePlanner.slotOutcome] contract. Runs on the tap executor.
+     * A long-press submenu LEFT/RIGHT choice on [side] (owner 2026-08-12 toggle + 3.1.5 · R31 swap): a FREE side casts the
+     * foreground into it; an OCCUPIED side is REPLACED in one press when the castable foreground is a different app not already on
+     * the cluster (`CastSlot(replace = true)` — the coordinator returns the old half first), else RETURNED. The decision is the
+     * pure [BubbleGesturePlanner.slotOutcome]. Runs on the tap executor.
      */
     fun onCastSlot(side: ClusterSlotSide) {
         val coordinator = SimpleCastRuntime.coordinator(context)
-        when (BubbleGesturePlanner.slotOutcome(coordinator.state, side)) {
+        val state = coordinator.state
+        // Occupied side ⇒ READ-ONLY probe (it may only return that half); free side ⇒ cast-path probe, as before.
+        val occupied = BubbleGesturePlanner.slotNeedsForegroundToDecide(state, side)
+        val foreground = castableForeground(coordinator, dismissPip = !occupied)
+        when (BubbleGesturePlanner.slotOutcome(state, side, foreground)) {
             BubbleGesturePlanner.BubbleSlotOutcome.RETURN -> {
                 coordinator.dispatch(SimpleCastIntent.Stop(side))
                 handler.post { toast(Lang.t("Đang trả app về…", "Returning app…")) }
             }
             BubbleGesturePlanner.BubbleSlotOutcome.CAST -> {
-                // detectForeground() posts the launcher-guard toast + returns null when not castable.
-                val foreground = detectForeground(coordinator) ?: return
-                coordinator.dispatch(SimpleCastIntent.CastSlot(foreground, side))
-                handler.post { toast(castingToast(foreground)) }
+                val pkg = foreground ?: return toastLauncherGuard()
+                coordinator.dispatch(SimpleCastIntent.CastSlot(pkg, side))
+                handler.post { toast(castingToast(pkg)) }
+            }
+            BubbleGesturePlanner.BubbleSlotOutcome.REPLACE -> {
+                val pkg = foreground ?: return
+                coordinator.dispatch(SimpleCastIntent.CastSlot(pkg, side, replace = true))
+                handler.post { toast(replacingToast(pkg)) }
             }
         }
     }
@@ -121,21 +142,27 @@ internal class BubbleActionDispatcher(
         return Lang.f("Chiếu {0}…", "Casting {0}…", name)
     }
 
+    /** 3.1.5 · R31 — one-tap swap: the old app goes back, [pkg] takes its place. */
+    private fun replacingToast(pkg: String): String {
+        val name = pkg.substringAfterLast('.')
+        return Lang.f("Đang thay bằng {0}…", "Replacing with {0}…", name)
+    }
+
+    private fun toastLauncherGuard() {
+        handler.post { toast(Lang.t("Không cast màn hình chính", "Won't cast the launcher/home screen")) }
+    }
+
     /**
-     * Foreground package eligible for casting on the HOME display, or null when it must not be
-     * cast. Excludes ourselves plus EVERY launcher/home package the platform knows about — the full
-     * CATEGORY_HOME resolver list (not just the default) UNIONed with [AppMover.isLauncher] — so the
-     * BYD Dudu home can never be projected onto the cluster (#3 / R2, Wave 1). On a null or
-     * launcher/home result this posts the "won't cast home" toast and returns null; callers only need
-     * `?: return`.
+     * Foreground package eligible for casting on the HOME display, or null when it must not be cast. Excludes ourselves plus
+     * EVERY launcher/home package the platform knows about — the full CATEGORY_HOME resolver list (not just the default) UNIONed
+     * with [AppMover.isLauncher] — so the BYD Dudu home can never be projected onto the cluster (#3 / R2, Wave 1). Posts NO
+     * toast: since R31 a null here while casting means "return quietly"; the cast branches post [toastLauncherGuard] themselves.
+     * [dismissPip] `false` = read-only probe (a single `am stack list`, no PiP removal).
      */
-    private fun detectForeground(coordinator: SimpleCastCoordinator): String? {
+    private fun castableForeground(coordinator: SimpleCastCoordinator, dismissPip: Boolean): String? {
         val excluded = homePackages() + setOf(context.packageName)
-        val foreground = runCatching { coordinator.foregroundPackage(HOME_DISPLAY_ID, excluded) }.getOrNull()
-        if (foreground == null || foreground in excluded || AppMover.isLauncher(foreground)) {
-            handler.post { toast(Lang.t("Không cast màn hình chính", "Won't cast the launcher/home screen")) }
-            return null
-        }
+        val foreground = runCatching { coordinator.foregroundPackage(HOME_DISPLAY_ID, excluded, dismissPip) }.getOrNull()
+        if (foreground == null || foreground in excluded || AppMover.isLauncher(foreground)) return null
         return foreground
     }
 

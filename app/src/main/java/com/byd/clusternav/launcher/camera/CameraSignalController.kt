@@ -261,7 +261,7 @@ class CameraSignalController(private val appCtx: Context) {
             rotationDeg = rot,
             mirror = mirror,
             render = render,
-            // 2.92: hình KHUNG thật sự dùng (*Theo cụm* + kiểu trọn dải ⇒ chữ nhật — spec R7); *Nắn thẳng* = pref y nguyên.
+            // Hình khung = ĐÚNG lựa chọn của người lái ở mọi kiểu hình (3.1.5 gỡ phép ép R7 — CAMERA-STYLE-CLUSTER-RECT).
             shape = crops.frameShape,
             streamW = s.streamW,
             streamH = s.streamH,

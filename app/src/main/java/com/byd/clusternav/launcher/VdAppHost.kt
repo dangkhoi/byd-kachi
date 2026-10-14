@@ -416,6 +416,9 @@ class VdAppHost(
     /** A3 · SLOT-CLOSE-SETTLE — lệnh *tắt* [expect] đã gửi ⇒ giấu mặt vẽ NGAY (không khung đứng); gỡ không xong ⇒ hiện lại. Luồng chính. */
     fun closing(expect: String, on: Boolean) { if (!released && !dead && pkg == expect) surface.visibility = if (on) INVISIBLE else VISIBLE }
 
+    /** R30 — khung ô bị ẨN vì ô khác bung: che/gỡ CHÍNH mặt vẽ (r47 `SurfaceView.java:274-289` không theo cha); `true` = đã che. */
+    fun veil(on: Boolean): Boolean { if (released || dead || (on && surface.visibility != VISIBLE)) return false; surface.visibility = if (on) INVISIBLE else VISIBLE; return on }
+
     /**
      * ═══ ĐƯA CHẠM VÀO MÀN ẢO CỦA Ô — hai đường, và đường lùi nay hiểu CỬ CHỈ (1.69) ══════════════════════════
      *

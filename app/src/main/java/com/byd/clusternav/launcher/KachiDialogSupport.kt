@@ -126,3 +126,17 @@ internal fun dialogControlFill(p: KachiPalette): String {
 
 /** Bước sáng tối thiểu điều khiển ↔ thẻ hộp để "thấy hình nút" — [ĐO] bảng Sáng `chipOff` 1.16–1.23×, Tối `cardFill` 1.23–1.26×. */
 internal const val CONTROL_MIN_STEP = 1.12
+
+/**
+ * 3.1.x LIGHT-CONTRAST — mặt ô chọn TẮT trong hộp ([KachiFormControls.toggle]): ô rỗng chỉ có MẶT để nói "đây là ô chọn". [TÍNH]
+ * `fieldSunken` cũ chỉ 1,26–1,34:1 trên thẻ hộp Sáng (Tối 1,03–1,22) ⇒ ĐO như [dialogControlFill]: vai đầu tiên trong
+ * `fieldSunken` → `lineStrong` tách CẢ HAI đầu chuyển sắc ≥ [BOX_OFF_MIN] (WCAG 1.4.11); không vai nào ⇒ `lineStrong`.
+ */
+internal fun dialogBoxOff(p: KachiPalette): String {
+    val faces = listOf(ColorMath.parse(p.surfFrom), ColorMath.parse(p.surfTo))
+    return listOf(p.fieldSunken, p.lineStrong).firstOrNull { role ->
+        faces.all { f -> ColorMath.ratio(ColorMath.over(ColorMath.parse(role), f), f) >= BOX_OFF_MIN }
+    } ?: p.lineStrong
+}
+
+internal const val BOX_OFF_MIN = 3.0

@@ -30,7 +30,8 @@ object Car3dLamps {
         val cx = (lo + hi) / 2; val half = (hi - lo) / 2
         val out = ArrayList<Pair<String, String>>()
         for (p in mesh.parts) {
-            if (!p.name.contains(LAMP)) continue
+            // Kính che đèn (`body_glasslamp`, vật liệu `glasslamp`/`glasstail` [ĐO SL6]) là KÍNH ([Car3dMaterials.classOf]), không phải bóng.
+            if (!p.name.contains(LAMP) || p.name.contains(GLASS) || p.material.contains(GLASS)) continue
             val on = isOn(p.name, names)
             val (a, b) = xRange(mesh, listOf(p)) ?: continue
             val rear = (a + b) / 2 < cx - REAR_OF_HALF * half
@@ -58,6 +59,7 @@ object Car3dLamps {
     /** Phần tư sau: tâm cách tâm thân về phía đuôi hơn nửa nửa-chiều-dài. */
     const val REAR_OF_HALF = 0.5
     private const val LAMP = "lamp"
+    private const val GLASS = "glass"
     private const val TURN = "turn"
     private const val ON = "on"
     private const val OPEN = "open"

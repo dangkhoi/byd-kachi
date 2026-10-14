@@ -40,6 +40,9 @@ internal interface SlotActionsPort {
      * 2.93 · R3 task của nó còn ở display khác (`APP_ELSEWHERE` — ra khỏi ô, vẫn mở; không phải đã đóng).
      */
     fun onAppGone(index: Int, pkg: String, elsewhere: Boolean = false)
+
+    /** R30 — ô [index] đang bung ⇒ nút [Button.EXPAND] vẽ glyph + mô tả *Thu về*. Mặc định không (test). */
+    fun expanded(index: Int): Boolean = false
 }
 
 /**
@@ -119,6 +122,7 @@ internal class SlotActionsCluster private constructor(
             if (v.visibility != want) v.visibility = want
         }
         if (Button.CLOSE !in now) disarm()
+        (buttons[Button.EXPAND] as? ViewGroup)?.let { glyph(it, index, port.expanded(index)) }   // R30: ⤢ Bung to ↔ ⤡ Thu về
     }
 
     /** Một chạm lên nút [b]: *tắt* đi qua [SlotCloseConfirm] (hai bước), nút khác làm ngay. */
@@ -297,7 +301,9 @@ internal class SlotActionsCluster private constructor(
                 b == null || b !in possible -> Space(ctx)
                 else -> button(slot, index, kind, b).also { made[b] = it }
             }
-            listOf(Button.BACKGROUND, null, Button.CLOSE).forEach { row.addView(cell(it), LinearLayout.LayoutParams(touch, touch)) }
+            // R30: ô trống ĐẦU hàng đối xứng với *Bung to* ở CUỐI ⇒ ⇄ vẫn đúng giữa khung (hàng 5 × TOUCH).
+            row.addView(Space(ctx), LinearLayout.LayoutParams(touch, touch))
+            listOf(Button.BACKGROUND, null, Button.CLOSE, Button.EXPAND).forEach { row.addView(cell(it), LinearLayout.LayoutParams(touch, touch)) }
             slot.addView(row, slot.childCount - 1, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, touch, Gravity.TOP or Gravity.CENTER_HORIZONTAL))
             val cluster = SlotActionsCluster(slot, index, kind, projector, port, row, made, onArmed)
             made.forEach { (b, v) -> v.setOnClickListener { cluster.tap(b) } }   // *tắt* qua hai bước ([tap]), nút khác làm ngay
@@ -317,7 +323,7 @@ internal class SlotActionsCluster private constructor(
         private fun button(slot: ViewGroup, index: Int, kind: SlotHeadRest.Kind, b: Button): View {
             val ctx = slot.context
             val icon = ImageView(ctx).apply {
-                val r = KachiTheme.iconRes(if (b == Button.BACKGROUND) "ic-to-back" else "ic-close")
+                val r = KachiTheme.iconRes(when (b) { Button.BACKGROUND -> "ic-to-back"; Button.EXPAND -> "ic-expand"; else -> "ic-close" })
                 if (r != 0) setImageResource(r)
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 background = null
@@ -377,9 +383,22 @@ internal class SlotActionsCluster private constructor(
             }
         }
 
+        /**
+         * R30 — glyph + mô tả của nút bung theo trạng thái ([expanded] ⇒ ⤡ *Thu về*, không ⇒ ⤢ *Bung to*). Đổi view CHỈ khi khác
+         * (thẻ trên khung chạm) — [refresh] chạy mỗi lần đầu ô hiện / mỗi DOWN, không được đặt lại ảnh thừa.
+         */
+        private fun glyph(cell: ViewGroup, index: Int, expanded: Boolean) {
+            if (cell.tag == expanded) return
+            cell.tag = expanded
+            val r = KachiTheme.iconRes(if (expanded) "ic-collapse" else "ic-expand")
+            if (r != 0) (cell.getChildAt(1) as? ImageView)?.setImageResource(r)
+            cell.contentDescription = cell.context.getString(if (expanded) R.string.kachi_slot_collapse else R.string.kachi_slot_expand, index + 1)
+        }
+
         /** Mô tả trợ năng (người đọc thấy số ô 1-based như mọi chỗ khác). */
         private fun describe(b: Button, kind: SlotHeadRest.Kind): Int = when {
             b == Button.BACKGROUND -> R.string.kachi_slot_to_back
+            b == Button.EXPAND -> R.string.kachi_slot_expand
             kind == SlotHeadRest.Kind.APP -> R.string.kachi_slot_close_app
             else -> R.string.kachi_slot_close_widget
         }

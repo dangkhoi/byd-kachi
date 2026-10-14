@@ -160,8 +160,8 @@ class WallView(context: Context) : View(context) {
         bandBottom.shader = LinearGradient(0f, h - bandH, 0f, h.toFloat(), Color.TRANSPARENT, bar, Shader.TileMode.CLAMP)
     }
 
-    private companion object {
+    internal companion object {
         /** Dải che cao 14 % màn (≈ 150 px trên 1080): phủ thanh trên + thanh nút, tan hết trước hàng ô đầu tiên. */
-        const val BAND_FRACTION = 0.14f
+        const val BAND_FRACTION = 0.14f   // R29: [AdaptiveInk] dựng cùng dải này
     }
 }

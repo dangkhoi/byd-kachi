@@ -182,6 +182,14 @@
    "domain": "LAUNCHER",
    "note": "ĐÓNG (✕)"
   },
+  "collapse": {
+   "domain": "LAUNCHER",
+   "note": "THU VỀ — ô đang bung co về khung cũ (R30, nút đầu ô)"
+  },
+  "expand": {
+   "domain": "LAUNCHER",
+   "note": "BUNG TO — ô nở ra trọn vùng ô của launcher (R30, nút đầu ô)"
+  },
   "consumption": {
    "domain": "ENERGY",
    "note": "TIÊU THỤ (`trip_kwh` · `consumption_50km`)"

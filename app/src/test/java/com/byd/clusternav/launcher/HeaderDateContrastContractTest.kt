@@ -33,7 +33,8 @@ class HeaderDateContrastContractTest {
     @Test
     fun `ngay dung CHINH muc va co cua chip trung tinh`() {
         val date = strip.lines().single { it.trimStart().startsWith("dateText = TextView(activity)") }
-        assertTrue(date.contains("setTextColor(c(chipInk(ChipTone.NEUTRAL)))"), "ngày phải dùng mực chip trung tính: $date")
+        // 3.1.5 R29 T29-7: vai mực chip trung tính, tô qua bộ giải mực thích ứng (AdaptiveContrastContractTest).
+        assertTrue(date.contains("AdaptiveInk.text(this, chipInk(ChipTone.NEUTRAL))"), "ngày phải dùng mực chip trung tính: $date")
         assertTrue(date.contains("KachiType.apply(this, KachiType.BODY)"), "ngày cùng cỡ chữ chip: $date")
         assertFalse(Regex("KachiTheme\\.MUT2?\\b").containsMatchIn(date), "MUT/MUT2 là mực chìm — không dùng cho ngày")
         assertTrue(date.contains("themed {"), "đổi Sáng/Tối tại chỗ phải tô lại (QA 2.87 [P2])")

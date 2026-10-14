@@ -179,3 +179,7 @@ app/src/vehicleTest/assets/oem-*/
 
 # 3.1.1 — ảnh chụp máy ảo có ảnh/hình xe BYD (chỉ để thử, owner 13/10) ⇒ chỉ giữ ở máy, không lên repo public
 docs/diagnostics/widget-visual-301/*.jpg
+
+# 3.1.5 — bộ ảnh nền MẶC ĐỊNH (ảnh owner + hình nền BYD Seal có BẢN QUYỀN) — CHỈ đóng vào APK dựng tại máy owner (14/10),
+# KHÔNG lên repo public. Thiếu thư mục ⇒ app lùi nền vẽ bằng mã (WallDefault). Dựng lại: docs/diagnostics/widget-visual-301-2026-10-13.md
+app/src/*/assets/wall-default/

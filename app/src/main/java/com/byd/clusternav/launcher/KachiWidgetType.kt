@@ -5,7 +5,6 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.SpannableString
 import android.text.Spanned
-import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
 import android.widget.ImageView
 import android.widget.TextView
@@ -73,7 +72,7 @@ object KachiWidgetType {
     const val CAPTION_TRACKING = 0.03f
 
     fun hero(tv: TextView, color: String = KachiTheme.INK) {
-        tv.typeface = LIGHT; tv.fontFeatureSettings = TABULAR; tv.setTextColor(c(color))
+        tv.typeface = LIGHT; tv.fontFeatureSettings = TABULAR; AdaptiveInk.text(tv, color)   // R29: mực theo nền đo được
     }
 
     /** Số phụ nét LIGHT + `tnum` (R22·B — số `%` cạnh hình xe: "light numerals" như Kim). Màu do chỗ gọi. */
@@ -86,15 +85,15 @@ object KachiWidgetType {
     }
 
     fun unit(tv: TextView) {
-        tv.typeface = Typeface.DEFAULT; tv.setTextColor(c(KachiTheme.MUT))
+        tv.typeface = Typeface.DEFAULT; AdaptiveInk.text(tv, KachiTheme.MUT)
     }
 
     fun caption(tv: TextView) {
-        tv.typeface = Typeface.DEFAULT; tv.setTextColor(c(KachiTheme.MUT)); tv.letterSpacing = CAPTION_TRACKING
+        tv.typeface = Typeface.DEFAULT; AdaptiveInk.text(tv, KachiTheme.MUT); tv.letterSpacing = CAPTION_TRACKING
     }
 
     fun title(tv: TextView) {
-        tv.typeface = MEDIUM; tv.setTextColor(c(KachiTheme.INK2)); tv.letterSpacing = 0f
+        tv.typeface = MEDIUM; AdaptiveInk.text(tv, KachiTheme.INK2); tv.letterSpacing = 0f
     }
 
     /**
@@ -108,7 +107,7 @@ object KachiWidgetType {
         val s = SpannableString("$number $unit")
         val from = number.length
         s.setSpan(RelativeSizeSpan(UNIT_SCALE), from, s.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        s.setSpan(ForegroundColorSpan(c(KachiTheme.MUT)), from, s.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        s.setSpan(AdaptiveInk.InkSpan(KachiTheme.MUT), from, s.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)   // R29: vai MUT, mực theo nền đo
         return s
     }
 
@@ -144,7 +143,7 @@ object KachiWidgetType {
      */
     fun pending(tv: TextView, available: Boolean, ink: String = KachiTheme.INK) {
         tv.alpha = 1f
-        tv.setTextColor(c(if (available) ink else KachiTheme.MUT))
+        AdaptiveInk.text(tv, if (available) ink else KachiTheme.MUT)   // R29: mực theo nền đo được (nhịp 1 Hz chỉ tra kết quả đã giải)
     }
 
     /** Alpha nền chip (`0x26` = 15 %). Đồ hoạ (icon) trên chip phải ≥ 3:1 — đo ở `widget-visual-301`. */

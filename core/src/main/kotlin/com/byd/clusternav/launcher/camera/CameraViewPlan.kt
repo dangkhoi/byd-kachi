@@ -26,7 +26,11 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy.CamView
  */
 object CameraViewPlan {
 
-    /** Hai vùng cắt + hình khung thật sự dùng ([CameraViewMode.frameShape]). Mảng `null` = nguyên khung ảnh. */
+    /**
+     * Hai vùng cắt + hình khung của phiên. Mảng `null` = nguyên khung ảnh. [frameShape] = ĐÚNG hình người lái chọn ở MỌI
+     * kiểu hình (3.1.5 gỡ phép ép *Theo cụm* + kiểu trọn dải ⇒ chữ nhật — xem ghi chú ở [CameraViewMode]); phép quy duy
+     * nhất còn lại theo display (*Theo cụm* trên màn chính ⇒ chữ nhật) nằm ở `CameraClusterBand.effectiveShape`.
+     */
     class Crops(val frame: FloatArray?, val content: FloatArray?, val frameShape: String)
 
     /**
@@ -70,9 +74,10 @@ object CameraViewPlan {
             view = view, left = left, strip = strip, span = CameraSignalPolicy.SPAN_STRIP,
             shape = CameraSignalPolicy.SHAPE_RECT, circlePct = circlePct, panoStrip = panoStrip,
         )
-        val frameShape = CameraViewMode.frameShape(mode, shape)
-        val frame = if (frameShape == CameraSignalPolicy.SHAPE_ROUND) today else content
-        return Crops(frame, content, frameShape)
+        // *Theo cụm* lấy khung = nội dung như chữ nhật (cùng tỉ lệ dải); phép NỚI ra kính + phóng-cắt để bám cong là việc của
+        // `CameraClusterBand.place` (cùng đường đã chạy cho *Nắn thẳng* + *Theo cụm* trên xe 06/10).
+        val frame = if (shape == CameraSignalPolicy.SHAPE_ROUND) today else content
+        return Crops(frame, content, shape)
     }
 
     /** `uFit` của phiên — *Nắn thẳng* chỉ thu phóng; hai kiểu kia vừa khung rồi thu phóng ([CameraViewFit]). */

@@ -2,10 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.ColorStateList
 import android.graphics.RectF
-import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.RippleDrawable
 import android.os.SystemClock
 import android.util.Log
 import android.view.Gravity
@@ -16,7 +13,6 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
 import com.byd.clusternav.R
-import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -66,6 +62,9 @@ internal class ActionMatrixCompact(context: Context, private val mx: ActionMatri
     private val cells = HashMap<String, GroupCell>()
     /** Đích lạc quan vừa gửi theo vật: (đích %, hạn `uptimeMillis`). */
     private val pending = HashMap<CarPart, Pair<Int, Long>>()
+    /** Lúc chạm gần nhất từng kính (chạm đúp — [WindowCycle.isDouble]) · thời hạn chạm đúp của hệ thống. */
+    private val lastTap = HashMap<CarPart, Long>()
+    private val doubleMs = android.view.ViewConfiguration.getDoubleTapTimeout().toLong()
     private val zones: List<Pair<ActionMatrix.Row, View>> = mx.placed.map { r -> r to zoneView(r.place!!) { cycle(r) } }
     private val endZones: List<View> = ends.map { (p, a) -> zoneView(p) { act(a) } }
     /** Chủ cú chạm đang giữ (bắt lúc NHẤN): vật + việc của nó. */
@@ -222,7 +221,11 @@ internal class ActionMatrixCompact(context: Context, private val mx: ActionMatri
     /** Chạm kính: bước kế của vòng (`:core`), ghi qua ô nút thật, chấm hiện ngay đích vừa gửi. */
     private fun cycle(r: ActionMatrix.Row) {
         val p = r.place ?: return
-        val target = WindowCycle.next(live(p) ?: read(r))
+        // 3.1.5 — chạm ĐÚP mở hẳn (cùng luật `:core` với xe 3D): cú đơn gửi ngay; cú hai trong thời hạn chạm đúp ⇒ 100 %.
+        val now = SystemClock.uptimeMillis()
+        val double = WindowCycle.isDouble(lastTap[p], now, doubleMs)
+        if (double) lastTap.remove(p) else lastTap[p] = now
+        val target = WindowCycle.tapTarget(live(p) ?: read(r), double, live(p)) ?: return
         val step = WindowCycle.plan(r.slots, target) ?: return
         if (!kit.set(step.action.id, if (step.on) 1 else 0)) return
         pending[p] = target to SystemClock.uptimeMillis() + PENDING_MS
@@ -269,24 +272,18 @@ internal class ActionMatrixCompact(context: Context, private val mx: ActionMatri
         setOnClickListener { levels.pulse(p); onTap() }
     }
 
-    /** Sóng chạm màu nhấn 20 % trên [mask] (chỉ alpha có nghĩa) — phản hồi tay; [content] = nền nghỉ (có thể `null`). */
-    private fun ripple(mask: GradientDrawable, content: GradientDrawable?): RippleDrawable =
-        RippleDrawable(ColorStateList.valueOf(ColorMath.withAlpha(c(KachiTheme.ACCENT), RIPPLE_ALPHA)), content, mask)
-
     /**
-     * Nút chân CHỈ icon: đĩa TÔNG mềm (mực 8 %, không viền — ZeroBorder) + sóng nhấn khi chạm; icon tint mực [KachiTheme.ICON],
-     * NHẤN ⇒ màu nhấn ([KachiTheme.ACCENT_INK]). [say] = chuỗi đọc to (0 = đặt sau). Đích chạm 48 dp, icon [Sp.ICON_M].
+     * Nút chân CHỈ icon: đĩa tròn không viền (ZeroBorder) + sóng nhấn khi chạm — mực đĩa/glyph theo bảng ở [KachiButtonInks]
+     * (tối: mực 8 % + [KachiTheme.ICON], nhấn ⇒ [KachiTheme.ACCENT_INK] · sáng: kính tối + [KachiTheme.ON_ACCENT]). [say] = chuỗi đọc to (0 = đặt sau). Đích chạm 48 dp, icon [Sp.ICON_M].
      */
     private fun barButton(icon: Int, say: Int, onTap: () -> Unit): View = FrameLayout(context).apply {
-        val disc = { color: Int -> GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) } }
-        background = ripple(disc(c(KachiTheme.INK)), disc(ColorMath.withAlpha(c(KachiTheme.INK), REST_ALPHA)))
+        background = KachiButtonInks.background()   // tối: đĩa mực 8 % (như cũ) · sáng: đĩa kính tối + glyph trắng — [KachiButtonInks]
         addView(ImageView(context).apply {
             setImageResource(icon)
-            imageTintList = ColorStateList(
-                arrayOf(intArrayOf(android.R.attr.state_pressed), intArrayOf()), intArrayOf(c(KachiTheme.ACCENT_INK), c(KachiTheme.ICON)),
-            )
+            imageTintList = KachiButtonInks.glyphTint()
             isDuplicateParentStateEnabled = true
         }, FrameLayout.LayoutParams(kit.px(Sp.ICON_M), kit.px(Sp.ICON_M), Gravity.CENTER))
+        KachiButtonInks.adapt(this, getChildAt(0))   // R29 T29-6: đĩa/glyph theo nền ĐO dưới nút (mặc định trên = lúc chưa đo)
         if (say != 0) contentDescription = context.getString(say)
         isClickable = true; isFocusable = true
         setOnClickListener { onTap() }
@@ -295,10 +292,6 @@ internal class ActionMatrixCompact(context: Context, private val mx: ActionMatri
     private companion object {
         /** Hình xe gọn không thấp hơn chừng này (dp) — dưới đó thân xe thành một vệt. */
         const val MIN_CAR_DP = 72
-        /** Sóng chạm: mực nhấn 20 %. */
-        const val RIPPLE_ALPHA = 0x33
-        /** Đĩa nghỉ của nút chân: mực 8 % — thấy là nút, không thành mảng màu. */
-        const val REST_ALPHA = 0x14
         /** Giữ đích lạc quan tối đa chừng này khi xe chưa báo tới đích (kính chạy vài giây — [CtlSafetyPolicy.MOVES_SLOWLY]). */
         const val PENDING_MS = 12_000L
     }

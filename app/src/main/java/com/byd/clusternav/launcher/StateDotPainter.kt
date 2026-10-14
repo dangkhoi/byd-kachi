@@ -2,6 +2,10 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.ColorFilter
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.RectF
@@ -26,13 +30,95 @@ internal class StateDotPainter(context: Context) {
         val accent: Int, val closed: Int, val unknown: Int, val backing: Int, val halo: Int,
         /** 3.01 POLISH — mặt nút (đĩa tông) · nét đèn báo TẮT · viền bóng tối của đèn báo. */
         val tonal: Int = 0, val lampOff: Int = 0, val shadow: Int = 0,
+        /** 3.1.x LIGHT-CONTRAST — hệ số nhân alpha của CHÍNH nét icon (lớp phụ 0,38/0,16 của glyph hai tông) · 1 = như cũ. */
+        val glyphBoost: Float = 1f,
+        /**
+         * Đèn báo chỉ-xem ([drawLamp]): viền · mực "chưa đọc" · màu khi không có màu loại · bảng màu loại đèn → mực (ARGB → ARGB).
+         * Tối = chính [shadow]/[unknown]/[accent], màu loại giữ nguyên. Sáng = viền SÁNG + mực TỐI (đèn báo đứng trên thẻ/ảnh sáng)
+         * và màu loại đổi sang vai màu-mang-nghĩa bản sáng (`green`/`amber`/`accentInk` — đã tối sẵn, ≥ 4,5:1 trên trắng).
+         */
+        val lampEdge: Int = shadow, val lampUnknown: Int = unknown, val lampAccent: Int = accent,
+        val lampTones: Map<Int, Int> = emptyMap(),
     ) {
+        /** Mực đèn BẬT theo màu loại [argb] (`null` ⇒ [lampAccent]). */
+        fun lampTone(argb: Int?): Int = argb?.let { lampTones[it] ?: it } ?: lampAccent
+
+        /** Màu VẼ THẬT của nét icon [c]: alpha × [glyphBoost] kẹp 255 — đúng phép của bộ lọc ma trận ([ink]) cho nét chính. */
+        fun drawnGlyph(c: Int): Int =
+            if (glyphBoost == 1f) c else ColorMath.withAlpha(c, minOf(255, Math.round(ColorMath.alpha(c) * glyphBoost)))
+
+        /**
+         * 3.1.5 R29 T29-6 — lớp đỡ (ARGB, 0 = không cần) cho từng ô [slot] của một điểm vẽ ở hình [shape] trên nền ĐO [under]
+         * (ảnh nền xe 3D ∪ màu sơn dưới điểm — `Car3dDotsLayer.adapt`). Nền của nét = đúng các lớp bộ vẽ đặt dưới nó: chấm =
+         * nền tối [backing]; nút = nền [shadow] + mặt tông [tonal]; đèn báo = hợp (ảnh, ảnh + viền [lampEdge]) (+ quầng khi BẬT).
+         * Một ứng viên = chính mực thiết kế (giữ nghĩa màu) — lớp đỡ chỉ nằm dưới nét, không đổi mực ([InkModel.overlayHalo]).
+         * [log] nhận mọi lần dưới sàn (fail-loud). Thuần số — bài `AdaptiveContrastContractTest` chạy off-device.
+         */
+        fun halos(under: ContrastBackdrop, shape: Shape, warn: Int, p: KachiPalette, log: (String) -> Unit): IntArray {
+            fun need(ground: ContrastBackdrop, ink: Int): Int {
+                val r = InkModel.overlayHalo(InkRole.ICON, ground, ink, p)
+                if (!r.ok) log("${shape.name} ${r.describe()}")
+                return if (r.reinforced) r.haloColor() else 0
+            }
+            fun ContrastBackdrop.over(c: Int) = with(ContrastBackdrop.Layer.Flat(c))
+            val out = IntArray(SLOTS)
+            when (shape) {
+                Shape.DOT -> {   // [draw]: (quầng mở) → nền tối → [lớp đỡ] → vòng/quạt/chấm
+                    val g = under.over(backing)
+                    out[CarDots.Kind.UNKNOWN.ordinal] = need(g, unknown)
+                    out[CarDots.Kind.CLOSED.ordinal] = need(g, closed)
+                    out[TONE] = need(g, accent)
+                    out[CarDots.Kind.PARTIAL.ordinal] = out[TONE]
+                    out[CarDots.Kind.OPEN.ordinal] = need(under.over(halo).over(backing), accent)
+                    out[WARN] = need(g, warn)
+                    out[WARN_OPEN] = need(under.over(ColorMath.withAlpha(warn, HALO_ALPHA)).over(backing), warn)
+                }
+                Shape.BUTTON -> {   // [drawButton]: (quầng ngoài + quầng khi BẬT) → nền nút → mặt tông → [lớp đỡ] → vòng + icon
+                    val g = under.over(shadow).over(tonal)
+                    out[CarDots.Kind.UNKNOWN.ordinal] = need(g, drawnGlyph(unknown))
+                    out[CarDots.Kind.CLOSED.ordinal] = need(g, drawnGlyph(closed))
+                    out[CarDots.Kind.PARTIAL.ordinal] = out[CarDots.Kind.CLOSED.ordinal]
+                    val lit = under.over(ColorMath.withAlpha(accent, GLOW_OUTER_ALPHA)).over(halo).over(shadow).over(tonal)
+                    out[CarDots.Kind.OPEN.ordinal] = need(lit, drawnGlyph(accent))
+                }
+                Shape.LAMP -> {   // [drawLamp]: (quầng khi BẬT) → viền bóng (9 bản lệch: chỗ có, chỗ không) → [lớp đỡ] → nét
+                    fun edged(b: ContrastBackdrop) = ContrastBackdrop(b.ground().union(b.over(lampEdge).ground()))
+                    val g = edged(under)
+                    val tone = lampTone(null)
+                    out[CarDots.Kind.UNKNOWN.ordinal] = need(g, drawnGlyph(lampUnknown))
+                    out[CarDots.Kind.CLOSED.ordinal] = need(g, drawnGlyph(lampOff))
+                    out[CarDots.Kind.PARTIAL.ordinal] = out[CarDots.Kind.CLOSED.ordinal]
+                    out[CarDots.Kind.OPEN.ordinal] = need(edged(under.over(ColorMath.withAlpha(tone, LAMP_GLOW_ALPHA))), drawnGlyph(tone))
+                }
+            }
+            return out
+        }
+
+        /** Ba hình bộ vẽ tô — mỗi hình một chồng lớp dưới nét ([halos]). */
+        enum class Shape { DOT, BUTTON, LAMP }
+
         companion object {
+            /**
+             * Ô của [halos]: 0–3 = [CarDots.Kind] (mực thường; OPEN = chấm đặc nhấn trên quầng nhấn) · [TONE] = vòng/quạt nhấn
+             * (một phần · `lit`) · [WARN] = vòng/quạt cảnh báo · [WARN_OPEN] = chấm đặc cảnh báo trên quầng cảnh báo.
+             */
+            const val TONE = 4
+            const val WARN = 5
+            const val WARN_OPEN = 6
+            const val SLOTS = 7
+
+            /** Ô lớp đỡ của một CHẤM mức ([draw]) — cùng phép chọn mực/lớp của [draw]. */
+            fun dotSlot(dot: CarDots.Dot, lit: Boolean): Int = when {
+                dot.kind == CarDots.Kind.OPEN -> if (dot.warn) WARN_OPEN else CarDots.Kind.OPEN.ordinal
+                dot.kind == CarDots.Kind.PARTIAL || lit -> if (dot.warn) WARN else TONE
+                else -> dot.kind.ordinal
+            }
+
             fun of(p: KachiPalette, night: Boolean): Inks {
                 val ink = ColorMath.parse(p.accentInk)
                 val light = ColorMath.parse(p.onAccent)
                 val accent = if (night) ink else ColorMath.mix(light, ink, ON_PHOTO_LIFT)
-                return Inks(
+                val base = Inks(
                     accent = accent,
                     closed = ColorMath.withAlpha(light, CLOSED_ALPHA),
                     unknown = ColorMath.withAlpha(light, UNKNOWN_ALPHA),
@@ -41,6 +127,21 @@ internal class StateDotPainter(context: Context) {
                     tonal = ColorMath.withAlpha(light, TONAL_ALPHA),
                     lampOff = ColorMath.withAlpha(light, LAMP_OFF_ALPHA),
                     shadow = ColorMath.withAlpha(ColorMath.parse(p.wallScrim), SHADOW_ALPHA),
+                    glyphBoost = if (night) 1f else LIGHT_GLYPH_BOOST,
+                )
+                if (night) return base
+                return base.copy(
+                    // Mặt nút đứng trên thẻ/nền SÁNG (tới trắng tinh) ⇒ nền nút đậm hơn: 80 % đen trên trắng còn 51 ⇒ glyph BẬT 4,34:1.
+                    shadow = ColorMath.withAlpha(ColorMath.parse(p.wallScrim), LIGHT_SHADOW_ALPHA),
+                    lampEdge = ColorMath.withAlpha(light, SHADOW_ALPHA),
+                    lampOff = ColorMath.parse(p.ink),
+                    lampUnknown = ColorMath.parse(p.mut),
+                    lampAccent = ink,
+                    lampTones = mapOf(
+                        LampTone.Tone.AMBER.argb to ColorMath.parse(p.amber),
+                        LampTone.Tone.GREEN.argb to ColorMath.parse(p.green),
+                        LampTone.Tone.BLUE.argb to ink,
+                    ),
                 )
             }
         }
@@ -53,13 +154,14 @@ internal class StateDotPainter(context: Context) {
     private val arc = RectF()
     private var tinted: KachiPalette? = null
     private var inks = Inks.of(KachiTheme.palette, KachiTheme.night)
+    private val boosted = HashMap<Int, ColorFilter>()
 
     /**
      * Tô chấm [dot] tâm ([cx],[cy]) đường kính [diameter] px. [warnColor] = màu sắc thái cảnh báo của vật (chỉ dùng khi
      * `dot.warn`).
      */
-    fun draw(canvas: Canvas, cx: Float, cy: Float, diameter: Float, dot: CarDots.Dot, lit: Boolean, warnColor: Int) {
-        if (tinted !== KachiTheme.palette) { tinted = KachiTheme.palette; inks = Inks.of(KachiTheme.palette, KachiTheme.night) }
+    fun draw(canvas: Canvas, cx: Float, cy: Float, diameter: Float, dot: CarDots.Dot, lit: Boolean, warnColor: Int, halo: Int = 0) {
+        retint()
         val r = diameter / 2f
         val tone = if (dot.warn) warnColor else inks.accent
         val open = dot.kind == CarDots.Kind.OPEN   // quầng CHỈ khi mở hẳn ⇒ 100 % không lẫn quạt lớn
@@ -67,6 +169,7 @@ internal class StateDotPainter(context: Context) {
         if (open) { fill.color = if (dot.warn) ColorMath.withAlpha(warnColor, HALO_ALPHA) else inks.halo; canvas.drawCircle(cx, cy, r + HALO_DP * d, fill) }
         fill.color = inks.backing
         canvas.drawCircle(cx, cy, r + BACKING_DP * d, fill)
+        if (halo != 0) { fill.color = halo; canvas.drawCircle(cx, cy, r + BACKING_DP * d, fill) }   // R29 T29-6: lớp đỡ đo được
         val inner = r - ring.strokeWidth / 2f
         when (dot.kind) {
             CarDots.Kind.OPEN -> { fill.color = tone; canvas.drawCircle(cx, cy, r, fill) }
@@ -82,6 +185,9 @@ internal class StateDotPainter(context: Context) {
         }
     }
 
+    /** Bộ màu đang dùng (theo bảng màu hiện tại) — để chỗ vẽ tính lớp đỡ [Inks.halos] theo sự kiện, không trong `onDraw`. */
+    fun inks(): Inks { retint(); return inks }
+
     /**
      * 3.01 R24 — ĐIỂM ICON (đèn trên hình xe). [scale] = nhịp nảy khi chạm. Không cấp phát. Chữ ký giữ nguyên (bảng 3D gọi).
      *
@@ -92,12 +198,13 @@ internal class StateDotPainter(context: Context) {
      */
     fun drawIcon(
         canvas: Canvas, cx: Float, cy: Float, diameter: Float, kind: CarDots.Kind, icon: Drawable?, scale: Float = 1f,
-        tappable: Boolean = true,
+        tappable: Boolean = true, halo: Int = 0,
     ) {
-        if (tappable) drawButton(canvas, cx, cy, diameter * scale, kind, icon) else drawLamp(canvas, cx, cy, diameter, kind, icon, null, scale)
+        if (tappable) drawButton(canvas, cx, cy, diameter * scale, kind, icon, halo) else drawLamp(canvas, cx, cy, diameter, kind, icon, null, scale, halo)
     }
 
-    private fun drawButton(canvas: Canvas, cx: Float, cy: Float, diameter: Float, kind: CarDots.Kind, icon: Drawable?) {
+    /** [halo] = lớp đỡ đo được ([Inks.halos], 0 = không) — đĩa cùng cỡ mặt nút, trên mặt tông, dưới nét. */
+    private fun drawButton(canvas: Canvas, cx: Float, cy: Float, diameter: Float, kind: CarDots.Kind, icon: Drawable?, halo: Int = 0) {
         retint()
         val r = diameter / 2f
         val on = kind == CarDots.Kind.OPEN
@@ -111,6 +218,7 @@ internal class StateDotPainter(context: Context) {
         canvas.drawCircle(cx, cy, r + BACKING_DP * d, fill)
         fill.color = inks.tonal                                    // mặt nút: đĩa tông đặc — thấy là NÚT kể cả khi tắt
         canvas.drawCircle(cx, cy, r, fill)
+        if (halo != 0) { fill.color = halo; canvas.drawCircle(cx, cy, r, fill) }   // R29 T29-6
         val ink = when (kind) { CarDots.Kind.OPEN -> inks.accent; CarDots.Kind.UNKNOWN -> inks.unknown; else -> inks.closed }
         if (kind != CarDots.Kind.CLOSED) {                         // vòng chỉ khi BẬT (liền) hoặc CHƯA BIẾT (đứt)
             ring.pathEffect = if (kind == CarDots.Kind.UNKNOWN) dash else null
@@ -120,7 +228,7 @@ internal class StateDotPainter(context: Context) {
         icon ?: return
         val ir = (r * ICON_OF_DISC).toInt()
         icon.setBounds((cx - ir).toInt(), (cy - ir).toInt(), (cx + ir).toInt(), (cy + ir).toInt())
-        icon.setTint(ink)
+        ink(icon, ink)
         icon.draw(canvas)
     }
 
@@ -131,26 +239,46 @@ internal class StateDotPainter(context: Context) {
      * Tô lại tint KHÔNG làm VectorDrawable dựng lại bitmap (tint là bộ lọc lúc vẽ), bounds giữ nguyên ⇒ 9 lần chép bitmap.
      */
     fun drawLamp(
-        canvas: Canvas, cx: Float, cy: Float, diameter: Float, kind: CarDots.Kind, icon: Drawable?, lamp: Int?, scale: Float = 1f,
+        canvas: Canvas, cx: Float, cy: Float, diameter: Float, kind: CarDots.Kind, icon: Drawable?, lamp: Int?, scale: Float = 1f, halo: Int = 0,
     ) {
         retint()
         icon ?: return
         val ir = (diameter * scale / 2f * LAMP_OF_DISC).toInt()
         val on = kind == CarDots.Kind.OPEN
-        val tone = lamp ?: inks.accent
+        val tone = inks.lampTone(lamp)
         if (on) { fill.color = ColorMath.withAlpha(tone, LAMP_GLOW_ALPHA); canvas.drawCircle(cx, cy, ir * LAMP_GLOW_OF_ICON, fill) }
         icon.setBounds((cx - ir).toInt(), (cy - ir).toInt(), (cx + ir).toInt(), (cy + ir).toInt())
-        icon.setTint(inks.shadow)
+        ink(icon, inks.lampEdge)
         val o = SHADOW_DP * d
         for (dx in -1..1) for (dy in -1..1) {
             canvas.save(); canvas.translate(dx * o, dy * o); icon.draw(canvas); canvas.restore()
         }
-        icon.setTint(when (kind) { CarDots.Kind.OPEN -> tone; CarDots.Kind.UNKNOWN -> inks.unknown; else -> inks.lampOff })
+        // R29 T29-6: chỉ khi ĐO thấy viền bóng không đủ — đĩa đỡ nhỏ (cỡ quầng) TRÊN viền, dưới nét (luật POLISH: không đĩa thường trực).
+        if (halo != 0) { fill.color = halo; canvas.drawCircle(cx, cy, ir * LAMP_GLOW_OF_ICON, fill) }
+        ink(icon, when (kind) { CarDots.Kind.OPEN -> tone; CarDots.Kind.UNKNOWN -> inks.lampUnknown; else -> inks.lampOff })
         icon.draw(canvas)
     }
 
+    /**
+     * 3.1.x LIGHT-CONTRAST — tô [icon] bằng [color]. [Inks.glyphBoost] = 1 ⇒ `setTint` như cũ (bảng tối giữ từng byte). > 1 (bảng
+     * sáng) ⇒ bộ lọc ma trận: RGB = mực, alpha = min(1, boost × alpha mực × alpha nét) — [ĐO máy ảo 14/10] glyph hai tông (thân xe
+     * 0,16 · phụ 0,38 · chỉ phần ĐÈN 1,0) ở ~21 px chỉ còn vệt xám 1,4–2,6:1; nhân alpha đưa lớp phụ lên ~0,6–0,76, nét chính kẹp 1
+     * (nên mực 80 %/60 % thành đặc — bật/tắt vẫn khác ở MÀU + vòng/quầng). Bộ lọc giữ theo màu ⇒ vẽ không cấp phát sau lần đầu.
+     */
+    private fun ink(icon: Drawable, color: Int) {
+        if (inks.glyphBoost == 1f) { icon.colorFilter = null; icon.setTint(color); return }
+        icon.colorFilter = boosted.getOrPut(color) {
+            ColorMatrixColorFilter(ColorMatrix(floatArrayOf(
+                0f, 0f, 0f, 0f, Color.red(color).toFloat(),
+                0f, 0f, 0f, 0f, Color.green(color).toFloat(),
+                0f, 0f, 0f, 0f, Color.blue(color).toFloat(),
+                0f, 0f, 0f, inks.glyphBoost * Color.alpha(color) / 255f, 0f,
+            )))
+        }
+    }
+
     private fun retint() {
-        if (tinted !== KachiTheme.palette) { tinted = KachiTheme.palette; inks = Inks.of(KachiTheme.palette, KachiTheme.night) }
+        if (tinted !== KachiTheme.palette) { tinted = KachiTheme.palette; inks = Inks.of(KachiTheme.palette, KachiTheme.night); boosted.clear() }
     }
 
     companion object {
@@ -170,6 +298,10 @@ internal class StateDotPainter(context: Context) {
         const val SHADOW_DP = 1f
         const val LAMP_GLOW_ALPHA = 0x40
         const val LAMP_GLOW_OF_ICON = 1.25f
+        /** 3.1.x LIGHT-CONTRAST — bảng sáng: alpha nét icon × 2 (lớp phụ 0,38 → 0,76; thân 0,16 → 0,32; nét chính kẹp 1). */
+        const val LIGHT_GLYPH_BOOST = 2f
+        /** Bảng sáng: nền nút 90 % (bảng tối 80 % — [SHADOW_ALPHA]). */
+        const val LIGHT_SHADOW_ALPHA = 0xE6
 
         /**
          * Đường kính chấm (px) theo cạnh nhỏ khung xe [frameMinPx]: [RATIO] × cạnh, kẹp [MIN_DP]..[MAX_DP] (10–12 dp) — theo ô
@@ -197,7 +329,7 @@ internal class StateDotPainter(context: Context) {
         const val HALO_ALPHA = 0x59
         /** Quạt bắt đầu ở 12 giờ. */
         const val START_DEG = -90f
-        /** Bảng sáng: nhấn trên ảnh = 45 % nhấn + 55 % trắng (`ColorMath.mix(trắng, nhấn, t)`), cùng số lớp kính R22·R. */
-        const val ON_PHOTO_LIFT = 0.45
+        /** Bảng sáng: nhấn trên ảnh = 40 % nhấn + 60 % trắng (`ColorMath.mix(trắng, nhấn, t)`). 3.1.x LIGHT-CONTRAST: 0,45 → 0,40 — glyph BẬT trên mặt nút ở ảnh sáng đỉnh chỉ 4,48:1. */
+        const val ON_PHOTO_LIFT = 0.40
     }
 }

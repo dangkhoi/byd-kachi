@@ -88,7 +88,8 @@ class TyreNoThresholdContractTest {
         // Khoá chữ gồm MÀU đã phân giải của từng đoạn ⇒ đổi màu mà chữ đứng yên vẫn vẽ lại (R6).
         val key = SourceRoots.body(ink, "internal fun chipTextKey(")
         assertTrue(key.contains("chipInk(it.tone)"), "khoá so phải gồm màu của từng đoạn")
-        assertTrue(SourceRoots.body(ink, "internal fun chipText(").contains("ForegroundColorSpan(c(chipInk(r.tone)))"))
+        // 3.1.5 R29 (đổi ghim có lý do): đoạn mang VAI của sắc thái (chipInk), mực thật giải trên nền đo được — không màu đóng băng.
+        assertTrue(SourceRoots.body(ink, "internal fun chipText(").contains("AdaptiveInk.InkSpan(chipInk(r.tone))"))
     }
 
     @Test

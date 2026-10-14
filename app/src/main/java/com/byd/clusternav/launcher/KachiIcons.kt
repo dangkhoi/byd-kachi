@@ -67,13 +67,17 @@ internal object KachiIcons {
     /**
      * Hợp đồng tint (KDoc lớp). [inkHex] = mực khi tint (mặc định [KachiTheme.INK]; ô điều khiển đang bật truyền
      * [KachiTheme.INK_ON_ACCENT]). [selected] chỉ có nghĩa ở mặt lớn + chủ đề tối.
+     *
+     * 3.1.5 R29 — nhánh TÔ MỰC đi qua [AdaptiveInk.icon]: [inkHex] là VAI, mực thật giải trên nền đo được của mặt chứa icon (ô nút
+     * · đĩa ghế · hàng chân 3D…); ngoài mọi mặt ⇒ đúng [inkHex] như cũ. Nhánh bộ lọc màu riêng (mặt lớn chủ đề tối) gỡ vai mực
+     * ([AdaptiveInk.release]) — icon màu không bị tô đè.
      */
     fun tint(img: ImageView, sizeDp: Int, selected: Boolean, inkHex: String = KachiTheme.INK) {
         drawn(img).also { it.tinted = true; it.selected = selected; it.ink = inkHex }
         when {
-            !KachiTheme.night || sized(img, sizeDp) < Sp.ICON_L -> img.setColorFilter(c(inkHex))
-            selected -> img.colorFilter = null
-            else -> img.colorFilter = UNSELECTED
+            !KachiTheme.night || sized(img, sizeDp) < Sp.ICON_L -> AdaptiveInk.icon(img, inkHex)
+            selected -> { AdaptiveInk.release(img); img.colorFilter = null }
+            else -> { AdaptiveInk.release(img); img.colorFilter = UNSELECTED }
         }
     }
 
@@ -85,6 +89,7 @@ internal object KachiIcons {
      */
     fun untint(img: ImageView) {
         drawnBy[img]?.tinted = false
+        AdaptiveInk.release(img)
         img.colorFilter = null
     }
 
@@ -149,20 +154,34 @@ internal object KachiIcons {
      * lớp chính giữ ≥ 4,5:1 trên nền ô tắt — mực [KachiTheme.ICON], nền [KachiTheme.SURF_FROM]/[KachiTheme.SURF_TO]). Mặt
      * lớn chủ đề tối đã mờ [UNSELECTED_ALPHA] trong bộ lọc ⇒ `inner` (bản cũ nhân hai lần: 0,72 × 0,72 = 0,52). Ghi nhớ
      * [dim] để [refit] tính lại khi cỡ đã khớp đổi; nhớ kết quả theo (mực, nền, inner, dim) — nhịp vẽ 1 Hz không tính lại.
+     *
+     * 3.1.5 R29 — icon đã qua mực thích ứng ([tint] → [AdaptiveInk.icon]) ⇒ độ mờ tính trên MỰC ĐÃ GIẢI + hai góc NỀN ĐO của mặt
+     * (kể cả lớp đỡ), tính lại mỗi lần mực được tô lại ([AdaptiveInk.onInk]); chưa đo ⇒ đường cũ (mực `ICON` trên `SURF_*`).
      */
     fun fadeOff(img: ImageView, sizeDp: Int, active: Boolean, dim: Float) {
         drawn(img).offDim = if (active) null else dim
-        if (active) { img.alpha = 1f; return }
+        if (active) { AdaptiveInk.onInk(img) { _, _, _ -> }; img.alpha = 1f; return }
         val inner = if (KachiTheme.night && sized(img, sizeDp) >= Sp.ICON_L) UNSELECTED_ALPHA else 1f
-        val key = FadeKey(KachiTheme.ICON, KachiTheme.SURF_FROM, KachiTheme.SURF_TO, inner, dim)
-        img.alpha = fades.getOrPut(key) {
-            IconFade.offAlpha(c(key.ink), intArrayOf(c(key.from), c(key.to)), dim.toDouble(), inner.toDouble()).toFloat()
+        fun fade(k: FadeKey): Float {
+            if (fades.size >= FADE_CAP) fades.clear()   // nền đo đổi theo ảnh trình chiếu ⇒ khoá mới; trần giữ bộ nhớ có hạn
+            return fades.getOrPut(k) { IconFade.offAlpha(k.ink, intArrayOf(k.from, k.to), dim.toDouble(), inner.toDouble()).toFloat() }
         }
+        var measured = false
+        AdaptiveInk.onInk(img) { v, r, ground ->
+            measured = true
+            val g = ground.ground()
+            v.alpha = fade(FadeKey(r.ink, g.lo, g.hi, inner, dim))
+        }
+        if (measured) return
+        val key = FadeKey(c(KachiTheme.ICON), c(KachiTheme.SURF_FROM), c(KachiTheme.SURF_TO), inner, dim)
+        img.alpha = fade(key)
     }
 
-    private data class FadeKey(val ink: String, val from: String, val to: String, val inner: Float, val dim: Float)
+    private const val FADE_CAP = 256
 
-    /** CHỈ luồng chính; vài khoá (chủ đề × màu × hai mức cỡ) — không cần trần. */
+    private data class FadeKey(val ink: Int, val from: Int, val to: Int, val inner: Float, val dim: Float)
+
+    /** CHỈ luồng chính; khoá = (mực, hai góc nền, inner, dim) — nền ĐO đổi theo ảnh ⇒ có trần [FADE_CAP]. */
     private val fades = HashMap<FadeKey, Float>()
 
     /**

@@ -54,7 +54,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
     private var model: Car3dModel? = null
     private var placement: Car3dOrient.Placement? = null
     private val anchors = HashMap<String, V3>()          // id điểm chạm → điểm THẾ GIỚI
-    private var orbit = Car3dOrbit(0.0, 0.0, 0.0, 0.0)
+    private var orbit = Car3dOrbit(0.0, 0.0)
     private var fallen: View? = null
     private var shown = false
     private var night = KachiTheme.night
@@ -77,7 +77,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
     init {
         // Khung 3D chừa chân cho hàng nút (không đè bánh/cản — đo máy ảo 13/10). Lớp chấm trùng ĐÚNG khung 3D (cùng phép chiếu).
         val foot = dpi(context, Sp.TOUCH) + 2 * dpi(context, Sp.S)
-        addView(backdrop, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        addView(backdrop, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)); Car3dInk.declare(this, backdrop)   // R29 T29-6: mặt khung 3D
         addView(texture, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT).also { it.bottomMargin = foot })
         addView(dots, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT).also { it.bottomMargin = foot })
         addView(hero, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT).also { it.bottomMargin = foot })
@@ -97,26 +97,27 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
     }
 
     // ── Vòng đời ───────────────────────────────────────────────────────────────────────────────────────────────────
-
     private val paintChanged: () -> Unit = { main.post { if (applyPaint()) requestFrames(1); hero.reproject() } }   // R28: + công tắc số lốp
     private val backdropChanged: () -> Unit = { main.post(::syncBackdrop) }
     override fun onAttachedToWindow() {
-        super.onAttachedToWindow(); TileSafetyGate.listen(taps.refused); Car3dPaintChoice.listen(paintChanged)
-        Car3dBackdropChoice.listen(backdropChanged); syncBackdrop(); if (width > 0) start()
+        super.onAttachedToWindow(); TileSafetyGate.listen(taps.refused); Car3dPaintChoice.listen(paintChanged); WidgetFallbacks.shared.attach(this, WIDGET_ID, fallen != null)
+        unlit = com.byd.clusternav.system.ScreenLit.watch(context) { screenOff = !com.byd.clusternav.system.ScreenLit.read(context); syncLive() }
+            .also { screenOff = !com.byd.clusternav.system.ScreenLit.read(context) }
+        Car3dBackdropChoice.listen(backdropChanged); syncBackdrop(); if (width > 0 && !windowHidden && !viewHidden && !screenOff) start()
     }
 
     /** POLISH2: dựng khi biết cỡ ô THẬT (ô < `minSlotDp` ⇒ 2D). ĐỒNG BỘ, trước lượt vẽ đầu — [ĐO máy ảo 13/10] dựng trễ một nhịp ⇒
      *  UiHelper gắn sau khi bề mặt TextureView đã có ⇒ không nhận cỡ ⇒ camera không đặt. Lùi 2D thì hoãn (không gỡ view giữa bố cục). */
     override fun onSizeChanged(w: Int, h: Int, ow: Int, oh: Int) {
         super.onSizeChanged(w, h, ow, oh)
-        if (w <= 0 || !isAttachedToWindow) return
+        if (w <= 0 || !isAttachedToWindow || windowHidden || viewHidden || screenOff) return   // khuất ⇒ không dựng (cổng [syncLive])
         if (slotFits()) start() else main.post { if (isAttachedToWindow) start() }
     }
 
     private fun slotFits(): Boolean = Car3dDevice.slotFits(this, WIDGET_ID)
     override fun onDetachedFromWindow() {
-        TileSafetyGate.unlisten(taps.refused); Car3dPaintChoice.unlisten(paintChanged); Car3dBackdropChoice.unlisten(backdropChanged)
-        stop(); super.onDetachedFromWindow()
+        TileSafetyGate.unlisten(taps.refused); Car3dPaintChoice.unlisten(paintChanged); Car3dBackdropChoice.unlisten(backdropChanged); WidgetFallbacks.shared.detach(this)
+        unlit?.invoke(); unlit = null; stop(); windowHidden = false; viewHidden = false; screenOff = false; super.onDetachedFromWindow()
     }
 
     /** Ảnh nền theo lựa chọn (hồ sơ); đang căn ⇒ giữ bản nháp, đổi hàng nút thành "Xong". */
@@ -126,10 +127,18 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
         bar.visibility = if (aligning) GONE else VISIBLE
         doneAlign.visibility = if (aligning) VISIBLE else GONE
     }
-    override fun onVisibilityAggregated(isVisible: Boolean) {
-        super.onVisibilityAggregated(isVisible)
-        shown = isVisible
-        if (isVisible) { applyPaint(); applyVariants(); requestFrames(1) } else { cancelFrames(); main.removeCallbacks(blinkTick); endGesture() }
+    /** 3.1.5 [ĐO máy ảo 14/10]: tắt/bật màn KHÔNG gọi [onVisibilityAggregated] mà gọi hàm này (cửa sổ khuất/hiện) — cùng cổng [syncLive]. */
+    override fun onWindowVisibilityChanged(visibility: Int) { super.onWindowVisibilityChanged(visibility); windowHidden = visibility != VISIBLE; syncLive() }
+    override fun onVisibilityAggregated(isVisible: Boolean) { super.onVisibilityAggregated(isVisible); viewHidden = !isVisible; syncLive() }
+    private var windowHidden = false; private var viewHidden = false; private var screenOff = false; private var unlit: (() -> Unit)? = null
+    /** PERF 3.1.5 · owner 14/10 *"car 3D không bao giờ chạy nền"* — MỘT cổng: khuất (ô khác bung R30 · màn chính rời · màn tắt) ⇒ [stop] nhả
+     *  Engine/GPU/GLB + nhu cầu HAL về 0 ([WidgetFallbacks.shown]); hiện lại ⇒ [start] nạp lại từ tệp đệm (trước: khuất chỉ huỷ khung).
+     *  Màn tắt: [ĐO máy ảo 14/10] `SLEEP` không đổi độ hiện của cửa sổ ⇒ nghe thêm [com.byd.clusternav.system.ScreenLit] (cùng nguồn vòng HAL). */
+    private fun syncLive() {
+        val live = !windowHidden && !viewHidden && !screenOff
+        shown = live; WidgetFallbacks.shared.shown(this, live)
+        if (!live) { if (renderer != null) stop() else { cancelFrames(); main.removeCallbacks(blinkTick); endGesture() }; return }
+        if (renderer == null) { if (isAttachedToWindow && width > 0) start() } else { applyPaint(); applyVariants(); requestFrames(FRAMES_AFTER_WAKE) }
     }
 
     private fun start() {
@@ -162,9 +171,9 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
         main.removeCallbacks(blinkTick); blinkSince.clear(); paintApplied = null
         endGesture()
         renderer?.let { runCatching { it.destroy() }.onFailure { e -> Log.w(TAG, "destroy", e) } }
-        renderer = null; placement = null; anchors.clear(); glassOf.clear(); glassAt.clear(); glassAnim.clear(); swingAt.clear(); swingAnim.clear()
+        renderer = null; model = null; placement = null; anchors.clear(); glassOf.clear(); glassAt.clear(); glassAnim.clear(); swingAt.clear(); swingAnim.clear()
         posed.clear(); Car3dSeat.shared.release(this)
-        Log.i(TAG, "dừng — tổng $framesTotal khung đã vẽ")
+        Log.i(TAG, "dừng — tổng $framesTotal khung đã vẽ"); com.byd.clusternav.launcher.perf.KachiMem.trim("car3d dừng")   // PERF 3.1.5: trả trang Engine vừa nhả cho hệ
     }
 
     private fun onLoaded(r: Car3dRenderer, l: Car3dModelSource.Loaded?, t0: Long) {
@@ -188,27 +197,26 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
             anchors[h.id] = pl.apply(a); found += h.id
         }
         // Đích chạm = hộp THẾ GIỚI của bộ phận neo ([Car3dPick]); điểm vẫn chấm khi hình 3D không tự nói trạng thái.
-        val boxes = HashMap<String, Car3dPick.Target>(); val withDot = HashSet<String>()
+        val boxes = HashMap<String, Car3dPick.Target>()
         for (h in m.hotspots) {
             val a = anchors[h.id] ?: continue
             val shown = h.shownBy?.let(r::hasPart) == true
             boxes[h.id] = (if (shown) target(r, pl, h, a, posed = false) else null) ?: Car3dPick.Target(h.id, a, a, a)
-            if (!shown) withDot += h.id
             if (shown && r.hasHinge(h.shownBy!!)) posed[h.id] = h to a
         }
         glassOf.clear()
-        m.hotspots.filter { it.group == Car3dCatalog.GROUPS.first() && it.id in boxes && it.id !in withDot && it.target in DOOR_KEYS }
+        m.hotspots.filter { it.group == Car3dCatalog.GROUPS.first() && it.id in boxes && it.shownBy?.let(r::hasPart) == true && it.target in DOOR_KEYS }
             .forEach { h -> glassOf[h.id] = "${h.shownBy}*" }
         r.place(pl.matrix())
         placement = pl
-        orbit = Car3dOrbit(m.yawDeg, 0.0, m.yawMin, m.yawMax, pitch = m.pitchDeg)
-        taps.bind(m, anchors.keys, boxes, withDot)
+        orbit = Car3dOrbit(m.yawDeg, 0.0, pitch = m.pitchDeg)
+        taps.bind(m, anchors.keys, boxes) { h -> r.worldBox(pl, h.anchor) }; taps.blocked = hero::owns   // chấm né icon ghế
         // R28 — điểm ghế (từ neo cửa + kính trước SẴN CÓ) + điểm chạm đất 4 bánh (hộp hợp bộ phận `wheel*`, đo hình học).
         val seats = Car3dHero.Seat.values().mapNotNull { s -> val k = if (s.side == Car3dHero.LEFT) "lf" else "rf"
             anchors["door-$k"]?.let { d -> anchors["win-$k"]?.let { g -> s to Car3dHero.seatPoint(d, g) } } }.toMap()
         hero.bind(seats, worldBox(r, pl, Car3dAnchor.Node(WHEELS))?.let { (lo, hi) -> Car3dHero.wheels(lo, hi) } ?: emptyMap())
         hero.bringToFront(); bar.bringToFront(); doneAlign.bringToFront()   // nút ghế/chân TRÊN các nút trợ năng bộ phận ([Car3dTaps] gắn sau)
-        Log.i(TAG, "pick targets ${boxes.size} · dots only for $withDot · sliding glass ${glassOf.keys}")
+        Log.i(TAG, "pick targets ${boxes.size} · sliding glass ${glassOf.keys}")
         Log.i(TAG, "nạp ${m.id} (${l.origin}) · nguồn ${(t1 - t0) / 1_000_000} ms · gltfio ${(System.nanoTime() - t1) / 1_000_000} ms · " +
             "${r.partNames().size} bộ phận · chấm có: $found · chấm thiếu: $missing · hộp ${pl.half} · neo " +
             anchors.entries.joinToString { (k, v) -> "$k(%.2f,%.2f,%.2f)".format(v.x, v.y, v.z) })
@@ -216,30 +224,20 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
         fill(latest)
         requestFrames(FRAMES_AFTER_LOAD)
     }
-
-    /** Hộp THẾ GIỚI của bộ phận neo [h] ([posed] = theo tư thế đang vẽ — nắp cốp mở) → đích chạm. */
-    private fun target(r: Car3dRenderer, pl: Car3dOrient.Placement, h: Car3dHotspot, a: V3, posed: Boolean): Car3dPick.Target? =
-        worldBox(r, pl, h.anchor, posed)?.let { (lo, hi) -> Car3dPick.Target(h.id, lo, hi, a) }
-
-    /** Hộp THẾ GIỚI (min, max) của neo [a]: 8 góc hộp mô hình qua phép đặt. */
-    private fun worldBox(r: Car3dRenderer, pl: Car3dOrient.Placement, a: Car3dAnchor, posed: Boolean = false): Pair<V3, V3>? {
-        val (bmn, bmx) = r.box(a, posed) ?: return null
-        val wc = (0 until CORNERS).map { i -> pl.apply(V3(if (i and 1 == 0) bmn.x else bmx.x, if (i and 2 == 0) bmn.y else bmx.y, if (i and 4 == 0) bmn.z else bmx.z)) }
-        return V3(wc.minOf { it.x }, wc.minOf { it.y }, wc.minOf { it.z }) to V3(wc.maxOf { it.x }, wc.maxOf { it.y }, wc.maxOf { it.z })
-    }
-
+    private fun target(r: Car3dRenderer, pl: Car3dOrient.Placement, h: Car3dHotspot, a: V3, posed: Boolean) = r.target(pl, h, a, posed)
+    private fun worldBox(r: Car3dRenderer, pl: Car3dOrient.Placement, a: Car3dAnchor) = r.worldBox(pl, a)
     /** Điểm có bộ phận quay bản lề (nắp cốp): đích chạm đi theo tư thế hiện tại — chạm nắp ĐANG giơ lên thì đóng (owner 13/10). */
     private val posed = HashMap<String, Pair<Car3dHotspot, V3>>()
     private fun repose(r: Car3dRenderer) {
         val pl = placement ?: return
         posed.values.forEach { (h, a) -> target(r, pl, h, a, posed = true)?.let(taps::retarget) }
+        taps.redot { h -> r.worldBox(pl, h.anchor, posed = true) }   // chấm đi theo cửa/nắp/kính ĐANG vẽ
     }
-
     private fun fallBack(why: String) {
         if (fallen != null) return
         Log.w(TAG, "lùi bảng 2D: $why")
         gen++; cancelFrames()
-        renderer?.let { runCatching { it.destroy() } }; renderer = null; Car3dSeat.shared.release(this)
+        renderer?.let { runCatching { it.destroy() } }; renderer = null; Car3dSeat.shared.release(this); WidgetFallbacks.shared.fell(this, WIDGET_ID)
         removeAllViews()
         taps.clear()
         fallen = fallback(latest).also { addView(it, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)) }
@@ -332,7 +330,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
         for (id in glassOf.keys) {
             val to = (taps.level(id) ?: 0) / WindowCycle.FULL.toFloat()
             val cur = glassAt[id]
-            if (cur == null) { glassAt[id] = to; renderer?.slide(glassOf.getValue(id), to); started = true; continue }
+            if (cur == null) { glassAt[id] = to; renderer?.let { it.slide(glassOf.getValue(id), to); repose(it) }; started = true; continue }
             val goal = glassAnim[id]?.second ?: cur
             if (goal != to) { glassAnim[id] = Triple(cur, to, now); started = true }
         }
@@ -341,6 +339,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
 
     /** Một bước hoạt cảnh kính (gọi mỗi khung). `true` = còn chạy. */
     private fun stepGlass(r: Car3dRenderer, now: Long): Boolean {
+        val moved = glassAnim.isNotEmpty()
         val it = glassAnim.entries.iterator()
         while (it.hasNext()) {
             val (id, a) = it.next()
@@ -350,6 +349,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
             glassAt[id] = v; r.slide(glassOf.getValue(id), v)
             if (t >= 1f) it.remove()
         }
+        if (moved) repose(r)
         return glassAnim.isNotEmpty()
     }
 
@@ -359,7 +359,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
         if (model == null) return false
         val p = Car3dPaint.pick(paints, Car3dPaintChoice.current) ?: return false
         if (p.name == paintApplied) return false
-        paintApplied = p.name
+        paintApplied = p.name; backdrop.paint = p.argb()   // R29 T29-6: màu sơn vào nền đo của lớp phủ (đổi ⇒ một lượt giải)
         Log.i(TAG, "paint ${p.name}")
         return runCatching { r.paint(p.linear) }.getOrElse { Log.e(TAG, "paint", it); false }
     }
@@ -456,11 +456,11 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
         if (r.render(t)) {
             lastNs = t; framesTotal++; burst++; misses = 0; burstNs += System.nanoTime() - w0
             if (pending > 0) pending--
-            cam?.let { c -> placement?.let { taps.project(c, anchors, it.bounds, texture.width, texture.height); hero.project(c, texture.width, texture.height); groundShadow(c, it.bounds) } }
+            cam?.let { c -> placement?.let { hero.project(c, texture.width, texture.height); taps.project(c, anchors, it.bounds, texture.width, texture.height); groundShadow(c, it.bounds) } }
         } else if (++misses > MAX_MISSES) { pending = 0; misses = 0 }
         if (orbit.moving || pending > 0 || dragging || sliding) post()
         else {
-            if (burst > 0) { Log.d(TAG, "đợt vẽ $burst khung (tổng $framesTotal) · luồng chính TB ${burstNs / burst / 1000} µs/khung"); taps.dump("dots yaw=${orbit.yaw.toInt()} pitch=${orbit.pitch.toInt()}") }
+            if (burst > 0) { Log.d(TAG, "đợt vẽ $burst khung (tổng $framesTotal) · luồng chính TB ${burstNs / burst / 1000} µs/khung"); taps.dump("dots yaw=${orbit.yaw.toInt()} pitch=${orbit.pitch.toInt()}"); Car3dInk.settle(this) }   // R29: xoay DỪNG
             burst = 0; burstNs = 0L; lastNs = 0L
         }
     }
@@ -474,7 +474,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
         val pl = placement ?: return null; val m = model ?: return null
         if (r.width <= 0 || r.height <= 0) return null
         val dist = maxOf(Car3dMath.frameDistance(pl.bounds, m.fovDeg, r.width, r.height, m.zoom),   // ngẩng cao ⇒ lùi xa cho khỏi cắt
-            Car3dMath.fitDistance(pl.bounds, V3.ZERO, orbit.yaw, orbit.pitch, m.fovDeg, r.width, r.height))
+            Car3dMath.steadyDistance(pl.bounds, m.fovDeg, r.width, r.height, orbit.pitchMin, orbit.pitchMax))   // cố định: xoay không đổi cỡ
         return Car3dCamera(V3.ZERO, dist, orbit.yaw, orbit.pitch, m.fovDeg)
     }
 
@@ -484,10 +484,10 @@ internal class Car3dWidgetView(context: Context, data: WidgetData, private val f
         /** ~24 khung/giây (41,7 ms) — trần khi đang xoay/quán tính. */
         const val FRAME_NS = 41_666_666L
         const val FRAMES_AFTER_LOAD = 3
+        const val FRAMES_AFTER_WAKE = 6
         const val MAX_MISSES = 48
         /** Kính tụt/kéo lên trong 560 ms (owner 13/10 "kính chạy hơi nhanh, giảm 1/2": 280 → 560) — rồi đứng yên, 0 khung. */
         const val GLASS_MS = 560L
-        const val CORNERS = 8
         /** Cửa/cốp mở/đóng trong 900 ms (owner: 800–1000 ms), êm hai đầu. */
         const val SWING_MS = 900L
         const val OPEN_TAG = "open"

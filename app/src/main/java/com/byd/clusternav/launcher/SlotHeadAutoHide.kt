@@ -264,8 +264,9 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
             e.cluster?.hits(x - slot.left, y - slot.top) == true
     }
 
+    /** R30: chỉ khung ĐANG HIỆN — lúc bung, khung ẩn vẫn giữ chỗ cũ dưới ô bung, không được nhận cú chạm của nó. */
     private fun slotAt(slots: List<View>, x: Float, y: Float): Int =
-        slots.indexOfFirst { x >= it.left && x < it.right && y >= it.top && y < it.bottom }
+        slots.indexOfFirst { it.visibility == View.VISIBLE && x >= it.left && x < it.right && y >= it.top && y < it.bottom }
 
     /** Đường chiếu của ô, đọc từ chính cây view vừa dựng (không lặp lại điều kiện của `makeSlot`). */
     private fun projectorOf(slot: ViewGroup): SlotHeadRest.Projector {

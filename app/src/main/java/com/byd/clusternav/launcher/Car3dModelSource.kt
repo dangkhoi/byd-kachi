@@ -102,7 +102,15 @@ object Car3dModelSource {
         val hinges = Car3dHinge.fitAll(mesh)
         val lamps = Car3dLamps.styles(mesh, m.whiteLamps)
         Log.i(TAG, "hinges ${hinges.size}: ${hinges.entries.take(HINGE_LOG).joinToString { (k, h) -> "$k %.0f° rms %.4f".format(Math.toDegrees(h.angle), h.rms) }}")
-        val glb = Car3dGlb.write(mesh, styles, tex, m.partStyles + lamps, m.uvOriginBottom, hinges, lid) { n ->
+        // Mặt sơn chỉ thấy QUA KÍNH (mặt trong khung kính, sơn dưới nẹp trụ/nóc) ⇒ đen như nội thất (đo tầm nhìn — [Car3dCabin]).
+        // SAU bản lề + vai đèn (khớp theo tên — phần tách giữ tên), giữ tư cách nắp cốp của phần tách.
+        val tc = System.nanoTime()
+        val cabin = Car3dCabin.apply(mesh, lid)
+        Log.i(TAG, "mặt sơn qua kính → đen: ${cabin.blackened} · tách mặt ${cabin.backed} · ${(System.nanoTime() - tc) / 1_000_000} ms")
+        // Ảnh của kiểu PHÁT SÁNG (đèn, nội thất, mâm) giải mã thu nhỏ để đo: UV của bộ phận rơi vào vùng đen ⇒ bản trơn ([Car3dMaterials]).
+        val texels = m.materials.values.filter { it.emissive != null }.mapNotNull { it.texture }.distinct()
+            .mapNotNull { name -> tex[name]?.let { b -> texels(b)?.let { name to it } } }.toMap()
+        val glb = Car3dGlb.write(cabin.mesh, styles, tex, m.partStyles + lamps, m.uvOriginBottom, hinges, cabin.lid, texels) { n ->
             // Tệp THƯA: hết chỗ lúc ghi trang ánh xạ = SIGBUS (HOME sập). Thiếu chỗ ⇒ ném ⇒ [load] trả `null` ⇒ bảng 2D.
             val usable = ctx.cacheDir.usableSpace
             if (!Car3dCache.roomFor(n.toLong(), usable)) throw IOException("cacheDir thiếu chỗ: cần $n B, còn $usable B")
@@ -110,7 +118,7 @@ object Car3dModelSource {
         }
         (glb as? java.nio.MappedByteBuffer)?.force()
         if (!tmp.renameTo(cache)) { tmp.delete(); Log.w(TAG, "không ghi được tệp đệm ${cache.name}") }
-        Log.i(TAG, "AVM ${path("car.mesh")}: ${mesh.buffers.size} bộ đỉnh ${mesh.buffers.sumOf { it.count }} đỉnh · ${mesh.parts.size} bộ phận · " +
+        Log.i(TAG, "AVM ${path("car.mesh")}: ${mesh.buffers.size} bộ đỉnh ${mesh.buffers.sumOf { it.count }} đỉnh · ${cabin.mesh.parts.size} bộ phận · " +
             "${tex.size} ảnh · ${paints.size} màu sơn · glb ${glb.capacity()} B · " +
             "đọc+phân tích ${(t1 - t0) / 1_000_000} ms · dựng ${(System.nanoTime() - t1) / 1_000_000} ms")
         Log.i(TAG, "bộ phận: ${mesh.parts.joinToString(",") { it.name }}")
@@ -181,6 +189,26 @@ object Car3dModelSource {
         } finally { tmp.delete() }
     }
 
+    /**
+     * Ảnh PNG → bộ lấy mẫu độ sáng (giải mã thu nhỏ ≤ [TEXEL_MAX] cạnh, ~256 KB heap tạm, chỉ lúc dựng tệp đệm). Hỏng ⇒ `null`
+     * (bên ghi chỉ xét tệp có + UV thật).
+     */
+    private fun texels(png: ByteArray): Car3dMaterials.Texels? {
+        val o = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        android.graphics.BitmapFactory.decodeByteArray(png, 0, png.size, o)
+        if (o.outWidth <= 0 || o.outHeight <= 0) return null
+        var ss = 1; while (maxOf(o.outWidth, o.outHeight) / ss > TEXEL_MAX) ss *= 2
+        val bmp = android.graphics.BitmapFactory.decodeByteArray(png, 0, png.size,
+            android.graphics.BitmapFactory.Options().apply { inSampleSize = ss }) ?: return null
+        val w = bmp.width; val h = bmp.height
+        val px = IntArray(w * h).also { bmp.getPixels(it, 0, w, 0, 0, w, h) }
+        bmp.recycle()
+        return Car3dMaterials.Texels { u, v ->
+            val c = px[(v * (h - 1)).toInt().coerceIn(0, h - 1) * w + (u * (w - 1)).toInt().coerceIn(0, w - 1)]
+            (0.2126 * ((c shr 16) and 255) + 0.7152 * ((c shr 8) and 255) + 0.0722 * (c and 255)).toInt()
+        }
+    }
+
     /** Ánh xạ tệp đệm thành đệm trực tiếp (gltfio đọc thẳng, không chép vào heap). */
     private fun map(f: File): ByteBuffer = RandomAccessFile(f, "r").use { it.channel.map(FileChannel.MapMode.READ_ONLY, 0, it.length()) }
 
@@ -188,8 +216,9 @@ object Car3dModelSource {
     const val BUNDLED = "oem-3d/"
     private const val FALLBACK_TYPE = "138"
     /** Tăng khi đổi cách dựng GLB / bảng vật liệu ⇒ đệm cũ tự bỏ. */
-    private const val CACHE_VERSION = "v17"   // v17: mâm phát sáng nền 0,8 (mép dưới không tối; 1,5 cháy trắng) · v16: thử 1,5 · v15: lòng cốp một màu đen sâu · v14: dải sau khoang cũng ẩn kết cấu trong · v13: khoang quấn đúng pháp tuyến · v12: khoang: ẩn theo trọng tâm trong lòng vách · dải sàn sau hẹp · v11: khoang sạch (ẩn kết cấu trong theo đo) · mâm điện môi · v10: khoang cốp lùi vào trong vỏ nắp · v9: nội thất khai phát sáng (đèn đọc) · v8: nắp cốp theo khe tấm + khoang · nẹp metal đen · v7: bỏ bộ phận gộp · nắp cốp · vai đèn + phát sáng theo ảnh · v6: lật UV · mipmap · bảng đèn AVM · kiểm hợp lý · vật liệu theo khai báo · bản lề · phát sáng
+    private const val CACHE_VERSION = "v26"   // v26: gỡ v25 (#49 rãnh ô kính — không đổi gì thấy được trên máy ảo, owner 14/10 chọn dò từng bộ phận trước) ⇒ nội dung = v24, khoá mới để máy đã dựng v25 dựng lại · v24: kim loại (lớp metal) chỉ thấy qua kính → đen như sơn (Car3dCabin.isShell) · v23: mặt đen chỉ thấy qua kính KHÔNG chiếu sáng (KHR_materials_unlit — hết vạch xám phản xạ gương, #45) · v22: mặt đục nằm TRÊN tấm kính → đen (Car3dCabin.PLANE; sơn chỉ khi ở TRƯỚC kính) — bản thử máy ảo v21 mang tệp đệm khác · v20: ảnh đèn tối ⇒ trơn theo CẢ lưới (Seal body_lamp_15on giữ ảnh) · trơn phát sáng kẹp ×1 (đuôi không cháy trắng) · v19: vật liệu mọi đời (lớp theo từ chung · ảnh chỉ gắn khi đo dùng được · kính đèn đuôi đỏ sẫm — SL6) · v18: mặt sơn chỉ thấy qua kính → đen (Car3dCabin) · v17: mâm phát sáng nền 0,8 (mép dưới không tối; 1,5 cháy trắng) · v16: thử 1,5 · v15: lòng cốp một màu đen sâu · v14: dải sau khoang cũng ẩn kết cấu trong · v13: khoang quấn đúng pháp tuyến · v12: khoang: ẩn theo trọng tâm trong lòng vách · dải sàn sau hẹp · v11: khoang sạch (ẩn kết cấu trong theo đo) · mâm điện môi · v10: khoang cốp lùi vào trong vỏ nắp · v9: nội thất khai phát sáng (đèn đọc) · v8: nắp cốp theo khe tấm + khoang · nẹp metal đen · v7: bỏ bộ phận gộp · nắp cốp · vai đèn + phát sáng theo ảnh · v6: lật UV · mipmap · bảng đèn AVM · kiểm hợp lý · vật liệu theo khai báo · bản lề · phát sáng
     private const val HINGE_LOG = 12
+    private const val TEXEL_MAX = 256
     private const val CHUNK = 64 * 1024
     private const val TAG = "Car3d"
 }

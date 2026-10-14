@@ -1,0 +1,15 @@
+<!--
+  BUNG TO (R30, owner 14/10) — bốn góc vuông chĩa RA ngoài: khung ô nở ra trọn vùng ô của launcher (không phải toàn màn hệ thống). Khung mờ ở giữa = ô hiện tại.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/expand.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực LAUNCHER · họ màu chrome · cỡ 24dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 8.6 8.6 L 15.4 8.6 L 15.4 15.4 L 8.6 15.4 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.16" />
+    <path android:pathData="M 3.4 8.6 L 3.4 3.4 L 8.6 3.4 M 15.4 3.4 L 20.6 3.4 L 20.6 8.6 M 20.6 15.4 L 20.6 20.6 L 15.4 20.6 M 8.6 20.6 L 3.4 20.6 L 3.4 15.4"
+        android:fillColor="#00000000" android:strokeColor="#EAF0F8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

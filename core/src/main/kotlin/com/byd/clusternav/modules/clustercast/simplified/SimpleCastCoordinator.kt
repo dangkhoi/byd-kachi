@@ -204,8 +204,8 @@ class SimpleCastCoordinator(
         copy.forEach { it(new) }
     }
 
-    /** Set error state with auto-recovery to Idle (or Off) after 3 seconds. */
-    internal fun setError(message: String) {
+    /** Set error state with auto-recovery after 3 seconds: [recover] (Pass 5 — the split half still on the VD) else Idle (or Off). */
+    internal fun setError(message: String, recover: SimpleCastState? = null) {
         val err = SimpleCastState.Error(message)
         setState(err)
         // KHÔNG xếp vào executor: `Thread.sleep(3000)` ở đó khoá worker duy nhất 3 giây, và với hàng đợi
@@ -216,7 +216,7 @@ class SimpleCastCoordinator(
         // HƠN lọt vào giữa hai bước (vd `Opening` của cú chiếu vừa bấm). CAS trên ĐÚNG thực thể lỗi đã hẹn đóng
         // cả hai lỗ: không đè trạng thái mới hơn, và không nhả sớm một lỗi KHÁC tới sau.
         executor.schedule(ERROR_RECOVERY_MS) {
-            val next = if (projection.isOpen) SimpleCastState.Idle else SimpleCastState.Off
+            val next = if (!projection.isOpen) SimpleCastState.Off else recover ?: SimpleCastState.Idle
             if (_state.compareAndSet(err, next)) notifyState(next)
         }
     }
@@ -408,9 +408,9 @@ class SimpleCastCoordinator(
      *
      * Must be called off main thread — performs shell I/O.
      */
-    fun foregroundPackage(targetDisplayId: Int = 0, excluded: Set<String>): String? {
-        // Dismiss PiP first — prevents misidentification
-        dismissPipOnDisplay(targetDisplayId)
+    fun foregroundPackage(targetDisplayId: Int = 0, excluded: Set<String>, dismissPip: Boolean = true): String? {
+        // Dismiss PiP first (cast paths). 3.1.5 · R31: `dismissPip = false` = READ-ONLY probe (tap while casting may only return)
+        if (dismissPip) dismissPipOnDisplay(targetDisplayId)
         val result = shell.execute("am stack list")
         if (!result.success || result.stdout.isBlank()) return null
         return CastStackParser.foreground(result.stdout, targetDisplayId, excluded)

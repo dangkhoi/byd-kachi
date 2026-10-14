@@ -22,13 +22,22 @@ package com.byd.clusternav.launcher
  *    KHÔNG có (*tắt* vẫn có — nó không đi qua BEHIND-HOME).
  *
  * Thứ tự trả về = thứ tự trái → phải trên màn (⇄ ở giữa, như hôm nay).
+ *
+ * R30 (owner 14/10, spec `kachi-301-cast-steps-dialog-ia.html` §4.8) — nút thứ tư [EXPAND] *Bung to* / *Thu về*, bên PHẢI
+ * [CLOSE], khi bố cục có ≥ 2 ô (`multi`) và loại ô có thứ để bung ([SlotExpand.offered]). Không cần kênh (chỉ đổi khung).
  */
 object SlotHeadActions {
 
-    enum class Button { BACKGROUND, SWAP, CLOSE }
+    enum class Button { BACKGROUND, SWAP, CLOSE, EXPAND }
 
-    /** Nút đang làm được của một ô, trái → phải. [behind] = BEHIND-HOME còn dùng được trong tiến trình này. */
-    fun of(kind: SlotHeadRest.Kind, projector: SlotHeadRest.Projector, channel: Boolean, behind: Boolean): List<Button> =
+    /**
+     * Nút đang làm được của một ô, trái → phải. [behind] = BEHIND-HOME còn dùng được trong tiến trình này; [multi] = bố cục đang
+     * hiện có ≥ 2 ô (R30 — bung một ô duy nhất không đổi gì).
+     */
+    fun of(kind: SlotHeadRest.Kind, projector: SlotHeadRest.Projector, channel: Boolean, behind: Boolean, multi: Boolean = false): List<Button> =
+        base(kind, projector, channel, behind) + if (multi && SlotExpand.offered(kind, projector)) listOf(Button.EXPAND) else emptyList()
+
+    private fun base(kind: SlotHeadRest.Kind, projector: SlotHeadRest.Projector, channel: Boolean, behind: Boolean): List<Button> =
         when (kind) {
             SlotHeadRest.Kind.EMPTY -> listOf(Button.SWAP)
             SlotHeadRest.Kind.WIDGET, SlotHeadRest.Kind.APPWIDGET_LIVE, SlotHeadRest.Kind.APPWIDGET_DEAD ->
@@ -45,5 +54,5 @@ object SlotHeadActions {
      * tập này không bao giờ được dựng. ⇄ không thuộc tập (bộ dựng riêng, `SlotSwapButton`).
      */
     fun possible(kind: SlotHeadRest.Kind, projector: SlotHeadRest.Projector): Set<Button> =
-        of(kind, projector, channel = true, behind = true).toSet() - Button.SWAP
+        of(kind, projector, channel = true, behind = true, multi = true).toSet() - Button.SWAP
 }

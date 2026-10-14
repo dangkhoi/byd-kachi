@@ -220,3 +220,141 @@ chấm 0,009–0,012. Bảng Sáng chưa chụp trên máy ảo (ảnh xe không
 Chưa có dữ liệu "chưa đọc" trên máy ảo (số giả đọc đủ) ⇒ vòng đứt nét mới khoá bằng test, chưa nhìn trên màn.
 
 > Ảnh chụp `widget-visual-301/*.jpg` chỉ giữ ở máy dựng (gitignore): nhiều ảnh có ảnh nền/hình xe BYD dùng để THỬ, không được lên repo public.
+
+## 10. 3.1.5 — bộ ảnh nền MẶC ĐỊNH đóng gói (owner 14/10), CHỈ ở máy dựng
+
+Owner 14/10: bộ ảnh của owner (1 ảnh chụp riêng + 10 hình nền BYD Seal) là nền mặc định của Kachi. Ảnh BYD có bản quyền mà repo
+công khai ⇒ ảnh CHỈ được đóng vào APK dựng tại máy owner (release + vehicleTest, vì nằm ở `app/src/main/assets/wall-default/`),
+thư mục bị `.gitignore` chặn (`app/src/*/assets/wall-default/`); `DefaultWallpapersContractTest` canh `git ls-files` rỗng + `check-ignore`.
+
+- **Thứ tự nguồn** (`WallSourcePolicy`, `:core`): ảnh người dùng (bật *Dùng ảnh làm hình nền* + thư mục có ảnh) > bộ ảnh đóng gói >
+  nền "phòng trưng bày" vẽ bằng mã (`WallDefault`, mục 2). Lựa chọn của người dùng không bao giờ bị đè; tắt ⇒ về bộ ảnh đóng gói.
+- **Cùng đường ảnh người dùng**: `WallpaperController.step` giải mã asset theo cỡ màn (`WallpaperStore.decodeScaled`, chung luật
+  inSampleSize) → `WallArtBuilder` (kính + `GlassVeil` + lớp làm tối theo mức người dùng chọn) → `WallView` + `WallArtStore`; đổi ảnh
+  theo đúng nhịp trình chiếu có sẵn (chu kỳ của người dùng, mặc định 60 s). Không thêm luồng/nhịp. Bộ đệm kính của asset ở
+  `cacheDir/wall-default-art/` (bộ dọn thư mục người dùng coi khoá asset là mồ côi).
+- **Lùi an toàn**: không có thư mục (clone sạch) / `AssetManager.list` lỗi ⇒ danh sách rỗng, log `không có ảnh nền đóng gói` ⇒ nền vẽ
+  bằng mã. Ảnh đóng gói giải mã hỏng khi chưa hiện ảnh đóng gói nào ⇒ nền vẽ bằng mã. Không danh sách tệp cứng trong mã.
+- **Tệp**: `wall-01.jpg` (ảnh owner) … `wall-11.jpg` (Seal theo số thứ tự), 1920 px ngang giữ tỉ lệ (1920×977–1080), JPEG q85, đã
+  xoá toàn bộ EXIF/metadata (ảnh owner không có GPS). Tổng **≈1,7 MB** (104–302 KB/ảnh).
+- **Dựng lại** (khi đổi ảnh): từ thư mục ảnh của owner ngoài repo, script PIL ngoài repo — với mỗi ảnh: áp xoay EXIF → resize 1920 ngang
+  (LANCZOS) → lưu JPEG q85 không kèm EXIF/ICC → đặt tên `wall-NN.jpg` (ảnh owner trước, rồi ảnh Seal theo số trong tên), ghi vào
+  `app/src/main/assets/wall-default/`, rồi dựng APK như thường. Kiểm `git check-ignore -v app/src/main/assets/wall-default/wall-01.jpg`.
+- Chưa đo trên máy ảo/xe: tương phản chữ/thẻ trên từng ảnh ở bảng Sáng và Tối (dim mặc định 45 %), RAM thực (ước: 1 bitmap 1920×1080
+  ARGB ≈ 8 MB, như ảnh người dùng).
+
+## 11. Chủ đề SÁNG — nút/icon 3.1 "mờ", sai màu (owner 14/10, log xe `chủ đề=sáng`)
+
+Đo trên máy ảo emulator-5556 (vehicleTest 3.1.4 (209), hồ sơ QA2: ảnh nền + làm tối 45 % + độ đục thẻ 70 %, số giả: kính 0/35/100/0,
+cốt + DRL + sương mù trước bật, xi-nhan trái). Số = WCAG từ ảnh chụp (PIL, script tạm của phiên); ảnh chỉ ở máy dựng.
+
+| Bề mặt | Gốc [mức] | Sửa (tầng chung) | Trước → sau (Sáng) |
+|---|---|---|---|
+| Nút tròn chỉ-icon: chân Kính 2D, nút xe 3D, hàng chân 3D (−/+, 3 nút kính, lấy gió) | [ĐO] ba bản chép tay cùng công thức bảng TỐI (đĩa `INK` 8 % + glyph `ICON`). Ở Sáng nền dưới nút là ảnh/thẻ đã làm tối ≈ (181–188) ⇒ đĩa xám trên nền xám | `KachiButtonInks` (một chỗ, chọn theo độ sáng `bg` của bảng): Sáng = đĩa kính tối (`wallScrim` 60 %) + glyph `ON_ACCENT`; BẬT = đĩa nhấn đậm (`GRAD_FROM` ½ `INK_ON_ACCENT`). Tối giữ nguyên từng byte | đĩa/nền **1,16 → 4,5–4,7** · glyph/đĩa nút kính **2,2–3,3 → 8,5–8,9** · −/+ **1,7–2,5 → 5,0–7,5** |
+| Đĩa nút đèn (`StateDotPainter.drawButton`, dùng chung 2D/3D) | [ĐO] glyph đèn hai tông (thân 0,16 · phụ 0,38 · chỉ phần ĐÈN 1,0) ở ~21 px: chỉ vài điểm đạt, phần lớn nét là xám | Sáng: alpha nét × 2 (bộ lọc ma trận, giữ theo màu) + nền nút 90 %; nhấn trên ảnh 0,45 → 0,40 | đèn pha 3D (p90 nét) **3,3 → 8,5** · DRL bật **2,1 → 4,6** (đỉnh 4,5 → 7,3) |
+| Đèn báo chỉ-xem (`drawLamp`, bảng Đèn 2D) | [ĐO] mực trắng 60 % + viền đen 1 dp trên thẻ sáng: lõi nét chỉ 1,4–2,6:1 | Sáng: viền SÁNG + mực TỐI (`INK`; chưa đọc `MUT`), màu loại đèn → vai bản sáng (`green`/`amber`/`accentInk`); không thêm đĩa (luật POLISH) | đèn tối/thẻ: lõi nét **1,4–2,6 → 6,9–10,2** (đỉnh) |
+| Ô chọn TẮT trong KachiDialog | [TÍNH] `fieldSunken` trên mặt hộp 1,26–1,34 (Tối 1,03–1,22) | `dialogBoxOff`: vai đầu tiên `fieldSunken` → `lineStrong` đạt 3:1 trên cả hai đầu mặt hộp (Tối cũng đổi) | **1,3 → 4,5–4,8** (Tối 1,0–1,2 → 3,05–3,18) |
+| Nút nguy hiểm KachiDialog | [TÍNH] `RED` trên `redSoft` 20 % ở đáy mặt hộp 4,39 | `redSoft` Sáng 20 % → 16 % | **4,39 → 4,68** |
+
+Bảng Tối [ĐO]: bảng Đèn/Kính/Khí hậu 2D 0 điểm ảnh khác (> 8) giữa trước/sau; đĩa/glyph hàng chân 3D cùng giá trị (glyph 174 · đĩa
+33–48), chỉ ảnh nền phía sau khác (bộ ảnh nền đóng gói §10 vào cùng bản dựng). Đĩa nút Tối/nền vẫn 1,2 — thiết kế "tông mềm" giữ nguyên.
+
+Khoá bằng `Widget301LightContrastTest` (nút sáng ở nền L 0,30–1,0: glyph ≥ 4,5, đĩa ≥ 3, BẬT lam rõ ≠ TẮT; ba chỗ vẽ nút đi qua
+`KachiButtonInks`; nút/đèn báo Sáng: nét chính ≥ 4,5, lớp phụ 0,38 ≥ 3 ở ba mức ảnh + nền sáng; hộp thoại) + `WindowControlIconContractTest`
+(4,5 + Tối giữ byte) + `LampIndicatorContractTest` (đổi sang `lampEdge`/`lampTone`).
+
+**Còn mở [ĐO máy ảo, SUY cho xe]**: với ảnh nền + làm tối 45 % + thẻ 70 %, mặt thẻ bảng Sáng chỉ còn ≈ (186,189,197) ⇒ nhãn `MUT` của ô
+nhóm (`GroupCellGrid`) đo 3,65–3,73:1 — không riêng 3.1, gốc là lớp làm tối ảnh KHÔNG theo chủ đề (`KachiPalette.wallScrim` KDoc: đổi
+chiều/nhãn "Làm tối ảnh" là quyết định owner). Nhãn nhiệt lốp (`38°C`, `MUT`) dưới bánh xe 3D cùng gốc (không sửa ở lượt này). Cần đọc trên xe `wallpaper_prefs`
++ `color_choice` của hồ sơ đang dùng để biết xe có ở cấu hình này không.
+
+## 12. R29 pha 2 — mực thích ứng nối vào `:app` (14/10, chưa commit, cùng bản 3.1.5)
+
+Spec 301 §R29 · §4.7 · §5.1 T29-2…T29-10. Nối: thẻ kính (`KachiGlass.paint` / `WallWindowDrawable.relocate`) · chữ/icon ô nhóm +
+năm hàm tô màu của `KachiWidgetType` · thanh trên (giờ, ngày, chip + icon chip) · thanh nút + ô nút (nhãn, số STEP, chữ lựa chọn).
+Mực = `ContrastInk.resolve` trên nền GHÉP đo được (ảnh sắc dưới vùng mặt → làm tối → dải che → lớp mọi mặt), ứng viên từ bảng màu SỐNG;
+thiếu ⇒ lớp đỡ dưới chính phần tử (`InkHalo`), không nâng độ đục thẻ (OQ7).
+
+**Chi phí** [ĐO-JVM máy dựng, ba ảnh đóng gói 1920×1080, bài thăm dò tạm đã gỡ]: lưới ảnh sắc 64×36 ≈ 22 ms/ảnh (gồm đọc hàng qua
+`ImageIO`; riêng bộ dựng 6,8 ms — pha 1) · lưới ảnh mờ 32×18 ≈ 0,6 ms · mã hoá đệm: lưới sắc **43–46 KB** + lưới mờ **11 KB** ⇒
+≈ 57 KB/khoá (`.kachi-art/*.txt`; trần 128 khoá `WallArtCachePolicy` ⇒ ≤ 7,3 MB tệp chữ tệ nhất). Chỉ nấu một lần mỗi ảnh/mức làm tối
+(lượt sau đọc đệm); mỗi lượt nấu ghi một dòng `WallArt: R29 đo nền: lưới sắc … ms · lưới mờ … ms · đệm … KB` (đọc trên máy ảo/xe).
+Giải: theo sự kiện (vùng mặt đổi · ảnh · chủ đề · độ đục), kết quả lưu trên mặt theo (vai, loại) — nhịp xe 1 Hz chỉ tra; `onDraw` 0
+lời gọi. 0 luồng · 0 nhịp; listener mới duy nhất: `OnLayoutChangeListener` trên mặt THƯỜNG (thanh trên, thanh nút, ô nút).
+Bộ nhớ: hai lưới ≈ 2 × (2 304 × 2 Int + Float) ≈ 55 KB/ảnh đang hiện; histogram dựng tạm 196 KB trên luồng nạp ảnh.
+
+**Máy ảo (T29-10)** [ĐO emulator-5556, vehicleTest 3.1.5 (210), hồ sơ QA2 — thanh trên + widget 3D ở ô 0; bằng chứng ảnh chỉ ở máy
+dựng]: hai APK dựng từ CÙNG một bản sao cây mã, khác đúng một hằng (mực thích ứng TẮT = "trước", BẬT = "sau"). Ma trận Sáng/Tối ×
+wall-01 · wall-03 (tối nhất, độ sáng TB 64/255) · wall-10 (sáng nhất, 152) × làm tối 0/45/90 × độ đục thẻ o20/o70/o100 = 54 cảnh mỗi bản.
+Đo WCAG trên ảnh chụp theo khung `uiautomator dump` (nút của gói Kachi): mực = lõi nét (Otsu, 20 % điểm đậm nhất phía mực), nền = p10/p90
+phía gần mực của các điểm cách nét ≥ 2 px (bỏ viền khử răng cưa — bản đo đầu không bỏ nên báo oan 3,75 cho giờ, thật ≈ 5,8).
+
+| Vùng · vai | Tối: tệ nhất trước → sau (số nút dưới sàn) | Sáng: tệ nhất trước → sau (số nút dưới sàn) |
+|---|---|---|
+| Thanh trên · chữ (giờ, ngày, chip) | **1,54 → 4,94** (15/216 → 0/216) | **1,07 → 4,86** (62/216 → 0/216) |
+| Vùng giữa · icon (ImageView) | 8,35 → 8,35 (0/54) | **1,00 → 6,48** (8/45 → 0/54) |
+| Thanh trên · icon (nút đĩa ứng dụng/mic — CHƯA nối) | 2,48 → 2,48 (1/81) | 1,11 → 1,11 (9/81) |
+| Hàng chân widget 3D · chữ (T29-6 hoãn) | 5,41 → 5,41 (0/27) | 1,16 → 1,16 (22/110) |
+| Hàng chân widget 3D · icon (T29-6 hoãn) | 2,46 → 2,46 (3/108) | 1,02 → 1,02 (9/127) |
+
+Ca tệ nhất trước đây: `—% · — km` trên wall-03 Sáng làm tối 45 % o20 (1,07) và ngày `Thứ Tư, 14/10` trên wall-10 Tối làm tối 0 % o20 (1,54).
+Còn dưới sàn sau R29 = đúng các chỗ CHƯA nối (hàng chân 3D, nút đĩa thanh trên), không đổi một số giữa trước/sau ⇒ đúng phạm vi.
+Ô nhóm (T29-5) không có trên màn QA2 ⇒ chỉ có bằng chứng bài off-car, chưa có ảnh chụp [CHƯA ĐO máy ảo].
+
+Chi phí trên máy ảo (dòng `WallArt: R29 đo nền`, 10 lượt nấu): lưới sắc 64×36 **9,8–26,5 ms** · lưới mờ 32×18 **0,7–5,3 ms** · đệm
+**51–58 KB**/khoá; mỗi ảnh/mức làm tối một lần, luồng nạp ảnh sẵn có. `KachiContrast` (dưới sàn / không đặt được lớp đỡ): 0 dòng trong
+cả lượt. PSS cuối lượt: 331,7 MB (trước) · 340,5 MB (sau) — MỘT mẫu mỗi bản sau 54 lần khởi động lại, chênh +8,8 MB nằm trong độ dao động
+giữa hai lần chạy ⇒ [CHƯA KẾT LUẬN]; phần R29 giữ trên heap theo tính toán ≈ 55 KB/ảnh (hai lưới) + một `InkHalo` mỗi nhãn được đỡ.
+
+**Chưa nối (backlog `R29-ADAPTIVE-CONTRAST`)**: T29-6 lớp phủ widget 3D (`Car3d*`, `StateDotPainter`, `Car3dFootRow`,
+`KachiButtonInks`) · nút ⇄ `SlotSwapButton` · icon ô nút (`KachiIcons.tint`/`fadeOff`) · hai nút đĩa `pill` của thanh trên · đoạn màu
+trong chuỗi (đơn vị `withUnit`, chip lốp) · nền WARN/ALERT 35 % của ô con · nút −/+ nền `DIM` (log `không đặt được lớp đỡ`).
+
+
+### 12b. R29 pha 2b — các chỗ còn lại đã nối (14/10, chưa commit, cùng bản 3.1.5)
+
+Spec 301 §R29 · §4.7 · §5.1 T29-6 · Autonomous Decisions (R29, pha 2b). Nối: lớp phủ widget 3D (`Car3dInk`: khung 3D là một mặt — ảnh
+nền xe ∪ màu sơn ∪ bóng đất; nhãn lốp/hàng chân = mặt theo vùng; đĩa ghế = mặt mang màu đĩa; chấm/nút/đèn canvas đo từng điểm) ·
+`KachiButtonInks` (mặt dò chọn công thức đĩa/glyph theo nền đo; nhánh `lightSurface` chỉ còn là mặc định chưa đo) · hai/ba nút pill
+thanh trên · ⇄ (`AdaptiveInk.ride`) · icon ô nút (`KachiIcons.tint` → `AdaptiveInk.icon`; `fadeOff` trên mực + nền đo) · đoạn màu
+(`InkSpan` thay `ForegroundColorSpan`: đơn vị `withUnit`, chip lốp) · ô con WARN/ALERT 35 % · nút −/+ `DIM` (lớp đỡ khi phần tử đã có
+nền: `HaloLayer` cùng hình).
+
+**Máy ảo (T29-10)** [ĐO emulator-5556, vehicleTest 3.1.5 (210), hồ sơ QA2 — widget 3D ô 0, **ảnh nền xe 3D = chính ảnh nền màn**
+(`bg=<ảnh>`) + sơn steelgrey; bằng chứng ảnh chỉ ở máy dựng]: hai APK dựng từ CÙNG một bản chụp cây mã, khác đúng các tệp của lượt này.
+Cùng ma trận §12 (Sáng/Tối × wall-01/03/10 × làm tối 0/45/90 × o20/o70/o100 = 54 cảnh mỗi bản), cùng phép đo. Lượt chạy đầu HỎNG
+(đọc lại tệp hồ sơ từ máy mỗi cảnh, trúng lúc app đang ghi ⇒ mất hồ sơ QA2, các cảnh sau là màn mặc định) — chạy lại từ mẫu QA2 cố
+định; chỉ số dưới đây là lượt chạy lại.
+
+| Vùng · vai | Tối: tệ nhất trước → sau (số nút dưới sàn) | Sáng: tệ nhất trước → sau (số nút dưới sàn) |
+|---|---|---|
+| Thanh trên · icon (pill ứng dụng · mic · cài đặt) | **2,48 → 3,53** (1/81 → 0/81) | **1,11 → 3,49** (9/81 → 0/81) |
+| Hàng chân 3D · icon (gió · lấy gió · ba nút kính) | **1,84 → 3,67** (45/117 → 0/108) | **1,39 → 3,67** (27/108 → 0/108) |
+| Hàng chân 3D · số (nhiệt `22°`, gió) | **3,39 → 5,07** (9/27 → 0/36) | **1,02 → 5,07** (54/54 → 0/36) |
+| Hàng chân 3D · dấu −/+ trên đĩa (đo trong đĩa nội tiếp¹) | **1,86 → 12,2** | 12,2 → 12,2 (đĩa kính sẵn) |
+| Thanh trên · chữ (đã nối pha 2 — kiểm không lùi) | 4,94 → 4,94 | 4,86 → 4,86 |
+| Vùng giữa · icon ghế 3D (không lùi) | 12,75 → 12,75 | 10,35 → 10,35 |
+
+¹ `r29meas` lấy cả bốn góc vuông NGOÀI đĩa tròn (ảnh nền) làm "nền" ⇒ với dấu −/+ nó báo 3,2–3,3 cho cả hai bản (đo nét với ảnh, không
+với đĩa); số trên đo nét (0,3 % điểm sáng nhất) với trung vị điểm trong đĩa. Bản trước Tối trên ảnh sáng: đĩa mực 8 % + glyph `ICON` =
+1,86 (owner: "mờ"); bản sau mặt dò đổi sang đĩa kính + glyph trắng.
+
+**Chưa đo được trên máy ảo [CHƯA ĐO]**: nhãn số lốp (máy ảo không có số lốp ⇒ nhãn ẩn đúng luật) · chấm/nút/đèn vẽ canvas (không có
+nút trợ năng mang khung nét — chỉ bài off-car `cham den nut tren xe 3D`, 136 080 phép kiểm, kiểm độc lập theo đúng thứ tự vẽ) · ⇄, icon ô
+nút, đoạn màu, ô WARN/ALERT, nút DIM (không có trên màn QA2) — khoá bằng bài nguồn + bài tính chất của `AdaptiveContrastContractTest`.
+
+**Chi phí** [ĐO máy ảo, dòng log `Car3d … R29 lưới` / `KachiContrast R29 chấm`]:
+- Giải chấm mỗi lần dừng xoay — bản đầu (cả 15 điểm, mọi lần): trung vị **3,5 ms**, p90 8,8 ms, đỉnh **15,5 ms** trên LUỒNG CHÍNH (264
+  lượt). Sửa: chỉ điểm ĐANG HIỆN có nền ĐỔI (`AdaptiveInk.sameBackdrop`). Sau sửa [ĐO 6 cảnh × 3 lần vuốt, APK after2]: lượt có giải
+  (2–5/15 điểm) trung vị **0,57 ms**, đỉnh **2,9 ms**; lượt không giải gì (chỉ dựng nền dưới điểm) đỉnh 1,4 ms.
+- Lưới nền 3D (64×36): số log đọc 179–282 ms nhưng **SAI DỤNG CỤ ĐO** — mốc cuối lấy trong `main.post` nên cộng cả thời gian chờ luồng
+  chính lúc HOME đang dựng (lấy mẫu 2×2 không đổi được số đó: 243–282 ms ⇒ không phải chi phí lưới). Một cảnh có luồng chính rảnh đọc
+  37 ms (cận trên, gồm chờ). Đã sửa dòng log (mốc trên luồng nền); lấy mẫu 2×2 vẫn giữ. Chi phí lưới THẬT [CHƯA ĐO] — đọc dòng
+  `R29 lưới` ở lượt máy ảo kế. Luồng nền sẵn có (`car3d-bg`), một lần mỗi ảnh nền xe.
+- 0 luồng mới · 0 nhịp mới; listener mới = `OnLayoutChangeListener` của các mặt mới (khung 3D, hàng chân, 4 nhãn
+lốp, đĩa ghế, mỗi nút đĩa, pill, nút DIM, ô con cảnh báo). `KachiContrast` dưới sàn / lỗi: 0 dòng. PSS cuối lượt 353,5 → 351,5 MB — một
+mẫu mỗi bản ⇒ [CHƯA KẾT LUẬN].
+
+**P0 tìm trong lượt (máy ảo, agent kính)**: `GradientDrawable.getCornerRadii()` ném NPE (`float[].clone()` trên mảng null) khi nền chỉ có
+`cornerRadius` ⇒ lỗi lớp đỡ lọt lên `Car3dHeroLayer.fill` ⇒ widget 3D lùi 2D. Sửa: đọc qua `runCatching` + mọi cửa công khai của
+`AdaptiveInk` là ranh giới fail-soft (log qua `LogLineThrottle`); khoá bằng bài `muc thich ung khong bao gio nem vao cho goi`.

@@ -41,7 +41,16 @@ class WallpaperController(
     private val onArtChanged: () -> Unit = {},
 ) {
     private var slide = SlideshowState()
+    /** Danh sách ĐANG chiếu — ảnh người dùng hoặc ảnh đóng gói, theo [source]; rỗng ⇔ nền vẽ bằng mã. */
     private var wallImages: List<String> = emptyList()
+
+    /**
+     * 3.1.5 — nguồn đang chiếu ([WallSourcePolicy]) + lượt quét thư mục người dùng gần nhất (để quét lại so đúng danh sách
+     * của NGƯỜI DÙNG, không so với bộ ảnh đóng gói đang chiếu thay) + bộ ảnh đóng gói (đọc một lần, [DefaultWallpapers]).
+     */
+    private var source = WallSourcePolicy.Source.DRAWN
+    private var userImages: List<String> = emptyList()
+    private var bundledImages: List<String> = emptyList()
 
     /** Thẻ thế hệ RIÊNG cho hai việc nền — xem KDoc lớp. */
     private var wallScanGen = 0
@@ -58,8 +67,8 @@ class WallpaperController(
     /**
      * Nạp lại lựa chọn + danh sách ảnh rồi vẽ ngay. Gọi lúc mở màn và mỗi khi người dùng đổi lựa chọn.
      *
-     * TẮT (mặc định) ⇒ nhả ảnh và để [WallView] vẽ nền gradient như trước ⇒ người không dùng tính năng này
-     * **không thấy gì khác**.
+     * TẮT (mặc định) ⇒ nền MẶC ĐỊNH: bộ ảnh đóng gói trong APK nếu có ([DefaultWallpapers], 3.1.5), không thì nền vẽ bằng
+     * mã ([WallDefault]). Ảnh người dùng (bật + có ảnh) luôn thắng ([WallSourcePolicy]).
      */
     fun reload() {
         // Lựa chọn đọc từ state (nguồn duy nhất). Lượt mở màn đầu tiên đã được `repository.load()` nạp vào state.
@@ -68,14 +77,15 @@ class WallpaperController(
         // chưa tồn tại để mà bỏ vào.
         if (!prefs().enabled) {
             wallImages = emptyList()
+            userImages = emptyList()
             // [SOÁT P1-3] Phải HUỶ luôn lượt giải mã đang bay. Trước bản vá này chỗ này chỉ tăng thẻ QUÉT, nên một
             // lượt giải mã bắt đầu TRƯỚC khi tắt vẫn về sau và gọi `wall.setPhoto(next…)` ⇒ **ảnh quay trở lại** sau
             // khi người dùng đã tắt, và ở đó tới lần nạp kế tiếp. Cùng loại hồi quy thẻ-thế-hệ đã vá trước đó, chỉ
             // đổi hướng ⇒ tăng thẻ GIẢI MÃ + nhả chốt đang-nạp.
             // [SOÁT P1-3] huỷ lượt giải mã đang bay (về muộn sẽ vẽ lại ảnh sau khi người dùng đã tắt).
             wallDecodeGen++
-            // 3.01 R22: tắt ảnh của người dùng ⇒ về NỀN MẶC ĐỊNH của Kachi (không còn nền phẳng không kính).
-            showDefault()
+            // 3.01 R22 → 3.1.5: tắt ảnh của người dùng ⇒ về NỀN MẶC ĐỊNH của Kachi — bộ ảnh đóng gói nếu APK có, không thì
+            // nền vẽ bằng mã. Chọn ở [applySource] sau lượt quét (asset cũng là I/O); dựng nền vẽ ở đây rồi đè bằng ảnh = làm hai lần.
         }
         // [SOÁT P2-2] Tạo thư mục + quét thư mục + giải mã ảnh đều là I/O. Trước đây cả ba chạy trên thread chính
         // NGAY trong lúc về màn chính ⇒ đứng hình mỗi lần về HOME. Nay đẩy sang thread nền có sẵn (cùng nơi các
@@ -86,17 +96,30 @@ class WallpaperController(
             PhotoStore.folder(ctx)                       // tạo sẵn cả thư mục ảnh trình chiếu (để user thấy chỗ)
             val paths = WallpaperStore.images(ctx)       // ảnh NỀN
             val photoPaths = PhotoStore.images(ctx)      // ảnh WIDGET trình chiếu — THƯ MỤC RIÊNG (owner 2026-09-21)
+            val bundled = DefaultWallpapers.list(ctx)    // 3.1.5 ảnh nền đóng gói (thiếu thư mục asset ⇒ rỗng)
             onUi {
                 // Lượt QUÉT cũ về muộn hơn lượt quét mới ⇒ bỏ. Dùng thẻ riêng của việc quét: dùng chung thẻ với việc
                 // giải mã thì nhịp trình chiếu sẽ làm lượt quét bị bỏ oan (xem KDoc wallScanGen).
                 if (gen != wallScanGen || gone()) return@onUi
                 onPhotoSource(photoPaths, prefs().intervalSec)
-                if (!prefs().enabled) return@onUi
-                wallImages = paths
-                slide = SlideshowState()          // đổi lựa chọn ⇒ bắt đầu lại từ ảnh đầu
-                step(force = true)
+                bundledImages = bundled
+                userImages = if (prefs().enabled) paths else emptyList()
+                applySource()
             }
         }
+    }
+
+    /**
+     * 3.1.5 — chọn nguồn ([WallSourcePolicy]: ảnh người dùng > ảnh đóng gói > nền vẽ bằng mã) rồi chiếu lại từ ảnh đầu.
+     * Lựa chọn của người dùng (bật + có ảnh) KHÔNG bao giờ bị ảnh đóng gói đè.
+     */
+    private fun applySource() {
+        val r = WallSourcePolicy.resolve(prefs().enabled, userImages, bundledImages)
+        if (r.source != source) Log.i("Wallpaper", "nguồn nền: $source → ${r.source} (${r.paths.size} ảnh)")
+        source = r.source
+        wallImages = r.paths
+        slide = SlideshowState()          // đổi lựa chọn ⇒ bắt đầu lại từ ảnh đầu
+        step(force = true)
     }
 
     /**
@@ -107,20 +130,20 @@ class WallpaperController(
      * thấy**; đổi lấy việc không có vòng đếm thứ hai là đáng.
      */
     fun step(force: Boolean = false) {
-        if (!prefs().enabled) return
-        if (!force) rescanIfDue()
-        if (wallImages.isEmpty()) {
-            // Bật mà chưa có ảnh: KHÔNG im lặng — nói chỗ bỏ ảnh vào, vì người dùng không có cách nào tự đoán.
-            if (force) {
-                Log.i("Wallpaper", "bật nhưng chưa có ảnh; bỏ ảnh vào: ${WallpaperStore.folderHint(ctx)}")
-                runCatching {
-                    Toast.makeText(
+        // 3.1.5: TẮT vẫn chạy nhịp khi đang chiếu bộ ảnh đóng gói; chỉ thư mục người dùng là chỉ quét lại khi BẬT.
+        if (!force && prefs().enabled) rescanIfDue()
+        // Bật mà thư mục trống: KHÔNG im lặng — nói chỗ bỏ ảnh vào (kể cả khi bộ ảnh đóng gói đang thế chỗ).
+        if (force && prefs().enabled && userImages.isEmpty()) {
+            Log.i("Wallpaper", "bật nhưng chưa có ảnh; bỏ ảnh vào: ${WallpaperStore.folderHint(ctx)}")
+            runCatching {
+                Toast.makeText(
                     ctx, ctx.getString(R.string.kachi_wall_no_photos, WallpaperStore.folderHint(ctx)),
                     Toast.LENGTH_LONG,
                 ).show()
-                }
             }
-            showDefault()   // 3.01 R22: bật mà chưa có ảnh ⇒ nền mặc định (trước: nền phẳng)
+        }
+        if (wallImages.isEmpty()) {
+            showDefault()   // 3.01 R22: không có ảnh nào để chiếu ⇒ nền vẽ bằng mã (trước: nền phẳng)
             return
         }
         val before = slide
@@ -135,23 +158,37 @@ class WallpaperController(
         wallLoading = path
         val first = slide.index == 0
         val fit = prefs().fit; val dim = prefs().dim
+        val src = source
+        val bundled = DefaultWallpapers.isBundled(path)
         submitIo {
-            val next = WallpaperStore.loadScaled(path, reqW, reqH)
+            // 3.1.5: ảnh đóng gói đọc từ asset, CÙNG luật hạ cỡ theo màn ([WallpaperStore.decodeScaled]) + cùng lượt nấu kính.
+            val next = if (bundled) DefaultWallpapers.loadScaled(ctx, path, reqW, reqH)
+            else WallpaperStore.loadScaled(path, reqW, reqH)
             // P1b · §4.10 mục (1): ảnh mờ ¼ + lưới độ chói + màu trội nấu MỘT LẦN, ở đây (thread nền), từ chính ảnh
             // vừa giải mã; lượt sau lấy từ bộ đệm đĩa. 0 blur lúc chạy.
-            val art = next?.let { WallArtBuilder.build(ctx, path, it, fit, dim, reqW, reqH) }
+            val art = next?.let {
+                if (bundled) DefaultWallpapers.artCache(ctx, path)?.let { c -> WallArtBuilder.build(c, it, fit, dim, reqW, reqH) }
+                else WallArtBuilder.build(ctx, path, it, fit, dim, reqW, reqH)
+            }
             onUi {
                 if (wallLoading == path) wallLoading = null
                 if (gen != wallDecodeGen || gone()) { next?.recycle(); art?.blurred?.recycle(); return@onUi }
                 // [SOÁT P1-3] lớp thứ HAI: kiểm lại công tắc ngay lúc ảnh về. Thẻ thế hệ chặn ca "đổi lựa chọn",
                 // còn cờ này chặn ca "người dùng vừa TẮT" và ca "đổi hồ sơ" — hai đường tới cùng một hậu quả.
-                if (!prefs().enabled) { next?.recycle(); art?.blurred?.recycle(); return@onUi }
+                // 3.1.5: chỉ ảnh NGƯỜI DÙNG phụ thuộc công tắc; ảnh đóng gói là nền khi tắt.
+                if (src == WallSourcePolicy.Source.USER && !prefs().enabled) {
+                    next?.recycle(); art?.blurred?.recycle(); return@onUi
+                }
                 if (next == null) {
-                    Log.w("Wallpaper", "ảnh không giải mã được, giữ nền hiện tại: ảnh thứ $shown/$total")
+                    Log.w("Wallpaper", "ảnh không giải mã được, giữ nền hiện tại: ảnh thứ $shown/$total ($src)")
+                    // 3.1.5 fail-soft: ảnh đóng gói hỏng mà đang chưa hiện ảnh đóng gói nào ⇒ nền vẽ bằng mã (không để ảnh
+                    // người dùng vừa tắt nằm lại, không để nền trống).
+                    if (bundled && !shownBundled) showDefault()
                     return@onUi
                 }
                 val old = wallBitmap
                 wallBitmap = next
+                shownBundled = bundled
                 defaultNight = null
                 wall.setPhoto(next, prefs().fit, prefs().dim)
                 Log.i("Wallpaper", "đã nạp ảnh $shown/$total (${next.width}×${next.height})")
@@ -173,7 +210,7 @@ class WallpaperController(
      */
     private fun rescanIfDue() {
         ticksSinceScan++
-        if (rescanning || !WallpaperRescan.due(ticksSinceScan, wallImages.isNotEmpty())) return
+        if (rescanning || !WallpaperRescan.due(ticksSinceScan, userImages.isNotEmpty())) return
         ticksSinceScan = 0
         rescanning = true
         val gen = wallScanGen
@@ -182,22 +219,23 @@ class WallpaperController(
             onUi {
                 rescanning = false
                 if (gen != wallScanGen || gone() || !prefs().enabled) return@onUi
-                when (WallpaperRescan.outcome(wallImages, paths)) {
+                // 3.1.5: so với danh sách của NGƯỜI DÙNG (không phải bộ ảnh đóng gói có thể đang chiếu thế chỗ).
+                when (WallpaperRescan.outcome(userImages, paths)) {
                     WallpaperRescan.Outcome.SAME -> Unit
                     WallpaperRescan.Outcome.FIRST -> {
                         Log.i("Wallpaper", "quét lại: có ${paths.size} ảnh mới ⇒ chiếu")
-                        wallImages = paths
-                        slide = SlideshowState()
-                        step(force = true)
+                        userImages = paths
+                        applySource()              // ảnh người dùng thắng bộ ảnh đóng gói
                     }
                     WallpaperRescan.Outcome.CHANGED -> {
-                        Log.i("Wallpaper", "quét lại: ${wallImages.size} → ${paths.size} ảnh")
-                        wallImages = paths
+                        Log.i("Wallpaper", "quét lại: ${userImages.size} → ${paths.size} ảnh")
+                        userImages = paths
+                        if (source == WallSourcePolicy.Source.USER) wallImages = paths
                     }
                     WallpaperRescan.Outcome.EMPTIED -> {
                         Log.i("Wallpaper", "quét lại: thư mục trống ⇒ về nền mặc định")
-                        wallImages = emptyList()
-                        step(force = true)   // cùng đường "bật mà chưa có ảnh" của [step] (báo chỗ bỏ ảnh + nền mặc định)
+                        userImages = emptyList()
+                        applySource()   // cùng đường "bật mà chưa có ảnh" (báo chỗ bỏ ảnh + bộ ảnh đóng gói / nền vẽ bằng mã)
                     }
                 }
             }
@@ -222,6 +260,9 @@ class WallpaperController(
     /** Bảng (Tối?) của NỀN MẶC ĐỊNH đang hiện; `null` = đang hiện ảnh người dùng / chưa có gì. */
     private var defaultNight: Boolean? = null
 
+    /** 3.1.5 — ảnh đang hiện là ảnh đóng gói (cho đường lùi khi một ảnh đóng gói hỏng). */
+    private var shownBundled = false
+
     /**
      * 3.01 R22 — hiện NỀN MẶC ĐỊNH ([WallDefault]) theo bảng đang dùng, qua đúng đường của ảnh người dùng (ảnh hiện +
      * [WallArtStore] cho kính). Đã hiện đúng bảng ⇒ không làm gì. Dựng ở thread nền; thẻ giải mã chặn lượt về muộn.
@@ -241,6 +282,7 @@ class WallpaperController(
                 val old = wallBitmap
                 wallBitmap = built.first
                 defaultNight = night
+                shownBundled = false
                 wall.setPhoto(built.first, ImageFit.FILL, 0)
                 old?.recycle()
                 val oldArt = WallArtStore.swap(built.second, true)

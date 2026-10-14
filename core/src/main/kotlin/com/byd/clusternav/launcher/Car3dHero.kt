@@ -33,6 +33,17 @@ object Car3dHero {
         }
     }
 
+    /**
+     * Sưởi và mát của CÙNG một ghế loại trừ nhau trên xe (owner 14/10: bật cái này thì xe tự tắt cái kia). Chạm [id] lên mức
+     * [level] > 0 ⇒ trả mã nút còn lại của ghế đó để bên vẽ hiện TẮT ngay (lạc quan) — KHÔNG gửi lệnh tắt thêm (xe tự làm). Tắt
+     * ([level] = 0) hoặc mã lạ ⇒ `null`.
+     */
+    fun exclusive(id: String, level: Int): String? {
+        if (level <= 0) return null
+        val s = Seat.values().firstOrNull { it.heat == id || it.vent == id } ?: return null
+        return if (s.heat == id) s.vent else s.heat
+    }
+
     /** Bước kế khi chạm icon ghế: cùng phép của ô SELECT ([ControlTileLogic.nextSelectIndex]) — 0 → 1 → 2 → 0. */
     fun nextSeat(level: Int?, options: Int): Int = ControlTileLogic.nextSelectIndex(level ?: 0, options)
 

@@ -115,6 +115,32 @@ object Car3dMath {
 
     const val FIT_MARGIN = 0.03
 
+    /**
+     * 3.1.5 — owner 14/10 *"khi xoay … cứ thu nhỏ phóng to cái xe khó chịu, fix size xe fit với khung"*: [fitDistance] tính
+     * theo góc HIỆN TẠI ⇒ mỗi góc một cỡ. Khoảng cách CỐ ĐỊNH = lớn nhất của [fitDistance] trên mọi yaw (bước [STEADY_STEP_DEG])
+     * và mọi pitch trong [pitchMin]..[pitchMax] ⇒ xe vừa khung ở mọi góc, xoay không đổi cỡ. Nhớ kết quả theo đầu vào (gọi mỗi khung).
+     */
+    fun steadyDistance(b: Car3dBounds, fovDeg: Double, w: Int, h: Int, pitchMin: Double, pitchMax: Double): Double {
+        if (w <= 0 || h <= 0) return 0.0
+        val key = listOf(b.center, b.half, fovDeg, w, h, pitchMin, pitchMax)
+        steadyMemo?.let { (k, d) -> if (k == key) return d }
+        var d = 0.0
+        var p = pitchMin
+        while (true) {
+            var y = 0.0
+            while (y < 360.0) { d = maxOf(d, fitDistance(b, V3.ZERO, y, p, fovDeg, w, h)); y += STEADY_STEP_DEG }
+            if (p >= pitchMax) break
+            p = minOf(pitchMax, p + STEADY_STEP_DEG)
+        }
+        d *= 1.0 + STEADY_SLACK   // giữa hai mẫu góc có thể nhích hơn đỉnh đo được — chừa chút lề thay vì cắt mép xe
+        steadyMemo = key to d
+        return d
+    }
+
+    const val STEADY_STEP_DEG = 5.0
+    const val STEADY_SLACK = 0.02
+    @Volatile private var steadyMemo: Pair<List<Any>, Double>? = null
+
     /** Hướng ra ngoài (ngang) của điểm [a] so với tâm xe — cho [Car3dCamera.facing]. */
     fun outward(a: V3, center: V3): V3 = V3(a.x - center.x, 0.0, a.z - center.z)
 
@@ -151,13 +177,15 @@ object Car3dMath {
 }
 
 /**
- * Góc xoay + quán tính vuốt. Có GIỚI HẠN (spec R25 "có giới hạn"): yaw [min]..[max] độ; chạm biên thì dừng quán tính.
+ * Góc xoay + quán tính vuốt. Yaw XOAY TRÒN tự do (owner 14/10 *"cho xoay tròn, đang chỉ xoay được max trái, phải là phải quay
+ * ngược lại"* — bỏ biên −120..200° cũ của spec R25): kéo/quán tính đi qua mọi góc, [yaw] luôn chuẩn hoá về (−180, 180] ([wrap]) ⇒
+ * quay bao nhiêu vòng cũng không trôi số. Mọi bên dùng yaw (ẩn mặt khuất, chạm chấm, ghế/lốp) đi qua [Car3dCamera] (sin/cos) ⇒ tuần hoàn.
  * Owner 13/10 *"không xoay lên xuống được à?"* ⇒ thêm góc NGẨNG camera [pitch] ([pitchMin]..[pitchMax], mặc định
  * [PITCH_MIN]..[PITCH_MAX]): vuốt dọc nghiêng camera, vuốt chéo áp cả hai, quán tính riêng mỗi trục.
  * Thuần — `:app` gọi [drag] trong `onTouchEvent`, [fling] một lần khi nhấc tay, [step] mỗi khung đến khi [moving] sai.
  */
 data class Car3dOrbit(
-    val yaw: Double, val velocity: Double, val min: Double, val max: Double,
+    val yaw: Double, val velocity: Double,
     val pitch: Double = 16.0, val pitchVelocity: Double = 0.0, val pitchMin: Double = PITCH_MIN, val pitchMax: Double = PITCH_MAX,
 ) {
 
@@ -165,7 +193,7 @@ data class Car3dOrbit(
 
     /** Kéo [dxPx] px trên khung rộng [widthPx]: cả bề ngang = [DEG_PER_WIDTH] độ. Kéo sang PHẢI ⇒ xe quay theo tay. */
     fun drag(dxPx: Float, widthPx: Int): Car3dOrbit =
-        copy(yaw = (yaw - dxPx.toDouble() / widthPx.coerceAtLeast(1) * DEG_PER_WIDTH).coerceIn(min, max), velocity = 0.0)
+        copy(yaw = wrap(yaw - dxPx.toDouble() / widthPx.coerceAtLeast(1) * DEG_PER_WIDTH), velocity = 0.0)
 
     /** Kéo 2 trục: thêm [dyPx] trên khung cao [heightPx] — kéo XUỐNG ⇒ camera lên cao (thấy nóc), cả chiều cao = [DEG_PER_HEIGHT]. */
     fun drag(dxPx: Float, dyPx: Float, widthPx: Int, heightPx: Int): Car3dOrbit =
@@ -185,7 +213,7 @@ data class Car3dOrbit(
         return fling(vxPxPerS, widthPx).copy(pitchVelocity = vp.coerceIn(-MAX_DEG_PER_S, MAX_DEG_PER_S))
     }
 
-    /** Tiến [dtS] giây: quán tính tắt dần theo hàm mũ; chạm biên ⇒ trục đó dừng hẳn. */
+    /** Tiến [dtS] giây: quán tính tắt dần theo hàm mũ; ngẩng chạm biên ⇒ trục đó dừng hẳn; yaw không biên (vòng qua 360°). */
     fun step(dtS: Double): Car3dOrbit {
         if (!moving) return copy(velocity = 0.0, pitchVelocity = 0.0)
         val decay = exp(-FRICTION_PER_S * dtS)
@@ -196,12 +224,15 @@ data class Car3dOrbit(
             val v = vel * decay
             return p to (if (abs(v) <= STOP_DEG_PER_S) 0.0 else v)
         }
-        val (y, vy) = axis(yaw, velocity, min, max)
+        val (y, vy) = axis(yaw, velocity, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY)
         val (p, vp) = axis(pitch, pitchVelocity, pitchMin, pitchMax)
-        return copy(yaw = y, velocity = vy, pitch = p, pitchVelocity = vp)
+        return copy(yaw = wrap(y), velocity = vy, pitch = p, pitchVelocity = vp)
     }
 
     companion object {
+        /** Góc về (−180, 180] — tuần hoàn 360°, không trôi số sau nhiều vòng. */
+        fun wrap(deg: Double): Double { val r = ((deg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0; return if (r == -180.0) 180.0 else r }
+
         /** Vuốt hết bề ngang khung = 200° (cả xe trong khoảng một vuốt rưỡi). */
         const val DEG_PER_WIDTH = 200.0
         const val MAX_DEG_PER_S = 540.0

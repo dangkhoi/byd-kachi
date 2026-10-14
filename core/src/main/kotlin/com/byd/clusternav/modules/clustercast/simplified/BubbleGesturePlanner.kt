@@ -26,6 +26,12 @@ object BubbleGesturePlanner {
         /** Projection open, nothing on the cluster → cast the current foreground app FULL. */
         CAST_FULL,
 
+        /**
+         * 3.1.5 · R31 — a FULL cast is on the cluster and the castable foreground is a DIFFERENT app → replace it in ONE tap
+         * (`CastFull(foreground)`; the coordinator returns the old app before pinning the new one).
+         */
+        REPLACE_FULL,
+
         /** Something is on the cluster (full OR split) → return it / stop, back to the gauges. */
         RETURN,
 
@@ -34,16 +40,29 @@ object BubbleGesturePlanner {
     }
 
     /**
-     * TAP = toggle full. [SimpleCastState.Idle] (projection open, nothing cast) invites a full cast;
-     * either casting state ([SimpleCastState.CastingFull] or [SimpleCastState.CastingSplit]) returns
-     * everything with a slot-less `Stop`; every transient state is not actionable.
-     *
-     * The RETURN branch deliberately covers split too: a slot-less `Stop` returns both halves (see
-     * `SimpleCastCoordinator.handleStop`), which is the "return to cluster gauges" the spec asks for.
+     * 3.1.5 · R31 — whether [tapOutcome] needs the castable foreground for [state]: Idle (cast it) and a FULL cast (replace or
+     * return). Split and transient states decide without it, so the dispatcher skips the `am stack list` read there.
      */
-    fun tapOutcome(state: SimpleCastState): BubbleTapOutcome = when (state) {
+    fun tapNeedsForeground(state: SimpleCastState): Boolean =
+        state is SimpleCastState.Idle || state is SimpleCastState.CastingFull
+
+    /**
+     * TAP. [foreground] = the castable foreground package on the HOME display AFTER the launcher guard (Kachi + every
+     * CATEGORY_HOME package + [AppMover.isLauncher] filtered out), or `null` when there is none / it is home.
+     *
+     *  - [SimpleCastState.Idle] → [BubbleTapOutcome.CAST_FULL] (a `null` foreground is the dispatcher's "won't cast home" toast).
+     *  - [SimpleCastState.CastingFull] and [foreground] is a DIFFERENT app → [BubbleTapOutcome.REPLACE_FULL] (R31, owner 14/10:
+     *    GMaps on the cluster + Waze in front used to take two taps — the first only returned GMaps).
+     *  - [SimpleCastState.CastingFull] and [foreground] is the same app, or `null` (home / nothing castable) → RETURN, as before.
+     *  - [SimpleCastState.CastingSplit] → RETURN everything (slot-less `Stop`), as before: `CastFull` from a split is ignored by
+     *    the coordinator (`handleCastFull` only replaces a FULL cast), so a "replace" here would be a silent no-op.
+     *  - every transient state is not actionable.
+     */
+    fun tapOutcome(state: SimpleCastState, foreground: String? = null): BubbleTapOutcome = when (state) {
         is SimpleCastState.Idle -> BubbleTapOutcome.CAST_FULL
-        is SimpleCastState.CastingFull, is SimpleCastState.CastingSplit -> BubbleTapOutcome.RETURN
+        is SimpleCastState.CastingFull ->
+            if (foreground != null && foreground != state.targetPkg) BubbleTapOutcome.REPLACE_FULL else BubbleTapOutcome.RETURN
+        is SimpleCastState.CastingSplit -> BubbleTapOutcome.RETURN
         else -> BubbleTapOutcome.PREPARING
     }
 
@@ -83,20 +102,34 @@ object BubbleGesturePlanner {
 
         /** That side is free → cast the current foreground app into it. */
         CAST,
+
+        /**
+         * 3.1.5 · R31 — that side holds a DIFFERENT app than the castable foreground → replace it in one press
+         * (`CastSlot(foreground, side, replace = true)`; the coordinator returns the old half before pinning the new one).
+         */
+        REPLACE,
     }
 
+    /** 3.1.5 · R31 — [slotOutcome] needs the foreground only to decide RETURN vs REPLACE on an OCCUPIED side. */
+    fun slotNeedsForegroundToDecide(state: SimpleCastState, side: ClusterSlotSide): Boolean = occupant(state, side) != null
+
     /**
-     * A submenu slot choice TOGGLES that side (owner 2026-08-12): if the [side] is already occupied
-     * in a [SimpleCastState.CastingSplit], RETURN that app; otherwise CAST the current foreground app
-     * into it. This mirrors the in-app zone buttons (MainActivityCastController.setupZoneButtons) so
-     * the bubble and the Home card behave identically. Any non-split state (Idle/Full/transient) has
-     * no occupied slot, so it CASTs — including turning a full cast or idle cluster into a split.
+     * A submenu slot choice on [side] (owner 2026-08-12 toggle, extended by R31 2026-10-14). [foreground] is the castable
+     * foreground after the launcher guard, or `null`.
+     *  - side FREE (any non-split state, or the empty half of a split) → CAST, as before.
+     *  - side OCCUPIED and [foreground] is an app NOT already on the cluster (neither half) → REPLACE.
+     *  - side OCCUPIED and [foreground] is `null` (home / nothing castable) or already on the cluster → RETURN that half, as before.
      */
-    fun slotOutcome(state: SimpleCastState, side: ClusterSlotSide): BubbleSlotOutcome {
-        val occupied = state is SimpleCastState.CastingSplit && when (side) {
-            ClusterSlotSide.LEFT -> state.left != null
-            ClusterSlotSide.RIGHT -> state.right != null
-        }
-        return if (occupied) BubbleSlotOutcome.RETURN else BubbleSlotOutcome.CAST
+    fun slotOutcome(state: SimpleCastState, side: ClusterSlotSide, foreground: String? = null): BubbleSlotOutcome {
+        occupant(state, side) ?: return BubbleSlotOutcome.CAST
+        val split = state as SimpleCastState.CastingSplit
+        val onCluster = setOfNotNull(split.left?.pkg, split.right?.pkg)
+        return if (foreground != null && foreground !in onCluster) BubbleSlotOutcome.REPLACE else BubbleSlotOutcome.RETURN
     }
+
+    private fun occupant(state: SimpleCastState, side: ClusterSlotSide): SlotState? =
+        if (state !is SimpleCastState.CastingSplit) null else when (side) {
+            ClusterSlotSide.LEFT -> state.left
+            ClusterSlotSide.RIGHT -> state.right
+        }
 }

@@ -222,6 +222,8 @@
     <string name="kachi_slot_close_app">ปิดแอปในช่อง %1$d</string>
     <string name="kachi_slot_close_widget">ปิดวิดเจ็ตในช่อง %1$d</string>
     <string name="kachi_slot_close_confirm">แตะอีกครั้งเพื่อปิด</string>
+    <string name="kachi_slot_expand">ขยายช่อง %1$d</string>
+    <string name="kachi_slot_collapse">คืนช่อง %1$d เป็นขนาดเดิม</string>
     <string name="kachi_slot_close_failed">ปิด %1$s ไม่ได้</string>
     <string name="kachi_slot_head_autohide_title">ซ่อนปุ่ม ⇄ อัตโนมัติ</string>
     <string name="kachi_slot_head_autohide_sub">ปุ่มสลับแอป/วิดเจ็ตของกรอบจะซ่อนไว้ให้หน้าจอโล่ง แตะที่กรอบ (หรือที่ว่างบนหน้าจอ) เพื่อแสดงสักครู่</string>
