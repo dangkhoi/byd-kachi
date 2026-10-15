@@ -127,8 +127,8 @@ class KeyCtlPlanTest {
     /** Đảo hai lần (mỗi lần thành công) ⇒ về đúng chỗ cũ — cho MỌI nút đảo được của registry, sinh tự động. */
     @Test
     fun `dao hai lan ve nhu cu voi moi nut dao duoc`() {
-        // R32: nút CHỈ quyết bằng số đọc ([KeyCtlPlan.readOnly] — cốp) đọc `null` ⇒ không bắn ⇒ có bài riêng dưới; ở đây bản không readKey.
-        (ControlRegistry.ALL.filterNot(KeyCtlPlan::readOnly) + blindTrunk).filter { it.kind == ControlKind.TOGGLE || it.kind == ControlKind.COVER }.forEach { d ->
+        // 3.1.7 · KEYCTL-TRUNK-TOGGLE-REGRESS: MỌI nút (cả cốp thật, có readKey) đọc `null` ⇒ lùi trí nhớ ⇒ Đảo hai lần về như cũ.
+        (ControlRegistry.ALL + blindTrunk).filter { it.kind == ControlKind.TOGGLE || it.kind == ControlKind.COVER }.forEach { d ->
             val m = ControlLastSent()
             val start = m.index(d.id)
             val f = KeyCtlTarget(d.id, KeyCtlAction.FLIP)
@@ -177,31 +177,38 @@ class KeyCtlPlanTest {
     }
 
     /**
-     * ═══ 3.1.6 · R32 (owner 15/10, OQ14) — cốp MỘT phím Đảo theo SỐ ĐỌC THẬT ═══════════════════════════════════════════════
-     * `tailgate_status` = `getDoorState(6)`: 0 ⇒ MỞ (1) · 1 ⇒ ĐÓNG (gửi 0 ⇒ `voiceCtlBackDoor(3)`) · đọc không ra ⇒ [Outcome.Unreadable],
-     * KHÔNG lùi về trí nhớ (đóng bằng nút vật lý thì trí nhớ nói "mở" ⇒ phím sẽ MỞ lại cái cốp vừa đóng — đúng ca owner nêu).
-     * Cổng tốc độ KHÔNG đổi: kế hoạch không đọc vận tốc (cổng thi hành `VoiceControlDispatch` vẫn chặn MỞ khi xe chạy — bài :app).
-     * Đỏ khi: gỡ `readKey` cốp · bỏ [KeyCtlPlan.readOnly] (null ⇒ lùi trí nhớ ⇒ Run MEMORY) · đảo chiều số đọc.
+     * ═══ 3.1.7 · KEYCTL-TRUNK-TOGGLE-REGRESS (owner 15/10 *"bấm cái nó mở, bấm cái nó tắt … mở xong là mình đâu có đóng lại
+     * được"*) — cốp MỘT phím Đảo: số đọc THẬT trước, trí nhớ sau, KHÔNG BAO GIỜ từ chối ═══════════════════════════════════════
+     * `tailgate_status` = `getDoorState(6)` (3.1.6 · R32): 0 ⇒ MỞ (1) · 1 ⇒ ĐÓNG (gửi 0 ⇒ `voiceCtlBackDoor(3)`) — số đọc thắng trí nhớ
+     * (đóng bằng nút vật lý). Đọc không ra (255 / HAL hỏng / tiến trình Kachi chưa đọc được — K6 chưa đo) ⇒ lùi về LỆNH CUỐI
+     * ([Basis.MEMORY]) như 2.87–3.1.5, KHÔNG phải `Unreadable` (3.1.6 dựng lại luật 2.86 ⇒ phím `ctl:trunk:flip` owner gán từ 2.9x
+     * thôi đóng được cốp). Trí nhớ ra MỞ mà xe chạy ⇒ ĐÓNG ([Basis.MEMORY_SAFE], P1 2.87). Số đọc 0 + xe chạy ⇒ MỞ (cổng thi hành chặn
+     * — đúng sự thật, bài :app). Đỏ khi: dựng lại nhánh từ chối (null ⇒ không Run) · đảo chiều số đọc · bỏ lùi trí nhớ an toàn.
      */
     @Test
-    fun `R32 dao cop chi theo so doc that, doc khong ra thi khong ban`() {
+    fun `dao cop theo so doc that, doc khong ra thi lui tri nho, khong bao gio tu choi`() {
         val trunk = ControlRegistry.byId("trunk")!!
         assertEquals("tailgate_status", trunk.readKey)
-        assertTrue(KeyCtlPlan.readOnly(trunk))
         val flip = KeyCtlTarget("trunk", KeyCtlAction.FLIP)
-        var speedAsked = 0
-        val motion = { speedAsked++; CtlSafetyPolicy.Motion(30, "D") }
-        assertEquals(byCar("trunk", 1), KeyCtlPlan.of(trunk, flip, memory = mem, motion = motion) { 0 }, "đọc 0 (đóng) ⇒ MỞ")
-        assertEquals(byCar("trunk", 0), KeyCtlPlan.of(trunk, flip, memory = mem, motion = motion) { 1 }, "đọc 1 (mở) ⇒ ĐÓNG")
-        mem.record("trunk", 1)   // trí nhớ nói "mở" (Kachi mở) — rồi người lái đóng bằng nút trên cốp ⇒ số đọc 0 thắng
-        assertEquals(byCar("trunk", 1), KeyCtlPlan.of(trunk, flip, memory = mem, motion = motion) { 0 })
-        assertEquals(Outcome.Unreadable, KeyCtlPlan.of(trunk, flip, memory = mem, motion = motion) { null }, "255/không đọc ⇒ không bắn")
-        assertEquals(0, speedAsked, "kế hoạch không đọc vận tốc — cổng tốc độ ở tầng thi hành, không đổi")
+        assertEquals(byCar("trunk", 1), KeyCtlPlan.of(trunk, flip, memory = mem, motion = noSpeed) { 0 }, "đọc 0 (đóng) ⇒ MỞ")
+        assertEquals(byCar("trunk", 0), KeyCtlPlan.of(trunk, flip, memory = mem, motion = noSpeed) { 1 }, "đọc 1 (mở) ⇒ ĐÓNG")
+        mem.record("trunk", 1)   // trí nhớ "mở" (Kachi mở) — rồi người lái đóng bằng nút trên cốp ⇒ số đọc 0 thắng
+        assertEquals(byCar("trunk", 1), KeyCtlPlan.of(trunk, flip, memory = mem, motion = noSpeed) { 0 }, "số đọc thắng trí nhớ")
+        // Đọc không ra ⇒ trí nhớ: "mở" ⇒ ĐÓNG; "đóng" ⇒ MỞ (đứng yên) — đúng phím 2.9x owner quen.
+        assertEquals(byMem("trunk", 0), KeyCtlPlan.of(trunk, flip, memory = mem, motion = noSpeed) { null }, "null + nhớ mở ⇒ ĐÓNG")
+        mem.record("trunk", 0)
+        assertEquals(byMem("trunk", 1), KeyCtlPlan.of(trunk, flip, memory = mem, motion = noSpeed) { null }, "null + nhớ đóng ⇒ MỞ")
+        // Xe chạy + đọc không ra + trí nhớ "đóng" ⇒ hướng luôn được phép (ĐÓNG), không kẹt ở MỞ-bị-chặn.
+        assertEquals(run("trunk", 0, basis = KeyCtlPlan.Basis.MEMORY_SAFE), KeyCtlPlan.of(trunk, flip, memory = mem, motion = kmh(30)) { null })
+        // Số đọc từ XE không bị đổi hướng: đọc 0 lúc chạy ⇒ vẫn MỞ (cổng thi hành chặn — đúng sự thật).
+        assertEquals(byCar("trunk", 1), KeyCtlPlan.of(trunk, flip, memory = mem, motion = kmh(30)) { 0 })
         // Mở/Đóng riêng không đọc gì, không đổi.
-        assertEquals(run("trunk", 1), KeyCtlPlan.of(trunk, KeyCtlTarget("trunk", KeyCtlAction.OPEN), memory = mem, motion = motion) { error("không đọc") })
-        assertTrue(KeyCtlPlan.unreadableReply(trunk, Lang.VI).contains(trunk.label))
-        // Nút khác có readKey (không bị cổng tốc độ) giữ luật 2.87: đọc hỏng ⇒ lùi trí nhớ.
-        assertTrue(ControlRegistry.ALL.filter { it.readKey.isNotBlank() }.all { KeyCtlPlan.readOnly(it) == (it.id == "trunk") })
+        assertEquals(run("trunk", 1), KeyCtlPlan.of(trunk, KeyCtlTarget("trunk", KeyCtlAction.OPEN), memory = mem, motion = noSpeed) { error("không đọc") })
+        // Luật chung, không riêng cốp: MỌI nút đảo được có readKey đọc `null` ⇒ vẫn ra một lệnh (Run), không từ chối.
+        ControlRegistry.ALL.filter { it.readKey.isNotBlank() && (it.kind == ControlKind.TOGGLE || it.kind == ControlKind.COVER) }.forEach { d ->
+            val o = KeyCtlPlan.of(d, KeyCtlTarget(d.id, KeyCtlAction.FLIP), memory = ControlLastSent(), motion = noSpeed) { null }
+            assertTrue(o is Outcome.Run && (o.basis == KeyCtlPlan.Basis.MEMORY), "${d.id}: $o")
+        }
     }
 
     /** Luật đi theo [CtlSafetyPolicy] + NGUỒN trạng thái, không theo tên nút: số đọc từ XE không đổi; Kế tiếp cũng áp. */

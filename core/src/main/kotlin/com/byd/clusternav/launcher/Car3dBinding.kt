@@ -67,6 +67,13 @@ data class Car3dMaterialStyle(
      * (Fresnel → 1 ở góc sượt) ⇒ dưới nắng 55 k lux mặt trong khung kính sượt hiện thành vạch XÁM trung tính [ĐO máy ảo — diagnostics §14 #45].
      */
     val unlit: Boolean = false,
+    /**
+     * 3.1.7 — phát sáng (tuyến tính) khi ĐÈN KHOANG (đèn đọc) bật; `null` = vật liệu này không bao giờ hắt đèn khoang. Bên vẽ đặt
+     * `emissiveFactor` = giá trị này / 0 theo trạng thái — đọc từ `extras.glow` của nút ([Car3dGlb]), không hằng số ở `:app`.
+     * Bản có ảnh nhân ảnh (Seal: ảnh nội thất tối ⇒ hiệu dụng ~3 %); bản trơn KHÔNG có ảnh làm tối ⇒ phải khai nhỏ hơn
+     * ([Car3dMaterials.READ_GLOW_PLAIN]) và bị kẹp ≤ [Car3dMaterials.PLAIN_GLOW_MAX] ([Car3dMaterials.plain]) — diagnostics §15.
+     */
+    val glowOn: List<Double>? = null,
 )
 
 sealed class Car3dSource {
@@ -198,8 +205,12 @@ object Car3dCatalog {
             // POLISH2: phát sáng KHAI SẴN = 0 (tắt) — bên vẽ đổi `emissiveFactor` khi đèn đọc bật (nội thất hắt sáng ấm, Car3dRenderer.glow).
             // 3.1.5 [ĐO]: `car_texture1.png` chỉ có ở eke/paha; SL6 `interior` còn không mang UV (u tới 2 252) ⇒ bản trơn đen sâu như
             // khoang Seal (ảnh Seal dưới UV nội thất: độ sáng TB 46/255), GIỮ `emissiveFactor` khai (đèn đọc hắt sáng vẫn đổi được).
+            // 3.1.7 [ĐO JVM SL6 + đọc mã]: đèn đọc bật ⇒ bên vẽ đặt ×5,2 ẤM lên MỌI nội thất — bản trơn (SL6) không có ảnh nhân vào ⇒
+            // khoang/khe cốp cháy kem (§15). Nay mỗi bản khai phát sáng KHI BẬT của riêng nó ([Car3dMaterialStyle.glowOn]).
             "interior" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.7, texture = "car_texture1.png", emissive = listOf(0.0, 0.0, 0.0),
-                plain = Car3dMaterialStyle(listOf(0.045, 0.045, 0.05, 1.0), roughness = 0.7, emissive = listOf(0.0, 0.0, 0.0))),
+                glowOn = Car3dMaterials.READ_GLOW,
+                plain = Car3dMaterialStyle(listOf(0.045, 0.045, 0.05, 1.0), roughness = 0.7, emissive = listOf(0.0, 0.0, 0.0),
+                    glowOn = Car3dMaterials.READ_GLOW_PLAIN)),
             "texture" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.6, texture = "car_texture.png", plain = TRIM_PLAIN),
             "texture1" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.7, texture = "car_door.png", plain = TRIM_PLAIN),
             "texture2" to Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), roughness = 0.7, texture = "car_control.png", plain = TRIM_PLAIN),
@@ -355,6 +366,15 @@ object Car3dBox {
 
     /** Khoá kiểu vật liệu đã áp cho nút (`extras.mat`), `null` nếu vắng. */
     fun material(extras: String?): String? = MAT.find(extras ?: return null)?.groupValues?.get(1)
+
+    private val GLOW = Regex(""""glow"\s*:\s*\[([^\]]*)]""")
+
+    /** Phát sáng KHI ĐÈN KHOANG BẬT của nút (`extras.glow`, [Car3dMaterialStyle.glowOn]); vắng/hỏng ⇒ `null` = không hắt đèn khoang. */
+    fun glow(extras: String?): FloatArray? {
+        val body = GLOW.find(extras ?: return null)?.groupValues?.get(1) ?: return null
+        val v = body.split(',').map { it.trim().toFloatOrNull() ?: return null }
+        return if (v.size == 3 && v.all { it.isFinite() && it >= 0f }) v.toFloatArray() else null
+    }
 
     private val GRP = Regex(""""grp"\s*:\s*"([^"]*)"""")
 

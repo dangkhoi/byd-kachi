@@ -69,6 +69,14 @@ class ControlLastSent {
      */
     val relayed: StateFlow<Long> = relayedChanges.asStateFlow()
 
+    /**
+     * 3.1.7 · STALE-AUDIT — một lượt ghi TRONG tiến trình mà KHÔNG ô nào tự vẽ (phím · giọng nói · gói lệnh — [ControlWriteEcho])
+     * vừa đổi bảng ⇒ tăng CÙNG bộ đếm [relayed], để màn chính vẽ lại ô/bảng NGAY qua đúng đường của cầu `:wake`. Nghĩa của
+     * [relayed] từ đây: *"bảng đổi mà không ô nào vẽ"* (từ tiến trình khác HOẶC từ đường không-ô). [record] KHÔNG gọi hàm này: cú
+     * chạm ô và lượt đọc-đồng-bộ của ô tự vẽ rồi — báo nữa là vẽ lại thừa, và hai bề mặt lệch số đọc sẽ đẩy nhau thành vòng lặp.
+     */
+    fun announce() { relayedChanges.update { it + 1 } }
+
     /** Chỉ số hiện nhớ của nút [id]; chưa có lệnh nào ⇒ [startIndex]. */
     fun index(id: String): Int = sent[id] ?: startIndex(id)
 

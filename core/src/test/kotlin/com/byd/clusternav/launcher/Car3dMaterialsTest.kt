@@ -227,6 +227,32 @@ class Car3dMaterialsTest {
         assertFalse(plain.contains("\"emissiveStrength\":5"), plain)
     }
 
+    /**
+     * 3.1.7 (diagnostics §15) — SL6: đèn đọc bật ⇒ `Car3dRenderer` đặt ×5,2 ấm lên MỌI nội thất; nội thất SL6 là bản TRƠN (không
+     * ảnh nhân vào) ⇒ khoang + khe cốp cháy kem. Nay giá trị KHI BẬT ghi theo đúng bản: có ảnh = [Car3dMaterials.READ_GLOW] (× ảnh),
+     * trơn = [Car3dMaterials.READ_GLOW_PLAIN] ≤ [Car3dMaterials.PLAIN_GLOW_MAX]. Gỡ `extras.glow` / dùng ×5,2 cho bản trơn ⇒ đỏ.
+     */
+    @Test
+    fun `GLB - den khoang theo ban da dung, noi that tron khong chay kem`() {
+        fun glowOf(j: String): List<Double>? = Car3dBox.glow(Regex(""""extras":\{[^}]*"mat":"interior"\}""").find(j)?.value)?.map { it.toDouble() }
+        val plainJ = json(mesh(Triple("body_interior", "interior", floatArrayOf(2252f, 820f, 0f))), setOf("car_texture1.png"))
+        val g = glowOf(plainJ)
+        assertTrue(g != null, "nội thất trơn vẫn hắt đèn khoang được: $plainJ")
+        assertTrue(g!!.max() <= Car3dMaterials.PLAIN_GLOW_MAX && g.max() < 0.25, "bản trơn: ${g} (×5,2 = cháy kem)")
+        assertTrue(g[0] > g[1] && g[1] > g[2], "vẫn ánh ấm")
+        assertTrue(materialJson(plainJ, "interior${Car3dGlb.PLAIN}")!!.contains("\"emissiveFactor\""), "có tham số để bên vẽ đổi")
+        val texJ = json(mesh(Triple("body_interior", "interior", floatArrayOf(0.4f, 0.6f, 0f))), setOf("car_texture1.png"))
+        assertEquals(Car3dMaterials.READ_GLOW, glowOf(texJ)?.map { Math.round(it * 10) / 10.0 }, "bản có ảnh giữ ×5,2 nhân ảnh (Seal không đổi)")
+        // Vật liệu không khai đèn khoang ⇒ không có `extras.glow`.
+        val other = json(mesh(Triple("body_paint", "paint", floatArrayOf(0f, 0f, 0.3f))), emptySet())
+        assertFalse(other.contains("\"glow\""), other)
+        // Kẹp ở tầng chung: bản trơn khai đèn khoang ×5 ⇒ kênh lớn nhất = trần, giữ tỉ lệ.
+        val loud = Car3dMaterialStyle(listOf(1.0, 1.0, 1.0, 1.0), texture = "x.png",
+            plain = Car3dMaterialStyle(listOf(0.05, 0.05, 0.05, 1.0), glowOn = listOf(5.0, 2.5, 0.0)))
+        assertEquals(listOf(Car3dMaterials.PLAIN_GLOW_MAX, 0.5 * Car3dMaterials.PLAIN_GLOW_MAX, 0.0), Car3dMaterials.plain(loud).glowOn)
+        assertEquals(null, Car3dBox.glow("""{"glow":[1,2]}""")); assertEquals(null, Car3dBox.glow("""{"glow":[1,-2,0]}"""))
+    }
+
     @Test
     fun `GLB - vat lieu khai la theo lop, khong lop thi toi trung tinh`() {
         val j = json(mesh(Triple("body_glasstail", "glasstail", floatArrayOf(0.5f, 0.5f, 0f)), Triple("body_foo", "foo", floatArrayOf(0f, 0f, 0.3f))), emptySet())
@@ -250,7 +276,7 @@ class Car3dMaterialsTest {
             val cat = Car3dCatalog.forAvm(rel.substringBefore('/'))
             val raw = BydAvmMesh.parse(File(d, "car.mesh").readBytes()) + BydAvmMesh.parse(File(d, "wheel.mesh").readBytes())
             val mesh = Car3dDupes.without(raw, Car3dDupes.aggregates(raw))
-            val ps = cat.partStyles + Car3dLamps.styles(mesh, cat.whiteLamps)
+            val ps = cat.partStyles + Car3dLamps.styles(mesh, cat.whiteLamps, cat.variants)
             val pngs = d.list()!!.filter { it.endsWith(".png") }.toSet()
             val texels = pngs.associateWith { n ->
                 val img = javax.imageio.ImageIO.read(File(d, n))

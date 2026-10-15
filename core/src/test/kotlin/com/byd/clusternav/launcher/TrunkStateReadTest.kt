@@ -29,7 +29,7 @@ class TrunkStateReadTest {
         assertNull(table("255").readBool("tailgate_status"), "BODYWORK_STATE_UNDEFINED ⇒ chưa biết, KHÔNG phải mở")
         assertNull(table("2").readBool("tailgate_status"), "mã ngoài thang ⇒ chưa biết")
         assertNull(table(null).readBool("tailgate_status"), "off-car ⇒ chưa biết")
-        // Nút: cùng đường, số 0/1; 255 ⇒ null (Đảo cốp ⇒ Unreadable, không bắn).
+        // Nút: cùng đường, số 0/1; 255 ⇒ null (Đảo cốp ⇒ lùi lệnh cuối — 3.1.7 KEYCTL-TRUNK-TOGGLE-REGRESS).
         assertEquals(0, table("0").readState("trunk"))
         assertEquals(1, table("1").readState("trunk"))
         assertNull(table("255").readState("trunk"))

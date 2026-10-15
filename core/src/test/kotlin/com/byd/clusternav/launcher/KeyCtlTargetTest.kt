@@ -108,12 +108,12 @@ class KeyCtlTargetTest {
         val all = all(reg)
         fun of(id: String) = all.filter { it.controlId == id }.map { it.action to it.level }
         assertEquals(listOf(KeyCtlAction.UP to 0, KeyCtlAction.DOWN to 0), of("zz_vol"))
-        assertEquals(listOf(KeyCtlAction.ON to 0, KeyCtlAction.OFF to 0, KeyCtlAction.FLIP to 0), of("zz_tog"))
-        assertEquals(listOf(KeyCtlAction.ON to 0, KeyCtlAction.OFF to 0, KeyCtlAction.FLIP to 0), of("zz_tog2"),
+        assertEquals(listOf(KeyCtlAction.FLIP to 0, KeyCtlAction.ON to 0, KeyCtlAction.OFF to 0), of("zz_tog"))
+        assertEquals(listOf(KeyCtlAction.FLIP to 0, KeyCtlAction.ON to 0, KeyCtlAction.OFF to 0), of("zz_tog2"),
             "2.87: TOGGLE không readKey VẪN có Đảo (lệnh cuối)")
         assertEquals(
-            listOf(KeyCtlAction.OPEN to 0, KeyCtlAction.CLOSE to 0, KeyCtlAction.SET to 2, KeyCtlAction.SET to 3, KeyCtlAction.FLIP to 0),
-            of("zz_cov"), "COVER: mở · đóng · mỗi mức thêm của args · Đảo (không cần readKey)",
+            listOf(KeyCtlAction.FLIP to 0, KeyCtlAction.OPEN to 0, KeyCtlAction.CLOSE to 0, KeyCtlAction.SET to 2, KeyCtlAction.SET to 3),
+            of("zz_cov"), "COVER: Đảo (đầu, không cần readKey) · mở · đóng · mỗi mức thêm của args",
         )
         assertEquals(listOf(KeyCtlAction.NEXT to 0, KeyCtlAction.SET to 0, KeyCtlAction.SET to 1, KeyCtlAction.SET to 2), of("zz_sel"),
             "SELECT không readKey VẪN có Kế tiếp, rồi chọn thẳng từng lựa chọn")
@@ -144,20 +144,29 @@ class KeyCtlTargetTest {
     }
 
     /**
-     * Owner 03/10 *"phím đóng mở cốp không chung được à, phải 2 nút à?"*. Tới 3.1.5 cốp KHÔNG có đường đọc (`tailgate_status` gỡ
-     * 25/09 vì `getHatchDoorStatus` — SAI TÊN getter, không có trên ROM) ⇒ Đảo quyết bằng lệnh cuối Kachi đã gửi.
-     * ═══ 3.1.6 · R32 (owner 15/10 *"có nhé, với cả làm luôn rồi lên xe test"*): `trunk.readKey = "tailgate_status"` =
-     * `getDoorState(6)` — [ĐO nguồn fw 2606] `BYDAutoBodyworkDevice.java:207,715-716` + [ĐO logcat xe 14/10] tiến trình BYD đọc 1/0
-     * theo lệnh Kachi (`docs/diagnostics/trunk-state-read-2026-10-15.md` §2). Đích phím KHÔNG đổi (Mở · Đóng · Đảo, đã sinh từ 2.87);
-     * cái đổi là NGUỒN của Đảo: chỉ số đọc, đọc không ra ⇒ không bắn (`KeyCtlPlanTest.R32 …`). Bài đỏ nếu cốp mất `readKey`.
+     * Owner 03/10 *"phím đóng mở cốp không chung được à, phải 2 nút à?"* ⇒ 2.87 sinh Đảo cho cốp (quyết bằng lệnh cuối Kachi đã
+     * gửi). 3.1.6 · R32 nối `trunk.readKey = "tailgate_status"` (`getDoorState(6)`, `docs/diagnostics/trunk-state-read-2026-10-15.md`).
+     * ═══ 3.1.7 · KEYCTL-TRUNK-TOGGLE-REGRESS (owner 15/10 *"lúc trước … bấm cái nó mở, bấm cái nó tắt. Sao bây giờ nó lại chia ra
+     * thành hai cái"*): hộp chọn xếp Đảo ĐẦU (trước đó chìm dưới Mở · Đóng — trông như cốp chỉ còn hai việc tách) và mã `ctl:trunk:flip`
+     * owner lưu từ 2.9x [ĐO log xe 06/10 + 10/10: `voice-key fire → target=ctl:trunk:flip key=306` ⇒ `basis=MEMORY`] vẫn ra ĐẢO —
+     * không bao giờ thành "Mở". Đỏ khi: Đảo không đứng đầu · cốp mất Đảo/Mở/Đóng · mã cũ không còn ra FLIP.
      */
     @Test
-    fun `cot co Mo, Dong rieng va mot phim Dao`() {
-        assertEquals("tailgate_status", trunk.readKey, "R32 — cốp đọc được (getDoorState(6)); mất readKey ⇒ Đảo lại đoán từ cờ RAM")
+    fun `cot co mot phim Dao dung dau, roi Mo, Dong rieng`() {
+        assertEquals("tailgate_status", trunk.readKey, "R32 — cốp đọc được (getDoorState(6)); mất readKey ⇒ Đảo chỉ còn trí nhớ")
         assertEquals(
-            listOf(KeyCtlTarget("trunk", KeyCtlAction.OPEN), KeyCtlTarget("trunk", KeyCtlAction.CLOSE), KeyCtlTarget("trunk", KeyCtlAction.FLIP)),
+            listOf(KeyCtlTarget("trunk", KeyCtlAction.FLIP), KeyCtlTarget("trunk", KeyCtlAction.OPEN), KeyCtlTarget("trunk", KeyCtlAction.CLOSE)),
             KeyCtlTargets.actionsFor(trunk),
         )
+        assertEquals(KeyCtlTarget("trunk", KeyCtlAction.FLIP), KeyCtlTargets.decode("ctl:trunk:flip"), "mã owner đã lưu ⇒ vẫn Đảo")
+        // Hộp chọn thật (nhóm Kính, nơi cốp nằm): việc ĐẦU của cốp là Đảo, nhãn "Mở/đóng … (đảo)".
+        val inGroup = KeyCtlTargets.groups().flatMap { it.targets }.filter { it.controlId == "trunk" }
+        assertEquals(KeyCtlAction.FLIP, inGroup.first().action)
+        assertEquals("Mở/đóng Cốp sau (đảo)", KeyCtlTargets.displayLabel(inGroup.first(), Lang.VI))
+        // Luật chung, không riêng cốp: mọi TOGGLE/COVER xếp Đảo đầu.
+        ControlRegistry.ALL.filter { it.kind == ControlKind.TOGGLE || it.kind == ControlKind.COVER }.forEach {
+            assertEquals(KeyCtlAction.FLIP, KeyCtlTargets.actionsFor(it).first().action, it.id)
+        }
     }
 
     /**

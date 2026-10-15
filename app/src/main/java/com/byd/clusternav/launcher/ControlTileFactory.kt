@@ -119,7 +119,7 @@ class ControlTileFactory(
         // Đọc lại trạng thái THẬT của xe (0/1) — bỏ qua trong cửa sổ ân hạn, và chỉ đổi khi khác để không vẽ thừa.
         return refresh@{ car ->
             if (state.touchedWithin(def.id)) return@refresh
-            val on = (car.controls[def.id] ?: on(def)) > 0   // R-FL2: xe không cho số ⇒ bảng lệnh cuối (phím/giọng nói vừa đổi) — TileResync
+            val on = (LampHold.shared.shown(def.id, car.controls[def.id], android.os.SystemClock.uptimeMillis()) ?: on(def)) > 0   // R-FL2 · STALE-AUDIT: đích giữ (phím/giọng nói — ControlWriteEcho) › số xe › bảng lệnh cuối
             if (on != state.isOn(def.id) || TileResync.stale(tile, if (on) 1 else 0) != null) { state.setOn(def.id, on); look(def, tile, icon, label, on(def)) }
         }
     }
@@ -138,7 +138,7 @@ class ControlTileFactory(
 
     private fun tileStep(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView, expose: ((Int) -> Unit, TextView) -> Unit): (CarStatus) -> Unit {
         // UX4 — *"đang TỰ ĐỘNG không"* ([ControlDef.autoId]); `null` = CHƯA BIẾT ⇒ y như trước UX4. Luật: [ClimateAuto].
-        var auto: Boolean? = null
+        var auto: Boolean? = null; var drawn: Int? = state.value(def); var drawnAuto: Boolean? = null   // FAN-STEP: hình ĐANG hiện ([StepTileSync])
         val vtext = TextView(ctx).apply {
             text = ControlVisuals.stepText(def, state.value(def))
             AdaptiveInk.text(this, KachiTheme.INK); setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp)   // R29 T29-7
@@ -166,7 +166,7 @@ class ControlTileFactory(
         fun nudge(delta: Int) {
             state.touch(def.id)
             val old = state.value(def); val oldAuto = auto; var nv = old
-            fun draw(v: Int) { vtext.text = ControlVisuals.stepText(def, v, auto); look(def, tile, icon, label, v, auto); say(v, auto) }
+            fun draw(v: Int) { drawn = v; drawnAuto = auto; vtext.text = ControlVisuals.stepText(def, v, auto); look(def, tile, icon, label, v, auto); say(v, auto) }
             fun show(v: Int, a: Boolean?) { nv = v; auto = a; state.setValue(def.id, v); tile.post { draw(v) } }
             writer.submit(def.id, act = {
                 val base = runCatching { control().readState(def.id) }.getOrNull() ?: state.value(def)
@@ -202,8 +202,8 @@ class ControlTileFactory(
             // ⚠ UX4 — `autoId` rỗng ⇒ tra map chuỗi rỗng ⇒ `null` ⇒ y hệt cũ; và KHÔNG thoát sớm khi mức đọc không ra (auto đổi mà mức còn nguội thì ô vẫn phải vẽ lại).
             val a = ClimateAuto.autoOnFromControl(car.controls[def.autoId])
             val v = car.controls[def.id] ?: state.value(def)
-            if (v != state.value(def) || a != auto) {
-                state.setValue(def.id, v); auto = a
+            if (StepTileSync.needsRedraw(drawn, drawnAuto, v, a) || a != auto) {   // FAN-STEP: so với HÌNH, không với bảng phím/giọng nói vừa ghi
+                state.setValue(def.id, v); auto = a; drawn = v; drawnAuto = a
                 vtext.text = ControlVisuals.stepText(def, v, a); look(def, tile, icon, label, v, a); say(v, a)
             }
         }
@@ -236,13 +236,12 @@ class ControlTileFactory(
                 LampHold.shared.drop(def.id); state.setSel(def.id, old); tile.post { show(old) }
             }
         }
-        // WP2 · R2.3 mở ⇒ màu nhấn, vẽ lại khi ĐỔI. R32: đích giữ ([LampHold]) ⇒ không thì SỐ ĐỌC + trí nhớ theo số đọc (nút vật lý).
-        var open = false
+        // WP2 · R2.3 mở ⇒ màu nhấn. R32: đích giữ ([LampHold]) ⇒ không thì SỐ ĐỌC + trí nhớ theo số đọc (nút vật lý). STALE-AUDIT 3.1.7: so
+        // với HÌNH đang vẽ (TileResync), không với cờ riêng — cú chạm `show` không cập nhật cờ ấy ⇒ hết hạn giữ, số đọc = cờ cũ ⇒ ô kẹt MỞ.
         return refresh@{ car ->
             if (state.touchedWithin(def.id)) return@refresh
             val read = car.controls[def.id]; val now = LampHold.shared.shown(def.id, read, android.os.SystemClock.uptimeMillis()).also { if (read != null && it == read && levels == 2) state.setSel(def.id, if (read > 0) 1 else 0) }
-            val v = ControlVisuals.of(def, now ?: TileResync.stale(tile, state.sel(def.id).coerceIn(0, levels - 1))?.let { show(it); return@refresh } ?: return@refresh)
-            if (v.active != open) { open = v.active; applyBg(tile, v.active); tint(icon, label, v.active) }
+            TileResync.stale(tile, (now ?: state.sel(def.id)).coerceIn(0, levels - 1))?.let(::show)
         }
     }
 
@@ -356,7 +355,7 @@ class ControlTileFactory(
                         if (sr.ok && ControlRegistry.byId(step.controlId)?.kind == ControlKind.TOGGLE) {
                             state.setOn(step.controlId, step.arg > 0)
                         }
-                    }
+                    }; state.announce()   // 3.1.7 STALE-AUDIT: ô khác (đèn đọc…) không tự vẽ ⇒ báo màn vẽ lại ngay
                     // Báo cho NGƯỜI DÙNG khi có bước không ăn. Trước đây kết quả chỉ vào nhật ký, mà người lái
                     // không bao giờ đọc nhật ký ⇒ bấm "Rời xe" xong xe khoá mà kính chưa đóng thì không ai biết.
                     // Thành công thì IM LẶNG (không ai muốn bị thông báo mỗi lần bấm đúng).

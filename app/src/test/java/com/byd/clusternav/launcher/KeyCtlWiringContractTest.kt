@@ -135,9 +135,12 @@ class KeyCtlWiringContractTest {
         assertFalse(run.contains("ControlLastSent("), "phím không được dựng bảng riêng — mặc định của KeyCtlPlan.of là bảng dùng chung")
         val plan = code("src/main/java/com/byd/clusternav/launcher/KeyCtlPlan.kt")
         assertTrue(plan.contains("memory: ControlLastSent = ControlLastSent.shared"))
-        // Giọng nói + phím ghi bảng ở tầng thi hành, CHỈ khi ok — kể cả COVER (trước 2.87 nhánh COVER bỏ qua).
+        // Giọng nói + phím ghi bảng ở tầng thi hành, CHỈ khi ok — kể cả COVER (trước 2.87 nhánh COVER bỏ qua). 3.1.7 STALE-AUDIT: luật
+        // theo kiểu nút dời sang `ControlWriteEcho.applied` (`:core`, ControlWriteEchoTest) — cùng bảng, thêm đích giữ + báo màn.
         val vcd = SourceRoots.body(code("$base/launcher/VoiceControlDispatch.kt"), "fun finish(ok: Boolean)")
-        assertTrue(vcd.contains("if (ok) when (def.kind)") && vcd.contains("ControlKind.SELECT, ControlKind.COVER -> st.setSel(def.id, arg)"))
+        assertTrue(vcd.contains("if (ok) st.echo(def, arg)"))
+        val echo = code("$base/launcher/ControlWriteEcho.kt")
+        assertTrue(echo.contains("ControlKind.SELECT, ControlKind.COVER -> sent.record(def.id, arg)"))
         // Ô vẽ lại khi bảng đổi bởi phím/giọng nói (nút không readKey: nhịp đọc xe không có số để so).
         val factory = code("$base/launcher/ControlTileFactory.kt")
         assertTrue(SourceRoots.body(factory, "private fun look(").contains("TileResync.drew(tile, value)"), "look là cửa DUY NHẤT ghi hình đã vẽ")

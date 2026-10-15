@@ -109,12 +109,8 @@ internal class VoiceControlDispatch(
             // 2.87 · R-FL2: đây là chỗ ghi *"lệnh cuối Kachi đã gửi"* ([ControlLastSent]) cho giọng nói + phím của tiến
             // trình chính — CHỈ khi `ok`. COVER nay cũng ghi (mức vừa gửi): thiếu nó thì *"đóng cốp"* bằng lời xong, phím
             // Đảo cốp vẫn tưởng cốp đang mở theo cú chạm ô trước đó.
-            if (ok) when (def.kind) {
-                ControlKind.TOGGLE -> st.setOn(def.id, arg > 0)
-                ControlKind.STEP -> st.setValue(def.id, arg)
-                ControlKind.SELECT, ControlKind.COVER -> st.setSel(def.id, arg)
-                else -> Unit
-            }
+            // 3.1.7 · STALE-AUDIT: + đích giữ LampHold (nút đọc được) + báo màn vẽ lại NGAY — như cú chạm ô ([ControlTileState.echo]).
+            if (ok) st.echo(def, arg)
             if (!ok) {
                 // ═══ R5 (live-state) — *"hỏng lần này"* và *"xe này không có"* là HAI câu khác nhau ═════════
                 //

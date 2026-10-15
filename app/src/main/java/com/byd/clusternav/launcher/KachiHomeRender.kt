@@ -26,7 +26,7 @@ internal fun KachiHomeActivity.applyThemeInPlace() {
 }
 
 /**
- * Soát vòng 2 [P3] — bảng lệnh cuối vừa đổi bởi `:wake` (cầu `ControlSentRelay` → `ControlLastSent.absorb`) ⇒ ô nút vẽ lại
+ * Soát vòng 2 [P3] (+ 3.1.7 STALE-AUDIT: hoặc bởi phím/giọng nói/gói lệnh của CHÍNH tiến trình — `ControlLastSent.announce`) — bảng lệnh cuối vừa đổi bởi `:wake` (cầu `ControlSentRelay` → `ControlLastSent.absorb`) ⇒ ô nút vẽ lại
  * NGAY với trạng thái xe ĐANG CÓ: thanh nút ([ControlDockView.setCarStatus] — đổ lại ô đọc + ô hành động, không dựng lại)
  * và ô hành động giữa màn ([WidgetRefreshers.resyncActions]). Hàm đổ của ô so hình với bảng (`TileResync.stale`) nên ô đã
  * khớp không vẽ lại. Gọi từ [collectHome] (luồng chính).
@@ -35,6 +35,10 @@ internal fun KachiHomeActivity.resyncTiles() {
     val car = viewModel.uiState.value.carStatus
     dock.setCarStatus(car)
     WidgetRefreshers.resyncActions(workspace, car)
+    // 3.1.7 STALE-AUDIT — cả ô WIDGET (xe 3D · bảng Đèn/Kính/Cửa · nhóm): chúng KHÔNG phải ô hành động nên `resyncActions` không chạm;
+    // đổ tại chỗ bằng CHÍNH đường của nhịp xe (`WidgetViews.refreshRead`, không dựng view). Gọi cả khi phím/giọng nói trong tiến trình
+    // chính ghi (`ControlLastSent.announce`), không chỉ khi cầu `:wake` đổi bảng.
+    workspace.widgetData().let { d -> workspace.slotViews.forEach { WidgetViews.refreshRead(it, d) } }
 }
 
 internal fun KachiHomeActivity.render(state: HomeUiState) {

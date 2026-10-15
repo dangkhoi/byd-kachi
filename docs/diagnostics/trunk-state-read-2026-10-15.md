@@ -149,9 +149,8 @@ lý, K6 tiến trình Kachi) chốt bằng bản build kế tiếp trên xe (§5
   đúng chiều sau khi đóng bằng nút vật lý. Chưa đọc được ⇒ giữ hình cuối (lối cũ `TileResync`).
 - **3D**: điểm `trunk` sang nhóm Cửa (`read = "tailgate_status"`), biến thể nắp đọc `tailgate_status` (cơ chế `cmd:` lệnh-cuối GỠ — chủ duy
   nhất là cốp). Chưa đọc ⇒ vòng đứt (chưa biết), nắp ở bản nghỉ — cùng luật cửa.
-- **Phím Đảo (OQ14 · D-KC3)**: `KeyCtlPlan.readOnly` (nút có `readKey` VÀ thuộc `CtlSafetyPolicy.REQUIRES_STATIONARY`): đọc tươi 0 ⇒ mở ·
-  >0 ⇒ đóng · `null` ⇒ `Outcome.Unreadable` (toast *"Chưa đọc được trạng thái Cốp sau — chưa gửi lệnh"*), không lùi về trí nhớ. Cổng tốc độ
-  không đổi (tầng thi hành `VoiceControlDispatch`/`TileSafetyGate`).
+- **Phím Đảo (OQ14 · D-KC3)**: đọc tươi 0 ⇒ mở · >0 ⇒ đóng. ~~3.1.6: `null` ⇒ `Outcome.Unreadable`, không bắn~~ — **gỡ ở 3.1.7**
+  (hồi quy, §6): `null` ⇒ lệnh cuối Kachi đã gửi như 2.87–3.1.5. Cổng tốc độ không đổi (tầng thi hành `VoiceControlDispatch`/`TileSafetyGate`).
 - **Giọng nói**: *"mở cốp"/"đóng cốp"* không đổi đường; `VoiceReadback` đọc lại mỗi 1 s trong `confirmMs` (≤ 10 lượt, luồng nền sẵn có)
   ⇒ khớp ⇒ *"đã xác nhận"*; hết cửa sổ ⇒ ✓ + hedge như cũ (`MOVES_SLOWLY`).
 - **Bảng Cửa** (`GroupBoard.DOOR_PARTS` + `CarPart.TAILGATE`), nhóm `g_doors` (*"cửa, cốp, nóc, rèm"*), widget `w_car` (dòng *"Cốp sau
@@ -178,9 +177,38 @@ adb -s <xe> logcat -v time | grep -E "KachiHal|getDoorState|KeyCtl|Car3d tap|Kac
 5. Phím gán "Đảo cốp": log `KeyCtl ctl:trunk:flip ⇒ Run(… value=1 …, basis=CAR)` khi đóng, `value=0` khi mở. Xe chạy: MỞ bị chặn
    (`KachiCtl … MỞ bị chặn` / câu giọng nói dừng xe) như 3.1.5.
 6. Giọng nói *"đóng cốp"*: câu trả lời *"đã xác nhận"* sau ~6 s (không còn hedge).
-7. Có `255` ở bước nào ⇒ ô giữ hình cuối, 3D vòng đứt, phím báo *"Chưa đọc được…"* — ghi lại thời điểm.
+7. Có `255` ở bước nào ⇒ ô giữ hình cuối, 3D vòng đứt, phím Đảo vẫn chạy theo lệnh cuối (`basis=MEMORY`, 3.1.7 §6) — ghi lại thời điểm.
 
-## 6. Còn mở
+## 6. Phím Đảo cốp hồi quy ở 3.1.6 (`KEYCTL-TRUNK-TOGGLE-REGRESS`, sửa 3.1.7)
+
+Owner 15/10: *"Lúc trước cái nút đóng mở cốp là gán lên vô lăng một nút, bấm cái nó mở, bấm cái nó tắt. Sao bây giờ nó lại chia ra
+thành hai cái … mở xong là mình đâu có đóng lại được"*.
+
+| # | Khẳng định | Mức |
+|---|---|---|
+| H1 | Phím một-nút có từ **2.87** (R-FL1/R-FL2): mã `ctl:trunk:flip`, quyết bằng **lệnh cuối Kachi đã gửi** (`ControlLastSent`) vì cốp chưa đọc được. Owner gán nó vào `key=306`; log xe 06/10 (2.9x) `ctl:trunk:flip ⇒ Run(value=1 … basis=MEMORY)` rồi `value=0` 16 s sau; 10/10 lặp lại. | [ĐO] log xe + git `f297411a` |
+| H2 | Mã đích **không đổi** từ 2.87 tới 3.1.6: `decode("ctl:trunk:flip")` vẫn ra FLIP, không bị đổi thành Mở. Không có mã cũ nào cần migrate (2.86 không có Đảo cốp). | [ĐO] mã + `KeyCtlTargetTest` |
+| H3 | Cái đổi là **hành vi**: commit `434a1466` (3.1.6 · R32) thêm `KeyCtlPlan.readOnly` + `Outcome.Unreadable` — cốp có `readKey` mà lượt đọc `getDoorState(6)` không ra số ⇒ **không bắn**, chỉ toast. Đó là luật 2.86 mà 2.87 đã gỡ có chủ ý. | [ĐO] git diff |
+| H4 | Trên xe owner, tiến trình Kachi có đọc ra số area 6 không (K6): chưa đo — log 14/10–15/10 không có lần bấm phím cốp nào. Nếu không đọc được thì 3.1.6 từ chối MỌI lần bấm Đảo. | [CHƯA BIẾT] |
+| H5 | Hộp chọn xếp Đảo **cuối** (Mở · Đóng · Mở/đóng (đảo)) từ 2.87 ⇒ trông như cốp bị tách làm hai việc. | [ĐO] mã + ảnh owner |
+
+**Sửa (3.1.7, generic — không `if (cốp)`):**
+- `KeyCtlPlan`: gỡ `readOnly`/`Unreadable`/`unreadableReply`; mọi nút TOGGLE/COVER/SELECT về một luật: số đọc hợp lệ ⇒ `basis=CAR`;
+  không ra số ⇒ lệnh cuối `basis=MEMORY`; trí nhớ ra MỞ mà cổng tốc độ chặn lúc này ⇒ ĐÓNG `basis=MEMORY_SAFE`. Số đọc từ xe = 0 lúc
+  xe chạy ⇒ vẫn MỞ và cổng thi hành chặn (đúng sự thật). Nhật ký `KeyCtl … ⇒ Run(… basis=…)` cho biết nguồn trạng thái.
+- `KeyCtlTargets.actionsFor`: Đảo **đứng đầu** cho TOGGLE và COVER (cốp: *Mở/đóng Cốp sau (đảo)* · *Mở* · *Đóng*). Chỉ đổi thứ tự hộp
+  chọn; mã bền giữ nguyên.
+- Gỡ 3 dòng dịch của câu từ chối (zh/th/ms).
+
+**Bài khoá (đỏ với mã 3.1.6, đã chạy):** `KeyCtlPlanTest.dao cop theo so doc that, doc khong ra thi lui tri nho…` (0 ⇒ mở · 1 ⇒ đóng ·
+null ⇒ trí nhớ · xe chạy + trí nhớ ⇒ đóng) · `KeyCtlPlanTest.dao hai lan ve nhu cu…` (mọi nút, kể cả cốp thật) ·
+`KeyCtlTargetTest.cot co mot phim Dao dung dau…` (Đảo đầu, `ctl:trunk:flip` ⇒ FLIP) · `KeyCtlSafetyTest.dao cop theo so doc that…`
+(chạy hết đường thi hành: hai lần bấm khi đọc không ra ⇒ mở rồi đóng; cổng tốc độ y như 3.1.5).
+
+**Kiểm trên xe (3.1.7, đỗ, số P):** gán một phím vào *Mở/đóng Cốp sau (đảo)* (hoặc giữ phím 306 đã gán), bấm 2 lần, logcat lọc `KeyCtl`:
+`value=1` rồi `value=0`; ghi `basis=CAR` (⇒ K6 đạt) hay `basis=MEMORY` (⇒ tiến trình Kachi chưa đọc được area 6 — ghi lời đáp `hal`).
+
+## 7. Còn mở
 
 - K5 + K6 chờ bản 3.1.6 trên xe (§5.3 — owner miễn §3 riêng). Chưa đo khi xe khoá cửa / ACC OFF (sau tắt máy Kachi bị BYD giết, nên không áp dụng).
 - Lọc 255 cho lượt đọc của nút `trunk` (mượn datum `door_rr`): cần bài kiểm off-car (§4.1).

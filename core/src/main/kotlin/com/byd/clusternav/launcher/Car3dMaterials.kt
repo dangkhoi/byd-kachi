@@ -80,8 +80,26 @@ object Car3dMaterials {
      */
     fun plain(st: Car3dMaterialStyle): Car3dMaterialStyle {
         val p = st.plain ?: NEUTRAL
-        return if (p.emissive != null && p.emissiveStrength > PLAIN_GLOW_MAX) p.copy(emissiveStrength = PLAIN_GLOW_MAX) else p
+        val q = if (p.emissive != null && p.emissiveStrength > PLAIN_GLOW_MAX) p.copy(emissiveStrength = PLAIN_GLOW_MAX) else p
+        // Đèn khoang của bản trơn: kênh lớn nhất ≤ PLAIN_GLOW_MAX (giữ tỉ lệ màu) — cùng lý do, không ảnh làm tối (§15).
+        val g = q.glowOn ?: return q
+        val m = g.maxOrNull() ?: 0.0
+        return if (m > PLAIN_GLOW_MAX) q.copy(glowOn = g.map { it * PLAIN_GLOW_MAX / m }) else q
     }
+
+    /**
+     * Ánh ấm của đèn khoang (đèn đọc) trên nội thất CÓ ảnh (tuyến tính, × ảnh nội thất). R28 [ĐO máy ảo 13/10]: 0,22/0,15/0,06
+     * không đổi một điểm ảnh nào ở khoang qua kính ⇒ ×12. Trước 3.1.7 là hằng số ở `Car3dRenderer` đặt lên MỌI nội thất.
+     */
+    val READ_GLOW: List<Double> = listOf(5.2, 3.6, 1.5)
+
+    /**
+     * Bản TRƠN (không ảnh): [READ_GLOW] × độ sáng tuyến tính trung bình của ảnh nội thất Seal dưới UV nội thất ([ĐO JVM 15/10]
+     * sRGB TB 44–46/255 ⇒ tuyến tính ≈ 0,03) ⇒ cùng độ hắt sáng như khoang Seal có ảnh. [ĐO cơ chế] SL6 (không ảnh) trước đó nhận
+     * nguyên ×5,2 ⇒ ~35 lần Seal ⇒ khoang + khe cốp kem cháy (§15).
+     */
+    val READ_GLOW_PLAIN: List<Double> = READ_GLOW.map { it * SEAL_INTERIOR_LINEAR }
+    const val SEAL_INTERIOR_LINEAR = 0.03
 
     /** Một lượt đếm mẫu ảnh dưới UV: [dark] mẫu tối hơn [DARK_LUM] trên [n] mẫu. */
     class Tally { var dark = 0; var n = 0 }

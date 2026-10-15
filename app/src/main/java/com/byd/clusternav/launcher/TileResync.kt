@@ -24,7 +24,8 @@ import java.util.WeakHashMap
  * trên xe đang nổ máy là vài giây một lần; [CHƯA BIẾT] khi mọi số liệu xe đứng yên hoàn toàn (luồng trạng thái gộp
  * giá trị trùng) — khi ấy ô theo kịp ở lần đổi kế tiếp hoặc lần dựng lại. Soát vòng 2: dòng từ `:wake` (cầu
  * `ControlSentRelay`) thì KHÔNG phải chờ — `ControlLastSent.relayed` đổi ⇒ `resyncTiles` (màn chính) chạy lại `refresh` ngay.
- * Lệnh ghi TRONG tiến trình chính bằng phím/giọng nói vẫn theo nhịp trên (giới hạn có từ trước, ngoài phạm vi bản vá này).
+ * 3.1.7 STALE-AUDIT: lệnh ghi TRONG tiến trình chính bằng phím/giọng nói/gói lệnh nay cũng không chờ — `ControlWriteEcho` →
+ * `ControlLastSent.announce` ⇒ cùng `resyncTiles` (kèm cả ô widget: xe 3D, bảng Đèn/Kính).
  */
 internal object TileResync {
 

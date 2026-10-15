@@ -18,9 +18,9 @@ package com.byd.clusternav.launcher
  * [actionsFor] suy hành động từ [ControlDef.kind] + dữ liệu của chính dòng nút: thêm một nút vào registry ⇒ nút đó tự
  * có đích phím, không ai phải nhớ sửa tệp này (`KeyCtlTargetTest` canh). Luật suy là DỮ LIỆU (CLAUDE.md §7), không
  * một `if (id == …)` nào:
- *  - [ControlKind.TOGGLE] ⇒ Bật · Tắt · Đảo;
+ *  - [ControlKind.TOGGLE] ⇒ Đảo · Bật · Tắt (Đảo đầu tiên từ 3.1.7);
  *  - [ControlKind.STEP] ⇒ +1 · −1 nấc (kẹp/AUTO theo [ClimateAuto] ở tầng thi hành, cùng đường cú chạm −/+);
- *  - [ControlKind.COVER] ⇒ Mở · Đóng · từng mức thêm trong [ControlDef.args] (rèm: Nửa) · Đảo;
+ *  - [ControlKind.COVER] ⇒ Đảo · Mở · Đóng · từng mức thêm trong [ControlDef.args] (rèm: Nửa);
  *  - [ControlKind.SELECT] ⇒ Kế tiếp (khi có ≥ 2 lựa chọn — vòng như cú chạm ô) · từng lựa chọn trong [ControlDef.args];
  *  - [ControlKind.BUTTON] ⇒ Bấm.
  *
@@ -122,13 +122,15 @@ object KeyCtlTargets {
         val id = def.id
         fun t(a: KeyCtlAction, n: Int = 0) = KeyCtlTarget(id, a, n)
         return when (def.kind) {
-            ControlKind.TOGGLE -> listOf(t(KeyCtlAction.ON), t(KeyCtlAction.OFF), t(KeyCtlAction.FLIP))
+            // 3.1.7 · KEYCTL-TRUNK-TOGGLE-REGRESS — Đảo ĐỨNG ĐẦU (owner 15/10 thấy cốp *"chia ra thành hai cái"*: Mở · Đóng
+            // ở trên, Đảo chìm ở cuối). Thứ tự chỉ là thứ tự hộp chọn — mã bền `ctl:<nút>:flip` không đổi, dữ liệu cũ nguyên vẹn.
+            ControlKind.TOGGLE -> listOf(t(KeyCtlAction.FLIP), t(KeyCtlAction.ON), t(KeyCtlAction.OFF))
             ControlKind.STEP -> listOf(t(KeyCtlAction.UP), t(KeyCtlAction.DOWN))
             ControlKind.COVER -> buildList {
+                add(t(KeyCtlAction.FLIP))
                 add(t(KeyCtlAction.OPEN)); add(t(KeyCtlAction.CLOSE))
                 // Mức thêm (≥ 2) đọc từ chính `args` — cùng số mức mà ô COVER bấm vòng (`ControlTileFactory.tileCover`).
                 for (n in 2 until def.args.size) add(t(KeyCtlAction.SET, n))
-                add(t(KeyCtlAction.FLIP))
             }
             ControlKind.SELECT -> buildList {
                 // < 2 lựa chọn thì "kế tiếp" là chính nó — không sinh một đích vô nghĩa.

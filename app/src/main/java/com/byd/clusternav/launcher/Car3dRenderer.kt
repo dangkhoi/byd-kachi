@@ -204,21 +204,23 @@ internal class Car3dRenderer private constructor(
         worldBox(pl, h.anchor, posed)?.let { (lo, hi) -> Car3dPick.Target(h.id, lo, hi, a) }
 
     /**
-     * POLISH2 — đèn khoang (đèn đọc): nội thất hắt sáng ấm khi [on] — đổi `emissiveFactor` (nhân ảnh nội thất) của vật liệu nội thất
-     * tại chỗ. `true` = có đổi (chủ xin vẽ lại).
+     * POLISH2 — đèn khoang (đèn đọc): nội thất hắt sáng ấm khi [on] — đổi `emissiveFactor` của nút mang `extras.glow` tại chỗ.
+     * 3.1.7 (diagnostics §15): giá trị KHI BẬT là dữ liệu của `:core` ghi theo đúng bản đã dựng ([Car3dMaterialStyle.glowOn] — bản có
+     * ảnh ×5,2 nhân ảnh, bản trơn nhỏ hơn + kẹp); trước đó một hằng ×5,2 đặt lên MỌI nội thất ⇒ nội thất trơn (SL6) cháy kem.
+     * Nút không có `extras.glow` ⇒ không đụng. `true` = có đổi (chủ xin vẽ lại).
      */
     fun glow(on: Boolean): Boolean {
         if (glowing == on) return false
         val a = asset ?: return false
         glowing = on
         val rm = engine.renderableManager
-        val k = if (on) GLOW else floatArrayOf(0f, 0f, 0f)
         for (e in renderables()) {
-            if (Car3dBox.material(a.getExtras(e)) != INTERIOR) continue
+            val g = Car3dBox.glow(a.getExtras(e)) ?: continue
+            val k = if (on) g else OFF_GLOW
             val inst = rm.getInstance(e)
             for (p in 0 until rm.getPrimitiveCount(inst)) {
                 // [ĐO máy ảo 13/10] `MaterialInstance.material` của thực thể gltfio là null (vỏ Java không giữ Material) ⇒ không hỏi
-                // hasParameter được. Vật liệu nội thất KHAI `emissiveFactor` (+ ảnh) trong GLB ([Car3dCatalog] `interior`) ⇒ có tham số.
+                // hasParameter được. Nút có `extras.glow` thì vật liệu KHAI `emissiveFactor` trong GLB ([Car3dGlb]) ⇒ có tham số.
                 rm.getMaterialInstanceAt(inst, p).setParameter(EMISSIVE, k[0], k[1], k[2])
             }
         }
@@ -466,10 +468,9 @@ internal class Car3dRenderer private constructor(
         const val GLASS_TRAVEL = 0.92f
         /** Vật liệu sơn của lưới AVM (bộ đỉnh `paint` + `open` — cánh cửa mở). */
         private val PAINT_MATERIALS = setOf("paint", "open")
-        private const val INTERIOR = "interior"
         private const val EMISSIVE = "emissiveFactor"
-        /** Ánh ấm của đèn đọc trên nội thất (tuyến tính, × ảnh nội thất). R28 [ĐO máy ảo 13/10]: 0,22/0,15/0,06 (POLISH2) KHÔNG đổi một điểm ảnh nào ở khoang qua kính (phơi sáng nhân phát sáng ≈ 0,1) ⇒ ×12. */
-        private val GLOW = floatArrayOf(5.2f, 3.6f, 1.5f)
+        /** Đèn khoang tắt. Giá trị BẬT nằm ở `extras.glow` của nút (`:core` [Car3dMaterials.READ_GLOW] / [Car3dMaterials.READ_GLOW_PLAIN]). */
+        private val OFF_GLOW = floatArrayOf(0f, 0f, 0f)
         /** Ba trục x/y/z · 8 đỉnh hộp bao (không viết khoảng số cứng — bài `GridSeamGuardTest`). */
         private val AXES = IntRange(0, 2)
         private const val CORNERS = 8

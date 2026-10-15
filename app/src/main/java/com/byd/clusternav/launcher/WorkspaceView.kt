@@ -208,7 +208,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     }
 
     /** Gói dữ liệu render widget hiện tại (trạng thái xe + nhạc live + cổng ra lệnh cho ô hành động + đơn vị). */
-    private fun widgetData(): WidgetData {
+    internal fun widgetData(): WidgetData {   // internal: `resyncTiles` (STALE-AUDIT 3.1.7)
         // [SOÁT P2-8] Đọc nhạc là một lời gọi LIÊN TIẾN TRÌNH (`getActiveSessions`). Bản trước gọi nó trong hàm này,
         // mà hàm này được gọi **mỗi Ô** (tới 6 ô) và mỗi nhịp trạng thái xe (1 giây) ⇒ tới 6 lời gọi/giây trên thread
         // chính cho một dữ liệu y hệt nhau. Nay đọc MỘT LẦN cho mỗi lượt render và dùng lại trong lượt đó.

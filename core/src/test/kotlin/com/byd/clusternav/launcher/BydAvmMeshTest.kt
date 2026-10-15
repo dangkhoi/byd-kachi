@@ -125,7 +125,7 @@ class BydAvmMeshTest {
         val m = BydAvmMesh.parse(file(listOf(buffer("lamp", 6), buffer("open", 3), part("body_lamp_3", "lamp", 3, 4, 5), part("body_lamp_3on", "lamp", 3, 4, 5))))
         // Vai đèn (trắng/đỏ/hổ phách, tắt/sáng) suy bằng ĐO ([Car3dLamps]) nối sau bảng tường minh — như `Car3dModelSource`.
         val glb = Car3dGlb.write(m, Car3dCatalog.BYD_AVM.materials, emptyMap(),
-            Car3dCatalog.BYD_AVM.partStyles + Car3dLamps.styles(m, Car3dCatalog.BYD_AVM.whiteLamps))
+            Car3dCatalog.BYD_AVM.partStyles + Car3dLamps.styles(m, Car3dCatalog.BYD_AVM.whiteLamps, Car3dCatalog.BYD_AVM.variants))
         val b = Car3dGlb.bytes(glb); val bb = ByteBuffer.wrap(b).order(ByteOrder.LITTLE_ENDIAN)
         val jLen = bb.getInt(12)
         val json = String(b, 20, jLen, Charsets.UTF_8)

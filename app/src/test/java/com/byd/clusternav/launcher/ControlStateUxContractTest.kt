@@ -47,16 +47,12 @@ class ControlStateUxContractTest {
         }
         val look = SourceRoots.body(factory, "private fun look(")
         assertTrue(look.contains("ControlVisuals.of("), "`look` phải hỏi :core, không tự suy trạng thái")
-        // ĐÚNG HAI chỗ, và cả hai phải nói được vì sao: (1) `look` = ÁP trạng thái lên view; (2) đường đọc-lại của
-        // COVER = HỎI trạng thái để so trước khi vẽ lại (không so thì `applyBg` dựng một Drawable mới mỗi nhịp 1 Hz).
-        // Chỗ thứ ba là một luật thứ hai sẽ lệch — đúng bẫy hai-bản-sao dự án đã trả giá nhiều lần.
+        // ĐÚNG MỘT chỗ: `look` = ÁP trạng thái lên view. 3.1.7 STALE-AUDIT: đường đọc-lại của COVER không còn hỏi `ControlVisuals.of`
+        // để so cờ riêng `open` (cờ đó KHÔNG phải hình đang vẽ — cú chạm `show` không cập nhật nó ⇒ ô kẹt MỞ); nay nó so CHỈ SỐ với hình
+        // đã vẽ (`TileResync.stale`) rồi đi `show` → `look`. Chỗ thứ hai là một luật thứ hai sẽ lệch — bẫy hai-bản-sao.
         assertEquals(
-            2, Regex("""ControlVisuals\.of\(""").findAll(factory).count(),
-            "chỉ được hai chỗ gọi ControlVisuals.of: `look` (áp) và đường đọc-lại của COVER (so sánh)",
-        )
-        assertTrue(
-            SourceRoots.body(factory, "private fun tileCover(").contains("ControlVisuals.of("),
-            "và chỗ thứ hai phải đúng là đường đọc-lại của COVER",
+            1, Regex("""ControlVisuals\.of\(""").findAll(factory).count(),
+            "chỉ được một chỗ gọi ControlVisuals.of: `look` (áp)",
         )
     }
 
@@ -144,8 +140,9 @@ class ControlStateUxContractTest {
         val fn = SourceRoots.body(factory, "private fun tileCover(")
         assertTrue(fn.contains("car.controls[def.id]"), "phải đọc giá trị thật của nút từ nhịp poll")
         assertTrue(fn.contains("state.touchedWithin(def.id)"), "và nhường cửa sổ ân hạn sau khi người lái vừa bấm")
+        // 3.1.7 STALE-AUDIT: "đổi" = khác HÌNH ĐANG VẼ (TileResync), không khác một cờ riêng mà cú chạm không cập nhật.
         assertTrue(
-            Regex("""if \(v\.active != open\)""").containsMatchIn(fn),
+            fn.contains("TileResync.stale(tile, (now ?: state.sel(def.id)).coerceIn(0, levels - 1))?.let(::show)"),
             "chỉ vẽ lại khi trạng thái ĐỔI — `applyBg` dựng một Drawable mới mỗi lượt, mà nhịp là 1 Hz trên xe",
         )
     }

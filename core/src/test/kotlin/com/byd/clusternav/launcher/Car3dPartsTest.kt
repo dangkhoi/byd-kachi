@@ -130,13 +130,19 @@ class Car3dPartsTest {
             part("body_lamp_turnleftrear0on", "lamp", listOf(3, 4, 5)) + part("body_lamp_logo", "lamp", listOf(6, 7, 8)) +
             part("trunk_lamp_position", "lamp", listOf(3, 4, 5)) + part("trunk_lamp_positionon", "lamp", listOf(3, 4, 5))
         val m = BydAvmMesh.parse(bytes)
-        val s = Car3dLamps.styles(m, Car3dCatalog.BYD_AVM.whiteLamps + "body_lamp_17*").toMap()
+        val s = Car3dLamps.styles(m, Car3dCatalog.BYD_AVM.whiteLamps + "body_lamp_17*", Car3dCatalog.BYD_AVM.variants).toMap()
         assertEquals(Car3dLamps.WHITE, s["body_lamp_3"]); assertEquals(Car3dLamps.WHITE_ON, s["body_lamp_3on"])
         assertEquals(Car3dLamps.REAR, s["body_lamp_15"]); assertEquals(Car3dLamps.REAR_ON, s["body_lamp_15on"])
         assertEquals(Car3dLamps.WHITE_ON, s["body_lamp_17on"], "đèn lùi (bảng nhóm) trắng"); assertEquals(Car3dLamps.WHITE_ON, s["trunk_lamp_reverson"])
         assertEquals(Car3dLamps.TURN_ON, s["body_lamp_turnleftrear0on"]); assertEquals(Car3dLamps.WHITE, s["body_lamp_logo"])
         assertEquals(Car3dLamps.REAR, s["trunk_lamp_position"], "`position` tận cùng 'on' nhưng có `positionon` ⇒ bản TẮT")
-        assertEquals(Car3dLamps.REAR_ON, s["trunk_lamp_positionon"])
+        // 3.1.7 (§15): bản sáng không biến thể nào nhận (bảng chung không có ô đọc cho `position`) ⇒ luôn hiện ⇒ kiểu TẮT, không phát sáng.
+        assertEquals(Car3dLamps.REAR, s["trunk_lamp_positionon"])
+        // 3.1.7 (§15, SL6 `body_lamp_{left,right}daynighton`): bản sáng không biến thể nào nhận ⇒ kiểu TẮT; có biến thể nhận ⇒ sáng.
+        val d = BydAvmMesh.parse(bytes + part("body_lamp_leftdaynighton", "lamp", listOf(0, 1, 2)))
+        assertEquals(Car3dLamps.WHITE, Car3dLamps.styles(d, Car3dCatalog.BYD_AVM.whiteLamps, Car3dCatalog.BYD_AVM.variants).toMap()["body_lamp_leftdaynighton"])
+        val owned = Car3dCatalog.BYD_AVM.variants + Car3dVariant("body_lamp_leftdaynight", "body_lamp_leftdaynighton", "g_lights", "light_drl")
+        assertEquals(Car3dLamps.WHITE_ON, Car3dLamps.styles(d, Car3dCatalog.BYD_AVM.whiteLamps, owned).toMap()["body_lamp_leftdaynighton"])
         // Vật liệu: đèn sáng phát sáng VỪA PHẢI (không ×8 trắng) và đỏ/hổ phách thật.
         val mats = Car3dCatalog.BYD_AVM.materials
         val rear = mats.getValue(Car3dLamps.REAR_ON)

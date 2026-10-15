@@ -82,8 +82,8 @@ class KeyCtlSafetyTest {
     }
 
     /**
-     * 3.1.6 · R32 — cốp thật nay có readKey (Đảo CHỈ theo số đọc — bài `R32 …` dưới). Các bài về luật TRÍ NHỚ (2.87 R-FL2 + P1) vẫn
-     * khoá luật ấy cho một bộ phận bị cổng tốc độ mà KHÔNG có đường đọc ⇒ chạy với bản `trunk` không readKey.
+     * 3.1.6 · R32 — cốp thật nay có readKey (Đảo theo số đọc trước, lệnh cuối khi đọc không ra — bài `dao cop theo so doc that …`).
+     * Các bài về luật TRÍ NHỚ (2.87 R-FL2 + P1) khoá luật ấy cho một bộ phận bị cổng tốc độ mà KHÔNG có đường đọc ⇒ bản `trunk` không readKey.
      */
     private val blind: (String) -> ControlDef? = { id -> ControlRegistry.byId(id)?.let { if (id == "trunk") it.copy(readKey = "") else it } }
 
@@ -251,25 +251,37 @@ class KeyCtlSafetyTest {
     }
 
     /**
-     * ═══ 3.1.6 · R32 (owner 15/10) — Đảo cốp THẬT theo số đọc `getDoorState(6)`, chạy hết đường thi hành ════════════════════
-     * Đọc 0 ⇒ MỞ (đứng yên) · đọc 1 ⇒ ĐÓNG · đọc không ra ⇒ KHÔNG bắn, báo *"Chưa đọc được…"* · đọc 0 mà xe chạy ⇒ MỞ bị cổng
-     * tốc độ chặn y như 3.1.5 (không lệnh nào). Trí nhớ không tham gia: ô nói "mở" mà xe đọc 0 (đóng bằng nút vật lý) ⇒ vẫn MỞ.
+     * ═══ 3.1.7 · KEYCTL-TRUNK-TOGGLE-REGRESS (owner 15/10 *"bấm cái nó mở, bấm cái nó tắt … mở xong là mình đâu có đóng lại được"*) ═══
+     * Phím `ctl:trunk:flip` (mã owner gán từ 2.9x) chạy HẾT đường thi hành: đọc 0 ⇒ MỞ (đứng yên) · đọc 1 ⇒ ĐÓNG · số đọc thắng trí nhớ
+     * (đóng bằng nút vật lý) · đọc KHÔNG ra ⇒ lùi lệnh cuối (bấm 1 MỞ, bấm 2 ĐÓNG — đúng phím 2.87–3.1.5), không câu từ chối nào ·
+     * đọc 0 mà xe chạy ⇒ MỞ bị cổng tốc độ chặn y như 3.1.5. 3.1.6 từ chối ở ca đọc không ra (`Outcome.Unreadable`) — bài đỏ với bản đó.
      */
     @Test
-    fun `R32 dao cop theo so doc that, khong doc duoc thi khong ban, cong toc do giu nguyen`() {
+    fun `dao cop theo so doc that, doc khong ra thi lui tri nho, cong toc do giu nguyen`() {
         Rig(reads = mapOf("trunk" to 0)).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:true"), it.port.fired) }
         Rig(reads = mapOf("trunk" to 1)).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:false"), it.port.fired) }
         sent.record("trunk", 1)   // trí nhớ "mở" (cũ) — người lái đã đóng bằng nút trên cốp
         Rig(reads = mapOf("trunk" to 0)).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:true"), it.port.fired, "số đọc thắng trí nhớ") }
+        // Đọc không ra: hai lần bấm = mở rồi đóng (trí nhớ ghi sau mỗi lệnh thành công).
+        sent.record("trunk", 0)
         Rig(reads = mapOf("trunk" to null)).also {
-            assertEquals(KeyCtlPlan.Outcome.Unreadable, it.press("ctl:trunk:flip"))
-            assertTrue(it.port.fired.isEmpty(), "đọc không ra ⇒ không bắn: ${it.port.fired}")
-            assertTrue(it.said.single().startsWith("Chưa đọc được trạng thái"), "${it.said}")
+            val o1 = it.press("ctl:trunk:flip")
+            val o2 = it.press("ctl:trunk:flip")
+            assertEquals(listOf("cover:trunk:true", "cover:trunk:false"), it.port.fired, "đọc không ra ⇒ vẫn đảo: ${it.said}")
+            assertEquals(KeyCtlPlan.Basis.MEMORY, (o1 as KeyCtlPlan.Outcome.Run).basis)
+            assertEquals(KeyCtlPlan.Basis.MEMORY, (o2 as KeyCtlPlan.Outcome.Run).basis)
+            assertTrue(it.said.none { s -> s.startsWith("Chưa đọc được") }, "không còn câu từ chối: ${it.said}")
         }
         Rig(reads = mapOf("trunk" to 0), speedKmh = 30).also {
             it.press("ctl:trunk:flip")
             assertTrue(it.port.fired.isEmpty(), "xe chạy ⇒ MỞ bị chặn ở tầng thi hành, như 3.1.5: ${it.port.fired}")
             assertTrue(it.said.contains(STOP_TO_OPEN), "${it.said}")
+        }
+        // Xe chạy + đọc không ra + trí nhớ "đóng" ⇒ ĐÓNG (hướng luôn được phép), không bao giờ MỞ.
+        sent.record("trunk", 0)
+        Rig(reads = mapOf("trunk" to null), speedKmh = 30).also {
+            it.press("ctl:trunk:flip")
+            assertEquals(listOf("cover:trunk:false"), it.port.fired)
         }
     }
 

@@ -43,6 +43,15 @@ class ControlTileState(
     fun setSel(id: String, i: Int) { sent.record(id, i) }
 
     /**
+     * 3.1.7 · STALE-AUDIT — lệnh [arg] cho [def] vừa ĂN từ đường KHÔNG vẽ ô (phím · giọng nói): ghi bảng + đích giữ [LampHold] + báo
+     * màn vẽ lại — cùng ba việc của cú chạm ô ([ControlWriteEcho]). Chỉ gọi khi `ok`.
+     */
+    fun echo(def: ControlDef, arg: Int) = ControlWriteEcho.applied(def, arg, setStep = ::setValue, sent = sent)
+
+    /** Gói lệnh vừa ghi bảng bằng [setOn] (không ô nào vẽ) ⇒ báo màn vẽ lại ([ControlLastSent.announce]). */
+    fun announce() = sent.announce()
+
+    /**
      * ═══ CỬA SỔ ÂN HẠN sau khi NGƯỜI DÙNG vừa bấm (2026-09-17 · đọc realtime) ══════════════════════════════
      *
      * Khi ô control đọc lại giá trị THẬT từ xe theo nhịp poll ([CarStatus.controls]), nó phải bỏ qua trong một

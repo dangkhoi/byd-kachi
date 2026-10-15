@@ -373,7 +373,7 @@ class VoiceDispatcher(
                     if (r.ok && ControlRegistry.byId(r.controlId)?.kind == ControlKind.TOGGLE) {
                         ControlTileState.shared.setOn(r.controlId, macro.steps.first { it.controlId == r.controlId }.arg > 0)
                     }
-                }
+                }; ControlTileState.shared.announce()   // 3.1.7 STALE-AUDIT: không ô nào vẽ ⇒ báo màn vẽ lại ngay
                 say(res.notice(macro.labelIn(lang), lang) ?: VoiceReply.done(i, lang))
             } catch (t: Throwable) {
                 Log.w(TAG, "gói ${macro.id} hỏng giữa lượt chạy", t)

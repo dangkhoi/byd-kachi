@@ -89,7 +89,8 @@ object Car3dGlb {
             }
             val extra = buildString {
                 if (st.blend) append(""","alphaMode":"BLEND"""")
-                st.emissive?.let { append(""","emissiveFactor":[${it.joinToString(",")}]""") }
+                // Có đèn khoang ([Car3dMaterialStyle.glowOn]) mà không khai phát sáng ⇒ vẫn khai 0 (bên vẽ đổi tham số này lúc chạy).
+                (st.emissive ?: st.glowOn?.let { listOf(0.0, 0.0, 0.0) })?.let { append(""","emissiveFactor":[${it.joinToString(",")}]""") }
                 // Phát sáng nhân CHÍNH ảnh đèn ⇒ hoa văn LED giữ nguyên, phần tối của ảnh không sáng (không thành dải trắng đặc).
                 if (st.emissive != null && tex != null) append(""","emissiveTexture":{"index":$tex}""")
                 val ext = ArrayList<String>()
@@ -153,9 +154,12 @@ object Car3dGlb {
             val inLid = lid != null && p in lid.lid
             val hinge = (if (inLid) lid?.hinge else hinges[p.name])?.let { ""","hinge":${it.json()}""" } ?: ""
             val grp = if (inLid) ""","grp":${q(Car3dLid.GROUP)}""" else ""
+            // Đèn khoang: phát sáng KHI BẬT của ĐÚNG bản đã ghi (có ảnh / trơn — [Car3dMaterials.plain] đã kẹp) — bên vẽ chỉ đọc số này.
+            val glowOn = (if (plain) Car3dMaterials.plain(st) else st).glowOn
+            val glow = glowOn?.let { g -> ""","glow":[${g.joinToString(",")}]""" } ?: ""
             // `mat` = khoá kiểu đã áp — bên vẽ đổi màu sơn theo NÚT (mọi bộ phận sơn, kể cả cánh cửa mở), không theo tên vật liệu
             // của gltfio [ĐO máy ảo 13/10, owner: "mở đóng cửa, màu cửa sai, không theo màu xe"].
-            nodes += """{"name":${q(p.name)},"mesh":${meshes.size - 1},"extras":{"bbox":[${mn.joinToString(",") { it.toFloat().toString() }},${mx.joinToString(",") { it.toFloat().toString() }}]$hinge$grp,"mat":${q(key)}}}"""
+            nodes += """{"name":${q(p.name)},"mesh":${meshes.size - 1},"extras":{"bbox":[${mn.joinToString(",") { it.toFloat().toString() }},${mx.joinToString(",") { it.toFloat().toString() }}]$hinge$grp$glow,"mat":${q(key)}}}"""
             children += nodes.size - 1
         }
         nodes[0] = """{"name":"car","children":[${children.joinToString(",")}]}"""

@@ -125,8 +125,15 @@ internal class CarIconBoardView(
         grid.refresh(m)
         var dirty = false
         m.cells.forEach { c -> if (cells[c.id] != null && cells[c.id] != c) { cells[c.id] = c; dirty = true } }
+        // 3.1.7 STALE-AUDIT: điểm KHÔNG ô đọc (đèn đọc…) sáng theo bảng lệnh cuối/đích giữ — phím/giọng nói đổi nó mà không ô đọc nào
+        // đổi ⇒ so trạng thái điểm với cái ĐANG VẼ, không chỉ so ô đọc (thiếu nó: bật đèn bằng phím, điểm vẫn tắt tới khi một ô đọc đổi).
+        val now = tiles.map(::kind)
+        if (now != drawnKinds) { drawnKinds = now; dirty = true }
         if (dirty) { layer.invalidate(); describe() }
     }
+
+    /** Trạng thái điểm ở lượt vẽ lại gần nhất do [refresh] xin — mốc so của STALE-AUDIT. */
+    private var drawnKinds: List<CarDots.Kind> = emptyList()
 
     /**
      * Chạm = ĐẢO cái người lái ĐANG THẤY (owner *"nhấn tắt, nhấn mở"*): đặt tường minh qua CÙNG hàm ghi của ô ([MatrixKit.set]

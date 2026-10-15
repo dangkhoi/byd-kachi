@@ -143,7 +143,6 @@ Tất cả đã đóng	All closed	ปิดทั้งหมด
 {0} cảnh báo	{0} alerts	แจ้งเตือน {0} รายการ
 {0} lưu ý	{0} to note	ควรตรวจดู {0} รายการ
 Phím gán nút xe không còn hợp lệ ({0}) — gán lại ở Cài đặt › Nút vật lý	This key binding is no longer valid ({0}) — rebind it in Settings › Physical buttons	การกำหนดปุ่มนี้ใช้ไม่ได้แล้ว ({0}) — กำหนดใหม่ที่ การตั้งค่า › ปุ่มกายภาพ
-Chưa đọc được trạng thái {0} — chưa gửi lệnh	Can't read the {0} state — no command sent	อ่านสถานะ{0}ไม่ได้ — ยังไม่ได้ส่งคำสั่ง
 Bật 	Turn on 	เปิด
 Tắt 	Turn off 	ปิด
 Mở/đóng {0} (đảo)	Open/close {0} (toggle)	เปิด/ปิด {0} (สลับ)
