@@ -37,8 +37,9 @@ class GroupBoardDoorTest {
         // (getter = 65535, xe không có cửa sổ trời) làm nóc chỉ còn một datum. ⇒ **không còn bộ phận nào có hai
         // datum KHÁC nhau**; phép gộp `worst`/"ưu tiên bản có số" vẫn ở lại (rèm dùng nó, xem ca dưới) nhưng nay
         // là một luật đang nghỉ, không phải một luật đang chịu tải.
-        assertEquals(6, CapabilityGroups.DOORS.reads.size)
-        assertEquals(6, plan.parts.size, "mỗi datum-bộ-phận đúng MỘT ô — không vẽ cùng một nắp hai lần")
+        // 3.1.6 · R32: 6 → **7** — cốp trở lại (`tailgate_status` = `getDoorState(6)`), một datum, một bộ phận.
+        assertEquals(7, CapabilityGroups.DOORS.reads.size)
+        assertEquals(7, plan.parts.size, "mỗi datum-bộ-phận đúng MỘT ô — không vẽ cùng một nắp hai lần")
     }
 
     /** Off-car: không bịa "đã đóng", và không bộ phận nào bị tô. */
@@ -161,9 +162,9 @@ class GroupBoardDoorTest {
          * `CarPart.TAILGATE` GIỮ trong enum (hình xe lớn `CarImageView`/`CarLayout` vẫn neo vùng cốp — ảnh vẽ được
          * cái cốp, chỉ không có dữ liệu về nó); nó chỉ rời **bảng dữ liệu** `GroupBoard.DOOR_PARTS`.
          */
-        val ABSENT_PARTS = mapOf(
-            CarPart.TAILGATE to "datum `tailgate_status` gỡ 2026-09-25 — [ĐO xe] getHatchDoorStatus rỗng mọi arg",
-        )
+        // 3.1.6 · R32 — RỖNG: cốp TRỞ LẠI bảng (`tailgate_status` = `getDoorState(6)`; lần gỡ 25/09 là sai tên getter). Giữ bảng để
+        // một bộ phận vắng có chủ ý về sau vẫn phải kèm lý do.
+        val ABSENT_PARTS = emptyMap<CarPart, String>()
 
         /**
          * Xe đã đọc được MỌI bộ phận và **đóng/mở hết mức nghỉ** — nền cho các ca bảng cửa.
@@ -178,7 +179,7 @@ class GroupBoardDoorTest {
         val ALL_SHUT = CarStatus(
             body = CarStatus.Body(
                 doorLfOpen = false, doorRfOpen = false, doorLrOpen = false, doorRrOpen = false,
-                sunroofOpen = false, sunshadePct = 0,
+                tailgateOpen = false, sunroofOpen = false, sunshadePct = 0,
             ),
         )
     }

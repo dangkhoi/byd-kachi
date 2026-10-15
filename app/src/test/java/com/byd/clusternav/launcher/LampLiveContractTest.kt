@@ -53,9 +53,10 @@ class LampLiveContractTest {
         val app = SourceRoots.codeOf(APP)
         assertTrue(app.contains("HalSignalHub(ensure = { HalHelperLauncher.ensure(app) })"))
         // Bảng Đèn: nhu cầu H1 của màn chính → Watch → hub (một đường); cổng màn từ CÙNG lượt hỏi màn của vòng poll.
-        assertTrue(app.contains("CarDataDemand.Holder { lampWatch.demand(it) }"))
+        // 3.1.6 HAL-EVENTS: cùng lượt công bố nhu cầu báo thêm `carEvents` (kế hoạch sự kiện) — vẫn MỘT đường từ nhu cầu màn.
+        assertTrue(app.contains("CarDataDemand.Holder { lampWatch.demand(it); carEvents.screen(it, carDemand.controls()) }"))
         assertTrue(app.contains("halSignal?.want(com.byd.clusternav.launcher.HalSignalDemand.Source.LAMP_WIDGET, on)"))
-        assertTrue(app.contains("awake = { screenAwake().also { lampWatch.screen(it) } }"))
+        assertTrue(app.contains("awake = { screenAwake().also { lampWatch.screen(it); carEvents.lit(it) } }"))
         // Camera: vẫn sau cổng pref, chỉ XIN/THÔI.
         val ctrl = SourceRoots.codeOf(CTRL)
         assertTrue(ctrl.contains("if (Prefs.cameraSignalEnabled(appCtx)) ensureSignal() else release()"))

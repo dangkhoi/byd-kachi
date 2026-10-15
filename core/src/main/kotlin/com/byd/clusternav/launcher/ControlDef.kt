@@ -179,6 +179,13 @@ data class ControlDef(
      * LIỆU riêng để hình nút chân vẽ kính đầy đúng mức, không phải bóc số từ chuỗi đã dịch.
      */
     val verbLevel: Int? = null,
+    /**
+     * 3.1.6 · R32 — **cửa sổ XÁC NHẬN** (ms) của nút có [readKey] mà bộ phận chạy vật lý chậm: bao lâu sau một lệnh của Kachi
+     * thì hình lạc quan ([LampHold]) còn thắng số đọc, và lượt đọc lại của giọng nói còn chờ được số khớp (`VoiceReadback`).
+     * `null` ⇒ [LampHold.HOLD_MS] / một lượt đọc lại như cũ. [ĐO logcat xe 14/10] cốp: số đọc lên 1 sau ~0,3 s khi mở nhưng
+     * chỉ về 0 lúc chốt khoá ~5,8 s sau lệnh đóng ⇒ cốp khai 10 s. Hết cửa sổ thì **số đọc thắng** (đóng bằng nút vật lý).
+     */
+    val confirmMs: Long? = null,
 ) : Localized {
     /** Động từ theo [Strings.current]; rỗng nếu nút không khai [verb]. */
     val displayVerb: String get() = verb?.let { Strings.pick(it, verbEn) }.orEmpty()

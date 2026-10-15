@@ -358,3 +358,54 @@ mẫu mỗi bản ⇒ [CHƯA KẾT LUẬN].
 **P0 tìm trong lượt (máy ảo, agent kính)**: `GradientDrawable.getCornerRadii()` ném NPE (`float[].clone()` trên mảng null) khi nền chỉ có
 `cornerRadius` ⇒ lỗi lớp đỡ lọt lên `Car3dHeroLayer.fill` ⇒ widget 3D lùi 2D. Sửa: đọc qua `runCatching` + mọi cửa công khai của
 `AdaptiveInk` là ranh giới fail-soft (log qua `LogLineThrottle`); khoá bằng bài `muc thich ung khong bao gio nem vao cho goi`.
+
+### 12c. R29 làm lại (15/10) — bỏ MỌI lớp đỡ, đổi MÀU MỰC theo MẶT (chưa commit, nhắm 3.1.6)
+
+Owner 15/10 bác bản §12–12b: *"cái làm tương phản chữ bằng cách vá 1 mớ text background nhìn rất dị hợm, xấu không tả được, phải làm
+đổi màu chữ tự động, đồng đều, chứ không vá thế này được em, rất tởm"*. Spec 301 §R29 Pass 12 · Autonomous Decisions (R29, pha 3) · OQ7'.
+
+**Thiết kế**: `ContrastInk.choose` (`:core`) chọn MỘT họ mực cho mỗi MẶT gốc (thẻ · thanh trên · thanh nút · lớp phủ 3D · ô nút) theo
+thứ tự: chủ đề → chủ đề nâng chữ phụ (`MUT`/`ICON` → `INK2`) → bảng đối cực → đối cực nâng; điểm = MIN(tỉ số tệ nhất/sàn) trên mọi
+phần tử, nền tệ nhất đo dưới CHÍNH vùng từng phần tử; có trễ 10 %; không họ nào đạt ⇒ họ để NHIỀU phần tử đạt nhất, cả mặt vẫn một họ,
+`Log.w "dưới sàn: mặt …"` (kèm phần tử tệ nhất + hộp nền của từng họ). Bộ vẽ tự tô (`AdaptiveInk.Probe`: nút đĩa, chấm 3D, mặt pill /
+nút DIM qua `AdaptiveInk.face`) góp điểm và nhận CÙNG họ; mọi nút đĩa của một mặt dùng CHUNG một kiểu đĩa (`Probe.group`). Gỡ:
+`InkHalo` · `HaloLayer` · `placeHalo` · `InkCandidate` · `overlayHalo/haloFor` · `Inks.halos` + tham số `halo` của ba hình vẽ ·
+`Spot.halos` · `KachiButtonInks.of(p, nền)` (đĩa đậm thêm theo từng nút). Không nâng độ đục thẻ / mức làm tối (lựa chọn người dùng).
+
+**Ba lần sửa trong lượt — mỗi lần do số đo máy ảo, không đoán** [ĐO logcat `KachiContrast R29 họ` + dòng dưới sàn]:
+1. Nền của MẶT (cả thanh 1920 px) làm nền đo cho mọi chữ ⇒ điểm kẹt 0,22 ở mọi họ (hộp nền phủ trọn dải độ chói) ⇒ đo dưới vùng TỪNG
+   phần tử (`AdaptiveInk.groundOf`), mặt chọn trên hợp các số đo đó.
+2. Pill thanh trên mang màu của CHỦ ĐỀ ⇒ khi thanh cần mực tối, icon tối nằm trên pill tối ⇒ mặt pill/DIM theo HỌ (`AdaptiveInk.face`).
+3. Tối: đĩa "tông mềm" trên ảnh trượt ⇒ 9 nút kéo cả lớp phủ 3D sang mực tối, số hàng chân còn 1,49 ⇒ hai kiểu đĩa đã thiết kế (tông
+   mềm / kính tối, cùng glyph sáng) chọn CHUNG cho cả nhóm nút của mặt.
+(Bẫy công cụ: worktree đo không có `app/src/vehicleTest/assets` (bị ignore) ⇒ bản dựng đầu lùi widget 3D về 2D — chép tài sản rồi đo lại.)
+
+**Máy ảo** [ĐO emulator-5556, vehicleTest, hồ sơ QA2 — widget 3D ô 0, sơn steelgrey, ảnh nền xe = ảnh màn]: trước = 3.1.5 (210) HEAD
+`fb166537`; sau = cây làm việc này. Sáng/Tối × wall-03 (tối) · wall-07 (rối nhất, cạnh 16,1) · wall-10 (sáng) × làm tối 0/45 × o20/o70
+= 24 cảnh mỗi bản; cùng phép đo §12 (`r29meas` + cờ cực mực). Bỏ `−`/`+` (đo với góc ngoài đĩa — chú thích ¹ §12b) và thẻ phải
+(media "Chưa có kênh điều khiển" — ngoài phạm vi T29, cùng số hai bản).
+
+| Mặt · cảnh | Trước: chữ / icon tệ nhất (dưới sàn) | Sau: chữ / icon tệ nhất (dưới sàn) |
+|---|---|---|
+| Thanh trên · Sáng o70 | 5,96 / 3,92 (0/66) | 4,14 / 3,32 (2/66) |
+| Thanh trên · Sáng o20 | 5,30 / 3,54 (0/66) | **1,55 / 1,11 (32/66)** |
+| Thanh trên · Tối o70 | 4,97 / 4,47 (0/66) | 2,54 / 2,86 (10/66) |
+| Thanh trên · Tối o20 | 3,07 / 3,13 (1/66) | **1,54 / 1,74 (20/66)** |
+| Lớp phủ 3D · Sáng | 5,03 / 4,46 (0/44) | 3,92 / 2,68 (4/42) |
+| Lớp phủ 3D · Tối | 5,48 / 4,46 (0/42) | 3,92 / 2,68 (6/42) |
+
+Số "trước" đo nét với ĐỆM dưới nó (chính lớp vá owner bác) ⇒ cao mà xấu. Đồng đều [ĐO cờ cực mực]: sau, 0/12 cảnh mỗi chủ đề có chữ
+trộn cực trên cùng một mặt (huy hiệu hồ sơ `Q` có mặt đặc riêng, không tính).
+
+**Kết luận [ĐO + SUY]**: tương phản đồng đều theo mặt đạt sàn khi nền dưới mặt đủ "một phía" (ảnh tối, o70, Tối wall-03: thanh trên
+họ#0 điểm 1,44–2,14). Thanh trên ở o20 trên ảnh sáng/rối [ĐO log]: nửa trái nền L ≈ 0,30–0,38 (mực sáng 1,5–2,6), nửa phải L ≈ 0,10
+(mực tối 2,8) ⇒ KHÔNG mực đồng đều nào đạt cả thanh — đó là giới hạn vật lý của luật "đồng đều" khi thanh 20 % trong, không phải lỗi đo.
+Lối ra duy nhất đúng luật owner là lớp nhuộm ĐỀU cả thanh/thẻ khi đo thấy dưới sàn = **OQ7'** (chạm "tùy user chọn" ⇒ CHƯA làm); hiện
+nhận họ tốt nhất + log dưới sàn (fail-loud, `ContrastLedger.belowFloor`).
+
+**Chi phí**: chọn họ chỉ theo sự kiện (nền mặt đổi · phần tử mới · xoay 3D dừng); đo nền dưới phần tử chỉ khi vùng của nó đổi; 0 luồng ·
+0 nhịp · không listener mới. Bài off-car: `ContrastInkTest` (quét 3 318 mặt — đạt kiểm độc lập hoặc dưới sàn thật, không bỏ sót họ đạt;
+trễ: 40 nhịp dao động ±3 % ⇒ ≤ 1 lần đổi họ) · `AdaptiveContrastContractTest` · `AdaptiveInkSourceContractTest` (chữ `halo` = 0 trong
+toàn bộ mã chính).
+
+> **OQ7' CHỐT (owner 15/10):** *"Giữ đúng độ đục anh chọn"* — không phủ mờ thêm khi dưới sàn; chỉ đổi họ mực đồng đều + ghi log dưới sàn. Người dùng tự tăng độ đục thẻ nếu khó đọc.

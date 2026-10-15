@@ -93,6 +93,7 @@ object CapabilityDescriptions {
         "door_rf" to Desc("Trạng thái đóng/mở cửa trước bên phải", "Front-right door open/closed state"),
         "door_lr" to Desc("Trạng thái đóng/mở cửa sau bên trái", "Rear-left door open/closed state"),
         "door_rr" to Desc("Trạng thái đóng/mở cửa sau bên phải", "Rear-right door open/closed state"),
+        "tailgate_status" to Desc("Trạng thái đóng/mở cốp sau", "Rear tailgate open/closed state"),
         "sunroof_state" to Desc("Trạng thái đóng/mở cửa sổ trời", "Sunroof open/closed state"),
         "sunshade_pct" to Desc("Vị trí mở hiện tại của rèm che nắng", "Current sunshade open position (%)"),
         "power_level" to Desc("Cấp nguồn hiện tại của xe (tắt/ACC/bật máy)", "Current vehicle power level (off/ACC/on)"),

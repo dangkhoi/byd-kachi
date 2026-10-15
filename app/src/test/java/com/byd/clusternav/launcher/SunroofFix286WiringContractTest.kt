@@ -30,7 +30,8 @@ class SunroofFix286WiringContractTest {
         // nhận đúng thực thể đó; ý của bài canh (bảng nhận bộ hẹn + nhật ký THẬT) giữ nguyên.
         assertTrue(container.contains("val halGateway: HalGateway by lazy { carGatewayInit() }"), "một gateway HAL cho cả tiến trình")
         assertTrue(
-            container.contains("HalBindingTable(halGateway, releaseSchedulerInit(), ctlJournalInit())"),
+            // 3.1.6 HAL-EVENTS: cùng gateway, bọc bộ nhớ sự kiện (`EventCachedGateway`) — vẫn một gateway, một bảng.
+            container.contains("HalBindingTable(com.byd.clusternav.launcher.EventCachedGateway(halGateway, halEvents), releaseSchedulerInit(), ctlJournalInit())"),
             "bảng nối HAL dùng chung phải nhận cả hai — một bảng, mọi bề mặt (ô · giọng nói · gói · cầu ctl)",
         )
         assertEquals(1, Regex("""HalBindingTable\(""").findAll(container).count(), "một bảng nối HAL cho cả tiến trình")

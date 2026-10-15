@@ -231,17 +231,17 @@ class ControlTileFactory(
         tile.setOnClickListener {
             state.touch(def.id)
             val old = state.sel(def.id); val next = ControlTileLogic.nextSelectIndex(old, levels)
-            state.setSel(def.id, next); show(next)
+            state.setSel(def.id, next); show(next); if (def.readKey.isNotBlank()) LampHold.shared.put(def.id, next > 0, android.os.SystemClock.uptimeMillis())   // R32: giữ tới khi xe xác nhận
             writer.submit(def.id, gated(def, next, tile, { state.setSel(def.id, old); show(old) }) { control().coverLevel(def.id, next) }, { state.sel(def.id) == next }, { control().writeFailureIsReal(def.id) }) {
-                state.setSel(def.id, old); tile.post { show(old) }
+                LampHold.shared.drop(def.id); state.setSel(def.id, old); tile.post { show(old) }
             }
         }
-        // WP2 · R2.3 — đang mở ⇒ ô mang màu nhấn; đọc lại xe theo nhịp poll, bỏ qua trong ân hạn, chỉ vẽ lại khi ĐỔI
-        // (`applyBg` dựng Drawable mới mỗi lượt, nhịp 1 Hz). Cốp đọc cờ mở/đóng · kính đọc % · nút không readKey ⇒ null.
+        // WP2 · R2.3 mở ⇒ màu nhấn, vẽ lại khi ĐỔI. R32: đích giữ ([LampHold]) ⇒ không thì SỐ ĐỌC + trí nhớ theo số đọc (nút vật lý).
         var open = false
         return refresh@{ car ->
             if (state.touchedWithin(def.id)) return@refresh
-            val v = ControlVisuals.of(def, car.controls[def.id] ?: TileResync.stale(tile, state.sel(def.id).coerceIn(0, levels - 1))?.let { show(it); return@refresh } ?: return@refresh)
+            val read = car.controls[def.id]; val now = LampHold.shared.shown(def.id, read, android.os.SystemClock.uptimeMillis()).also { if (read != null && it == read && levels == 2) state.setSel(def.id, if (read > 0) 1 else 0) }
+            val v = ControlVisuals.of(def, now ?: TileResync.stale(tile, state.sel(def.id).coerceIn(0, levels - 1))?.let { show(it); return@refresh } ?: return@refresh)
             if (v.active != open) { open = v.active; applyBg(tile, v.active); tint(icon, label, v.active) }
         }
     }
@@ -437,8 +437,9 @@ class ControlTileFactory(
     /** Nút −/+ của ô STEP: bề ngang do WEIGHT (không `minWidth` — [ĐO] 2×36dp bóp `"22°"` xuống 2 dòng), bề dọc [Sp.TOUCH_TIGHT]. */
     private fun stepBtn(s: String) = TextView(ctx).apply {
         text = s; setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp); gravity = Gravity.CENTER; minHeight = dpi(ctx, Sp.TOUCH_TIGHT); maxLines = 1
-        background = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_S).toFloat(); setColor(c(KachiTheme.DIM)) }
-        AdaptiveInk.fill(this, fades = false, variant = "dim") { intArrayOf(c(KachiTheme.DIM)) }; AdaptiveInk.text(this, KachiTheme.INK)   // R29: nút = mặt DIM
+        val face = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_S).toFloat(); setColor(c(KachiTheme.DIM)) }
+        background = face
+        AdaptiveInk.face(this, KachiTheme.INK, { p -> ColorMath.parse(p.dim) }) { face.setColor(it) }; AdaptiveInk.text(this, KachiTheme.INK)   // R29: mặt DIM theo họ của ô
     }
 
     private fun applyBg(v: View, active: Boolean) {

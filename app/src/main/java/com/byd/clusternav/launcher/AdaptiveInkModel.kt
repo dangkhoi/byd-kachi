@@ -11,7 +11,7 @@ import com.byd.clusternav.launcher.ContrastBackdrop.Layer
  * `WallWindowDrawable.draw` + bề mặt). Không Android (chỉ [ColorMath.parse]) ⇒ `AdaptiveContrastContractTest` chạy nguyên
  * hàm này trên bảng màu SỐNG, không trên một bản chụp. Phép GHÉP chồng (không mã màu) ở `:core` ([ContrastStack]).
  *
- * Phần dính view (đánh dấu · lưu kết quả trên view · lớp đỡ · log) ở [AdaptiveInk].
+ * Phần dính view (đánh dấu · chọn họ theo mặt · tô · log) ở [AdaptiveInk]. KHÔNG có lớp đỡ/đệm nền nào (owner 15/10).
  */
 enum class InkKey(val pick: (KachiPalette) -> String, val semantic: Boolean) {
     INK({ it.ink }, false),
@@ -36,6 +36,14 @@ enum class InkKey(val pick: (KachiPalette) -> String, val semantic: Boolean) {
     }
 }
 
+/**
+ * Một HỌ mực: bảng [palette] (của chủ đề hoặc bảng đối cực) + [raised] (chữ phụ nâng một bậc, cùng cực). [lightInk] = mực của họ
+ * là mực SÁNG (bảng nền tối) — bộ vẽ có công thức riêng theo cực (nút đĩa, chấm 3D) đọc cờ này.
+ */
+data class InkFamily(val palette: KachiPalette, val raised: Boolean) {
+    val lightInk: Boolean get() = !InkModel.light(palette)
+}
+
 object InkModel {
 
     /** Sàn "chữ lớn" WCAG 1.4.3: ≥ 18 pt hoặc ≥ 14 pt đậm — quy về sp như CSS px (bảo thủ: ít chữ được coi là lớn). */
@@ -57,25 +65,22 @@ object InkModel {
     fun light(p: KachiPalette): Boolean = Luma.of(ColorMath.parse(p.bg)) > 0.18
 
     /**
-     * Ứng viên theo thứ tự ưu tiên (spec §4.7 (b), cùng thứ tự `ContrastThemeFixtures.candidates` của bài `:core`):
-     *  • vai trung tính: mực cùng vai của chủ đề → mực chính của chủ đề → cùng vai bảng kia → mực chính bảng kia
-     *    (chữ phụ chỉ "lên" mực chính khi chính nó không đạt — giữ phân cấp);
-     *  • vai MANG NGHĨA (nhấn · xanh/hổ phách/đỏ…): cùng vai bảng kia đứng TRƯỚC mực chính — đổi cực mà giữ nghĩa (đỏ vẫn là đỏ)
-     *    tốt hơn giữ cực mà mất nghĩa.
-     * Lớp đỡ đi kèm: mực sáng ⇒ nền bảng Tối, mực tối ⇒ nền bảng Sáng (đục). Trùng mã ⇒ giữ lần đầu.
+     * Các HỌ mực của một mặt theo thứ tự ưu tiên (spec §4.7 (b), làm lại 15/10 — cùng thứ tự `ContrastThemeFixtures.inks` của bài
+     * `:core`): mực của chủ đề → chủ đề với chữ phụ NÂNG một bậc (cùng cực) → bảng đối cực → bảng đối cực nâng. Cả mặt dùng MỘT họ
+     * ([ContrastInk.choose]); vai mang nghĩa (nhấn · xanh/hổ phách/đỏ…) theo họ ⇒ đổi cực mà vẫn giữ nghĩa (đỏ vẫn là đỏ).
      */
-    fun candidates(key: InkKey, p: KachiPalette): List<InkCandidate> {
+    fun families(p: KachiPalette): List<InkFamily> {
         val o = other(p)
-        val order = if (key.semantic) listOf(key.pick(p), key.pick(o), p.ink, o.ink) else listOf(key.pick(p), p.ink, key.pick(o), o.ink)
-        return order.map { ColorMath.withAlpha(ColorMath.parse(it), 255) }.distinct().map { InkCandidate(it, haloFor(it, p)) }
+        return listOf(InkFamily(p, false), InkFamily(p, true), InkFamily(o, false), InkFamily(o, true))
     }
 
-    /** Lớp đỡ đi kèm mực [ink]: mực sáng ⇒ nền bảng Tối, mực tối ⇒ nền bảng Sáng (đục) — một luật cho mọi chỗ đỡ. */
-    fun haloFor(ink: Int, p: KachiPalette): Int {
-        val o = other(p)
-        val dark = if (light(p)) o.bg else p.bg
-        val bright = if (light(p)) p.bg else o.bg
-        return ColorMath.withAlpha(ColorMath.parse(if (Luma.of(ColorMath.withAlpha(ink, 255)) > 0.18) dark else bright), 255)
+    /**
+     * Mực của vai [key] dưới họ [f] (đục). Họ "nâng": chữ phụ / icon mờ (`MUT`, `MUT2`, `ICON`) lên `INK2` của CÙNG bảng — vẫn
+     * thấp hơn mực chính một bậc (giữ phân cấp), chỉ đậm hơn; mọi vai khác giữ nguyên mã của bảng.
+     */
+    fun ink(key: InkKey, f: InkFamily): Int {
+        val hex = if (f.raised && (key == InkKey.MUT || key == InkKey.MUT2 || key == InkKey.ICON)) f.palette.ink2 else key.pick(f.palette)
+        return ColorMath.withAlpha(ColorMath.parse(hex), 255)
     }
 
     // ═══ 3.1.5 R29 pha 2b · T29-6 — lớp phủ xe 3D (spec §5.1 T29-6) ═══════════════════════════════════════════════════
@@ -110,14 +115,6 @@ object InkModel {
         if (ColorMath.alpha(shadow) > 0) out += out.map { it + Layer.Flat(shadow) }
         return out
     }
-
-    /**
-     * Lớp đỡ (ARGB, 0 = không cần) cho một nét [ink] vai [role] vẽ trên nền [ground] của một bộ vẽ CANVAS (chấm/đèn/nút trên xe
-     * 3D): cùng bộ giải [ContrastInk.resolve], một ứng viên = chính mực thiết kế (giữ nghĩa màu), lớp đỡ theo [haloFor].
-     * Trả cả [Resolution]: `ok = false` (không mức đỡ nào đạt) ⇒ bên gọi log — không im lặng dưới sàn.
-     */
-    fun overlayHalo(role: InkRole, ground: ContrastBackdrop, ink: Int, p: KachiPalette): Resolution =
-        ContrastInk.resolve(role, ground, listOf(InkCandidate(ink, haloFor(ink, p))))
 
     /** Lớp làm tối ảnh nền ở [dimPct] % — cùng phép `WallView.drawPhoto`/`WallArtBuilder` (alpha = dim·255/100). */
     fun scrim(p: KachiPalette, dimPct: Int): Layer? {

@@ -324,7 +324,8 @@ class CapabilityGroupsTest {
         // phụ đã có từ B10, lượt này chúng chỉ được nối thêm `readKey`.
         // ⚠ 2.88 (owner 04/10): 66 → **79** = +13 mã trạng thái THÔ của lốp (`TyreIds.RAW_STATES` — màu cụm · áp ·
         // rò khí ×4 + hệ thống). Cả 13 đều nằm trong `HIDDEN_FROM_PICKER` nên phép đếm `all()` dưới đây không đổi.
-        assertEquals(79, TelemetryRegistry.ALL.size, "mục đọc rời: 66 + 13 mã trạng thái lốp (2.88)")
+        // ⚠ 3.1.6 · R32: 79 → **80** = `tailgate_status` trở lại (getter đúng `getDoorState(6)`; lần gỡ 25/09 là sai tên getter).
+        assertEquals(80, TelemetryRegistry.ALL.size, "mục đọc rời: 66 + 13 mã trạng thái lốp (2.88) + cốp (3.1.6)")
         assertEquals(33, ControlRegistry.ALL.size, "1.94: kính tường minh (5 full + 5 half + 1 close-all)")
         assertEquals(11, WidgetRegistry.ALL.size, "widget dựng tay: 9 + `w_apps` (F1 lối tắt, 2026-10-02) + `w_car3d` (3.01 R25)")
         assertEquals(2, ActionMacros.ALL.size, "1.94: 2 gói (mở/đóng hết kính)")
@@ -335,8 +336,8 @@ class CapabilityGroupsTest {
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
             // F1 (2026-10-02): widget 9 → 10 (`w_apps`) + nguồn `LauncherActions.BLOCKS` (khối lối tắt thanh nút).
-            // 3.01 R25: widget 10 → 11 (`w_car3d`, xe 3D).
-            79 + 33 + 11 + 2 + CapabilityGroups.ALL.size + LauncherActions.ALL.size + LauncherActions.BLOCKS.size -
+            // 3.01 R25: widget 10 → 11 (`w_car3d`, xe 3D). 3.1.6 R32: đọc 79 → 80 (`tailgate_status`).
+            80 + 33 + 11 + 2 + CapabilityGroups.ALL.size + LauncherActions.ALL.size + LauncherActions.BLOCKS.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",

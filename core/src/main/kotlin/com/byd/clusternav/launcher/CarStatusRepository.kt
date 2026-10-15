@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -32,6 +33,21 @@ interface CarStatusReader {
      * cách trả lời câu này bằng nhu cầu THẬT của màn hình.
      */
     fun fastNeeded(): Boolean = true
+
+    /**
+     * 3.1.6 — nhịp THÂN XE (~3 s): cửa (owner 15/10 *"mở/đóng cửa nhận chậm"*, [ĐO xe] đọc cửa mỗi 10 s). Mặc định KHÔNG làm gì
+     * và [bodyNeeded] `false` ⇒ mọi reader cũ/giả giữ hành vi; chỉ [CarDataAdapter] đọc, theo nhu cầu THẬT của màn.
+     */
+    fun readBody(prev: CarStatus): CarStatus = prev
+
+    /** Nhịp thân xe có đáng chạy ở lượt này không (màn có bày cửa không). */
+    fun bodyNeeded(): Boolean = false
+
+    /**
+     * 3.1.6 HAL-EVENTS — helper vừa báo [ids] đổi giá trị: đọc LẠI CHỈ các datum ấy (giá trị đã nằm trong `HalEventCache` ⇒ 0
+     * lượt HAL) và các nút mượn chúng. Mặc định không làm gì (reader cũ/giả).
+     */
+    fun readEvents(prev: CarStatus, ids: Set<String>): CarStatus = prev
 }
 
 /**
@@ -53,6 +69,8 @@ class CarStatusRepository(
     private val scope: CoroutineScope,
     private val fastMs: Long = 1_000L,
     private val slowMs: Long = 10_000L,
+    /** 3.1.6 — nhịp thân xe ([CarStatusReader.readBody]); chi phí + lý do ở KDoc `CarDataDemand.BODY_IDS`. */
+    private val bodyMs: Long = 3_000L,
     /**
      * 2.98 · R6-C (owner 09/10: *"chỉ đọc khi màn sáng, đọc suốt đêm tốn pin xe"*) — `false` = màn xe TẮT ⇒ hai vòng KHÔNG đọc
      * HAL, chỉ ngủ tới [wake] (màn sáng lại) hoặc [idleMs]. [ĐO log xe 08/10] màn chính RESUMED qua đêm ⇒ `HAL đọc=385/phút`
@@ -60,6 +78,8 @@ class CarStatusRepository(
      */
     private val awake: () -> Boolean = { true },
     private val idleMs: Long = 60_000L,
+    /** 3.1.6 HAL-EVENTS — gộp các sự kiện tới trong khoảng này vào MỘT lượt phát (chống vẽ lại dồn dập). */
+    private val eventCoalesceMs: Long = EVENT_COALESCE_MS,
 ) {
     private val _status = MutableStateFlow(CarStatus())
 
@@ -90,6 +110,7 @@ class CarStatusRepository(
 
     private var fastJob: Job? = null
     private var slowJob: Job? = null
+    private var bodyJob: Job? = null
 
     /**
      * Khoá cho MỌI lượt đọc-rồi-phát. Xem [publish].
@@ -120,32 +141,61 @@ class CarStatusRepository(
     /** Khởi 2 vòng poll (đọc NGAY 1 lần rồi mới delay → HOME có dữ liệu tức thì). Gọi lại = restart sạch. */
     fun start() {
         stop()
-        fastJob = scope.launch {
-            // R6-C (soát Pass 5 [P3]): hỏi màn ở MỌI nhịp nhanh = +2 binder/giây lúc xe chạy ⇒ vòng nhanh chỉ hỏi lại mỗi
-            // [slowMs] (đếm nhịp, không đồng hồ) hoặc ngay khi có [wake]. Màn vừa tắt ⇒ tối đa một nhịp chậm mới ngừng đọc.
-            val recheckEvery = (slowMs / fastMs).coerceAtLeast(1L).toInt()
-            var ticks = 0
-            var seenGen = wakeGen.value
-            while (isActive) {
-                val g = wakeGen.value
-                if (ticks == 0 || g != seenGen) {
-                    seenGen = g
-                    if (!awakeOrSleep()) { ticks = 0; continue }   // màn tắt ⇒ không đọc, ngủ tới wake() hoặc idleMs
-                }
-                ticks = (ticks + 1) % recheckEvery
-                // H1: màn không bày datum nhanh nào ⇒ KHÔNG đọc, và lùi về nhịp chậm thay vì thức dậy mỗi giây
-                // để không làm gì. Vẫn có một lượt hỏi lại mỗi [slowMs] nên khi người dùng kéo ô Tốc độ lên màn,
-                // nhịp nhanh sống lại trong vòng một nhịp chậm — không cần ai đánh thức nó.
-                if (!reader.fastNeeded()) { delay(slowMs); continue }
-                publish { reader.readFast(it) }
-                delay(fastMs)
-            }
-        }
+        fastJob = scope.launch { paced(fastMs, reader::fastNeeded, reader::readFast) }
+        bodyJob = scope.launch { paced(bodyMs, reader::bodyNeeded, reader::readBody) }   // 3.1.6 — cửa
         slowJob = scope.launch {
             while (isActive) {
                 if (!awakeOrSleep()) continue   // R6-C: màn tắt ⇒ không đọc, ngủ tới wake() hoặc idleMs
                 publish { reader.readSlow(it) }
                 delay(slowMs)
+            }
+        }
+    }
+
+    /**
+     * Vòng có nhịp [periodMs] ngắn hơn [slowMs] (nhanh 1 s · thân xe 3 s) — một thân cho cả hai, hành vi y vòng nhanh trước 3.1.6.
+     *
+     * R6-C (soát Pass 5 [P3]): hỏi màn ở MỌI nhịp = +binder mỗi nhịp lúc xe chạy ⇒ chỉ hỏi lại mỗi [slowMs] (đếm nhịp, không đồng
+     * hồ) hoặc ngay khi có [wake]. Màn vừa tắt ⇒ tối đa một nhịp chậm mới ngừng đọc. H1: màn không bày datum của vòng ([needed]
+     * `false`) ⇒ KHÔNG đọc, lùi về nhịp chậm thay vì thức dậy mỗi nhịp để không làm gì; vẫn hỏi lại mỗi [slowMs] nên ô kéo lên
+     * màn sống lại trong vòng một nhịp chậm — không cần ai đánh thức.
+     */
+    private suspend fun paced(periodMs: Long, needed: () -> Boolean, read: (CarStatus) -> CarStatus) {
+        val recheckEvery = (slowMs / periodMs).coerceAtLeast(1L).toInt()
+        var ticks = 0
+        var seenGen = wakeGen.value
+        while (currentCoroutineContext().isActive) {
+            // 3.1.6: hỏi nhu cầu TRƯỚC cổng màn — vòng không có việc (vd thân xe khi màn không bày cửa) không tốn một binder
+            // `awake()` nào; `ticks = 0` ⇒ lượt có việc kế tiếp hỏi màn NGAY (không đọc mù khi màn đã tắt trong lúc nghỉ).
+            if (!needed()) { ticks = 0; delay(slowMs); continue }
+            val g = wakeGen.value
+            if (ticks == 0 || g != seenGen) {
+                seenGen = g
+                if (!awakeOrSleep()) { ticks = 0; continue }   // màn tắt ⇒ không đọc, ngủ tới wake() hoặc idleMs
+            }
+            ticks = (ticks + 1) % recheckEvery
+            publish(read)
+            delay(periodMs)
+        }
+    }
+
+    private val pendingEvents = HashSet<String>()
+    private var eventJob: Job? = null
+
+    /**
+     * 3.1.6 HAL-EVENTS — [ids] vừa đổi theo sự kiện của helper ⇒ trong vòng [eventCoalesceMs] phát MỘT lượt [CarStatusReader.readEvents]
+     * (gộp mọi id tới trong khoảng đó). Gọi từ luồng nào cũng được (luồng đọc socket). Không đụng ba vòng poll: chúng vẫn chạy, chỉ là
+     * lượt đọc của datum có sự kiện được trả bằng bộ nhớ (xem `EventCachedGateway`).
+     */
+    fun onEvents(ids: Set<String>) {
+        if (ids.isEmpty()) return
+        synchronized(pendingEvents) {
+            pendingEvents += ids
+            if (eventJob != null) return
+            eventJob = scope.launch {
+                delay(eventCoalesceMs)
+                val batch = synchronized(pendingEvents) { eventJob = null; pendingEvents.toSet().also { pendingEvents.clear() } }
+                publish { reader.readEvents(it, batch) }
             }
         }
     }
@@ -164,11 +214,17 @@ class CarStatusRepository(
      * Đi qua [publish] như hai vòng poll: lượt đọc chạy đúng MỘT lần và không bị một nhịp poll chen vào giữa
      * bắt tính lại (xem KDoc [publish]).
      */
-    fun refreshNow(): CarStatus = publish { reader.readSlow(reader.readFast(it)) }
+    fun refreshNow(): CarStatus = publish { reader.readBody(reader.readSlow(reader.readFast(it))) }
 
-    /** Dừng poll (huỷ 2 job). Idempotent — gọi nhiều lần an toàn. */
+    /** Dừng poll (huỷ 3 job). Idempotent — gọi nhiều lần an toàn. */
     fun stop() {
         fastJob?.cancel(); fastJob = null
         slowJob?.cancel(); slowJob = null
+        bodyJob?.cancel(); bodyJob = null
+    }
+
+    companion object {
+        /** Gộp sự kiện 150 ms: người thấy "tức thì", mà một loạt cửa/đèn đổi cùng lúc chỉ là một lượt vẽ. */
+        const val EVENT_COALESCE_MS = 150L
     }
 }

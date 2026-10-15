@@ -183,9 +183,8 @@ data class CarStatus(
     /**
      * A5 — thân xe / cửa / kính. Kính = % mở (0..100); cửa = mở?(Boolean).
      *
-     * ⚠ 2026-09-25 — `tailgateOpen` (cốp không có cảm biến trạng thái) và `sunroofPct` (xe không có cửa sổ trời,
-     * getter = 65535) đã gỡ cùng hai datum của chúng. Nóc còn `sunroofOpen`; cốp không còn đường ĐỌC nào (nút
-     * `trunk` vẫn GHI được — ghi được ≠ đọc được).
+     * ⚠ 2026-09-25 — `sunroofPct` (getter = 65535) đã gỡ cùng datum của nó; nóc còn `sunroofOpen`. `tailgateOpen` gỡ cùng
+     * ngày vì sai tên getter, **nối lại 3.1.6 (R32)** bằng `getDoorState(6)`.
      */
     data class Body(
         val windowLfPct: Int? = null,
@@ -196,6 +195,8 @@ data class CarStatus(
         val doorRfOpen: Boolean? = null,
         val doorLrOpen: Boolean? = null,
         val doorRrOpen: Boolean? = null,
+        /** 3.1.6 · R32 — cốp mở? (`tailgate_status` = `getDoorState(6)`; 255/mã lạ ⇒ `null`). */
+        val tailgateOpen: Boolean? = null,
         val sunshadePct: Int? = null,
         val powerLevel: Int? = null,
         val vehicleType: String? = null,

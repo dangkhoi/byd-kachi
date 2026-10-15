@@ -143,6 +143,7 @@ Tất cả đã đóng	All closed	均已关闭
 {0} cảnh báo	{0} alerts	{0}个警告
 {0} lưu ý	{0} to note	{0}项需留意
 Phím gán nút xe không còn hợp lệ ({0}) — gán lại ở Cài đặt › Nút vật lý	This key binding is no longer valid ({0}) — rebind it in Settings › Physical buttons	此按键绑定已失效（{0}）——请在设置 › 实体按键中重新绑定
+Chưa đọc được trạng thái {0} — chưa gửi lệnh	Can't read the {0} state — no command sent	无法读取{0}状态——未发送指令
 Bật 	Turn on 	开启
 Tắt 	Turn off 	关闭
 Mở/đóng {0} (đảo)	Open/close {0} (toggle)	打开/关闭{0}（切换）
@@ -615,6 +616,7 @@ Cửa trước-trái	Door FL	左前门
 Cửa trước-phải	Door FR	右前门
 Cửa sau-trái	Door RL	左后门
 Cửa sau-phải	Door RR	右后门
+Cốp	Boot	后备箱
 Đèn sương mù trước	Fog front	前雾灯
 Đèn sương mù sau	Fog rear	后雾灯
 Đèn ban ngày	DRL	日行灯
@@ -640,7 +642,7 @@ Mức 2	Level 2	2挡
 Nửa	Half	半开
 áp suất + nhiệt độ từng bánh	pressure and temperature of each wheel	各轮胎的气压和温度
 từng kính: hé, mở hẳn, đóng · cốp sau · mở/đóng tất cả	each window: half, full, close · tailgate · open/close all	每扇车窗：半开、全开、关闭 · 后备箱 · 全开/全关
-cửa, nóc, rèm	doors, sunroof, sunshade	车门、天窗、遮阳帘
+cửa, cốp, nóc, rèm	doors, tailgate, sunroof, sunshade	车门、后备箱、天窗、遮阳帘
 đèn ngoài, đèn pha, đèn đọc trong xe	exterior lights, headlights, interior reading light	外部灯光、大灯、车内阅读灯
 nhiệt trong/ngoài, điều hoà, bụi mịn	inside/outside temperature, air conditioning, fine dust	车内/车外温度、空调、PM2.5
 pin, tầm chạy, mức tiêu thụ	battery, range, consumption	电量、续航、能耗
@@ -728,6 +730,7 @@ Trạng thái đóng/mở cửa trước bên trái	Front-left door open/closed 
 Trạng thái đóng/mở cửa trước bên phải	Front-right door open/closed state	右前门开关状态
 Trạng thái đóng/mở cửa sau bên trái	Rear-left door open/closed state	左后门开关状态
 Trạng thái đóng/mở cửa sau bên phải	Rear-right door open/closed state	右后门开关状态
+Trạng thái đóng/mở cốp sau	Rear tailgate open/closed state	后备箱开关状态
 Trạng thái đóng/mở cửa sổ trời	Sunroof open/closed state	天窗开关状态
 Vị trí mở hiện tại của rèm che nắng	Current sunshade open position (%)	遮阳帘当前开启位置（%）
 Cấp nguồn hiện tại của xe (tắt/ACC/bật máy)	Current vehicle power level (off/ACC/on)	当前整车电源状态（OFF/ACC/ON）

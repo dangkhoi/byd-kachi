@@ -143,6 +143,7 @@ Tất cả đã đóng	All closed	Semua tertutup
 {0} cảnh báo	{0} alerts	{0} amaran
 {0} lưu ý	{0} to note	{0} perlu perhatian
 Phím gán nút xe không còn hợp lệ ({0}) — gán lại ở Cài đặt › Nút vật lý	This key binding is no longer valid ({0}) — rebind it in Settings › Physical buttons	Pemetaan butang ini tidak lagi sah ({0}) — petakan semula di Tetapan › Butang fizikal
+Chưa đọc được trạng thái {0} — chưa gửi lệnh	Can't read the {0} state — no command sent	Tidak dapat membaca keadaan {0} — tiada arahan dihantar
 Bật 	Turn on 	Hidupkan 
 Tắt 	Turn off 	Matikan 
 Mở/đóng {0} (đảo)	Open/close {0} (toggle)	Buka/tutup {0} (togol)
@@ -615,6 +616,7 @@ Cửa trước-trái	Door FL	Pintu DKr
 Cửa trước-phải	Door FR	Pintu DKn
 Cửa sau-trái	Door RL	Pintu BKr
 Cửa sau-phải	Door RR	Pintu BKn
+Cốp	Boot	But
 Đèn sương mù trước	Fog front	Kabus depan
 Đèn sương mù sau	Fog rear	Kabus belakang
 Đèn ban ngày	DRL	Lampu siang
@@ -640,7 +642,7 @@ Mức 2	Level 2	Tahap 2
 Nửa	Half	Separuh
 áp suất + nhiệt độ từng bánh	pressure and temperature of each wheel	tekanan dan suhu setiap roda
 từng kính: hé, mở hẳn, đóng · cốp sau · mở/đóng tất cả	each window: half, full, close · tailgate · open/close all	setiap tingkap: separuh, penuh, tutup · pintu but · buka/tutup semua
-cửa, nóc, rèm	doors, sunroof, sunshade	pintu, bumbung matahari, teduh matahari
+cửa, cốp, nóc, rèm	doors, tailgate, sunroof, sunshade	pintu, but, bumbung matahari, teduh matahari
 đèn ngoài, đèn pha, đèn đọc trong xe	exterior lights, headlights, interior reading light	lampu luaran, lampu hadapan, lampu bacaan dalaman
 nhiệt trong/ngoài, điều hoà, bụi mịn	inside/outside temperature, air conditioning, fine dust	suhu dalam/luar, penghawa dingin, habuk halus
 pin, tầm chạy, mức tiêu thụ	battery, range, consumption	bateri, jarak, penggunaan
@@ -728,6 +730,7 @@ Trạng thái đóng/mở cửa trước bên trái	Front-left door open/closed 
 Trạng thái đóng/mở cửa trước bên phải	Front-right door open/closed state	Status buka/tutup pintu depan kanan
 Trạng thái đóng/mở cửa sau bên trái	Rear-left door open/closed state	Status buka/tutup pintu belakang kiri
 Trạng thái đóng/mở cửa sau bên phải	Rear-right door open/closed state	Status buka/tutup pintu belakang kanan
+Trạng thái đóng/mở cốp sau	Rear tailgate open/closed state	Keadaan buka/tutup but belakang
 Trạng thái đóng/mở cửa sổ trời	Sunroof open/closed state	Status buka/tutup bumbung matahari
 Vị trí mở hiện tại của rèm che nắng	Current sunshade open position (%)	Kedudukan bukaan teduh matahari semasa (%)
 Cấp nguồn hiện tại của xe (tắt/ACC/bật máy)	Current vehicle power level (off/ACC/on)	Tahap kuasa kenderaan semasa (mati/ACC/hidup)

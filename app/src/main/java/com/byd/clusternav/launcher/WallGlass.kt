@@ -203,7 +203,7 @@ object KachiGlass {
             view.background = KachiTheme.surface(ctx, spec.radius, spec.tone, spec.domain)
             if (spec.fade) view.background?.let { KachiChrome.fade(it) }   // R-OP: 100 % ⇒ không chạm gì
             // R29 T29-4: không ảnh ⇒ nền ghép = nền vẽ (bg + vầng sáng) + bề mặt × độ đục; không phụ thuộc vị trí.
-            AdaptiveInk.surface(view, listen = true) { listOf(ContrastStack.surfaceVariants(drawnPair(spec, overArt = false), drawnDomain(spec))) }
+            AdaptiveInk.surface(view, listen = true, scope = AdaptiveInk.Scope.CARD) { listOf(ContrastStack.surfaceVariants(drawnPair(spec, overArt = false), drawnDomain(spec))) }
             return
         }
         // R-OP (2.88) — có ảnh: cửa sổ (ảnh mờ + lớp che + nhuộm) và bề mặt cùng nhân MỘT hệ số [KachiChrome.fraction];
@@ -221,7 +221,7 @@ object KachiGlass {
         if (spec.fade) KachiChrome.fade(top)
         view.background = LayerDrawable(arrayOf(window, top))
         val surf = drawnPair(spec, overArt = true); val dom = drawnDomain(spec)
-        AdaptiveInk.surface(view, listen = false) { r -> window.inkGroups(r, surf, dom) }   // R29 T29-4 (relocate gọi update)
+        AdaptiveInk.surface(view, listen = false, scope = AdaptiveInk.Scope.CARD) { r -> window.inkGroups(r, surf, dom) }   // R29 T29-4 (relocate gọi update)
         bind(view, window::relocate)
     }
 

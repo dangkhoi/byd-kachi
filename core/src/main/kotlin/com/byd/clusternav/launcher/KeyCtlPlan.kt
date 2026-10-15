@@ -51,7 +51,21 @@ object KeyCtlPlan {
          * GIỜ ra ca này ([KeyCtlTargets.actionsFor] không sinh NEXT cho nút ấy); chỉ để hàm thuần không chia cho 0.
          */
         data object Invalid : Outcome
+
+        /**
+         * 3.1.6 · R32 — Đảo / Kế tiếp của nút CHỈ quyết bằng số đọc ([readOnly]) mà lượt đọc tươi không ra số ⇒ KHÔNG bắn gì
+         * (báo bằng [unreadableReply]). Không lùi về trí nhớ: với cốp, trí nhớ sai (đóng bằng nút vật lý) là MỞ cái cốp
+         * người lái vừa đóng.
+         */
+        data object Unreadable : Outcome
     }
+
+    /**
+     * 3.1.6 · R32 — nút có đường đọc mà Đảo / Kế tiếp KHÔNG được lùi về lệnh cuối: bộ phận bung khỏi bao xe
+     * ([CtlSafetyPolicy.REQUIRES_STATIONARY]) VÀ có [ControlDef.readKey]. Đoán hướng cho nó từ một cờ RAM là đúng thứ
+     * CLAUDE.md §5 cấm; các nút khác giữ luật 2.87 (R-FL2) không đổi.
+     */
+    fun readOnly(def: ControlDef): Boolean = def.readKey.isNotBlank() && CtlSafetyPolicy.requiresStationary(def.id)
 
     /**
      * @param count số lần bấm đã gộp (≥ 1) — STEP: số nấc; SELECT Kế tiếp: số bước vòng; hành động khác bỏ qua.
@@ -84,6 +98,11 @@ object KeyCtlPlan {
             } else {
                 run(value = value, basis = basis)
             }
+        if (readOnly(def) && (t.action == KeyCtlAction.FLIP || t.action == KeyCtlAction.NEXT)) {
+            // 3.1.6 · R32 — CHỈ số đọc tươi: 0 ⇒ mở · > 0 ⇒ đóng · không ra số ⇒ không bắn ([Outcome.Unreadable]).
+            val cur = readState() ?: return Outcome.Unreadable
+            return run(value = if (cur > 0) 0 else 1, basis = Basis.CAR)
+        }
         return when (t.action) {
             KeyCtlAction.ON, KeyCtlAction.OPEN, KeyCtlAction.PRESS -> run(value = 1)
             KeyCtlAction.OFF, KeyCtlAction.CLOSE -> run(value = 0)
@@ -101,6 +120,14 @@ object KeyCtlPlan {
             }
         }
     }
+
+    /** 3.1.6 · R32 — câu ngắn (toast) cho [Outcome.Unreadable]: chưa đọc được trạng thái ⇒ chưa gửi lệnh nào. */
+    fun unreadableReply(def: ControlDef, lang: Lang = Strings.current): String = Strings.fIn(
+        lang,
+        "Chưa đọc được trạng thái {0} — chưa gửi lệnh",
+        "Can't read the {0} state — no command sent",
+        def.labelIn(lang),
+    )
 
     /** Mã đích hỏng, hoặc nút/hành động không còn trên bản Kachi đang chạy (registry đổi) — gán lại. */
     fun invalidReply(spec: String, lang: Lang = Strings.current): String = Strings.fIn(

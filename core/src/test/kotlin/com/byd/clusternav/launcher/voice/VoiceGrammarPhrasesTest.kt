@@ -401,7 +401,9 @@ class VoiceGrammarPhrasesTest {
         // 2.88 LỐP THEO XE: không đổi — 13 mã lốp thô ngoài ngữ pháp ([VoiceTelemetry.NOT_SPOKEN]; từng đo 194 → 207).
         // [ĐO off-car 2026-10-06 · 2.93] **194 → 196 (+2)** = *"Front camera"* · *"Left camera"* (`front`/`left` vắng khỏi
         // từ điển VN — bản VI *"camera trước/trái"* vẫn GIỮ). Đọc từ **actual** (`set.phrasesDropped`).
-        const val EXPECTED_PHRASES_DROPPED = 196
+        // [ĐO off-car 2026-10-15 · 3.1.6 R32] **196 → 197 (+1)** = `labelEn` *"Tailgate"* của datum `tailgate_status` trở lại (cùng chữ
+        // với nhãn nút `trunk`, vắng khỏi từ điển VN). Bản VI *"Cốp sau"* vẫn GIỮ. Đọc từ **actual** (`set.phrasesDropped`).
+        const val EXPECTED_PHRASES_DROPPED = 197
 
         /**
          * [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`.

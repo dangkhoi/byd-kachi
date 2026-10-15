@@ -26,8 +26,9 @@ object CapabilityDots {
                 else -> 0
             }
         }
-        // Datum TRẠNG THÁI của một control (vd `seat_vent_state`) mang mức của chính control đó.
-        controlOfState(id)?.let { return maxLevel(it) }
+        // Datum TRẠNG THÁI của một control (vd `seat_vent_state`) mang mức của chính control đó — CHỈ khi control ấy có THANG
+        // mức đọc được ([ControlLevels]); 3.1.6 · R32: cốp (`tailgate_status` ← nút COVER `trunk`) là mở/đóng, không có chấm mức.
+        controlOfState(id)?.takeIf { ControlLevels.levelCount(it) > 0 }?.let { return maxLevel(it) }
         return 0
     }
 

@@ -40,6 +40,7 @@ internal object TileSafetyGate {
     /** Đã chặn MỞ [def] (luồng chính): không lệnh nào đi; ô lắc nhẹ, một câu ngắn (toast + đọc to), báo bảng hình xe. */
     fun refuse(view: View, def: ControlDef) {
         Log.i(TAG, "${def.id}: MỞ bị chặn — xe chưa chứng minh đứng yên (cổng chạm)")
+        LampHold.shared.drop(def.id)   // 3.1.6 · R32 — không lệnh nào đi ⇒ không có đích nào để "chờ xác nhận" (ô/3D về số đọc ngay)
         val text = view.context.getString(R.string.kctl_stop_to_open_trunk)
         if (view.isShown) shake(view)
         runCatching {

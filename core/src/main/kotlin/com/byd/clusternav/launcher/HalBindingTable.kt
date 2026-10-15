@@ -126,8 +126,11 @@ class HalBindingTable(
     /** [id] → Double (float= của EventValue hoặc số thuần). */
     fun readDouble(id: String): Double? = coerceDouble(readRaw(id))
 
-    /** [id] → Boolean (1/0, true/false, "on"/"off"). */
-    fun readBool(id: String): Boolean? = coerceBool(readRaw(id))
+    /** [id] → Boolean (1/0, true/false, "on"/"off"); datum enum 1=BẬT/2=TẮT đi [HalReadTables.BOOL_ENUM] (3.1.6 — DRL). */
+    fun readBool(id: String): Boolean? {
+        val raw = readRaw(id)
+        return if (id in HalReadTables.BOOL_ENUM) HalReadTables.enumBool(id, parseInt(id, raw)) else coerceBool(raw)
+    }
 
     /** [id] → chuỗi hiển thị (bỏ khoảng trắng thừa). */
     fun readString(id: String): String? = readRaw(id)?.trim()?.takeIf { it.isNotEmpty() && it != "null" }

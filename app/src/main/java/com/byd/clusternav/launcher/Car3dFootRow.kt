@@ -55,7 +55,7 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
             windows.forEachIndexed { i, b -> addView(b, LinearLayout.LayoutParams(touch, touch).also { lp -> lp.marginStart = CenteredRow.leading(i, gap) }) }
         }
-        stepper("fan", "ic-fan")?.let { steppers += it; groups += it }
+        stepper("fan", null)?.let { steppers += it; groups += it }   // owner 15/10: bỏ icon quạt (lệch), nhìn số là hiểu
         recirc()?.let { groups += it }
         groups.forEach { addView(it) }
     }
@@ -70,16 +70,17 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
         val t = tileOf(id) ?: return null
         val nudge = t.nudge ?: return null
         val shown = TextView(context).apply {
+            if (id == FAN) { fanShown = this; fanTile = t }
             setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiWidgetType.VALUE_SP + 2f); typeface = KachiWidgetType.heroFace
             AdaptiveInk.text(this, KachiTheme.INK); gravity = Gravity.CENTER; maxLines = 1; minWidth = value   // R29 T29-6
-            text = t.value?.text
+            text = label(id, t.value?.text?.toString())
             contentDescription = def.displayLabel
         }
         // Soi chữ giá trị của ô thật (đổi lạc quan khi chạm · về số cũ khi ghi hỏng · số đọc mỗi nhịp) — một nguồn chữ.
         t.value?.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, n: Int) = Unit
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, n: Int) = Unit
-            override fun afterTextChanged(s: Editable?) { if (shown.text.toString() != s.toString()) shown.text = s?.toString() }
+            override fun afterTextChanged(s: Editable?) { val v = label(id, s?.toString()); if (shown.text.toString() != v) shown.text = v }
         })
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
@@ -127,7 +128,19 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
     }
 
     /** Đổ số xe vào các ô ẩn (đọc lại thật) rồi vẽ lại hình lấy gió. */
-    fun fill(d: WidgetData) { hidden.forEach { it.refresh(d.car) }; drawRecirc() }
+    fun fill(d: WidgetData) {
+        hidden.forEach { it.refresh(d.car) }; drawRecirc()
+        fanLevel = d.car.climate.fanLevel; fanAutoRaw = d.car.climate.acWindAutoRaw
+        fanShown?.let { v -> fanTile?.value?.text?.toString()?.let { v.text = label(FAN, it) } }
+    }
+
+    /** Owner 15/10: gió AUTO ⇒ "AUTO n" như chip thanh trên ([ClimateAuto.fanText]); ô ẩn chỉ in "AUTO" (bề rộng ô thanh nút). */
+    private fun label(id: String, tile: String?): String? =
+        if (id == FAN && tile == ClimateAuto.AUTO) ClimateAuto.fanText(fanLevel, fanAutoRaw) ?: tile else tile
+    private var fanShown: TextView? = null
+    private var fanTile: ActionTile? = null
+    private var fanLevel: Int? = null
+    private var fanAutoRaw: Int? = null
 
     /**
      * Nút tròn cùng dáng chân bảng Kính 2D / ba nút kính — mực đĩa/glyph theo bảng ([KachiButtonInks]), sóng nhấn. R29: đĩa/glyph
@@ -169,6 +182,7 @@ internal class Car3dFootRow(context: Context, data: WidgetData, windows: List<Vi
     private companion object {
         const val TAG = "Car3d"
         const val RECIRC = "recirc"
+        const val FAN = "fan"
         const val CYCLE = "ac_cycle"
     }
 }

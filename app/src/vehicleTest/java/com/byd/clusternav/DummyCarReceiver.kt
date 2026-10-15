@@ -23,13 +23,19 @@ import com.byd.clusternav.launcher.LampLive
  * `adb shell am broadcast -a com.byd.clusternav.vehicletest.DUMMY_CAR -p <pkg> --ez on true|false [--ei speed 0] [--es gear P] [--ez turn_l true] [--ez turn_r true]`
  * POLISH2 (owner 13/10 *"đèn ban ngày không tắt được"* trên máy ảo): xe giả NHẠI lệnh ghi ([CtlWriteTap], móc ở đường ghi duy
  * nhất `ControlWriteFlow.write`) — đèn pha/ban ngày, từng kính + cả cụm (mở hẳn/hé/đóng theo [ControlDef.verbLevel]) đổi trạng
- * thái giả như xe thật đổi; cốp không có trường đọc nào (xe không có cảm biến cốp — `ControlRegistry` 09-25) ⇒ không nhại.
+ * thái giả như xe thật đổi.
+ * 3.1.6 · R32 — CỐP giả (`tailgate_status` + số nút `trunk`): `[--es trunk open|closed|unknown]` (mặc định đóng). Lệnh mở/đóng của
+ * Kachi được nhại với ĐỘ TRỄ như [ĐO logcat xe 14/10]: mở ⇒ đọc 1 sau [TRUNK_OPEN_MS], đóng ⇒ đọc 0 sau [TRUNK_CLOSE_MS] (chốt khoá).
+ * Thử ca "đóng bằng nút vật lý" (không qua Kachi): `--ez trunk_only true --es trunk closed` — CHỈ đổi cốp, giữ mọi số giả khác.
  *   `[--es doors lf,rr]` `[--ez sunshade true]` (có rèm che nắng — mặc định KHÔNG) (cửa MỞ; mặc định đóng hết) `[--es lights low,high,drl,ffog,rfog,side]` (đèn SÁNG; vắng ⇒ bộ mặc định).
  */
 class DummyCarReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action != ACTION) return
+        if (intent.getBooleanExtra("trunk_only", false)) {   // R32 — "nút vật lý trên cốp": chỉ đổi cốp, không reset gì khác
+            trunk = trunkOf(intent.getStringExtra("trunk")); Log.i(TAG, "dummy trunk (vật lý) ⇒ $trunk"); CarStatusTap.set(::fill); return
+        }
         val on = intent.getBooleanExtra("on", true)
         // 3.01 cổng chạm cốp (owner 13/10): `--ei speed 0` = xe đứng · `--es gear P|D` — để thử chặn/cho mở cốp trên máy ảo.
         speed = intent.getIntExtra("speed", DEFAULT_SPEED)
@@ -43,12 +49,13 @@ class DummyCarReceiver : BroadcastReceiver() {
         sunshade = intent.getBooleanExtra("sunshade", false)
         lamps = intent.getStringExtra("lights")?.split(',')?.map { it.trim() }?.toSet()
         windows = DEFAULT_WINDOWS.toMutableMap()
+        trunk = trunkOf(intent.getStringExtra("trunk") ?: "closed")
         CarStatusTap.set(if (on) ::fill else null)
         CtlWriteTap.set(if (on) ::echo else null)
         // 3.01 TURN: xi-nhan giả đi ĐÚNG đường của xi-nhan thật (hộp socket `LampLive`), không qua `fill` — để máy ảo
         // thử chính dây bảng Đèn dùng trên xe. Tắt số giả ⇒ xoá (như đứt socket ⇒ lùi về số đọc).
         if (on) LampLive.shared.publish(turnL, turnR) else LampLive.shared.clear()
-        Log.i(TAG, "dummy car status on=$on speed=$speed gear=$gear turn_l=$turnL turn_r=$turnR doors=$doors lights=${lamps ?: "default"} sunshade=$sunshade")
+        Log.i(TAG, "dummy car status on=$on speed=$speed gear=$gear turn_l=$turnL turn_r=$turnR doors=$doors trunk=$trunk lights=${lamps ?: "default"} sunshade=$sunshade")
     }
 
     companion object {
@@ -60,6 +67,13 @@ class DummyCarReceiver : BroadcastReceiver() {
         @Volatile private var doors: Set<String> = emptySet()
         @Volatile private var lamps: Set<String>? = null
         @Volatile private var sunshade = false
+        /** R32 — cốp giả: `true` mở · `false` đóng · `null` = đọc không ra (255 trên xe). */
+        @Volatile private var trunk: Boolean? = false
+        private fun trunkOf(s: String?): Boolean? = when (s) { "open" -> true; "unknown" -> null; else -> false }
+        /** [ĐO logcat xe 14/10] mở: sự kiện `0x2940001A = 1` +283 ms · đóng: `= 0` +5,8 s sau lệnh (chốt khoá). */
+        private const val TRUNK_OPEN_MS = 300L
+        private const val TRUNK_CLOSE_MS = 5_800L
+        private val main by lazy { android.os.Handler(android.os.Looper.getMainLooper()) }
         private fun lit(k: String, def: Boolean) = lamps?.contains(k) ?: def
         /** Mức kính giả theo vị trí (%), mặc định một bộ lệch nhau để soát chấm; lệnh kính ghi đè. */
         private val DEFAULT_WINDOWS = mapOf("lf" to 0, "rf" to 35, "lr" to 100, "rr" to 0)
@@ -87,6 +101,10 @@ class DummyCarReceiver : BroadcastReceiver() {
                 // 3.01 R28 — ghế (SELECT: chỉ số mức) + nhiệt/gió/lấy gió (STEP mức · TOGGLE 0/1) của hàng chân + icon ghế xe 3D.
                 def.id in SEATS -> seats = seats + (def.id to primary)
                 def.id in CLIMATE -> climate = climate + (def.id to primary)
+                def.id == "trunk" -> {   // R32 — nhại cốp với độ trễ đo được (đóng đọc 0 chỉ khi chốt khoá)
+                    main.postDelayed({ trunk = on; Log.i(TAG, "nhại trunk ⇒ $on (trễ)"); CarStatusTap.set(::fill) }, if (on) TRUNK_OPEN_MS else TRUNK_CLOSE_MS)
+                    return
+                }
                 else -> return
             }
             Log.i(TAG, "nhại ${def.id} [$primary] ⇒ lights=$lamps windows=$windows")
@@ -113,13 +131,13 @@ class DummyCarReceiver : BroadcastReceiver() {
                 defrostFrontOn = false, defrostRearOn = true,
                 seatVentRaw = raw("seatc"), seatHeatRaw = raw("seath"), seatVentRRaw = raw("seatc_r"), seatHeatRRaw = raw("seath_r"),
             ),
-            controls = s.controls + climate,
+            controls = (s.controls + climate).let { c -> trunk?.let { c + ("trunk" to if (it) 1 else 0) } ?: (c - "trunk") },
             tyres = s.tyres.copy(
                 pFlKpa = 245.0, pFrKpa = 248.0, pRlKpa = 239.0, pRrKpa = 251.0, tFlC = 38, tFrC = 39, tRlC = 36, tRrC = 37,
             ),
             body = s.body.copy(
                 windowLfPct = windows["lf"], windowRfPct = windows["rf"], windowLrPct = windows["lr"], windowRrPct = windows["rr"], doorLfOpen = "lf" in doors, doorRfOpen = "rf" in doors,
-                doorLrOpen = "lr" in doors, doorRrOpen = "rr" in doors, sunshadePct = if (sunshade) 50 else s.body.sunshadePct, sunroofOpen = false,
+                doorLrOpen = "lr" in doors, doorRrOpen = "rr" in doors, tailgateOpen = trunk, sunshadePct = if (sunshade) 50 else s.body.sunshadePct, sunroofOpen = false,
             ),
             lights = s.lights.copy(
                 lowBeam = lit("low", true), highBeam = lit("high", false), frontFog = lit("ffog", false), drl = lit("drl", true),

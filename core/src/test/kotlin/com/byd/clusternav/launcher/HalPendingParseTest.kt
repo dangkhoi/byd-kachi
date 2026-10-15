@@ -29,7 +29,8 @@ class HalPendingParseTest {
     fun `readInt va loi cho-co-so cung di qua parseInt`() {
         val table = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/HalBindingTable.kt")
         assertTrue(SourceRoots.body(table, "fun readInt(id: String): Int?").contains("parseInt(id, readRaw(id))"))
-        val adapter = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/CarDataAdapter.kt")
+        // 3.1.6 soát Pass 6: cổng đọc tách ra `CarReadGate.kt` (CarDataAdapter chạm trần 500 dòng) — cùng thân `int(...)`.
+        val adapter = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/CarReadGate.kt")
         val int = SourceRoots.body(adapter, "fun int(id: String, prev: Int?): Int?")
         assertTrue(int.contains("HalBindingTable.parseInt(id, it)"), "lối chờ-có-số không được tự parse:\n$int")
         assertTrue(!int.contains("::coerceInt"), "phép parse thứ hai quay lại:\n$int")

@@ -41,7 +41,9 @@ object KachiPerf {
      * `BEHIND_*` (spec shortcuts-autostart R0.5): số lần BEHIND-HOME lùi về O1 · số lần activity giữ chỗ bị ROM chạy
      * thật. Đếm dồn (không vào [dueLine], không đổi định dạng dòng đo đang so giữa các bản) — đọc bằng [value].
      */
-    enum class Counter { HAL_READ, HAL_SKIP_OFFSCREEN, HAL_SKIP_ABSENT, SHELL_CMD, LOG_BYTES, SHELL_DENY, BEHIND_FAIL, BEHIND_ANCHOR_RAN }
+    enum class Counter { HAL_READ, HAL_SKIP_OFFSCREEN, HAL_SKIP_ABSENT, SHELL_CMD, LOG_BYTES, SHELL_DENY, BEHIND_FAIL, BEHIND_ANCHOR_RAN,
+        /** 3.1.6 HAL-EVENTS — lượt đọc được trả bằng giá trị sự kiện (KHÔNG gọi HAL) · sự kiện vào từ helper. */
+        HAL_EVENT_HIT, HAL_EVENT }
 
     private val values: Map<Counter, AtomicLong> =
         Counter.values().associateWith { AtomicLong(0) }
@@ -89,6 +91,8 @@ object KachiPerf {
         val shell = perMin(Counter.SHELL_CMD)
         val logKb = perMin(Counter.LOG_BYTES) / 1024.0
         val deny = perMin(Counter.SHELL_DENY)
+        val evHit = perMin(Counter.HAL_EVENT_HIT)
+        val evIn = perMin(Counter.HAL_EVENT)
         // ⚠ `Locale.ROOT`: `String.format` không có locale dùng locale MẶC ĐỊNH của máy, mà xe của owner chạy
         // `vi-VN` ⇒ `%.1f` in ra `1,5` thay vì `1.5`. Dòng này là **số đo** được chép vào `docs/diagnostics/perf-*`
         // và so giữa hai lần chạy; đổi dấu thập phân theo ngôn ngữ máy là làm hai lần đo không so được với nhau.
@@ -96,8 +100,8 @@ object KachiPerf {
         return String.format(
             Locale.ROOT,
             "cửa sổ %ds · HAL đọc=%.0f/phút · bỏ-không-hiện=%.0f · bỏ-xe-không-có=%.0f · shell=%.1f/phút · log=%.1f KB/phút" +
-                " · shell-chặn=%.1f/phút",
-            elapsed / 1000, read, offscreen, absent, shell, logKb, deny,
+                " · shell-chặn=%.1f/phút · thay-bằng-sự-kiện=%.0f/phút · sự-kiện=%.0f/phút",
+            elapsed / 1000, read, offscreen, absent, shell, logKb, deny, evHit, evIn,
         )
     }
 

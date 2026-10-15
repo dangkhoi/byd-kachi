@@ -124,11 +124,15 @@ object ControlRegistry {
             // `BYDAutoSettingDevice.voiceCtlBackDoor(cmd)` — cmd 1 = MỞ · 3 = ĐÓNG (đo 2 lần mỗi lệnh, cốp mở/đóng
             // thật; cmd 2 không thấy tác dụng khi cốp đứng yên — [ĐOÁN] dừng-giữa-hành-trình, chưa thử lúc chạy).
             // Đọc trạng thái từ `getBackDoorOpenedHeight` cũng ở Setting device (Bodywork trả rỗng).
-            // ⚠ 2026-09-25 · `readKey` ĐÃ GỠ cùng datum `tailgate_status`: [ĐO xe] `getHatchDoorStatus` rỗng với
-            // MỌI arg ⇒ cốp xe này không có cảm biến trạng thái. Nút vẫn GHI được (cmd 1/3 đo thật), nên lượt đọc
-            // lại của `VoiceReadback` nay trả về câu *"đã gửi lệnh"* kèm hedge thay vì *"đã xác nhận"* — đúng sự
-            // thật. Nối lại chỉ khi có một phép ĐO mới (nghi `getBackDoorOpenedHeight`), không phải đoán tên getter.
+            // ⚠ 2026-09-25 · `readKey` gỡ cùng datum `tailgate_status` vì `getHatchDoorStatus` rỗng mọi arg — đó là SAI TÊN
+            // getter (không có trong `framework.jar` fw 2606), không phải "cốp không có cảm biến" (quy kết sai, CLAUDE.md §2).
+            // ═══ 3.1.6 · R32 — NỐI LẠI: `tailgate_status` = `BYDAutoBodyworkDevice.getDoorState(6)` (`BODYWORK_LUGGAGE_DOOR`,
+            // 0 đóng · 1 mở · 255 ⇒ null) — [ĐO nguồn fw 2606] `BYDAutoBodyworkDevice.java:207,239-241,715-716` + [ĐO logcat xe
+            // 14/10] tiến trình BYD đọc 1 sau lệnh mở / 0 sau lệnh đóng; SystemUI BYD (`TrunkItem`) dùng đúng feature này.
+            // Owner 15/10 miễn bước shell thô §14 (trích ở `docs/diagnostics/trunk-state-read-2026-10-15.md` §5) — chốt trên xe.
+            // `confirmMs` 10 s: đóng mất ~5,8 s mới đọc 0 ([ĐO] cùng log) ⇒ giữ lạc quan dài hơn, hết hạn thì số đọc thắng.
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.voiceCtlBackDoor",
+            readKey = "tailgate_status", confirmMs = TRUNK_CONFIRM_MS,
             labelEn = "Tailgate"),
         ControlDef("readl", "Đèn đọc", "ic-readlight", ControlKind.TOGGLE, enabledByDefault = true,
             domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330643002",
@@ -428,6 +432,9 @@ object ControlRegistry {
 
     /** FIX286 · SR2 — app OEM nhả nóc sau đúng 200 ms (`SunRoofFragment.java:836` `sendEmptyMessageDelayed(0, 200L)`). */
     private const val SUNROOF_RELEASE_MS = 200L
+
+    /** 3.1.6 · R32 — cửa sổ xác nhận của cốp ([ControlDef.confirmMs]): [ĐO logcat xe 14/10] đóng ~5,8 s mới đọc 0 ⇒ 10 s có dư. */
+    const val TRUNK_CONFIRM_MS = 10_000L
 
     fun byId(id: String): ControlDef? = RegistryIndex.CONTROLS[id]   // [SOÁT P3] tra băm — xem KDoc RegistryIndex
     fun defaultEnabledIds(): List<String> = ALL.filter { it.enabledByDefault }.map { it.id }

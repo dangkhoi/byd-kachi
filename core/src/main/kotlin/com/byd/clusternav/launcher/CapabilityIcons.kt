@@ -95,6 +95,9 @@ object CapabilityIcons {
         // của `getSunroofPosition` (datum `sunroof_pos` đã gỡ), không phải của getter này. Hình MỞ là generic,
         // [CHƯA BIẾT] trên xe owner (🚗 `chips-icons-close.md` §5 có phép đo thật cho chip này).
         "sunroof_state" to StateIcons(mapOf(0 to "ic-car-top-sunroof", 1 to "ic-car-top-sunroof-open"), unknown = "ic-car-top-sunroof"),
+        // 3.1.6 · R32 — CỐP: ĐÓNG (mã 0) = hình khái niệm sẵn có (đuôi tô đặc); MỞ (mã 1) = đuôi chỉ còn NÉT (`gen-car.py`); chưa đọc ⇒
+        // hình ĐÓNG (trạng thái lành, khác ở sắc thái — cùng luật cửa).
+        "tailgate_status" to StateIcons(mapOf(0 to "ic-car-top-trunk", 1 to "ic-car-top-trunk-open"), unknown = "ic-car-top-trunk"),
         // ═══ 2.76 (R9) · TỰ ĐỘNG / CHỈNH TAY — chip icon hai trạng thái, KHÔNG chữ đuôi ═════════════════════════
         // Mã 0 = AUTO (`AC_CTRLMODE_AUTO` · `AC_WINDLEVEL_MANUAL_SIGN_OFF`, xem `TelemetryReadout.stateTable`).
         // AUTO = núm chọn mang chữ **A** (`ic-mode-auto`, glyph MỚI); TAY = chính núm chọn có kim (`ic-mode`, hình
@@ -250,6 +253,8 @@ object CapabilityIcons {
         // nhóm Thân xe. ⚠ 2026-09-25 cả ba mã kia đã gỡ (cốp không cảm biến · xe không có cửa sổ trời) ⇒ chỉ còn
         // `sunroof_state`, va chạm hình tự hết.
         "sunroof_state" to "ic-car-top-sunroof",
+        // 3.1.6 · R32 — cốp đọc lại được (`getDoorState(6)`) ⇒ datum mang lại hình cốp (cùng hình nút `trunk`: MỘT vật).
+        "tailgate_status" to "ic-car-top-trunk",
         "sunshade_pct" to "ic-car-top-sunshade",
         // U7 · BỐN CỬA và BỐN KÍNH — mã đã mang vị trí (`_lf`/`_rf`/`_lr`/`_rr`), nay HÌNH cũng mang.
         // Cửa vẽ VẠT CỬA MỞ RA NGOÀI thân; kính vẽ THANH KÍNH TRONG vách ⇒ hai họ không lẫn nhau.

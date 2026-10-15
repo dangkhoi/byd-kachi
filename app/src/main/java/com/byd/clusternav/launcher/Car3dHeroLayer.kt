@@ -129,10 +129,10 @@ internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(
         KachiIcons.byLevel(v, def.icon, lv, Sp.ICON_M)
         // BẬT nói bằng đĩa tông nhấn + icon mực nhấn (như chip bật); TẮT = đĩa mờ + icon mực thường mờ nhẹ. [ĐO máy ảo 13/10, QA ảnh]
         // bản đầu chỉ đổi màu icon ⇒ hai trạng thái khó phân biệt trên kính tối. R29 T29-6: đĩa = MẶT (màu đĩa trên nền đo dưới nó)
-        // ⇒ đặt màu đĩa + khai mặt TRƯỚC khi tô icon (nền gốc qua [AdaptiveInk.base] — lớp đỡ có thể bọc nó).
+        // ⇒ đặt màu đĩa + khai mặt TRƯỚC khi tô icon (họ mực của icon = họ của lớp phủ 3D, đo trên đĩa).
         val disc = if (lv > 0) ColorMath.withAlpha(c(KachiTheme.ACCENT), ON_DISC_ALPHA) else c(KachiTheme.SCRIM_BTN)
-        (AdaptiveInk.base(v) as? GradientDrawable)?.setColor(disc)
-        AdaptiveInk.fill(v, fades = false, variant = disc) { intArrayOf(disc) }
+        (v.background as? GradientDrawable)?.setColor(disc)
+        AdaptiveInk.fill(v, AdaptiveInk.Scope.LAYER, fades = false, variant = disc) { intArrayOf(disc) }
         // TẮT: glyph [KachiTheme.ON_ACCENT] (trắng) — đĩa [KachiTheme.SCRIM_BTN] ĐEN 50 % cố định (không theo chủ đề, KDoc palette);
         // [ĐO máy ảo 14/10, chủ đề SÁNG] mực `ICON` của bản sáng (79,91,109) trên đĩa (8,15,19) chỉ ~2,7:1 — icon "bạc màu" ban ngày.
         KachiIcons.tint(v, Sp.ICON_M, lv > 0, if (lv > 0) KachiTheme.ACCENT_INK else KachiTheme.ON_ACCENT)

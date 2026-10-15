@@ -232,15 +232,15 @@ class VoiceWakeService : Service() {
         // hỏng) thì đứng xuống có log, không để nền tảng giết tiến trình bằng RemoteServiceException sau 5 s.
         if (!startForegroundOnce()) { stopSelf(startId); return START_NOT_STICKY }
         lastStartId = startId
-        // ACTION_LISTEN_NOW (owner 2026-09-25): phím-thoại / nút mic khi app khác đang fullscreen ⇒ mở phiên nghe
-        // HEADLESS (overlay TYPE_APPLICATION_OVERLAY nổi trên app đang xem), KHÔNG kéo KachiHomeActivity lên đè.
-        // Chạy được cả khi "Hey Kachi" TẮT (đây là phiên nghe một-lượt, không cần bộ nghe câu gọi). Không bật
-        // listener wake; wake OFF ⇒ sau khi phiên xong service ĐỨNG XUỐNG (BG-20, xem [standDownTask]).
+        // ACTION_LISTEN_NOW (owner 2026-09-25): phím-thoại / nút mic ⇒ phiên nghe HEADLESS (overlay nổi trên app đang xem), KHÔNG kéo
+        // KachiHomeActivity lên. Chạy cả khi "Hey Kachi" TẮT; wake BẬT ⇒ bộ nghe câu gọi đỗ suốt lượt nhường ([holdMicForSession]);
+        // wake OFF ⇒ sau khi phiên xong service ĐỨNG XUỐNG (BG-20, xem [standDownTask]).
         // FIX286 · VK1 — chế độ đọc từ ảnh chụp TƯƠI mỗi lượt start (START_STICKY dựng lại cũng qua đây), không tin cờ cũ.
         val mode = mode()
         VoiceTeachRelay.onWakeStart(this, intent, mode)   // 2.91 VOICE-APP-NAMES — lượt DẠY ở `:wake` (ack + chạy; OFF ⇒ không ack)
         if (intent?.action == ACTION_LISTEN_NOW) {
             Log.i(TAG, "LISTEN_NOW — mở phiên nghe headless (overlay, không kéo launcher)")
+            if (mode == VoiceWakeMode.WAKE) holdMicForSession()   // 3.1.6 — nhả mic NGAY khi lệnh tới (KDoc hàm)
             // VK6 — lối vào + chế độ + trạng thái mô hình lúc NHẬN lệnh (logcat `KachiWakeSession` + phiếu cho nhật ký bền).
             WakeSessionLog.pending(WakeSessionJournal.Entry.of(intent.getStringExtra(EXTRA_ENTRY)), mode)
             // 2.69 — bấm phím = muốn nói NGAY: phiên cũ đang đọc/nán bị cắt (chủ sở hữu mức tiến trình, xem [voiceSession]).
@@ -337,19 +337,20 @@ class VoiceWakeService : Service() {
      * bộ nghe vẫn tự sống lại.
      */
     private fun fireWake() {
-        // (1) Chặn lượt xin mic kế tiếp TRƯỚC khi phiên lệnh mở ra — xem KDoc (mic đã nhả từ trước, đây là kéo dài).
-        listener?.setListening(false)
-        // (2) Ghi mốc nhường NGAY.
-        handoffUntil = SystemClock.elapsedRealtime() + WAKE_HANDOFF_MS
+        holdMicForSession()   // (1) chặn lượt xin mic kế tiếp TRƯỚC khi phiên mở · (2) mốc nhường · (4) hẹn nghe lại — xem KDoc
         // (3) R7 — mở PHIÊN NGHE của chính `:wake` với overlay ĐỘC LẬP, KHÔNG kéo KachiHomeActivity lên đè app
         //     đang xem (owner 2026-09-23). Overlay `TYPE_APPLICATION_OVERLAY` nổi trên mọi thứ; điều khiển/nav/nhạc
         //     chạy thẳng từ service. Đường Activity (nút mic/"Nói với xe") KHÔNG đổi.
         WakeSessionLog.pending(WakeSessionJournal.Entry.WAKE_WORD, VoiceWakeMode.WAKE)   // VK6 — phiếu cho nhật ký phiên
         runCatching { main.post { voiceSession.start() } }
             .onFailure { Log.w(TAG, "fireWake mở phiên nghe lỗi", it) }
-        // (4) Hẹn nghe lại — vô điều kiện, kể cả khi overlay bị nền tảng chặn im lặng.
-        main.removeCallbacks(resumeTask)
-        main.postDelayed(resumeTask, WAKE_HANDOFF_MS)
+    }
+
+    /** (1)(2)(4) của [fireWake] (hẹn nghe lại VÔ ĐIỀU KIỆN). 3.1.6 LISTEN_NOW dùng chung: [ĐO xe 15/10] bộ nghe ASR giải mã 1,2–2,7 s
+     *  không nhả kịp lúc phiên xin mic (~2,3 s sau lệnh) ⇒ *"lần đầu không nghe rõ"* — nhả khi lệnh TỚI, không giành lại giữa lượt. */
+    private fun holdMicForSession() {
+        listener?.setListening(false); handoffUntil = SystemClock.elapsedRealtime() + WAKE_HANDOFF_MS
+        main.removeCallbacks(resumeTask); main.postDelayed(resumeTask, WAKE_HANDOFF_MS)
     }
 
     // `buildSession()` — bộ dây của phiên `:wake` (R7 · §8.2 (A) · 2.69 relay) là hàm mở rộng ở `VoiceWakeSessionFactory.kt`

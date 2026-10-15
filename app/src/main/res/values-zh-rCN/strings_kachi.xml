@@ -215,6 +215,9 @@
     <string name="kachi_doors_unknown">车门状态 —</string>
     <string name="kachi_doors_open">有车门未关</string>
     <string name="kachi_doors_closed">4门均已关闭</string>
+    <string name="kachi_tailgate_open">后备箱已打开</string>
+    <string name="kachi_tailgate_closed">后备箱已关闭</string>
+    <string name="kachi_tailgate_unknown">后备箱 —</string>
     <string name="kachi_tyre_pressure_unit">胎压（%1$s）</string>
     <string name="kachi_slot_swap_empty">为格位%1$d选择应用</string>
     <string name="kachi_slot_swap">更换格位%1$d的应用</string>

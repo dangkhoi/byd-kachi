@@ -450,7 +450,7 @@ object KachiTheme {
         "ic-car-top-tyre-temp-rl" -> R.drawable.ic_car_top_tyre_temp_rl
         "ic-car-top-tyre-temp-rr" -> R.drawable.ic_car_top_tyre_temp_rr
         "ic-car-top-seat-fl" -> R.drawable.ic_car_top_seat_fl
-        "ic-car-top-trunk" -> R.drawable.ic_car_top_trunk
+        "ic-car-top-trunk" -> R.drawable.ic_car_top_trunk; "ic-car-top-trunk-open" -> R.drawable.ic_car_top_trunk_open   // 3.1.6 R32 cặp cốp
         "ic-car-top-sunroof" -> R.drawable.ic_car_top_sunroof
         "ic-car-top-sunroof-pos" -> R.drawable.ic_car_top_sunroof_pos
         // 2.76 (R8) — cửa sổ trời MỞ (mã 1) cho chip `sunroof_state`; ĐÓNG dùng `ic-car-top-sunroof`. Xe owner N/A.

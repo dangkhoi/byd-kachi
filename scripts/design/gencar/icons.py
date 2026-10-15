@@ -46,6 +46,9 @@ ICONS: dict[str, tuple[str, list[str], list, str]] = {
     #   đèn viền (#39-43 · #46-49). Giữ dòng sinh cho một mã không còn tồn tại = sinh ra tệp mồ côi, và
     #   `IconStyleContractTest` bắt đúng ca đó ở cả hai chiều (tệp không ai dùng · bảng tra trỏ vào hư không).
     "ic_car_top_trunk": ("top", TOP_SUB, ["boot"], "CỐP SAU — mảng đuôi xe tô đặc (nắp ĐANG ĐÓNG, liền khối)."),
+    # 3.1.6 · R32 · CỐP MỞ — cặp trạng thái với ic_car_top_trunk (đóng, tô đặc), cùng lối cửa sổ trời: NẮP chỉ còn NÉT. Cốp đọc lại
+    # được (`tailgate_status` = `getDoorState(6)`) ⇒ chip/ô nói mở/đóng bằng HÌNH (họ 3 — TopStripStateIconTest).
+    "ic_car_top_trunk_open": ("top", TOP_SUB, ["boot:stroke"], "CỐP SAU MỞ — mảng đuôi xe chỉ còn NÉT (nắp đã nhấc); cặp với ic_car_top_trunk (đóng, tô đặc)."),
     "ic_car_top_sunroof": ("top", TOP_SUB, ["sunroof"], "CỬA SỔ TRỜI — ô nóc tô đặc (tấm kính ĐANG ĐÓNG, kín ô)."),
     "ic_car_top_sunshade": ("top", TOP_SUB, ["sunshade"], "RÈM CHE NẮNG — THANH CUỘN ở mép trước nóc + TẤM PHỦ có HAI NẾP GẤP khoét rỗng (even-odd)."),
     # 2.76 R8 · CỬA SỔ TRỜI MỞ — cặp trạng thái với ic_car_top_sunroof (đóng, tô đặc). Không mũi tên: mũi tên là

@@ -27,6 +27,7 @@ class VoiceWakeIsolationContractTest {
     private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
     private val service by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeService.kt") }
+    private val hold by lazy { SourceRoots.body(service, "private fun holdMicForSession()") }
     // 2.69 — ba tệp `:wake` tách ra khỏi service (bộ dây phiên · relay Activity · chủ sở hữu phiên) canh cùng luật.
     private val factory by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeSessionFactory.kt") }
     private val relay by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeHomeRelay.kt") }
@@ -217,14 +218,32 @@ class VoiceWakeIsolationContractTest {
     @Test
     fun `fireWake nha mic truoc roi moi mo phien lenh`() {
         val fn = SourceRoots.body(service, "private fun fireWake()")
-        val release = fn.indexOf("listener?.setListening(false)")
+        // 3.1.6 — ba bước (nhả · mốc · hẹn) gom vào `holdMicForSession()` để LISTEN_NOW dùng CHUNG (bài kế khoá chỗ ấy).
+        val release = fn.indexOf("holdMicForSession()")
         val start = fn.indexOf("voiceSession.start()")
-        assertTrue(release > 0, "fireWake phải nhả micro (`setListening(false)`) — xem KDoc tại chỗ")
+        assertTrue(hold.contains("listener?.setListening(false)"), "bước nhường phải nhả micro (`setListening(false)`)")
+        assertTrue(release > 0, "fireWake phải nhả micro (`holdMicForSession()`) — xem KDoc tại chỗ")
         assertTrue(start > 0, "fireWake vẫn phải mở phiên nghe lệnh (voiceSession.start)")
         assertTrue(
             release < start,
             "nhả micro phải nằm TRƯỚC khi mở phiên — mở phiên lệnh trong lúc `:wake` còn giữ mic là hai mic",
         )
+    }
+
+    /**
+     * 3.1.6 — owner 15/10 (xe): *"lần đầu mở Kachi voice ⇒ không nghe, báo không nghe rõ, lần 2 mới được"*. [ĐO logcat] lối phím
+     * (`LISTEN_NOW`) KHÔNG nhường như `fireWake`: bộ nghe câu gọi vẫn giữ mic + đang giải mã (ASR 1,2–2,7 s) khi phiên xin mic
+     * ~2,3 s sau ⇒ `chắn lượt 'chinh' … 'wake#1'`; giữa hai lượt hội thoại nó còn giành lại mic (`chắn lượt 'hoi-thoai'`).
+     * Lối phím phải đi CÙNG bước nhường, TRƯỚC khi mở phiên, và chỉ khi wake đang BẬT (OFF/HOLD không có bộ nghe).
+     */
+    @Test
+    fun `LISTEN_NOW nhuong micro ngay khi lenh toi, truoc khi mo phien`() {
+        val cmd = SourceRoots.body(service, "override fun onStartCommand(")
+        val branch = cmd.substring(cmd.indexOf("if (intent?.action == ACTION_LISTEN_NOW)"))
+        val holdAt = branch.indexOf("if (mode == VoiceWakeMode.WAKE) holdMicForSession()")
+        val start = branch.indexOf("VoiceWakeSessions.preempt { buildSession() }.start()")
+        assertTrue(holdAt > 0, "LISTEN_NOW (wake BẬT) phải gọi holdMicForSession() — không thì lần bấm đầu nhận Busy(wake)")
+        assertTrue(holdAt < start, "nhường phải nằm TRƯỚC lúc mở phiên — phiên xin mic sau ~2 s chuẩn bị")
     }
 
     /**
@@ -235,7 +254,8 @@ class VoiceWakeIsolationContractTest {
      */
     @Test
     fun `fireWake hen nghe lai theo thoi gian, khong cho tin hieu`() {
-        val fn = SourceRoots.body(service, "private fun fireWake()")
+        assertTrue(SourceRoots.body(service, "private fun fireWake()").contains("holdMicForSession()"))
+        val fn = hold
         assertTrue(fn.contains("main.removeCallbacks(resumeTask)"), "phải huỷ hẹn cũ trước khi hẹn mới (không xếp đống)")
         assertTrue(
             fn.contains("main.postDelayed(resumeTask, WAKE_HANDOFF_MS)"),
@@ -272,7 +292,8 @@ class VoiceWakeIsolationContractTest {
      */
     @Test
     fun `luot nhuong micro khong bi SCREEN_ON hay sync huy giua duong`() {
-        val fire = SourceRoots.body(service, "private fun fireWake()")
+        assertTrue(SourceRoots.body(service, "private fun fireWake()").contains("holdMicForSession()"))
+        val fire = hold
         assertTrue(
             fire.contains("handoffUntil = SystemClock.elapsedRealtime() + WAKE_HANDOFF_MS"),
             "fireWake phải ghi MỐC nhường, không chỉ hẹn giờ — hẹn giờ một mình không chặn được hai đường kia",

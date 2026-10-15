@@ -88,6 +88,18 @@ class HalSignalHub(
     /** Việc nền nhỏ cùng luồng hub (vd `cam_sort` của camera) — không dựng luồng riêng. */
     fun background(task: () -> Unit) = exec.execute { runCatching(task).onFailure { logW("việc nền ném: $it") } }
 
+    /**
+     * 3.1.6 HAL-EVENTS — nơi nhận dòng `hal.*` (chào · đăng ký · sự kiện) và tín hiệu mất dây của client DUY NHẤT. Gán một lần
+     * (`AppContainer` → `CarEventFeed`); callback chạy trên luồng đọc socket.
+     */
+    fun onHalEvents(sink: (com.byd.clusternav.launcher.HalEventWire.Msg) -> Unit, down: () -> Unit) {
+        client.onHal = sink
+        client.onHalDown = down
+    }
+
+    /** Thay dòng `sub …` gửi helper — ghi socket trên luồng hub (không chặn bên gọi, không ghi từ luồng chính). */
+    fun subscribe(line: String) = exec.execute { runCatching { client.subscribe(line) }.onFailure { logW("subscribe ném: $it") } }
+
     /** Đang giữ helper + client (kể cả trong ân hạn). */
     val isActive: Boolean get() = demand.isActive
 

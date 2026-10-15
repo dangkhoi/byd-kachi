@@ -117,18 +117,19 @@ object CapabilityGroups {
         icon = "ic-group-doors", domain = Domain.BODY, shape = WidgetShape.BOARD,
         reads = listOf(
             "door_lf", "door_rf", "door_lr", "door_rr",
-            "sunroof_state", "sunshade_pct",
+            "tailgate_status", "sunroof_state", "sunshade_pct",
         ),
         // ⚠ UX-OVERHAUL · WP8 2026-09-20: hai ô ĐỌC `tailgate_position` (vị trí cốp) và `mirror_fold` (gương) đã
         // xoá theo triage của owner (#29 · #30) ⇒ câu phụ bỏ chữ "gương", và bảng xe không còn chấm gương.
         // ⚠⚠ 2026-09-25: `tailgate_status` và `sunroof_pos` cũng đã xoá — [ĐO xe] `getHatchDoorStatus` rỗng với
         // MỌI arg (cốp xe này không có cảm biến trạng thái) và `getSunroofPosition` = 65535 (xe owner nghi không có
         // nóc mở — **[SUY]**, không phải [ĐO]: nóc kính liền cũng cho pos = sentinel; FIX286 SR7 thống nhất với
-        // `TelemetryReadout`). ⇒ dòng phụ bỏ chữ "cốp"; bảng xe không còn chấm cốp (`GroupBoard.DOOR_PARTS`). Nút `trunk` GIỮ —
-        // cốp GHI được (`voiceCtlBackDoor` cmd 1/3, [ĐO xe 2026-09-17]), chỉ không đọc lại được.
+        // `TelemetryReadout`). ⇒ dòng phụ bỏ chữ "cốp"; bảng xe không còn chấm cốp (`GroupBoard.DOOR_PARTS`).
+        // ═══ 3.1.6 · R32: `tailgate_status` TRỞ LẠI (getter đúng `getDoorState(6)`; lần gỡ 25/09 là sai tên getter) ⇒ dòng phụ
+        // có lại chữ "cốp", bảng xe có lại chấm cốp.
         writes = listOf("trunk", "sunroof", "sunshade"),
-        sub = "cửa, nóc, rèm",
-        subEn = "doors, sunroof, sunshade",
+        sub = "cửa, cốp, nóc, rèm",
+        subEn = "doors, tailgate, sunroof, sunshade",
     )
 
     /**

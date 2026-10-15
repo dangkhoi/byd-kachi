@@ -79,6 +79,39 @@ class CarStatusRepositoryTest {
     }
 
     /**
+     * 3.1.6 — owner 15/10 *"mở/đóng cửa nhận chậm"* ([ĐO xe] cửa chỉ đọc mỗi 10 s). Nhịp THÂN XE: màn bày cửa ⇒ đọc mỗi
+     * `bodyMs` (3 s), không thì KHÔNG đọc và không hỏi màn; `refreshNow` (câu hỏi bằng giọng) cũng đọc nó. Bỏ vòng thân xe khỏi
+     * `start()` ⇒ ĐỎ.
+     */
+    @Test fun `nhip than xe doc cua moi 3 s khi man bay cua, khong doc khi khong bay`() = runTest {
+        val reader = object : CarStatusReader {
+            var body = 0
+            var needed = false
+            override fun readFast(prev: CarStatus): CarStatus = prev
+            override fun readSlow(prev: CarStatus): CarStatus = prev
+            override fun fastNeeded(): Boolean = false
+            override fun readBody(prev: CarStatus): CarStatus { body++; return prev }
+            override fun bodyNeeded(): Boolean = needed
+        }
+        var asks = 0
+        val repo = CarStatusRepository(reader, backgroundScope, fastMs = 1_000, slowMs = 10_000, bodyMs = 3_000, awake = { asks++; true })
+        repo.start(); runCurrent()
+        advanceTimeBy(30_000); runCurrent()
+        assertEquals(0, reader.body, "màn không bày cửa mà vẫn đọc cửa")
+        val asksIdle = asks
+        reader.needed = true
+        advanceTimeBy(10_001); runCurrent()                   // ≤ một nhịp chậm để tỉnh
+        val woke = reader.body
+        assertTrue(woke >= 1, "nhu cầu cửa đổi mà vòng thân xe không tự sống lại")
+        advanceTimeBy(30_000); runCurrent()
+        assertTrue(reader.body - woke in 9..11, "30 s ⇒ ~10 lượt (3 s/lượt): ${reader.body - woke}")
+        assertTrue(asksIdle <= 4, "lúc rảnh vòng thân xe không được hỏi màn (asks=$asksIdle — chỉ vòng chậm hỏi)")
+        repo.refreshNow()
+        assertTrue(reader.body > woke, "refreshNow phải đọc cả nhịp thân xe")
+        repo.stop()
+    }
+
+    /**
      * [SOÁT P1-1 · 2026-09-16] `refreshNow` là đường TƯƠI cho câu hỏi bằng giọng: nó phải đọc **ngay trên luồng
      * của chỗ gọi** (người ta đang đợi câu trả lời, nhịp chậm còn 10 s nữa) và trả về đúng ảnh vừa đọc.
      *

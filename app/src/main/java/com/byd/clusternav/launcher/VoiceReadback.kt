@@ -110,8 +110,11 @@ internal class VoiceReadback(
         if (first == null) { say(VoiceReply.done(shown, l)); return }
         if ((first > 0) == wantOn) { say(VoiceReply.doneConfirmed(shown, l)); return }
         background {
-            runCatching { Thread.sleep(READBACK_SETTLE_MS) }
-            val again = runCatching { port.readState(def.id) }.getOrNull() ?: first
+            val read = { runCatching { port.readState(def.id) }.getOrNull() }
+            val again = def.confirmMs?.let { settle(it, first, wantOn, read) } ?: run {
+                runCatching { Thread.sleep(READBACK_SETTLE_MS) }
+                read() ?: first
+            }
             onUi {
                 val confirmed = (again > 0) == wantOn
                 // ⚠ [SOÁT lượt E · P1] Lượt đọc lại là bằng chứng **một chiều**: khớp ⇒ chắc chắn ăn; còn lệch thì
@@ -136,7 +139,29 @@ internal class VoiceReadback(
         }
     }
 
+    /**
+     * 3.1.6 · R32 — **khoảng chờ theo từng nút** (đúng cách chữa mà KDoc [READBACK_SETTLE_MS] để dành cho lượt có số đo): nút khai
+     * [ControlDef.confirmMs] (cốp — [ĐO logcat xe 14/10] đóng ~5,8 s mới đọc 0) được đọc lại mỗi [CONFIRM_POLL_MS] tới khi số khớp
+     * [wantOn], CÓ TRẦN = [windowMs] (≤ 10 lượt cho cốp, trên luồng nền sẵn có của lượt đọc lại — không luồng mới, không vòng vô
+     * hạn). Trả số đọc cuối (đọc không ra ⇒ số trước đó). Hết cửa sổ mà vẫn lệch ⇒ chỗ gọi kết luận như cũ (cốp: ✓ + hedge,
+     * [CtlSafetyPolicy.MOVES_SLOWLY]).
+     */
+    private fun settle(windowMs: Long, first: Int, wantOn: Boolean, read: () -> Int?): Int {
+        var last = first
+        var waited = 0L
+        while (waited < windowMs) {
+            runCatching { Thread.sleep(CONFIRM_POLL_MS) }
+            waited += CONFIRM_POLL_MS
+            last = read() ?: last
+            if ((last > 0) == wantOn) break
+        }
+        return last
+    }
+
     private companion object {
+        /** Nhịp đọc lại trong cửa sổ xác nhận của nút ([settle]) — 1 s (nhịp SystemUI BYD đọc lại cốp là 2 s, `TrunkItem.java:113-135`). */
+        const val CONFIRM_POLL_MS = 1_000L
+
         /**
          * Chờ bao lâu rồi đọc lại khi lượt đọc ĐẦU báo khác mức vừa gửi.
          *

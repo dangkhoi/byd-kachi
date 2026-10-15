@@ -433,7 +433,8 @@ class GroupTileWiringContractTest {
                 // ⚠ WP8 2026-09-20: `g_ambient` gỡ hẳn (hết thành viên) · `g_doors` 10 → 8 ô ⇒ [5,5] thành [4,4].
                 // ⚠⚠ 2026-09-25 (owner gỡ 7 datum CHẾT): `g_doors` 8 → 6 ô ⇒ [4,4] → [3,3]; `g_battery` 4 → 2 ô
                 //    (chỉ còn soh_oem · volt_12v) ⇒ [4] → [2]; `g_trip` 6 → 4 ô ⇒ [3,3] → [4].
-                "g_tyres" to listOf(4, 4), "g_windows" to listOf(4), "g_doors" to listOf(3, 3),
+                // 3.1.6 · R32: `g_doors` 6 → 7 ô (cốp `tailgate_status` trở lại) ⇒ [3,3] → [4,3].
+                "g_tyres" to listOf(4, 4), "g_windows" to listOf(4), "g_doors" to listOf(4, 3),
                 "g_lights" to listOf(5, 4), "g_climate" to listOf(5, 4, 4),
                 // ⚠ WP8 2026-09-20: `g_battery` từng còn 4 ô (batt_temp · soh_oem · volt_12v · volt_12v_level) sau
                 // khi purge cell_v/target_soc theo (V) FEATURE-FILTER ⇒ [5,4] → [4]; nay còn 2 ô ⇒ [2].
@@ -449,7 +450,8 @@ class GroupTileWiringContractTest {
             mapOf(
                 // ⚠⚠ 2026-09-25: `g_doors` 8 → 6 ô ⇒ [3,2,2] → [3,2]; `g_battery` 4 → 2 ô ⇒ [3] → [1];
                 //    `g_trip` 6 → 4 ô ⇒ [3,2] → [3].
-                "g_tyres" to listOf(3, 2, 2), "g_windows" to listOf(3), "g_doors" to listOf(3, 2),
+                // 3.1.6 · R32: `g_doors` + cốp ⇒ [3,2] → [3,3].
+                "g_tyres" to listOf(3, 2, 2), "g_windows" to listOf(3), "g_doors" to listOf(3, 3),
                 "g_lights" to listOf(3, 3, 2), "g_climate" to listOf(3, 3, 3, 3),
                 // ⚠ [(V) FEATURE-FILTER 2026-09-17] Nhóm Năng lượng 10 → 6 ô (5 ô sạc xoá theo lệnh owner,
                 //    `consumption_50km` thêm vào): STRIP [5,5] → [3,3] · CARD [3,3,3] → [3,2].

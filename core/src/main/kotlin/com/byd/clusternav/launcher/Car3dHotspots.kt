@@ -58,17 +58,11 @@ object Car3dHotspots {
 
     /**
      * Biến thể có ô đọc [read] (một hoặc nhiều mã nối `|`) đang "khác nghỉ": BẤT KỲ ô nào [active]. Rỗng ⇒ không bao giờ.
-     * [cell] tra ô theo mã trong nhóm của biến thể. Mã `cmd:<nút>` ([Car3dVariant.CMD]) = lệnh cuối Kachi đã gửi cho nút đó
-     * ([sent] — vật không cảm biến như cốp); không bao giờ coi là SỐ ĐỌC.
+     * [cell] tra ô theo mã trong nhóm của biến thể. (3.1.6 · R32: mã `cmd:<nút>` = "lệnh cuối Kachi đã gửi" đã gỡ cùng chủ duy
+     * nhất của nó — cốp nay có ô đọc `tailgate_status`.)
      */
-    fun activeAny(read: String, sent: (String) -> Boolean = { false }, cell: (String) -> GroupCell?): Boolean =
-        read.split('|').map { it.trim() }.any { r ->
-            when {
-                r.isEmpty() -> false
-                r.startsWith(Car3dVariant.CMD) -> sent(r.removePrefix(Car3dVariant.CMD))
-                else -> active(cell(r))
-            }
-        }
+    fun activeAny(read: String, cell: (String) -> GroupCell?): Boolean =
+        read.split('|').map { it.trim() }.any { r -> r.isNotEmpty() && active(cell(r)) }
 
     /**
      * Điểm có VIỆC khi chạm (ghi được — có ô nút): CÙNG cờ mà [Car3dPick.pick] dùng để nhường cú chạm cho đích có việc.

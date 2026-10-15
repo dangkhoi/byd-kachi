@@ -34,5 +34,5 @@ internal fun wiredStatus(seed: String): CarStatus {
             ),
         ),
     )
-    return adapter.readSlow(adapter.readFast(CarStatus()))
+    return adapter.readBody(adapter.readSlow(adapter.readFast(CarStatus())))   // 3.1.6 — cửa ở nhịp thân xe
 }

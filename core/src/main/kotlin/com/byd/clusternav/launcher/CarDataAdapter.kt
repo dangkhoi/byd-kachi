@@ -31,110 +31,29 @@ class CarDataAdapter(
     /**
      * TRIP-TIME-6MIN (owner duyệt 2026-09-27) — làm mượt `trip_hours` (HAL trả bậc 0,1 h = 6 phút, [ĐO xe Seal 11:48]).
      * **MỘT** instance cho một adapter vì nó có trạng thái (mốc + đồng hồ trôi); dùng chung [clock] để test bằng đồng
-     * hồ giả. Chỉ nhận giá trị ĐỌC THẬT — xem [Gate.dblVia].
+     * hồ giả. Chỉ nhận giá trị ĐỌC THẬT — xem [CarReadGate.dblVia].
      */
     private val tripTime: TripTimeSmoother = TripTimeSmoother(clock),
+    /** 3.1.6 HAL-EVENTS — datum đang được SỰ KIỆN phục vụ (`HalEventCache.covers`) ⇒ nhịp 3 s / 1 s nghỉ. Mặc định: poll như cũ. */
+    private val covered: (String) -> Boolean = { false },
 ) : CarDataPort, CarStatusReader {
 
-    /**
-     * Một lượt đọc có **hai** cổng. Chụp tập nhu cầu + mốc giờ MỘT lần cho cả nhịp (gọi [demand] 123 lần mỗi nhịp
-     * là đúng kiểu chi phí mà cổng này sinh ra để cắt), rồi mỗi field hỏi hai câu:
-     *  1. *màn có đang bày không* ([CarDataDemand]) — nếu không thì GIỮ giá trị cũ;
-     *  2. *xe này có không* ([HalAbsentCache]) — datum đã `null` liên tiếp thì giãn nhịp hỏi lại.
-     *
-     * Thứ tự QUAN TRỌNG: hỏi nhu cầu TRƯỚC. Một datum không hiện thì không được tính là "miss" — nếu không, cái
-     * không đọc lại tự nguội, rồi lúc người dùng kéo nó lên màn thì nó câm cho tới lượt thử lại.
-     */
-    private class Gate(
-        private val table: HalBindingTable,
-        private val want: Set<String>?,
-        private val absent: HalAbsentCache,
-        val now: Long,
-    ) {
-        /** Màn có bày [id] không — như [wanted] nhưng KHÔNG đếm [KachiPerf] (hỏi để quyết, không phải một lượt bỏ đọc). */
-        fun wants(id: String): Boolean = want?.contains(id) ?: true
+    // Cổng đọc hai lớp (nhu cầu + cache vắng) — tách ra [CarReadGate] (3.1.6 soát Pass 6: tệp chạm trần 500 dòng).
 
-        private fun wanted(id: String): Boolean {
-            val w = want ?: return true
-            if (id in w) return true
-            KachiPerf.add(KachiPerf.Counter.HAL_SKIP_OFFSCREEN)
-            return false
-        }
+    private fun gate() = eventGate ?: CarReadGate(table, demand(), absent, clock())
 
-        /**
-         * ⚠ Hai lối bỏ qua trả về HAI thứ khác nhau, có chủ ý:
-         *  • *không hiện* ⇒ trả [prev] — ta KHÔNG biết gì mới, mà cũng chưa kết luận gì; xoá đi thì lúc ô quay lại
-         *    màn hình nó nháy "—" một nhịp dù dữ liệu cũ vẫn còn đúng.
-         *  • *đang nguội* ⇒ trả `null` (= "—") — ta ĐÃ kết luận datum này đọc không ra. Trả [prev] ở đây là đóng
-         *    băng con số cuối cùng đọc được, tức ô hiện một giá trị CŨ mà trông như đang sống (đúng bệnh
-         *    "SurfaceView giữ khung hình cuối" mà `SlotLiveProbe` sinh ra để chữa, lần này bằng số).
-         */
-        private inline fun <T> read(id: String, prev: T?, body: () -> T?): T? =
-            if (!wanted(id)) prev else fresh(id, body)
+    /** 3.1.6 HAL-EVENTS — cổng + id của lượt [readEvents] đang chạy (mọi lượt đọc đi dưới khoá `publish` của repo ⇒ không chồng). */
+    @Volatile private var eventGate: CarReadGate? = null
+    @Volatile private var eventIds: Set<String>? = null
 
-        /** Lượt đọc THẬT (đã qua cổng vắng) — `null` ở đây = *"đọc không ra"* (⚠), KHÔNG phải *"không hiện"*. */
-        private inline fun <T> fresh(id: String, body: () -> T?): T? {
-            if (!absent.shouldRead(id, now)) { KachiPerf.add(KachiPerf.Counter.HAL_SKIP_ABSENT); return null }
-            val v = body()
-            absent.record(id, v != null, now)
-            return v
-        }
-
-        fun int(id: String, prev: Int?): Int? =
-            if (id in HalReadTables.INVALID_IS_PENDING) pending(id, prev) { HalBindingTable.parseInt(id, it) }
-            else read(id, prev) { table.readInt(id) }
-        fun dbl(id: String, prev: Double?): Double? =
-            if (id in HalReadTables.INVALID_IS_PENDING) pending(id, prev, HalBindingTable::coerceDouble)
-            else read(id, prev) { table.readDouble(id) }
-
-        /**
-         * Soát 2.88 Pass 2 — datum mà mã "không hợp lệ" nghĩa là *"chưa có số"* ([HalReadTables.INVALID_IS_PENDING]):
-         * hiện y như [read] (mã ⇒ `null` = "—"), nhưng cache vắng ghi *"getter CÓ trả lời"* nên KHÔNG nguội vì mã ấy —
-         * số thật đến là nhịp kế thấy ngay, không chờ một lượt thử lại 60 s … 10 phút. Getter vắng thật (sentinel /
-         * không tra được tên ⇒ [HalBindingTable.answerRaw] `null`) vẫn nguội như mọi datum.
-         *
-         * 2.93 · HAL-PENDING-PARSE-DRY — *"getter đã trả lời"* = MÃ chưa-có-số HOẶC một con số [parse] đọc được; chuỗi lạ
-         * không parse nổi (vd `int=- float=- buf=4`) nay nguội như [fresh] (bản trước coi MỌI chuỗi khác `null` là đã trả
-         * lời ⇒ đọc lại mỗi nhịp mãi). Phép parse Int là [HalBindingTable.parseInt] — chung với [HalBindingTable.readInt].
-         */
-        private inline fun <T> pending(id: String, prev: T?, parse: (String?) -> T?): T? {
-            if (!wanted(id)) return prev
-            if (!absent.shouldRead(id, now)) { KachiPerf.add(KachiPerf.Counter.HAL_SKIP_ABSENT); return null }
-            val raw = table.answerRaw(id)
-            val code = raw != null && HalBindingTable.isInvalidValue(id, raw)
-            val v = if (code) null else parse(raw)
-            // HAL-PENDING-PARSE-DRY (2.93 MISC): "đã đáp" = mã không hợp lệ HOẶC số đọc được — chuỗi rác ⇒ nguội như vắng.
-            absent.record(id, code || v != null, now)
-            asked += id
-            // 2.93 TYRE-BURST-REASON: mã "không hợp lệ" vẫn là LỜI ĐÁP của xe — giữ lại cho [code] (cùng lượt đọc, 0 HAL thêm).
-            // Soát senior WIDGET Pass 1 [P3]: đọc mã bằng CÙNG `parseInt` mà `isInvalidValue` vừa dùng để quyết [code] — một phép parse.
-            if (code) codes[id] = HalBindingTable.parseInt(id, raw)
-            return v
-        }
-
-        /** Datum [pending] đã HỎI xe ở nhịp này + mã "không hợp lệ" nó trả (2.93 `TYRE-BURST-REASON`). */
-        private val asked = HashSet<String>()
-        private val codes = HashMap<String, Int?>()
-
-        /**
-         * Mã [HalReadTables.INVALID_VALUES] mà getter của [id] trả ở nhịp này (`null` = số thường / không đọc được); nhịp
-         * KHÔNG hỏi [id] (không hiện) ⇒ [prev] — cùng luật hai lối bỏ qua của [read]. Không gọi HAL nào.
-         */
-        fun code(id: String, prev: Int?): Int? = if (id in asked) codes[id] else if (!wants(id)) prev else null
-
-        /**
-         * Như [dbl] nhưng giá trị ĐỌC THẬT đi qua [via] (bộ làm mượt CÓ TRẠNG THÁI — [TripTimeSmoother]); lối *"không
-         * hiện ⇒ trả prev"* thì **KHÔNG** đi qua: `prev` là số đã làm mượt, đưa nó vào lại như một mốc HAL là tự nâng mốc
-         * (1.8 → 1.85 bị coi là bậc tăng) rồi vượt bậc kế tiếp — đúng cái bộ làm mượt sinh ra để tránh. `null` (nguội /
-         * off-car) vẫn qua [via] để nó reset và trả `null` = "—".
-         */
-        fun dblVia(id: String, prev: Double?, via: (Double?) -> Double?): Double? =
-            if (!wanted(id)) prev else via(fresh(id) { table.readDouble(id) })
-        fun bool(id: String, prev: Boolean?): Boolean? = read(id, prev) { table.readBool(id) }
-        fun str(id: String, prev: String?): String? = read(id, prev) { table.readString(id) }
+    /** 3.1.6 HAL-EVENTS — đọc lại CHỈ [ids] ∩ nhu cầu qua ba thân nhịp (giá trị từ `HalEventCache` ⇒ 0 HAL) + nút mượn chúng. */
+    override fun readEvents(prev: CarStatus, ids: Set<String>): CarStatus {
+        // Nút cốp mượn `tailgate_status` dù màn không bày datum ấy ⇒ readKey của nút mirror cũng thuộc lượt này (mirrorBody chép vào nút).
+        val want = demand()?.let { d -> val k = d + mirrored().map { it.readKey }; ids.filterTo(HashSet()) { it in k } } ?: ids
+        eventGate = CarReadGate(table, want, absent, clock(), count = false)
+        eventIds = ids
+        return try { readBody(readSlow(readFast(prev))) } finally { eventGate = null; eventIds = null }
     }
-
-    private fun gate() = Gate(table, demand(), absent, clock())
 
     /**
      * Nhịp NHANH đáng chạy khi màn bày ít nhất một datum nhanh, HOẶC có ô điều khiển **còn đáng hỏi** (để setpoint
@@ -155,7 +74,10 @@ class CarDataAdapter(
         val want = controlDemand()
         if (want.isEmpty()) return false
         val now = clock()
-        return want.any { absent.shouldRead(it, now) }
+        // 3.1.6 HAL-EVENTS: nút mà datum của nó đang được sự kiện phục vụ ⇒ không cần nhịp 1 s (sự kiện tự làm mới — [readEvents]).
+        // 3.1.6 · R32: nút đọc ở nhịp thân xe ([CarDataDemand.mirrorsBody] — cốp) không đánh thức nhịp 1 s.
+        return want.any { absent.shouldRead(it, now) && readPathOf(it)?.id?.let(covered) != true &&
+            ControlRegistry.byId(it)?.let(CarDataDemand::mirrorsBody) != true }
     }
 
     /**
@@ -175,7 +97,7 @@ class CarDataAdapter(
     /**
      * K1b (2026-09-25) — người dùng vừa **tác động** nút [controlId] ⇒ quên nguội cho CẢ HAI khoá mà nút ấy có thể
      * nằm dưới: khoá **nút** (đường [readControls] · `readState(nút)`) và khoá **datum** `readKey` (đường nhịp
-     * chậm · `Gate.read(datum)`). Hai đường đọc cùng một getter nhưng nhớ riêng, vì `readState` còn có thể `null`
+     * chậm · `CarReadGate.read(datum)`). Hai đường đọc cùng một getter nhưng nhớ riêng, vì `readState` còn có thể `null`
      * do thang mức chưa khớp ([ControlLevels]) chứ không chỉ do xe không có — trộn chung là để một lỗi thang mức
      * làm câm cả ô cụm. Chỗ gọi: `WakeOnWriteControl` (`:app`) sau mỗi lệnh ghi. Nút không có `readKey` ⇒ chỉ
      * quên khoá nút.
@@ -239,6 +161,51 @@ class CarDataAdapter(
         )
     }
 
+    // ── NHỊP THÂN XE (~3 s, 3.1.6): cửa — chỉ khi màn bày ([CarDataDemand.BODY_IDS]) ──────────────────────────────
+    override fun bodyNeeded(): Boolean {
+        val d = demand()
+        // 3.1.6 · R32 — nút cốp đang hiện ⇒ nhịp thân xe chạy (cốp chỉ đọc ở đây, không ở nhịp nhanh 1 s — [readControls]).
+        if (mirrored().any { !covered(it.readKey) }) return true
+        if (!CarDataDemand.needsBody(d)) return false
+        // 3.1.6 HAL-EVENTS: nhịp 3 s chỉ còn là ĐƯỜNG LÙI — mọi datum nó đọc đều có sự kiện (helper sống, đăng ký OK, chưa quá hạn
+        // đối soát) ⇒ nghỉ; một cái không ⇒ chạy như trước.
+        return (d?.filter { it in CarDataDemand.BODY_IDS } ?: CarDataDemand.BODY_IDS).any { !covered(it) }
+    }
+
+    /** 3.1.6 · R32 — nút đang hiện lấy trạng thái từ nhịp thân xe ([CarDataDemand.mirrorsBody]: `trunk`). */
+    private fun mirrored(): List<ControlDef> = controlDemand().mapNotNull(ControlRegistry::byId).filter(CarDataDemand::mirrorsBody)
+
+    override fun readBody(prev: CarStatus): CarStatus {
+        // R32: nút cốp đang hiện mà màn KHÔNG bày datum cốp ⇒ vẫn đọc datum ấy ở đây (một lượt / 3 s); lượt sự kiện giữ cổng của nó.
+        val mine = mirrored()
+        val g = eventGate ?: CarReadGate(table, demand()?.let { d -> d + mine.map { it.readKey } }, absent, clock()); val b = prev.body
+        val body = b.copy(
+            doorLfOpen = g.bool("door_lf", b.doorLfOpen), doorRfOpen = g.bool("door_rf", b.doorRfOpen),
+            doorLrOpen = g.bool("door_lr", b.doorLrOpen), doorRrOpen = g.bool("door_rr", b.doorRrOpen),
+            tailgateOpen = g.bool("tailgate_status", b.tailgateOpen),   // 3.1.6 · R32 — cốp `getDoorState(6)`
+        )
+        return prev.copy(body = body, controls = mirrorBody(prev.controls, body, mine.filter { g.wants(it.readKey) }))
+    }
+
+    /**
+     * 3.1.6 · R32 — nút đang hiện mà trạng thái CHÍNH LÀ số datum nhịp thân xe ([CarDataDemand.mirrorsBody] — `trunk`) lấy số vừa
+     * đọc ở trên: 0 lượt HAL thêm, và [readControls] (nhịp NHANH 1 s) bỏ qua nút ấy ⇒ cốp chỉ được đọc ở nhịp thân xe 3 s.
+     * Đọc không ra (`null`) ⇒ GIỮ số cũ, cùng luật [readControls].
+     */
+    private fun mirrorBody(prev: Map<String, Int>, body: CarStatus.Body, ids: List<ControlDef>): Map<String, Int> {
+        if (ids.isEmpty()) return prev
+        val out = HashMap(prev)
+        ids.forEach { d -> bodyBool(d.readKey, body)?.let { out[d.id] = if (it) 1 else 0 } }
+        return out
+    }
+
+    /** Cờ của datum nhịp thân xe [id] trong [b] — đúng [CarDataDemand.BODY_IDS], không datum nào khác. */
+    private fun bodyBool(id: String, b: CarStatus.Body): Boolean? = when (id) {
+        "door_lf" -> b.doorLfOpen; "door_rf" -> b.doorRfOpen; "door_lr" -> b.doorLrOpen; "door_rr" -> b.doorRrOpen
+        "tailgate_status" -> b.tailgateOpen
+        else -> null
+    }
+
     // ── NHỊP CHẬM (~10s): pin/tầm/sạc · khí hậu · lốp · thân xe · đèn · danh tính ────────────────────────
     override fun readSlow(prev: CarStatus): CarStatus {
         val g = gate()
@@ -278,7 +245,7 @@ class CarDataAdapter(
                 tempUnit = g.str("temp_unit", c.tempUnit),
                 // H1 · T2 — năm getter [ĐO xe 2026-09-16]. Ba mục giữ mã THÔ (`seat*Raw`, `acModeRaw`): phép đổi
                 // (thang mức · đảo AUTO) làm ở chỗ HIỂN THỊ/chỗ đọc của nút, đúng MỘT lần — xem KDoc ở `CarStatus`.
-                // ⚠ Cả năm dòng phải truyền giá trị CŨ làm `prev`: [Gate.read] phân biệt *"ô không hiện"* (trả prev)
+                // ⚠ Cả năm dòng phải truyền giá trị CŨ làm `prev`: [CarReadGate.read] phân biệt *"ô không hiện"* (trả prev)
                 // với *"đọc không ra"* (trả null = ⚠). Truyền `null` rồi tự `?: cũ` ở ngoài là **xoá mất** phân biệt
                 // ấy — datum nguội sẽ đóng băng con số cuối thay vì hiện "—".
                 seatVentRaw = g.int("seat_vent_state", c.seatVentRaw),
@@ -299,10 +266,8 @@ class CarDataAdapter(
                 windowRfPct = g.int("window_rf", b.windowRfPct),
                 windowLrPct = g.int("window_lr", b.windowLrPct),
                 windowRrPct = g.int("window_rr", b.windowRrPct),
-                doorLfOpen = g.bool("door_lf", b.doorLfOpen),
-                doorRfOpen = g.bool("door_rf", b.doorRfOpen),
-                doorLrOpen = g.bool("door_lr", b.doorLrOpen),
-                doorRrOpen = g.bool("door_rr", b.doorRrOpen),
+                // 3.1.6 — cửa đọc ở nhịp THÂN XE ([readBody], ~3 s), không ở đây: GIỮ giá trị của nhịp ấy.
+                doorLfOpen = b.doorLfOpen, doorRfOpen = b.doorRfOpen, doorLrOpen = b.doorLrOpen, doorRrOpen = b.doorRrOpen,
                 sunshadePct = g.int("sunshade_pct", b.sunshadePct),
                 powerLevel = g.int("power_level", b.powerLevel),
                 vehicleType = g.str("vehicle_type", b.vehicleType),
@@ -347,10 +312,11 @@ class CarDataAdapter(
      * Ngân sách K1 (< 150 lượt/phút) đo trên màn MẶC ĐỊNH (`w_board` có lốp ⇒ MỌI người dùng bố cục mặc định đều
      * trả giá này, không chỉ người chọn chip) — [ĐO] `TyreChipTest` R7 K1, xem bảng §4.5 của spec.
      */
-    private fun readTyres(g: Gate, t: CarStatus.Tyres): CarStatus.Tyres {
+    private fun readTyres(g: CarReadGate, t: CarStatus.Tyres): CarStatus.Tyres {
         val cFl = g.int("tyre_c_fl", t.cFl); val cFr = g.int("tyre_c_fr", t.cFr)
         val cRl = g.int("tyre_c_rl", t.cRl); val cRr = g.int("tyre_c_rr", t.cRr)
-        val due = tpmsDue(g.now, TyreIds.RAW_STATES.all(g::wants))
+        // 3.1.6 HAL-EVENTS: lượt sự kiện KHÔNG chạm mốc TPMS (nó chỉ bày vài datum ⇒ `tpmsDue` sẽ xoá mốc và ép nhịp kế đọc lại 13 mã).
+        val due = if (eventGate != null) false else tpmsDue(g.now, TyreIds.RAW_STATES.all(g::wants))
         fun state(id: String, prev: Int?) = if (due || prev == null) g.int(id, prev) else prev
         fun ifNeed(c: Int?, id: String, prev: Int?) = if (c != TyreJudge.COLOUR_WHITE) state(id, prev) else null
         val clusterJudgedAll = listOf(cFl, cFr, cRl, cRr).all { it in CLUSTER_COLOURS }
@@ -400,7 +366,7 @@ class CarDataAdapter(
      * thời không nên xoá về "—"). Nút đọc ra `null` (off-car / getter chưa provision) ⇒ **loại khỏi map** để ô lùi
      * về mức RAM thay vì hiện số bịa. Đọc qua [HalBindingTable.readState] — cùng đường mà nút ± dùng ở [ControlTileFactory].
      *
-     * ## K1b (2026-09-25) — đi qua CÙNG cổng vắng [HalAbsentCache] như [Gate.read]
+     * ## K1b (2026-09-25) — đi qua CÙNG cổng vắng [HalAbsentCache] như [CarReadGate.read]
      * Trước K1b hàm này gọi thẳng `readState` mỗi nhịp nhanh, **không** hỏi cache ⇒ nút off-car / chưa provision /
      * HAL từ chối bị hỏi 1 Hz mãi mãi: [ĐO máy ảo 2.65, màn chính đứng yên] `HAL đọc = 420/phút · bỏ-không-hiện =
      * 426 · bỏ-xe-không-có = 120` dù vòng 09-16 đo idle = 0/phút; trên xe [ĐO 09-16] ≈23 ms/lượt HAL ⇒ 7 lượt/s ≈ 16 %
@@ -412,11 +378,14 @@ class CarDataAdapter(
      * [forgetAbsentControl] ⇒ nhịp kế đọc lại ngay dù đang nguội.
      */
     private fun readControls(prev: Map<String, Int>): Map<String, Int> {
-        val want = controlDemand()
+        val ev = eventIds
+        val want = controlDemand().let { w -> if (ev == null) w else w.filterTo(HashSet()) { readPathOf(it)?.id in ev } }
         if (want.isEmpty()) return prev
         val now = clock()
         val out = HashMap<String, Int>(prev)   // giữ nút cũ (ngoài nhu cầu lượt này) — tránh nháy "—" khi giao thời
         for (id in want) {
+            // 3.1.6 · R32 — nút lấy số từ nhịp THÂN XE ([readBody] → [mirrorBody], 3 s): không đọc ở nhịp nhanh 1 s này.
+            if (ControlRegistry.byId(id)?.let(CarDataDemand::mirrorsBody) == true) continue
             if (!absent.shouldRead(id, now)) { KachiPerf.add(KachiPerf.Counter.HAL_SKIP_ABSENT); continue }
             val v = runCatching { table.readState(id) }.getOrNull()
             absent.record(id, v != null, now)

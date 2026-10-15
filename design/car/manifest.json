@@ -1820,6 +1820,17 @@
       ],
       "paths": 3
     },
+    "ic_car_top_trunk_open": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "boot:stroke"
+      ],
+      "paths": 3
+    },
     "ic_car_top_tyre_fl": {
       "face": "top",
       "sub": [

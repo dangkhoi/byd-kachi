@@ -139,8 +139,38 @@ class CarDataAdapterTest {
     }
 
     /** Mọi nút có đường đọc — tập mà `CarDataDemand.controlsOf` sẽ đưa vào `controlDemand` khi chúng ở dock/slot. */
+    // 3.1.6 · R32 — nút đọc ở nhịp THÂN XE ([CarDataDemand.mirrorsBody]: cốp) không thuộc phạm vi K1b (nhịp nhanh) — bài riêng dưới.
     private val readableControls: Set<String> =
-        ControlRegistry.ALL.filter { it.readKey.isNotBlank() }.map { it.id }.toSet()
+        ControlRegistry.ALL.filter { it.readKey.isNotBlank() && !CarDataDemand.mirrorsBody(it) }.map { it.id }.toSet()
+
+    /**
+     * 3.1.6 · R32 — nút cốp CHỈ đọc ở nhịp thân xe: nhịp nhanh 1 s không hỏi HAL cho nó (kể cả khi màn không bày datum cốp), nhịp
+     * thân xe đọc `getDoorState(6)` MỘT lần và ô nút lấy đúng số ấy (0/1); 255 ⇒ `null` ⇒ GIỮ số cũ. Đỏ khi: bỏ dòng bỏ-qua ở
+     * `readControls` (nhịp nhanh lại hỏi) · bỏ phần nối nút ở `bodyNeeded`/`readBody` (ô nút câm khi chỉ có thanh nút).
+     */
+    @Test fun `R32 nut cop chi doc o nhip than xe, mot luot getDoorState 6`() {
+        var raw = "1"
+        val calls = mutableListOf<Int?>()
+        val gw = object : HalGateway by FakeHalGateway() {
+            override fun getter(fqn: String, method: String, arg: Int?): String? {
+                if (method == "getDoorState") calls += arg
+                return if (method == "getDoorState" && arg == 6) raw else null
+            }
+        }
+        val a = CarDataAdapter(HalBindingTable(gw), demand = { emptySet() }, controlDemand = { setOf("trunk") })
+        assertFalse(a.fastNeeded(), "chỉ có nút cốp ⇒ nhịp 1 s không cần chạy")
+        var s = a.readFast(CarStatus())
+        assertTrue(calls.isEmpty(), "nhịp nhanh không đọc cốp: $calls")
+        assertTrue(a.bodyNeeded(), "nút cốp đang hiện ⇒ nhịp thân xe chạy")
+        s = a.readBody(s)
+        assertEquals(listOf<Int?>(6), calls, "đúng MỘT lượt getDoorState(6) — không đọc bốn cửa khi màn không bày")
+        assertEquals(1, s.controls["trunk"]); assertEquals(true, s.body.tailgateOpen)
+        raw = "0"; s = a.readBody(s)
+        assertEquals(0, s.controls["trunk"]); assertEquals(false, s.body.tailgateOpen)
+        raw = "255"; s = a.readBody(s)
+        assertEquals(0, s.controls["trunk"], "255 = chưa xác định ⇒ giữ số cũ của nút")
+        assertEquals(null, s.body.tailgateOpen, "255 ⇒ datum `null` (không phải 'đang mở')")
+    }
 
     private class Clock { var now = 0L }
 

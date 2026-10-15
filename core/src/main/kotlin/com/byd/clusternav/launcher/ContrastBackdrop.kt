@@ -9,7 +9,7 @@ import kotlin.math.roundToInt
  *
  * Chữ/icon không nằm trên "màu nền của chủ đề" — nó nằm trên một CHỒNG: ảnh nền sắc nét ([base], hộp đo bởi [LumaField])
  * → lớp làm tối `wallScrim` × mức người dùng → (trên thẻ kính) ảnh mờ × độ đục chung → lớp che `bg` theo [GlassVeil] →
- * nhuộm màu trội → bề mặt thẻ × độ đục người dùng → (khi cần) lớp đỡ cục bộ. Đúng thứ tự `WallView` + `WallWindowDrawable`
+ * nhuộm màu trội → bề mặt thẻ × độ đục người dùng. Đúng thứ tự `WallView` + `WallWindowDrawable`
  * vẽ. Bản cũ đo một lớp rồi coi các lớp kia cố định ⇒ đổi o20/o70, đổi ảnh, đổi chủ đề là tương phản "hên xui".
  *
  * ## Vì sao hai góc hộp là ĐỦ
@@ -25,7 +25,7 @@ class ContrastBackdrop(val base: ToneBox, val layers: List<Layer> = emptyList())
         /** Trộn lớp lên nền ĐỤC [under] tại vị trí [t] của các hộp ảnh. */
         fun over(under: Int, t: Double): Int
 
-        /** Lớp phẳng một màu (alpha nằm trong chính [color]): lớp làm tối · lớp che · nhuộm · bề mặt thẻ · lớp đỡ. */
+        /** Lớp phẳng một màu (alpha nằm trong chính [color]): lớp làm tối · lớp che · nhuộm · bề mặt thẻ · mặt đĩa nút. */
         data class Flat(val color: Int) : Layer {
             override fun over(under: Int, t: Double): Int = if (ColorMath.alpha(color) == 0) under else ColorMath.over(color, under)
         }
@@ -44,7 +44,7 @@ class ContrastBackdrop(val base: ToneBox, val layers: List<Layer> = emptyList())
         return g
     }
 
-    /** Thêm một lớp TRÊN cùng (lớp đỡ cục bộ). */
+    /** Thêm một lớp TRÊN cùng (mặt đĩa / nền của chính nút vẽ dưới nét). */
     fun with(layer: Layer): ContrastBackdrop = ContrastBackdrop(base, layers + layer)
 
     /** Hộp của nền ghép (hai góc `t = 0/1`). */

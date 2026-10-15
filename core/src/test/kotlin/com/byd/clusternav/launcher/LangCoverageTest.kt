@@ -61,7 +61,8 @@ class LangCoverageTest {
         // UX5b (2026-09-27): 64 → 66 (+2 datum ghế PHỤ — `seat_vent_state_r` · `seat_heat_state_r`; cả hai có nhãn
         // + nhãn ngắn ở CẢ hai thứ tiếng, chính bài này ép điều đó).
         // 2.88 (04/10): 66 → 79 (+13 mã trạng thái THÔ của lốp — nhãn VI/EN + bản dịch zh/th/ms đủ cả 13).
-        assertEquals(79, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        // 3.1.6 · R32: 79 → 80 (`tailgate_status` — nhãn "Cốp sau"/"Tailgate" + ngắn "Cốp"/"Boot", zh/th/ms đủ).
+        assertEquals(80, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = TelemetryRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "datum thiếu nhãn tiếng Anh: $missing")
     }
@@ -263,7 +264,8 @@ class LangCoverageTest {
         // (`LauncherActions`), EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
         // 2.98 · R18 (2026-10-10): **269 → 270 (+1)** = mục Cài đặt `home_escape_return`, EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
         // 3.01 R25 (2026-10-13): **270 → 271 (+1)** = widget `w_car3d` ("Xe 3D" / "3D car"), EN tại chỗ khai + dòng zh/th/ms.
-        assertEquals(271, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 3.1.6 · R32: **271 → 272 (+1)** = datum `tailgate_status` ("Cốp sau" / "Tailgate"), EN tại chỗ khai + dòng zh/th/ms có sẵn.
+        assertEquals(272, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

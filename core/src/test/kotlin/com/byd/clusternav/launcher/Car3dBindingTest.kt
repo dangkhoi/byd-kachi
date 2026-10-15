@@ -42,7 +42,7 @@ class Car3dBindingTest {
 
     @Test
     fun `cop va den bam o san co, cua chi xem`() {
-        val trunk = Car3dHotspots.resolve(model("g_windows"), Car3dCatalog.BYD_AVM.hotspots.first { it.id == "trunk" })
+        val trunk = Car3dHotspots.resolve(model("g_doors"), Car3dCatalog.BYD_AVM.hotspots.first { it.id == "trunk" })
         assertEquals(Car3dHotspots.Tap.Press(trunk.actions.single()), Car3dHotspots.tap(trunk, null))
         assertEquals("trunk", trunk.actions.single().id)
         val headl = Car3dHotspots.resolve(model("g_lights"), Car3dCatalog.BYD_AVM.hotspots.first { it.id == "headl" })
@@ -61,9 +61,17 @@ class Car3dBindingTest {
         val cells = GroupBoard.of("g_doors", open)!!.cells.associateBy { it.id }
         assertTrue(Car3dHotspots.activeAny("door_rf|door_lf") { cells[it] }); assertFalse(Car3dHotspots.activeAny("door_rf") { cells[it] })
         assertFalse(Car3dHotspots.activeAny("") { cells[it] })
-        // Cốp: KHÔNG có ô đọc ⇒ theo lệnh cuối đã gửi (`cmd:trunk`); không bao giờ lấy từ ô đọc cùng tên.
-        assertTrue(Car3dHotspots.activeAny("cmd:trunk", { it == "trunk" }) { null })
-        assertFalse(Car3dHotspots.activeAny("cmd:trunk", { false }) { cells["door_lf"] })
+        // 3.1.6 · R32 — cốp theo SỐ ĐỌC `tailgate_status` (`getDoorState(6)`), không theo lệnh cuối (`cmd:` đã gỡ). Khoá: đổi
+        // điểm cốp về nhóm Kính / bỏ `read` ⇒ ô đọc `null` ⇒ đỏ.
+        assertEquals("tailgate_status", trunk.cell?.id)
+        assertEquals(CarDots.Kind.UNKNOWN, Car3dHotspots.dot(trunk, null).kind)   // off-car: chưa đọc ⇒ vòng đứt, KHÔNG "đóng"
+        val boot = CarStatus().let { it.copy(body = it.body.copy(tailgateOpen = true)) }
+        val bootOpen = Car3dHotspots.resolve(GroupBoard.of("g_doors", boot)!!, Car3dCatalog.BYD_AVM.hotspots.first { it.id == "trunk" })
+        assertTrue(Car3dHotspots.active(bootOpen.cell))
+        val lid = Car3dCatalog.BYD_AVM.variants.single { it.closed == "trunk*" }
+        assertEquals("tailgate_status", lid.read)
+        assertTrue(Car3dHotspots.activeAny(lid.read) { id -> GroupBoard.of("g_doors", boot)!!.cells.firstOrNull { it.id == id } })
+        assertFalse(Car3dHotspots.activeAny(lid.read) { id -> cells[id] })   // đọc ra ĐÓNG (`tailgateOpen = null` ⇒ chưa đọc) ⇒ nắp nghỉ
     }
 
     @Test

@@ -407,25 +407,39 @@ object WidgetViews {
     }
 
     private fun carState(ctx: Context, data: WidgetData): View {
-        val art = CarMiniView(ctx)      // P3: cửa tô trên hình xe
+        val art = CarMiniView(ctx)      // P3: cửa/cốp tô trên hình xe
         val doorLine = tv(ctx, "", 13f, KachiTheme.GREEN)
         // 2.93 WIDGET-CAR-STRIP-LAYOUT: khung rộng thấp ⇒ hình CẠNH chú thích (CarStripFit, :core); còn lại y dáng 2.92
         // (hình trên, chú thích dưới, lề trong + khe Sp.S như khối dọc `col`). Chú thích đo theo chữ dài nhất có thể hiện.
-        val doorTexts = listOf(R.string.kachi_doors_unknown, R.string.kachi_doors_open, R.string.kachi_doors_closed).map(ctx::getString)
+        // 3.1.6 · R32 — dòng CỐP trở lại (`tailgate_status` = `getDoorState(6)`; gỡ 25/09 vì sai tên getter): dòng thứ hai của
+        // CÙNG chú thích, mực riêng (mở ⇒ vàng cảnh báo · đóng/chưa đọc ⇒ mờ), đo theo dòng dài nhất như dòng cửa.
+        val doorTexts = listOf(
+            R.string.kachi_doors_unknown, R.string.kachi_doors_open, R.string.kachi_doors_closed,
+            R.string.kachi_tailgate_open, R.string.kachi_tailgate_closed, R.string.kachi_tailgate_unknown,
+        ).map(ctx::getString)
         val root = CarStateLayout(ctx, art, doorLine, pad = dpi(ctx, Sp.S), gap = dpi(ctx, Sp.S), captions = doorTexts)
-        // ⚠ 2026-09-25 — dòng CỐP đã gỡ cùng datum `tailgate_status` ([ĐO xe] `getHatchDoorStatus` rỗng với mọi
-        // arg). Widget này trước luôn hiện *"Cốp sau —"* ở mọi lần chạy, tức một dòng chỉ nói "chưa đọc được".
         fun fillCarState(d: WidgetData) {
             val doors = listOf(d.car.body.doorLfOpen, d.car.body.doorRfOpen, d.car.body.doorLrOpen, d.car.body.doorRrOpen)
-            art.set(doors)
+            val tail = d.car.body.tailgateOpen
+            art.set(doors, tail)
             val anyOpen = doors.any { it == true }
-            doorLine.setText(
+            val door = ctx.getString(
                 when {
                     doors.all { it == null } -> R.string.kachi_doors_unknown
                     anyOpen -> R.string.kachi_doors_open
                     else -> R.string.kachi_doors_closed
                 },
             )
+            val trunk = ctx.getString(
+                when (tail) {
+                    true -> R.string.kachi_tailgate_open
+                    false -> R.string.kachi_tailgate_closed
+                    null -> R.string.kachi_tailgate_unknown
+                },
+            )
+            val text = android.text.SpannableStringBuilder(door).append('\n').append(trunk)   // hai dòng chữ ĐÃ dịch, không chuỗi trần
+            text.setSpan(android.text.style.ForegroundColorSpan(c(if (tail == true) KachiTheme.AMBER else KachiTheme.MUT)), door.length + 1, text.length, 0)
+            if (doorLine.text.toString() != text.toString()) doorLine.text = text   // chỉ đổi khi chữ đổi (không requestLayout mỗi nhịp)
             doorLine.setTextColor(c(if (anyOpen) KachiTheme.AMBER else KachiTheme.GREEN))
         }
         fillCarState(data)

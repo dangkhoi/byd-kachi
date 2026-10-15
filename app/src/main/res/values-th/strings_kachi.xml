@@ -215,6 +215,9 @@
     <string name="kachi_doors_unknown">สถานะประตู —</string>
     <string name="kachi_doors_open">มีประตูเปิดอยู่</string>
     <string name="kachi_doors_closed">ปิดประตูครบทั้ง 4 บาน</string>
+    <string name="kachi_tailgate_open">ฝากระโปรงท้ายเปิดอยู่</string>
+    <string name="kachi_tailgate_closed">ฝากระโปรงท้ายปิด</string>
+    <string name="kachi_tailgate_unknown">ฝากระโปรงท้าย —</string>
     <string name="kachi_tyre_pressure_unit">แรงดันลมยาง (%1$s)</string>
     <string name="kachi_slot_swap_empty">เลือกแอปสำหรับช่อง %1$d</string>
     <string name="kachi_slot_swap">เปลี่ยนแอปในช่อง %1$d</string>

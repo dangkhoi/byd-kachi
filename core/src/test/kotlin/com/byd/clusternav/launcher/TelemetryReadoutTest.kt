@@ -162,7 +162,7 @@ class TelemetryReadoutTest {
                 ),
             ),
         )
-        val status = adapter.readSlow(adapter.readFast(CarStatus()))
+        val status = adapter.readBody(adapter.readSlow(adapter.readFast(CarStatus())))   // 3.1.6 — cửa ở nhịp thân xe
 
         // Datum còn "—" sau khi nối đủ = ĐÚNG tập binding None (genuine NEEDS_CAR), không hơn.
         val blanks = TelemetryRegistry.ALL
@@ -213,7 +213,7 @@ class TelemetryReadoutTest {
                 ),
             ),
         )
-        val status = adapter.readSlow(adapter.readFast(CarStatus()))
+        val status = adapter.readBody(adapter.readSlow(adapter.readFast(CarStatus())))   // 3.1.6 — cửa ở nhịp thân xe
         TelemetryRegistry.ALL.filter { it.tier.wired }.forEach { spec ->
             assertTrue(
                 TelemetryReadout.of(spec.id, status)!!.available,
@@ -377,8 +377,9 @@ class TelemetryReadoutTest {
         val declared = CapabilityIcons.stateIconTable().keys.sorted()
         // 2.76 (R8/R9): 2 → 9 datum hai chế độ — cửa ×4 + cửa sổ trời (mở/đóng) + hai chỉ báo tự động/tay.
         assertEquals(
+            // 3.1.6 · R32: + `tailgate_status` (cốp đóng = đuôi tô đặc · mở = đuôi chỉ NÉT — `gen-car.py`).
             listOf("ac_cycle", "ac_mode_auto", "ac_wind_auto", "door_lf", "door_lr", "door_rf", "door_rr",
-                "pm25_online", "sunroof_state"), declared,
+                "pm25_online", "sunroof_state", "tailgate_status"), declared,
             "thêm datum hai chế độ thì phải khai cả ở `stateTable` — và ghi vào đây",
         )
         val seen = mutableMapOf<String, MutableSet<String?>>()

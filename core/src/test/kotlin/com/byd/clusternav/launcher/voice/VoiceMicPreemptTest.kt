@@ -33,6 +33,24 @@ class VoiceMicPreemptTest {
         assertEquals(2, steps, "và không chờ thêm nhịp nào sau khi đã cầm được")
     }
 
+    /**
+     * 3.1.6 — owner 15/10 *"lần đầu mở voice không nghe, lần 2 mới được"*. [ĐO xe] bộ nghe wake ASR đang giải mã một cửa sổ
+     * 1,6 s thì không hỏi cờ nhường được; nhịp giải mã đo trên xe max **2 667 ms**. Với trần mặc định cũ (600 ms) bài này ĐỎ
+     * (phiên lệnh rút ⇒ *"không nghe rõ"*); trần mặc định phải đợi được bộ nghe nhả sau đúng lượt giải mã dài nhất đã đo.
+     */
+    @Test fun `tran mac dinh doi duoc mot luot giai ma wake dai nhat da do tren xe`() {
+        VoiceSingleFlight.acquireWake("wake#9")
+        val decodeMs = 2_667L
+        var waited = 0L
+        val ok = VoiceMicPreempt.preempt("chinh") { ms ->
+            waited += ms
+            if (waited >= decodeMs) VoiceSingleFlight.release("wake#9")   // giải mã xong ⇒ hỏi cờ ⇒ nhả
+            true
+        }
+        assertTrue(ok, "phiên lệnh phải cầm được micro sau khi lượt giải mã wake (2,7 s) xong")
+        assertTrue(waited < VoiceMicPreempt.WAIT_MS, "và vẫn trong trần hằng — không chờ vô hạn")
+    }
+
     /** Bộ nghe KHÔNG nhả ⇒ hết trần thì rút, KHÔNG chờ mãi và KHÔNG cầm chốt. */
     @Test fun `khong nhuong thi het tran roi rut, khong cam chot`() {
         VoiceSingleFlight.acquireWake("wake#2")

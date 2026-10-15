@@ -116,8 +116,8 @@ class Car3dSanityTest {
         assertEquals(Car3dAnchor.Node("body_lamp_4"), seal.hotspots.first { it.id == "headl" }.anchor)
         assertFalse(Car3dSanity.resolves(other.hotspots.first { it.id == "headl" }.anchor, listOf("body_lamp_4", "body_lamp_3")))
         assertTrue(Car3dSanity.resolves(other.hotspots.first { it.id == "headl" }.anchor, listOf("body_lamp_head3")))
-        // Cốp: bản mở theo LỆNH cuối (cmd:trunk), đời có `trunk_open` [ĐO ew/paha/sc3e…].
-        val trunk = other.variants.first { it.read == "cmd:trunk" }
+        // Cốp: bản mở theo SỐ ĐỌC `tailgate_status` (3.1.6 R32), đời có `trunk_open` [ĐO ew/paha/sc3e…].
+        val trunk = other.variants.first { it.read == "tailgate_status" }
         assertEquals(true, Car3dNames.visible(trunk, "trunk_open", open = true)); assertEquals(false, Car3dNames.visible(trunk, "trunk_paint", open = true))
         assertTrue(Car3dNames.matches("*_lamp_#*", "trunk_lamp_16_2")); assertFalse(Car3dNames.matches("*_lamp_#*", "doorlf_lamp_turnleft10off"))
     }

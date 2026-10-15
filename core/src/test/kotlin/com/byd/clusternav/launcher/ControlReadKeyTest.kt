@@ -148,9 +148,12 @@ class ControlReadKeyTest {
         // getter mới đoán ra: cùng getter đã ĐO của ghế lái, chỉ khác `seatID` 2 (khai ở `HalReadTables.readArg`),
         // và hai datum `seat_*_state_r` đi kèm. Owner xin tách ghế lái/ghế phụ (*"2 ghế nó khác nhau mà"*).
         // Dòng T2 trong `docs/specs/kachi-live-state-ux.html` đã sửa cùng lượt (R2.1).
+        // ⚠⚠ 3.1.6 · R32 (owner 15/10): 15 → **16** — `trunk` có lại `readKey` = `tailgate_status` (`getDoorState(6)`). Lần gỡ 25/09
+        // là SAI TÊN getter (`getHatchDoorStatus` không có trên ROM), không phải cốp không cảm biến; [ĐO logcat xe 14/10] BYD đọc
+        // `getDoorState(6)` ⇒ 1/0 theo lệnh Kachi. Dòng T2 của spec sửa cùng lượt.
         assertEquals(33, ControlRegistry.ALL.size, "số nút đổi ⇒ đếm lại cả hai vế rồi sửa §Tasks T2 của spec")
         assertEquals(
-            15, wired.size,
+            16, wired.size,
             "độ phủ đường đọc đổi (thấy ${wired.size}/29; chưa có đường đọc: ${blind.sorted()}). " +
                 "Sửa dòng T2 trong docs/specs/kachi-live-state-ux.html NGAY trong lượt này (R2.1), đừng chỉ sửa số ở đây.",
         )

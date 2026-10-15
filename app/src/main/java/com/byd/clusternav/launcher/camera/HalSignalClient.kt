@@ -1,8 +1,10 @@
 package com.byd.clusternav.launcher.camera
 
 import android.util.Log
+import com.byd.clusternav.launcher.HalEventWire
 import com.byd.clusternav.launcher.LampLive
 import java.io.BufferedReader
+import java.io.OutputStream
 import java.io.InputStreamReader
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -61,6 +63,31 @@ class HalSignalClient(
     @Volatile private var left = false
     @Volatile private var right = false
 
+    /**
+     * 3.1.6 HAL-EVENTS — dòng `hal.*` của helper (chào · kết quả đăng ký · sự kiện) giao cho [onHal] trên luồng đọc; mất dây / [stop]
+     * ⇒ [onHalDown]. Gán bởi `HalSignalHub`. Client không hiểu gì về datum: chỉ chuyển thư.
+     */
+    @Volatile var onHal: ((HalEventWire.Msg) -> Unit)? = null
+    @Volatile var onHalDown: (() -> Unit)? = null
+
+    /** Dòng `sub …` đang muốn (gửi lại mỗi lần nối). Helper bản cũ không đọc gì từ client ⇒ dòng nằm yên trong bộ đệm, vô hại. */
+    @Volatile private var subscription: String = "sub"
+    @Volatile private var out: OutputStream? = null
+    private val writeLock = Any()
+
+    /** Thay tập xin của client này; đang nối ⇒ gửi ngay. Chặn (ghi socket) — gọi từ luồng nền, không từ luồng chính. */
+    fun subscribe(line: String) {
+        subscription = line
+        send(line)
+    }
+
+    private fun send(line: String) {
+        synchronized(writeLock) {
+            val o = out ?: return
+            runCatching { o.write((line + "\n").toByteArray(Charsets.UTF_8)); o.flush() }.onFailure { logD("gửi '$line' hỏng: $it") }
+        }
+    }
+
     /** Trạng thái đèn theo dây của lần nối hiện tại (chỉ luồng đọc ghi). */
     @Volatile private var lamps = LampLive.Lamps(left = false, right = false)
 
@@ -91,6 +118,7 @@ class HalSignalClient(
         thread?.interrupt()
         thread = null
         live.clear()
+        runCatching { onHalDown?.invoke() }
     }
 
     /**
@@ -108,7 +136,13 @@ class HalSignalClient(
 
     /** Nhả [socket] nếu nó vẫn là của lần nối này (không xoá socket của luồng mới). */
     @Synchronized
-    private fun unclaim(s: Socket) { if (socket === s) socket = null }
+    private fun unclaim(s: Socket) {
+        if (socket === s) {
+            socket = null
+            synchronized(writeLock) { out = null }
+            runCatching { onHalDown?.invoke() }
+        }
+    }
 
     /**
      * Ghi trạng thái mới + phát vào [LampLive] — dưới khoá của [start]/[stop] và CHỈ khi còn hiện hành ⇒ không bao giờ có hai luồng
@@ -146,6 +180,8 @@ class HalSignalClient(
                     if (!commit(LampLive.Lamps(left = left, right = right))) return@use
                     linked = true
                     logI("đã nối 127.0.0.1:$port")
+                    synchronized(writeLock) { out = s.getOutputStream() }
+                    send(subscription)   // 3.1.6 HAL-EVENTS — tập xin hiện hành (helper mới mất phần của client cũ khi dây đứt)
                     read(s, onTurn)
                 }
             } catch (t: Throwable) {
@@ -195,6 +231,11 @@ class HalSignalClient(
         val reader = BufferedReader(InputStreamReader(s.getInputStream(), Charsets.UTF_8))
         while (current()) {
             val line = reader.readLine() ?: break   // null = helper đóng đầu bên kia
+            val msg = HalEventWire.parse(line)   // 3.1.6 HAL-EVENTS — không phải dòng đèn
+            if (msg != null) {
+                if (current()) runCatching { onHal?.invoke(msg) }.onFailure { logW("onHal ném: $it") }
+                continue
+            }
             val parsed = parseLine(line)
             if (parsed == null) {
                 logD("bỏ dòng lạ: $line")

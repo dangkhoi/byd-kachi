@@ -172,7 +172,8 @@ object TelemetryRegistry {
         //   • `ev_mileage_km`   — `getEVMileageValue` rỗng;
         //   • `trip_kwh`        — feature-id 1246801976 rỗng;
         //   • `volt_12v_level`  — `getBatteryVoltageLevel` = 65535 (sentinel);
-        //   • `tailgate_status` — `getHatchDoorStatus` rỗng với MỌI arg (cốp xe này không có cảm biến trạng thái);
+        //   • `tailgate_status` — `getHatchDoorStatus` rỗng với MỌI arg (⚠ 3.1.6: SAI TÊN getter — nối lại bằng
+        //                          `getDoorState(6)` ở cụm A5, R32);
         //   • `sunroof_pos`     — `getSunroofPosition` = 65535 (xe owner nghi không có nóc mở — **[SUY]**: 65535 +
         //                          HAL từ chối `setMoonRoofState`; nóc kính liền cũng cho pos = sentinel. FIX286 SR7).
         // Gỡ kéo theo: 5 trường `CarStatus.Energy` + 2 `CarStatus.Body` · 7 dòng `CarDataAdapter` · 7 case
@@ -382,8 +383,14 @@ object TelemetryRegistry {
         t("door_rf", "Cửa trước-phải", "Door front-right", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door FR"),
         t("door_lr", "Cửa sau-trái", "Door rear-left", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door RL"),
         t("door_rr", "Cửa sau-phải", "Door rear-right", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door RR"),
-        // ⚠ 2026-09-25 · `tailgate_status` (cốp không có cảm biến) và `sunroof_pos` (getter = 65535) đã
-        // gỡ — xem nhật ký ở cụm A1. `sunroof_state` GIỮ: nó vẫn đọc ra được, và nút `sunroof` vẫn tồn tại.
+        // ⚠ 2026-09-25 · `sunroof_pos` (getter = 65535) đã gỡ — xem nhật ký ở cụm A1. `sunroof_state` GIỮ: nó vẫn đọc ra được.
+        // ═══ 3.1.6 · R32 — `tailgate_status` NỐI LẠI bằng getter ĐÚNG: CÙNG `getDoorState` của bốn cửa, area **6** =
+        // `BODYWORK_CMD_DOOR_LUGGAGE_DOOR` ([ĐO nguồn fw 2606] `BYDAutoBodyworkDevice.java:207`, `case 6 → BODYWORK_LUGGAGE_DOOR`
+        // `:715-716`, cùng quyền `BODYWORK_GET_PERM`) — `HalReadTables.readArg` cấp số 6; 0 đóng · 1 mở · khác ⇒ `null`
+        // (`HalReadTables.BOOL_ENUM` + `INVALID_VALUES`). Lần gỡ 25/09 là SAI TÊN getter (`getHatchDoorStatus` không có trên ROM),
+        // không phải "cốp không có cảm biến". [ĐO logcat xe 14/10] tiến trình BYD đọc `getDoorState(6)` ⇒ 1 / 0 theo lệnh Kachi;
+        // tiến trình Kachi: chốt trên xe (owner miễn bước shell thô 15/10 — `docs/diagnostics/trunk-state-read-2026-10-15.md` §5).
+        t("tailgate_status", "Cốp sau", "Tailgate", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", short = "Cốp", shortEn = "Boot"),
         t("sunroof_state", "Cửa sổ trời", "Sunroof", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getSunroofState"),
         t("sunshade_pct", "Rèm che nắng", "Sunshade", "%", BODY, VALUE, OVERDRIVE, "1101004816"),
         t("power_level", "Nguồn xe", "Vehicle power", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getPowerLevel"),

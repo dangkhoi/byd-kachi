@@ -48,17 +48,17 @@ object UpdateDotBadge {
      * [Sp.HAIRLINE] mỗi phía ⇒ chấm đỏ tách khỏi nền gradient của nút ⚙ mà không kẻ viền.
      */
     private class Dot {
-        val halo = GradientDrawable().apply { shape = GradientDrawable.OVAL }
+        val rim = GradientDrawable().apply { shape = GradientDrawable.OVAL }
         val core = GradientDrawable().apply { shape = GradientDrawable.OVAL }
     }
 
     private fun apply(v: View, dot: Dot) {
-        v.overlay.remove(dot.halo); v.overlay.remove(dot.core)
+        v.overlay.remove(dot.rim); v.overlay.remove(dot.core)
         if (!UpdateDotStore.shows(v.context)) return
-        dot.halo.setColor(c(KachiTheme.BAR_TOP))
+        dot.rim.setColor(c(KachiTheme.BAR_TOP))
         dot.core.setColor(c(KachiTheme.RED))
         place(v, dot)
-        v.overlay.add(dot.halo); v.overlay.add(dot.core)
+        v.overlay.add(dot.rim); v.overlay.add(dot.core)
     }
 
     /** Góc trên-phải, lề trong [Sp.XS], đường kính [Sp.DOT] (+ quầng [Sp.HAIRLINE]). */
@@ -68,6 +68,6 @@ object UpdateDotBadge {
         val ring = Sp.dp(v.context, Sp.HAIRLINE).coerceAtLeast(1)
         val right = v.width - inset
         dot.core.setBounds(right - d, inset, right, inset + d)
-        dot.halo.setBounds(right - d - ring, inset - ring, right + ring, inset + d + ring)
+        dot.rim.setBounds(right - d - ring, inset - ring, right + ring, inset + d + ring)
     }
 }

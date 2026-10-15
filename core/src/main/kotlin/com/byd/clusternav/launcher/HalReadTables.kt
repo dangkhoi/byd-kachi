@@ -50,6 +50,8 @@ object HalReadTables {
         "tyre_ps_fl" -> 1; "tyre_ps_fr" -> 2; "tyre_ps_rl" -> 3; "tyre_ps_rr" -> 4
         "tyre_lk_fl" -> 1; "tyre_lk_fr" -> 2; "tyre_lk_rl" -> 3; "tyre_lk_rr" -> 4
         "door_lf" -> 1; "door_rf" -> 2; "door_lr" -> 3; "door_rr" -> 4
+        // 3.1.6 · R32 — cốp: CÙNG `getDoorState(area)`, area 6 = `BODYWORK_CMD_DOOR_LUGGAGE_DOOR` (xem [TRUNK_DOOR_AREA]).
+        "tailgate_status" -> TRUNK_DOOR_AREA
         else -> null
     }
 
@@ -77,11 +79,46 @@ object HalReadTables {
      */
     const val SUNROOF_WINDOW_ID = 5
 
+    /**
+     * 3.1.6 · R32 — `area` của **cốp** trong `getDoorState(int)`: [ĐO nguồn fw 2606] `BYDAutoBodyworkDevice.java:207`
+     * `BODYWORK_CMD_DOOR_LUGGAGE_DOOR = 6`, `:715-716` `case 6 → get(BODYWORK_LUGGAGE_DOOR)` (feature 692060186 = 0x2940001A trên
+     * CAN-FD). [ĐO logcat xe 14/10] dịch vụ nhắc nhở BYD gọi `getDoorState(6)` ⇒ 1 sau lệnh mở của Kachi, 0 sau lệnh đóng.
+     */
+    const val TRUNK_DOOR_AREA = 6
+
     // ⚠ (V) FEATURE-FILTER 2026-09-17 — MỘT bảng tra đã xoá cùng chủ của nó, KHÔNG để lại bảng rỗng:
     //  • `BOOL_WHEN_EQUALS` (bool = MỘT giá trị enum) chỉ từng có `is_charging`→2 của `getChargerWorkState()`.
     // Hai id ấy đều bị owner chấm NO. Một bảng rỗng cộng một nhánh `if` không bao giờ vào là dead code (ADAS-PURGE
     // đã gỡ `CarDataAdapter.Gate.ints()` đúng vì lẽ này). Cần lại: thêm bảng + nhánh ở `HalBindingTable.readBool`.
     // ⚠ Bảng `ARRAY_INDEX` thì đã **quay lại** ở 1.85 (bụi mịn ngoài xe) — xem KDoc của nó ngay trên.
+
+    /**
+     * ═══ 3.1.6 · Datum bool đọc từ một ENUM 1=BẬT/2=TẮT — `coerceBool` (`> 0`) đọc NHẦM `2` thành BẬT ═══════════════════
+     *
+     * Owner 15/10 (xe): *"tắt đèn ban ngày trên 3D ⇒ đèn tắt, rồi trên 3D tự sáng lại, đèn xe thì đã tắt"*. Gốc [ĐO]:
+     *  • feature `985661476` = `LIGHT_DAY_RUNNING_LIGHT_AUTO_STATE` (`BYDAutoFeatureIds.java:1683`) trả **1 hoặc 2** — ba lượt quét
+     *    trên xe (`sweep-2026092x`) đọc `int=2` và `int=1`; logcat xe 15/10 08:21:52 sau `setDayTimeLightState [2]` phát
+     *    `event_type =3ac00024, value = 2`;
+     *  • thang ấy là `DAYTIME_LIGHT_INVALID=0 · OPEN=1 · CLOSE=2 · UNDEFINED=3` (`BYDAutoLightDevice.java:8-11`);
+     *  • [HalBindingTable.coerceBool] là `coerceInt > 0` ⇒ **2 (TẮT) thành `true`** ⇒ hết 3 s giữ lạc quan ([LampHold]) thì số
+     *    đọc "BẬT" thắng và đèn 3D sáng lại. Cũng là lý do 2026-09-24 phải bỏ `readKey` của nút `drl` (*"đọc lại không phản ánh
+     *    đúng"*) — số đọc đúng, phép GIẢI sai.
+     *
+     * Bảng = dữ liệu: datum → (mã BẬT, mã TẮT). Mã khác hai số ấy (INVALID/UNDEFINED) ⇒ `null` = "—", KHÔNG đoán.
+     * Thêm một datum enum-bool khác = thêm một dòng, có `file:line` của thang.
+     */
+    val BOOL_ENUM: Map<String, Pair<Int, Int>> = mapOf(
+        "light_drl" to (1 to 2),
+        // 3.1.6 · R32 — cốp `BODYWORK_STATE_OPEN 1 / CLOSED 0` (`BYDAutoBodyworkDevice.java:239-241` fw 2606): mã khác (255
+        // UNDEFINED · số lạ) ⇒ `null`, không phải "đang mở" như `coerceBool` (`> 0`) sẽ đọc.
+        "tailgate_status" to (1 to 0),
+    )
+
+    /** Giải mã [code] của datum enum-bool [id] theo [BOOL_ENUM]; `null` khi [id] không trong bảng HOẶC mã ngoài cặp (BẬT, TẮT). */
+    fun enumBool(id: String, code: Int?): Boolean? {
+        val (on, off) = BOOL_ENUM[id] ?: return null
+        return when (code) { on -> true; off -> false; else -> null }
+    }
 
     /** `BODYWORK_STATE_UNDEFINED = 255` [ĐO source `BYDAutoBodyworkDevice.java:205`] — xem KDoc [INVALID_VALUES].
      *  Khai TRƯỚC [INVALID_VALUES]: thân `object` khởi tạo theo thứ tự khai, dùng trước là đọc một `null`. */
@@ -124,6 +161,8 @@ object HalReadTables {
         "door_lr" to BODYWORK_UNDEFINED,
         "door_rr" to BODYWORK_UNDEFINED,
         "sunroof_state" to BODYWORK_UNDEFINED,
+        // 3.1.6 · R32 — nút `trunk` đọc qua datum này bằng `readState` (Int, không qua [BOOL_ENUM]) ⇒ lọc 255 ở đây nữa.
+        "tailgate_status" to BODYWORK_UNDEFINED,
     ) + TyreIds.COLOUR.associateWith { TYRE_COLOUR_INVALID } + TyreIds.PRESSURE.associateWith { TYRE_PRESSURE_CODES }
 
     /**

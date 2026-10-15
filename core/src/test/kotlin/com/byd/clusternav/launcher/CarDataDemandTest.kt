@@ -239,6 +239,28 @@ class CarDataDemandTest {
         )
     }
 
+    /**
+     * 3.1.6 — cùng khuôn [FAST_IDS]: [CarDataDemand.BODY_IDS] khớp ĐÚNG danh sách [CarDataAdapter.readBody] đọc, và nhịp CHẬM
+     * KHÔNG còn đọc cửa (đọc ở cả hai nhịp = tốn 24 lượt/phút thừa mà vẫn trễ theo nhịp nhanh hơn). Owner 15/10: cửa hiện trễ tới
+     * 10 s vì chỉ đọc ở nhịp chậm — bỏ nhịp thân xe (cửa về lại `readSlow`) thì bài này ĐỎ ở chiều thứ ba.
+     */
+    @Test
+    fun `BODY_IDS khop dung danh sach ma readBody doc, va readSlow khong doc cua`() {
+        val table = HalBindingTable(FakeHalGateway())
+        val before = KachiPerf.value(KachiPerf.Counter.HAL_SKIP_OFFSCREEN)
+        CarDataAdapter(table, demand = { emptySet() }).readBody(CarStatus())
+        assertEquals(CarDataDemand.BODY_IDS.size.toLong(), KachiPerf.value(KachiPerf.Counter.HAL_SKIP_OFFSCREEN) - before)
+        val before2 = KachiPerf.value(KachiPerf.Counter.HAL_SKIP_OFFSCREEN)
+        CarDataAdapter(table, demand = { CarDataDemand.BODY_IDS }).readBody(CarStatus())
+        assertEquals(before2, KachiPerf.value(KachiPerf.Counter.HAL_SKIP_OFFSCREEN), "readBody đọc một id KHÔNG có trong BODY_IDS")
+        // Nhịp chậm: cửa đang hiện mà gateway trả "1" ⇒ readSlow vẫn GIỮ giá trị cũ (null), chỉ readBody mới đọc.
+        val gw = HalBindingTable(FakeHalGateway(gettersByArg = mapOf("getDoorState" to mapOf(1 to "1", 2 to "0", 3 to "0", 4 to "0"))))
+        val a = CarDataAdapter(gw, demand = { CarDataDemand.BODY_IDS })
+        assertEquals(null, a.readSlow(CarStatus()).body.doorLfOpen, "readSlow không được đọc cửa nữa")
+        assertEquals(true, a.readBody(CarStatus()).body.doorLfOpen, "readBody phải đọc cửa trước-trái = MỞ")
+        assertTrue(a.bodyNeeded() && !CarDataDemand.needsBody(setOf("soc")) && CarDataDemand.needsBody(null))
+    }
+
     // ── UX4 · datum BẠN ĐỒNG HÀNH + nút phụ của ô có mặt tự động ─────────────────────────────────
 
     /**

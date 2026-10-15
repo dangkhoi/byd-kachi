@@ -215,6 +215,9 @@
     <string name="kachi_doors_unknown">Status pintu —</string>
     <string name="kachi_doors_open">Ada pintu terbuka</string>
     <string name="kachi_doors_closed">Semua 4 pintu tertutup</string>
+    <string name="kachi_tailgate_open">But terbuka</string>
+    <string name="kachi_tailgate_closed">But tertutup</string>
+    <string name="kachi_tailgate_unknown">But —</string>
     <string name="kachi_tyre_pressure_unit">Tekanan tayar (%1$s)</string>
     <string name="kachi_slot_swap_empty">Pilih apl untuk petak %1$d</string>
     <string name="kachi_slot_swap">Tukar petak %1$d</string>

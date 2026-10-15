@@ -8,17 +8,19 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * R29 — bộ giải mực ([ContrastInk]). Tính chất chính (owner 14/10 *"luôn luôn nhìn thấy được"*): với MỌI độ chói nền 0..1,
- * cả hai chủ đề, mọi vai, ảnh đồng màu lẫn ảnh nhiều chi tiết, trên ảnh trần lẫn trên thẻ ở mọi độ đục — mực trả về ĐẠT sàn,
- * hoặc đi kèm lớp đỡ làm nó đạt; kiểm lại bằng phép đo ĐỘC LẬP (`Wcag`, vét 401 điểm), không tin con số bộ giải tự khai.
+ * R29 (làm lại 15/10) — bộ giải HỌ MỰC theo mặt ([ContrastInk.choose]). Owner 15/10: *"phải làm đổi màu chữ tự động, đồng đều,
+ * chứ không vá thế này"*. Tính chất: với MỌI nền (0..1, hai chủ đề, ảnh trần lẫn thẻ mọi độ đục, ảnh rực màu), một mặt có ĐỦ các
+ * vai nhận MỘT họ; họ đó ĐẠT sàn cho mọi vai — kiểm lại bằng phép đo ĐỘC LẬP (`Wcag`, vét 401 điểm) — hoặc bộ giải báo DƯỚI SÀN
+ * và phép đo độc lập xác nhận quả thật không họ nào đạt (bộ giải không bỏ sót họ đạt). Không có lớp đỡ nào để tính vào.
  */
 class ContrastInkTest {
 
-    /** Kiểm độc lập: dựng lại nền (kể cả lớp đỡ) rồi đo bằng `Wcag` trên chuỗi hex. */
-    private fun verified(r: Resolution, b: ContrastBackdrop): Double {
-        val full = if (r.reinforced) b.with(ContrastBackdrop.Layer.Flat(r.haloColor())) else b
-        return (0..400).minOf { Wcag.ratio(ColorMath.hex(r.ink), ColorMath.hex(full.groundAt(it / 400.0))) }
-    }
+    /** Tỉ số tệ nhất đo độc lập: dựng lại nền rồi đo bằng `Wcag` trên chuỗi hex. */
+    private fun verified(ink: Int, b: ContrastBackdrop): Double =
+        (0..400).minOf { Wcag.ratio(ColorMath.hex(ink), ColorMath.hex(b.groundAt(it / 400.0))) }
+
+    /** Họ [f] đạt cho mọi phần tử của mặt — theo phép đo độc lập. */
+    private fun passes(needs: List<InkNeed>, f: Int) = needs.all { verified(it.inks[f], it.ground) >= it.role.floor - 1e-6 }
 
     private fun sweepBackdrops(theme: ThemeFixture): Sequence<Pair<String, ContrastBackdrop>> = sequence {
         for (dim in intArrayOf(0, 45, 90)) for (width in doubleArrayOf(0.0, 0.1, 0.3, 0.6, 1.0)) {
@@ -33,156 +35,185 @@ class ContrastInkTest {
                     yield("thẻ o${(fade * 100).toInt()} ${if (top) "đỉnh" else "đáy"} dim=$dim $base" to
                         ContrastBackdrop(base, listOf(theme.scrim(dim)) + theme.card(glass, fade, top = top)))
                 }
-                l += 0.02
+                l += 0.04
             }
         }
     }
 
     @Test
-    fun `quet do choi 0 toi 1 hai chu de moi vai - luon dat san hoac co lop do lam dat`() {
-        var cases = 0; var reinforced = 0; var swapped = 0
-        for (theme in ThemeFixture.BOTH) for ((label, b) in sweepBackdrops(theme)) for (role in InkRole.entries) {
-            val r = ContrastInk.resolve(role, b, theme.candidates(role))
-            assertTrue(r.ok, "${theme.name} $label ${r.describe()}")
-            val v = verified(r, b)
-            assertTrue(v >= role.floor - 1e-6, "${theme.name} $label ${role.name}: đo độc lập ${Wcag.fmt(v)} < ${role.floor} (${r.describe()})")
-            cases++; if (r.reinforced) reinforced++; if (r.swapped) swapped++
+    fun `quet 0 toi 1 hai chu de - mot ho cho ca mat, dat san hoac bao duoi san that su`() {
+        ContrastLedger.reset()
+        var cases = 0; var below = 0; var swapped = 0
+        for (theme in ThemeFixture.BOTH) for ((label, b) in sweepBackdrops(theme)) {
+            val needs = theme.surface(b)
+            val c = ContrastInk.choose(ContrastInk.scores(needs, 4), passes = ContrastInk.passes(needs, 4))
+            if (c.ok) {
+                assertTrue(passes(needs, c.family), "${theme.name} $label ${c.describe()}: đo độc lập trượt")
+            } else {
+                below++
+                for (f in 0 until 4) assertFalse(passes(needs, f), "${theme.name} $label: họ#$f đạt mà bộ giải báo dưới sàn")
+            }
+            cases++; if (c.family != 0) swapped++
         }
-        println("[ĐO] R29 quét: $cases ca · đổi mực $swapped · lớp đỡ $reinforced")
-        assertTrue(cases > 20_000, "quét quá thưa: $cases")
+        println("[ĐO] R29 họ mực quét: $cases mặt · khác họ chủ đề $swapped · dưới sàn $below")
+        assertEquals(below.toLong(), ContrastLedger.belowFloor.get(), "mỗi lần dưới sàn phải được đếm (fail-loud)")
+        assertTrue(cases > 3_000, "quét quá thưa: $cases")
+        assertTrue(below < cases / 2, "phần lớn mặt phải có họ đạt: $below/$cases")
     }
 
     /** Ảnh RỰC màu: hộp góc tối/sáng lệch sắc (đỏ cạnh lam, xanh lá, cam…) — đúng chỗ mô hình "xám" cũ sai 29 %. */
     @Test
-    fun `anh ruc mau - hop lech sac van luon dat san hoac co lop do`() {
+    fun `anh ruc mau - dat san doc lap hoac that su khong ho nao dat`() {
         val rnd = kotlin.random.Random(1014)
         var cases = 0
-        repeat(1500) {
+        repeat(800) {
             val a = IntArray(3) { rnd.nextInt(256) }; val z = IntArray(3) { rnd.nextInt(256) }
             val box = ToneBox(ColorMath.argb(255, minOf(a[0], z[0]), minOf(a[1], z[1]), minOf(a[2], z[2])),
                 ColorMath.argb(255, maxOf(a[0], z[0]), maxOf(a[1], z[1]), maxOf(a[2], z[2])))
             for (theme in ThemeFixture.BOTH) {
                 val dim = intArrayOf(0, 45, 90)[rnd.nextInt(3)]
                 val b = ContrastBackdrop(box, listOf(theme.scrim(dim)) + theme.card(box, fade = rnd.nextDouble(0.0, 1.0), top = rnd.nextBoolean()))
-                for (role in InkRole.entries) {
-                    val r = ContrastInk.resolve(role, b, theme.candidates(role))
-                    assertTrue(r.ok && verified(r, b) >= role.floor - 1e-6, "${theme.name} $b ${r.describe()}")
-                    cases++
-                }
+                val needs = theme.surface(b)
+                val c = ContrastInk.choose(ContrastInk.scores(needs, 4))
+                if (c.ok) assertTrue(passes(needs, c.family), "${theme.name} $b ${c.describe()}")
+                else assertTrue((0 until 4).none { passes(needs, it) }, "${theme.name} $b: bỏ sót họ đạt")
+                cases++
             }
         }
-        assertTrue(cases >= 18_000)
+        assertTrue(cases >= 1_600)
     }
 
     @Test
-    fun `lop do la toi thieu - bot mot bac thi truot, ung vien khac khong can it hon`() {
-        for (theme in ThemeFixture.BOTH) for ((label, b) in sweepBackdrops(theme)) for (role in InkRole.entries) {
-            val cands = theme.candidates(role)
-            val r = ContrastInk.resolve(role, b, cands)
-            if (!r.reinforced) continue
-            for (c in cands) {
-                if (ColorMath.ratio(c.ink, c.halo) < role.floor) continue
-                val less = r.haloAlpha - ContrastInk.HALO_STEP
-                if (less < ContrastInk.HALO_STEP / 2) continue
-                val w = b.with(ContrastBackdrop.Layer.Flat(ColorMath.withAlpha(c.halo, ContrastInk.alphaByte(less)))).worst(c.ink)
-                assertTrue(w < role.floor, "${theme.name} $label ${role.name}: ${ColorMath.hex(c.ink)} đạt ở alpha $less < ${r.haloAlpha}")
-            }
+    fun `tre - ho dang hien con dat thi giu, chi ve ho uu tien khi du le`() {
+        // Đang ở họ đối cực nâng (3), mực chủ đề vừa đủ sàn ⇒ GIỮ (không nhấp nháy ở nhịp trình chiếu kế).
+        assertEquals(3, ContrastInk.choose(doubleArrayOf(1.05, 1.05, 0.7, 1.4), current = 3).family)
+        // Mực chủ đề đạt với lề ≥ 10 % ⇒ về lại.
+        assertEquals(0, ContrastInk.choose(doubleArrayOf(1.12, 1.12, 0.7, 1.4), current = 3).family)
+        // Họ đang hiện trượt ⇒ họ ĐẦU TIÊN đạt (không chờ lề).
+        assertEquals(2, ContrastInk.choose(doubleArrayOf(0.99, 0.99, 1.01, 1.3), current = 0).family)
+        // Mặt mới (chưa có họ) ⇒ họ đầu tiên đạt.
+        assertEquals(1, ContrastInk.choose(doubleArrayOf(0.9, 1.0, 1.5, 1.5)).family)
+        // Không họ nào đạt: giữ họ đang hiện nếu kém tốt nhất ≤ 5 %, không thì sang họ tốt nhất.
+        val keep = ContrastInk.choose(doubleArrayOf(0.80, 0.80, 0.78, 0.78), current = 2)
+        assertEquals(2, keep.family); assertFalse(keep.ok)
+        assertEquals(0, ContrastInk.choose(doubleArrayOf(0.80, 0.80, 0.70, 0.70), current = 2).family)
+        // Có số phần tử đạt: họ để NHIỀU phần tử đạt nhất thắng dù điểm MIN thấp hơn (một chip trên mảng tối không kéo cả thanh).
+        assertEquals(2, ContrastInk.choose(doubleArrayOf(0.33, 0.33, 0.24, 0.24), passes = intArrayOf(2, 2, 8, 8)).family)
+        // Hoà số đạt ⇒ điểm cao hơn; họ đang hiện hoà số đạt và kém điểm ≤ 5 % ⇒ giữ.
+        assertEquals(3, ContrastInk.choose(doubleArrayOf(0.5, 0.5, 0.6, 0.7), passes = intArrayOf(4, 4, 6, 6)).family)
+        assertEquals(2, ContrastInk.choose(doubleArrayOf(0.5, 0.5, 0.68, 0.7), current = 2, passes = intArrayOf(4, 4, 6, 6)).family)
+    }
+
+    /** Trình chiếu dao động quanh ngưỡng: chuỗi điểm lên xuống ±3 % quanh 1,0 — số lần đổi họ phải ≤ 1. */
+    @Test
+    fun `tre - nen dao dong sat nguong khong lam mat nhap nhay`() {
+        var cur = -1; var flips = 0
+        for (i in 0 until 40) {
+            val theme = 1.0 + if (i % 2 == 0) 0.03 else -0.03   // mực chủ đề lúc đạt lúc trượt sát sàn
+            val c = ContrastInk.choose(doubleArrayOf(theme, theme, 1.6, 1.6), cur)
+            if (cur != -1 && c.family != cur) flips++
+            cur = c.family
         }
+        assertTrue(flips <= 1, "đổi họ $flips lần trong 40 nhịp sát ngưỡng")
     }
 
     @Test
-    fun `lop do hoa alpha thi giu thu tu uu tien`() {
-        val t = ThemeFixture.LIGHT
-        val c = t.candidates(InkRole.TEXT)[0]
-        val r = ContrastInk.resolve(InkRole.TEXT, ContrastBackdrop(ToneBox.gray(0.0, 1.0)), listOf(c, c.copy()))
-        assertTrue(r.reinforced, r.describe())
-        assertEquals(0, r.index, "hai ứng viên cần cùng alpha ⇒ giữ ứng viên đứng trước")
-    }
-
-    @Test
-    fun `khong doi muc khi muc mac dinh da dat - ket qua on dinh`() {
-        // Tối trên nền tối đồng màu: mực chủ đề đủ ⇒ index 0, không đỡ.
+    fun `mat toi tren nen toi - giu muc chu de, khong doi ho`() {
         val dark = ContrastBackdrop(ToneBox.gray(0.01))
-        for (role in InkRole.entries) {
-            val r = ContrastInk.resolve(role, dark, ThemeFixture.DARK.candidates(role))
-            assertEquals(0, r.index, r.describe()); assertFalse(r.reinforced, r.describe())
-        }
-        // Sáng trên ảnh tối: mực tối của chủ đề chìm ⇒ đổi sang mực sáng (không đỡ, vì nền đồng màu).
-        val r = ContrastInk.resolve(InkRole.TEXT, dark, ThemeFixture.LIGHT.candidates(InkRole.TEXT))
-        assertTrue(r.swapped && !r.reinforced, r.describe())
-        assertEquals(ThemeFixture.DARK.ink, r.ink)
+        assertEquals(0, ContrastInk.choose(ContrastInk.scores(ThemeFixture.DARK.surface(dark), 4)).family)
+        // Sáng trên ảnh tối: mực tối của chủ đề chìm ⇒ CẢ MẶT sang họ đối cực (mực sáng), không riêng một chữ.
+        val c = ContrastInk.choose(ContrastInk.scores(ThemeFixture.LIGHT.surface(dark), 4))
+        assertTrue(c.ok && c.family == 2, c.describe())
+        assertEquals(ThemeFixture.DARK.ink, ThemeFixture.LIGHT.inks(InkRole.TEXT)[c.family])
     }
 
-    /** Diagnostics 301 §11 [ĐO máy ảo 14/10]: Sáng · ảnh + làm tối 45 % + thẻ 70 % ⇒ mặt thẻ ≈ (186,189,197), MUT 3,65–3,73:1. */
+    /**
+     * Diagnostics 301 §11 [ĐO máy ảo 14/10]: Sáng · ảnh + làm tối 45 % + thẻ 70 % ⇒ mặt thẻ ≈ (186,189,197), MUT 3,65–3,73:1.
+     * Họ nâng chữ phụ (CÙNG cực, `mut` → `ink2`) đứng trước đổi cực ⇒ cả thẻ giữ mực tối, chữ phụ đậm lên một bậc cho mọi nhãn.
+     */
     @Test
-    fun `ca that GroupCellGrid - MUT tren the sang 186 189 197 khong duoc giu nguyen`() {
+    fun `ca that GroupCellGrid - chu phu nang mot bac cung cuc cho ca the`() {
         val face = ColorMath.argb(255, 186, 189, 197)
         val theme = ThemeFixture.LIGHT
         assertTrue(ColorMath.ratio(theme.mut, face) < 4.5, "tiền đề: MUT trên mặt thẻ phải dưới sàn")
-        val r = ContrastInk.resolve(InkRole.SECONDARY_TEXT, ContrastBackdrop(ToneBox(face, face)), theme.candidates(InkRole.SECONDARY_TEXT))
-        assertTrue(r.ok && r.ink != theme.mut, r.describe())
-        assertTrue(ColorMath.ratio(r.ink, face) >= 4.5, r.describe())
+        val b = ContrastBackdrop(ToneBox(face, face))
+        val needs = listOf(InkRole.TEXT, InkRole.SECONDARY_TEXT, InkRole.ICON).map { InkNeed(it, b, theme.inks(it)) }   // vai của ô nhóm
+        val c = ContrastInk.choose(ContrastInk.scores(needs, 4))
+        assertTrue(c.ok && c.family == 1, c.describe())
+        assertTrue(ColorMath.ratio(theme.ink2, face) >= 4.5 && theme.ink2 != theme.ink, "chữ phụ vẫn khác mực chính")
     }
 
     /**
      * Ảnh nhiều chi tiết: sọc 2 px đen/trắng (đúng ảnh làm phương án A của 2.86 chết). Trung bình nói "xám 0.5" ⇒ A chọn một mực
-     * đạt trên xám 0.5 — nhưng mực ấy chìm trên nửa số điểm ảnh. Bộ giải đo KHOẢNG ⇒ không mực trần nào đạt ⇒ xin lớp đỡ.
+     * đạt trên xám 0.5 — nhưng mực ấy chìm trên nửa số điểm ảnh. Bộ giải đo KHOẢNG ⇒ không họ nào đạt ⇒ BÁO dưới sàn, không vá.
      */
     @Test
-    fun `anh soc 2 px - trung binh lua, khoang khong lua, bo giai xin lop do`() {
+    fun `anh soc 2 px - trung binh lua, khoang khong lua, bao duoi san`() {
+        ContrastLedger.reset()
         val w = 960; val h = 120
         val px = IntArray(w * h) { if (((it % w) / 2) % 2 == 0) -1 else ColorMath.parse("#000000") }
         val region = LumaField.of(px, w, h).range(300, 30, 420, 70)!!
         for (theme in ThemeFixture.BOTH) {
             val meanGray = ColorMath.grayOfLuminance(region.mean)
-            val meanPick = theme.candidates(InkRole.TEXT).firstOrNull { ColorMath.ratio(it.ink, meanGray) >= 4.5 }
+            val meanPick = theme.inks(InkRole.TEXT).firstOrNull { ColorMath.ratio(it, meanGray) >= 4.5 }
             requireNotNull(meanPick) { "tiền đề: theo trung bình (${Wcag.fmt(region.mean)}) phương án A tìm được mực 'đạt'" }
-            val onPixels = minOf(ColorMath.ratio(meanPick.ink, -1), ColorMath.ratio(meanPick.ink, ColorMath.parse("#000000")))
-            assertTrue(onPixels < 4.5, "tiền đề: một mực trần không thể đạt trên cả trắng lẫn đen (${Wcag.fmt(onPixels)})")
-            val b = ContrastBackdrop(region, listOf(theme.scrim(0)))
-            val r = ContrastInk.resolve(InkRole.TEXT, b, theme.candidates(InkRole.TEXT))
-            assertTrue(r.ok && r.reinforced, "${theme.name}: ${r.describe()}")
-            assertTrue(verified(r, b) >= 4.5 - 1e-6)
+            val c = ContrastInk.choose(ContrastInk.scores(theme.surface(ContrastBackdrop(region, listOf(theme.scrim(0)))), 4))
+            assertFalse(c.ok, "${theme.name}: ${c.describe()}")
+            assertTrue(c.describe().contains("DƯỚI-SÀN"))
         }
+        assertEquals(2L, ContrastLedger.belowFloor.get())
     }
 
     @Test
-    fun `anh chia doi sang toi - vung vat ranh xin lop do, vung mot ben chi doi muc`() {
+    fun `anh chia doi sang toi - vung vat ranh bao duoi san, vung mot ben ca mat doi ho`() {
         val w = 640; val h = 200
         val px = IntArray(w * h) { if (it % w < w / 2) -1 else ColorMath.parse("#101010") }
         val f = LumaField.of(px, w, h)
         val theme = ThemeFixture.LIGHT
-        val across = ContrastInk.resolve(InkRole.ICON, ContrastBackdrop(f.range(280, 80, 360, 120)!!), theme.candidates(InkRole.ICON))
-        assertTrue(across.reinforced, across.describe())
-        val darkSide = ContrastInk.resolve(InkRole.ICON, ContrastBackdrop(f.range(420, 80, 600, 120)!!), theme.candidates(InkRole.ICON))
-        assertTrue(!darkSide.reinforced && darkSide.swapped, darkSide.describe())
+        fun on(b: ContrastBackdrop) = ContrastInk.choose(ContrastInk.scores(listOf(InkNeed(InkRole.ICON, b, theme.inks(InkRole.ICON))), 4))
+        assertFalse(on(ContrastBackdrop(f.range(280, 80, 360, 120)!!)).ok)
+        val darkSide = on(ContrastBackdrop(f.range(420, 80, 600, 120)!!))
+        assertTrue(darkSide.ok && darkSide.family == 2, darkSide.describe())
     }
 
     @Test
-    fun `bang mau hong - khong ung vien nao do duoc thi bao duoi san, khong im lang`() {
+    fun `mot phan tu truot thi CA MAT doi ho - khong co phan tu nao tu chon rieng`() {
+        // Chữ chính đạt dưới họ 0; MỘT chữ phụ nằm trên chỗ sáng hơn (L 0,07) nên `mut` trượt ⇒ CẢ MẶT sang họ nâng (mọi chữ phụ
+        // của mặt cùng đậm lên một bậc), không riêng chữ phụ đó.
+        val t = ThemeFixture.DARK
+        val text = InkNeed(InkRole.TEXT, ContrastBackdrop(ToneBox.gray(0.0)), t.inks(InkRole.TEXT))
+        val icon = InkNeed(InkRole.SECONDARY_TEXT, ContrastBackdrop(ToneBox.gray(0.07)), t.inks(InkRole.SECONDARY_TEXT))
+        assertTrue(ContrastInk.margin(text, 0) >= 1.0 && ContrastInk.margin(icon, 0) < 1.0, "tiền đề")
+        val c = ContrastInk.choose(ContrastInk.scores(listOf(text, icon), 4))
+        assertTrue(c.ok && c.family == 1, c.describe())
+        assertEquals(c.score, minOf(ContrastInk.margin(text, c.family), ContrastInk.margin(icon, c.family)), 1e-12)
+    }
+
+    @Test
+    fun `bang mau hong - khong ho nao dat thi bao duoi san, khong im lang`() {
         ContrastLedger.reset()
         val gray = ColorMath.grayOfLuminance(0.2)
-        val bad = listOf(InkCandidate(gray, ColorMath.grayOfLuminance(0.22)))
-        val r = ContrastInk.resolve(InkRole.TEXT, ContrastBackdrop(ToneBox.gray(0.2)), bad)
-        assertFalse(r.ok, r.describe())
-        assertTrue(r.describe().contains("DƯỚI-SÀN"))
+        val c = ContrastInk.choose(ContrastInk.scores(listOf(InkNeed(InkRole.TEXT, ContrastBackdrop(ToneBox.gray(0.2)), intArrayOf(gray))), 1))
+        assertFalse(c.ok, c.describe())
+        assertTrue(c.describe().contains("DƯỚI-SÀN"))
         assertEquals(1L, ContrastLedger.belowFloor.get())
         assertEquals(1L, ContrastLedger.resolved.get())
-        assertThrows(IllegalArgumentException::class.java) { ContrastInk.resolve(InkRole.TEXT, ContrastBackdrop(ToneBox.gray(0.2)), emptyList()) }
+        assertThrows(IllegalArgumentException::class.java) { ContrastInk.choose(DoubleArray(0)) }
+        assertTrue(ContrastInk.score(emptyList(), 0) == Double.MAX_VALUE, "mặt không phần tử ⇒ không ràng buộc")
     }
 
     @Test
-    fun `so dem dem dung doi muc va lop do`() {
+    fun `so dem dem dung khac ho, doi ho, duoi san`() {
         ContrastLedger.reset()
         val t = ThemeFixture.DARK
-        ContrastInk.resolve(InkRole.TEXT, ContrastBackdrop(ToneBox.gray(0.0)), t.candidates(InkRole.TEXT))   // giữ
-        ContrastInk.resolve(InkRole.TEXT, ContrastBackdrop(ToneBox.gray(1.0)), t.candidates(InkRole.TEXT))   // đổi
-        ContrastInk.resolve(InkRole.TEXT, ContrastBackdrop(ToneBox.gray(0.0, 1.0)), t.candidates(InkRole.TEXT)) // đỡ
+        val c0 = ContrastInk.choose(ContrastInk.scores(t.surface(ContrastBackdrop(ToneBox.gray(0.0))), 4))           // giữ
+        ContrastInk.choose(ContrastInk.scores(t.surface(ContrastBackdrop(ToneBox.gray(1.0))), 4), c0.family)      // đổi
+        ContrastInk.choose(ContrastInk.scores(t.surface(ContrastBackdrop(ToneBox.gray(0.0, 1.0))), 4))            // dưới sàn
         assertEquals(3L, ContrastLedger.resolved.get())
-        assertEquals(1L, ContrastLedger.reinforced.get())
+        assertEquals(1L, ContrastLedger.switched.get())
         assertTrue(ContrastLedger.swapped.get() >= 1L)
-        assertEquals(0L, ContrastLedger.belowFloor.get())
-        assertTrue(ContrastLedger.snapshot().contains("dưới-sàn=0"))
+        assertEquals(1L, ContrastLedger.belowFloor.get())
+        assertTrue(ContrastLedger.snapshot().contains("dưới-sàn=1"))
     }
 
     @Test

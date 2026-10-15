@@ -19,7 +19,13 @@ import org.junit.jupiter.api.Test
  */
 class KeyCtlPlanTest {
 
-    private fun def(id: String) = ControlRegistry.byId(id)!!
+    /**
+     * 3.1.6 · R32 — `trunk` nay CÓ readKey (`tailgate_status` = `getDoorState(6)`) ⇒ Đảo cốp chỉ quyết bằng số đọc. Các bài về
+     * luật TRÍ NHỚ (2.87 R-FL2 + P1 "trí nhớ cũ + xe chạy ⇒ ĐÓNG") vẫn phải khoá luật ấy cho một bộ phận bị cổng tốc độ mà KHÔNG có
+     * đường đọc ⇒ dựng bản `trunk` không readKey (cùng mã ⇒ cùng [CtlSafetyPolicy.REQUIRES_STATIONARY]) thay vì xoá bài.
+     */
+    private val blindTrunk = ControlRegistry.byId("trunk")!!.copy(readKey = "")
+    private fun def(id: String) = if (id == "trunk") blindTrunk else ControlRegistry.byId(id)!!
     private fun t(spec: String) = KeyCtlTargets.decode(spec)!!
 
     /** Bảng lệnh cuối RIÊNG cho mỗi bài (không chạm `ControlLastSent.shared` của cả JVM kiểm). */
@@ -121,7 +127,8 @@ class KeyCtlPlanTest {
     /** Đảo hai lần (mỗi lần thành công) ⇒ về đúng chỗ cũ — cho MỌI nút đảo được của registry, sinh tự động. */
     @Test
     fun `dao hai lan ve nhu cu voi moi nut dao duoc`() {
-        ControlRegistry.ALL.filter { it.kind == ControlKind.TOGGLE || it.kind == ControlKind.COVER }.forEach { d ->
+        // R32: nút CHỈ quyết bằng số đọc ([KeyCtlPlan.readOnly] — cốp) đọc `null` ⇒ không bắn ⇒ có bài riêng dưới; ở đây bản không readKey.
+        (ControlRegistry.ALL.filterNot(KeyCtlPlan::readOnly) + blindTrunk).filter { it.kind == ControlKind.TOGGLE || it.kind == ControlKind.COVER }.forEach { d ->
             val m = ControlLastSent()
             val start = m.index(d.id)
             val f = KeyCtlTarget(d.id, KeyCtlAction.FLIP)
@@ -167,6 +174,34 @@ class KeyCtlPlanTest {
         mem.record("trunk", 1)
         assertEquals(byMem("trunk", 0), plan("ctl:trunk:flip", speed = 30), "trí nhớ 'mở' ⇒ ĐÓNG — không cần đổi gì")
         assertEquals(0, speedReads, "lệnh ĐÓNG không bao giờ bị chặn ⇒ không tốn lượt đọc vận tốc")
+    }
+
+    /**
+     * ═══ 3.1.6 · R32 (owner 15/10, OQ14) — cốp MỘT phím Đảo theo SỐ ĐỌC THẬT ═══════════════════════════════════════════════
+     * `tailgate_status` = `getDoorState(6)`: 0 ⇒ MỞ (1) · 1 ⇒ ĐÓNG (gửi 0 ⇒ `voiceCtlBackDoor(3)`) · đọc không ra ⇒ [Outcome.Unreadable],
+     * KHÔNG lùi về trí nhớ (đóng bằng nút vật lý thì trí nhớ nói "mở" ⇒ phím sẽ MỞ lại cái cốp vừa đóng — đúng ca owner nêu).
+     * Cổng tốc độ KHÔNG đổi: kế hoạch không đọc vận tốc (cổng thi hành `VoiceControlDispatch` vẫn chặn MỞ khi xe chạy — bài :app).
+     * Đỏ khi: gỡ `readKey` cốp · bỏ [KeyCtlPlan.readOnly] (null ⇒ lùi trí nhớ ⇒ Run MEMORY) · đảo chiều số đọc.
+     */
+    @Test
+    fun `R32 dao cop chi theo so doc that, doc khong ra thi khong ban`() {
+        val trunk = ControlRegistry.byId("trunk")!!
+        assertEquals("tailgate_status", trunk.readKey)
+        assertTrue(KeyCtlPlan.readOnly(trunk))
+        val flip = KeyCtlTarget("trunk", KeyCtlAction.FLIP)
+        var speedAsked = 0
+        val motion = { speedAsked++; CtlSafetyPolicy.Motion(30, "D") }
+        assertEquals(byCar("trunk", 1), KeyCtlPlan.of(trunk, flip, memory = mem, motion = motion) { 0 }, "đọc 0 (đóng) ⇒ MỞ")
+        assertEquals(byCar("trunk", 0), KeyCtlPlan.of(trunk, flip, memory = mem, motion = motion) { 1 }, "đọc 1 (mở) ⇒ ĐÓNG")
+        mem.record("trunk", 1)   // trí nhớ nói "mở" (Kachi mở) — rồi người lái đóng bằng nút trên cốp ⇒ số đọc 0 thắng
+        assertEquals(byCar("trunk", 1), KeyCtlPlan.of(trunk, flip, memory = mem, motion = motion) { 0 })
+        assertEquals(Outcome.Unreadable, KeyCtlPlan.of(trunk, flip, memory = mem, motion = motion) { null }, "255/không đọc ⇒ không bắn")
+        assertEquals(0, speedAsked, "kế hoạch không đọc vận tốc — cổng tốc độ ở tầng thi hành, không đổi")
+        // Mở/Đóng riêng không đọc gì, không đổi.
+        assertEquals(run("trunk", 1), KeyCtlPlan.of(trunk, KeyCtlTarget("trunk", KeyCtlAction.OPEN), memory = mem, motion = motion) { error("không đọc") })
+        assertTrue(KeyCtlPlan.unreadableReply(trunk, Lang.VI).contains(trunk.label))
+        // Nút khác có readKey (không bị cổng tốc độ) giữ luật 2.87: đọc hỏng ⇒ lùi trí nhớ.
+        assertTrue(ControlRegistry.ALL.filter { it.readKey.isNotBlank() }.all { KeyCtlPlan.readOnly(it) == (it.id == "trunk") })
     }
 
     /** Luật đi theo [CtlSafetyPolicy] + NGUỒN trạng thái, không theo tên nút: số đọc từ XE không đổi; Kế tiếp cũng áp. */

@@ -16,7 +16,8 @@ class PerfR6cScreenGateWiringContractTest {
     fun `cong man sang hai nguon va danh thuc khi man doi`() {
         val c = SourceRoots.codeOf("src/main/java/com/byd/clusternav/AppContainer.kt")
         // 3.01 LAMPLIVE (owner 13/10 "nối luôn đi"): CÙNG lượt hỏi màn báo luôn cho cổng nhu cầu helper đèn — không thêm binder.
-        assertTrue("CarStatusRepository(carDataAdapter, carScope, awake = { screenAwake().also { lampWatch.screen(it) } })" in c)
+        // 3.1.6 HAL-EVENTS: cùng lượt hỏi màn báo thêm `carEvents.lit` (không thêm binder).
+        assertTrue("CarStatusRepository(carDataAdapter, carScope, awake = { screenAwake().also { lampWatch.screen(it); carEvents.lit(it) } })" in c)
         assertTrue("screenAwake = { com.byd.clusternav.system.ScreenLit.read(app) }" in c)
         val lit = SourceRoots.codeOf("src/main/java/com/byd/clusternav/system/ScreenLit.kt")
         assertTrue("ScreenLitRule.lit(ScreenInteractive.read(ctx), displayOn(ctx))" in lit)

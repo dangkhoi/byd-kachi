@@ -52,9 +52,10 @@ object GroupBoard {
         DoorPartSpec(CarPart.DOOR_RF, "door_rf"),
         DoorPartSpec(CarPart.DOOR_LR, "door_lr"),
         DoorPartSpec(CarPart.DOOR_RR, "door_rr"),
-        // ⚠ 2026-09-25 — bộ phận **CỐP** đã rời bảng cùng datum `tailgate_status` ([ĐO xe] `getHatchDoorStatus`
-        // rỗng với mọi arg — cốp xe này không có cảm biến trạng thái), và nóc mất `sunroof_pos` (getter = 65535,
-        // xe không có cửa sổ trời) nên chỉ còn datum TRẠNG THÁI. Giữ một `DoorPartSpec` không có datum nào vẫn vẽ
+        // 3.1.6 · R32 — CỐP trở lại bảng (owner 15/10 "có nhé"): `tailgate_status` = `getDoorState(6)` (gỡ 25/09 vì SAI TÊN
+        // getter `getHatchDoorStatus`, không phải vì cốp không có cảm biến).
+        DoorPartSpec(CarPart.TAILGATE, "tailgate_status"),
+        // ⚠ 2026-09-25 — nóc mất `sunroof_pos` (getter = 65535, xe không có cửa sổ trời) nên chỉ còn datum TRẠNG THÁI. Giữ một `DoorPartSpec` không có datum nào vẫn vẽ
         // được một chấm trên hình xe, nhưng chấm đó không bao giờ nói được gì — đúng ô-nút-chết mà steering cấm.
         DoorPartSpec(CarPart.SUNROOF, "sunroof_state"),
         // Rèm chỉ có MỘT datum, và nó đã là phần trăm ⇒ vừa là trạng thái vừa là số.
@@ -314,6 +315,7 @@ object GroupBoard {
             "door_rf" -> alertIf(s.body.doorRfOpen)
             "door_lr" -> alertIf(s.body.doorLrOpen)
             "door_rr" -> alertIf(s.body.doorRrOpen)
+            "tailgate_status" -> alertIf(s.body.tailgateOpen)
             // Ngưỡng bụi dùng LẠI [Pm25Filter] (đã có, đang chạy trên xe) — không đặt ngưỡng thứ hai.
             "pm25_level" -> s.climate.pm25Level?.let {
                 when {

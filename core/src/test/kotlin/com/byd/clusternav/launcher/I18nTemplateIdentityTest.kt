@@ -64,7 +64,7 @@ class I18nTemplateIdentityTest {
         val shut = CarStatus(
             body = CarStatus.Body(
                 doorLfOpen = false, doorRfOpen = false, doorLrOpen = false, doorRrOpen = false,
-                sunroofOpen = false, sunshadePct = 0,
+                tailgateOpen = false, sunroofOpen = false, sunshadePct = 0,   // 3.1.6 R32 — cốp là một bộ phận của bảng
             ),
         )
         fun footer(s: CarStatus) = at(l) { GroupBoard.doorPlan(GroupBoard.of(CapabilityGroups.DOORS, s)).footer }

@@ -66,8 +66,8 @@ object CarDataDemand {
             "tyre_p_fl", "tyre_p_fr", "tyre_p_rl", "tyre_p_rr",
             "tyre_t_fl", "tyre_t_fr", "tyre_t_rl", "tyre_t_rr",
         ),
-        // ⚠ 2026-09-25: `tailgate_status` gỡ ⇒ widget này chỉ còn BỐN cửa (cốp không có đường đọc nào).
-        "w_car" to setOf("door_lf", "door_rf", "door_lr", "door_rr"),
+        // ⚠ 2026-09-25: `tailgate_status` gỡ ⇒ widget chỉ còn BỐN cửa. 3.1.6 · R32: cốp đọc lại được (`getDoorState(6)`) ⇒ dòng Cốp trở lại.
+        "w_car" to setOf("door_lf", "door_rf", "door_lr", "door_rr", "tailgate_status"),
         // ⚠ [SOÁT P1-1] Bốn mã NHIỆT lốp có mặt dù ô tổng hợp chỉ *in ra* áp suất: bộ vẽ chuyền **cả cụm**
         // `CarStatus.Tyres` cho `TyreBoard.readings(...)` rồi đọc mức nặng của kết quả. Chép ranh giới theo **thứ
         // được chuyền đi**, không theo thứ đang được in ra; giá là 4 lượt đọc mỗi nhịp chậm khi ô có trên màn.
@@ -86,7 +86,7 @@ object CarDataDemand {
         // Bản chép tay của `CapabilityGroups.{WINDOWS,DOORS,LIGHTS}.reads`; `CarDataDemandTest` đo hai bên khớp.
         "w_car3d" to setOf(
             "window_lf", "window_rf", "window_lr", "window_rr",
-            "door_lf", "door_rf", "door_lr", "door_rr", "sunroof_state", "sunshade_pct",
+            "door_lf", "door_rf", "door_lr", "door_rr", "tailgate_status", "sunroof_state", "sunshade_pct",
             "light_low_beam", "light_high_beam", "light_front_fog", "light_rear_fog",
             "light_left_turn", "light_right_turn", "light_side", "light_drl", "headlight_feedback",
             // 3.01 R28 (xe 3D là hero) — mức sưởi/mát hai ghế (cùng cặp chip ghế — có chip thì hợp tập, 0 lượt đọc thêm).
@@ -377,4 +377,30 @@ object CarDataDemand {
         // ⚠ 1.90 · `op_mode`/`energy_mode` gỡ cùng hai datum (owner 2026-09-21 — xe thuần điện).
         "speed", "gear", "motor_power",
     )
+
+    /**
+     * 3.1.6 — datum của nhịp THÂN XE (~3 s, `CarStatusRepository.bodyMs`) — **cùng một danh sách** mà [CarDataAdapter.readBody] đọc
+     * (`CarDataDemandTest` ép khớp như [FAST_IDS]).
+     *
+     * Owner 15/10 (xe): *"mở cửa, đóng cửa nhận chậm lắm, một lúc sau mới hiển thị đúng"*. [ĐO logcat xe 15/10] Kachi đọc
+     * `getDoorState` đúng mỗi **10 s** (153/156 khoảng cách = 10 s) ⇒ cửa vừa mở hiện trễ tới 10 s (TB 5 s). Đường SỰ KIỆN
+     * (`AbsBYDAutoBodyworkListener.onDoorStateChanged`) chưa có bằng chứng shell trên xe (CLAUDE.md §14) ⇒ bước này là nhịp
+     * riêng, CHỈ chạy khi màn đang bày cửa ([needsBody]). Chi phí: 4 lượt / 3 s = 80/phút thay 24/phút ⇒ **+56/phút** khi cửa
+     * đang hiện (màn 3D [ĐO] ~530/phút ⇒ ~586, dưới ngân sách 600 owner chấp nhận); màn không bày cửa: 0.
+     *
+     * 3.1.6 · R32 — CỐP (`tailgate_status`, CÙNG getter `getDoorState`, area 6) đi chung nhịp này: +1 lượt / 3 s = **+20/phút**
+     * khi màn bày cốp; nút `trunk` đang hiện thì lấy luôn số ấy ([mirrorsBody]) chứ không đọc lần hai ở nhịp chậm.
+     */
+    val BODY_IDS: Set<String> = setOf("door_lf", "door_rf", "door_lr", "door_rr", "tailgate_status")
+
+    /** Màn có bày datum nào của nhịp thân xe không — `null` (đọc hết) ⇒ `true`, cùng luật [needsFast]. */
+    fun needsBody(demand: Set<String>?): Boolean = demand == null || demand.any { it in BODY_IDS }
+
+    /**
+     * 3.1.6 · R32 — nút [def] lấy trạng thái THẲNG từ số datum của nhịp thân xe (0 lượt HAL thêm): [ControlDef.readKey] thuộc
+     * [BODY_IDS], đọc ĐÚNG con số của datum ([CapabilityDots.readsDatumItself]), không thang mức, không đảo — tức
+     * `HalBindingTable.readState(nút)` == số của datum (0/1). Hôm nay: `trunk ← tailgate_status`.
+     */
+    fun mirrorsBody(def: ControlDef): Boolean =
+        def.readKey in BODY_IDS && CapabilityDots.readsDatumItself(def) && ControlLevels.levelCount(def.id) == 0 && !def.readInverted
 }

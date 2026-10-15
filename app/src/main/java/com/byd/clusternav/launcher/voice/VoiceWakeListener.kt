@@ -273,6 +273,11 @@ class VoiceWakeListener(
                     VoiceWakeController.Frame.SUSPENDED -> return if (controller.isFused()) Inner.FUSED else Inner.SUSPEND
                     VoiceWakeController.Frame.IDLE -> Unit
                     VoiceWakeController.Frame.RUN_KWS -> if (kws != null) {
+                        // 3.1.6 — hỏi cờ nhường (và cổng nghe) LẦN NỮA ngay trước `feed`: với engine ASR một `feed` có thể là
+                        // MỘT LƯỢT GIẢI MÃ 0,5–2,7 s [ĐO xe 15/10] không ngắt được; yêu cầu nhường tới trong lúc `read` chặn
+                        // ~100 ms thì đừng mở thêm một lượt giải mã nữa rồi mới nhả (KDoc [VoiceMicPreempt]).
+                        if (VoiceSingleFlight.yieldRequested()) return Inner.YIELD
+                        if (!listening) break
                         for (i in 0 until n) fbuf[i] = buf[i] / 32768f
                         if (kws.feed(fbuf, n)) {
                             when (controller.onKwsResult(true, now)) {

@@ -184,6 +184,7 @@ object TelemetryReadout {
         "door_rf" -> s.body.doorRfOpen
         "door_lr" -> s.body.doorLrOpen
         "door_rr" -> s.body.doorRrOpen
+        "tailgate_status" -> s.body.tailgateOpen
         "sunroof_state" -> s.body.sunroofOpen
         // ═══ 2.76 (R9) — hai chỉ báo TỰ ĐỘNG / CHỈNH TAY, mỗi cái đọc MỘT hằng OEM riêng (cố ý KHÔNG gộp qua một
         // hàm chung — xem cảnh báo ở [format] `ac_wind_auto`). Mã 0 = AUTO · 1 = TAY; mã khác (sentinel 65535,
@@ -358,6 +359,7 @@ object TelemetryReadout {
         "door_rf" -> s.body.doorRfOpen?.let { openShut(it, lang) }
         "door_lr" -> s.body.doorLrOpen?.let { openShut(it, lang) }
         "door_rr" -> s.body.doorRrOpen?.let { openShut(it, lang) }
+        "tailgate_status" -> s.body.tailgateOpen?.let { openShut(it, lang) }
         "sunshade_pct" -> s.body.sunshadePct?.toString()
         // 2.76 (R8) — MÃ → CHỮ qua bảng OEM ([TelemetryEnums.POWER_LEVEL]); trước đó chip in "Nguồn xe · 2" [P3 UX8].
         "power_level" -> s.body.powerLevel?.let { TelemetryEnums.text("power_level", it, lang) }

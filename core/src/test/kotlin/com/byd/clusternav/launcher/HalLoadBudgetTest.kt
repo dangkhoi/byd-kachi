@@ -34,6 +34,7 @@ class HalLoadBudgetTest {
         fun second(t: Int) {
             if (t % 10 == 0) { val r0 = gw.reads; s = adapter.readSlow(s); slow += gw.reads - r0 }
             if (adapter.fastNeeded()) s = adapter.readFast(s)
+            if (t % 3 == 0 && adapter.bodyNeeded()) s = adapter.readBody(s)   // 3.1.6 — nhịp thân xe 3 s (cửa)
             now += 1_000
         }
         for (t in 0 until 60) second(t)
@@ -61,8 +62,13 @@ class HalLoadBudgetTest {
         val q = perMinute(qa2)
         val qFallen = perMinute(qa2, setOf("w_car3d"))
         println("HAL/phút mặc định=$d · QA2=$q · QA2 xe 3D lùi=$qFallen")
-        assertTrue(d <= 600, "màn mặc định $d > 600 (số đo trước 3.1.5 — không được phình)")
-        assertTrue(q <= 474, "QA2 $q > 474: ô ẩn / thanh nút ẩn lại bị đọc")
+        // 3.1.6 — nhịp thân xe (cửa 3 s thay 10 s, owner 15/10 *"mở/đóng cửa nhận chậm"*): +56/phút ĐÚNG khi cửa đang hiện
+        // (4 × 20 − 4 × 6), ghi tường minh — không phình âm thầm. Hai màn dưới đều bày xe 3D (có cửa). Lý do + số xe: KDoc
+        // `CarDataDemand.BODY_IDS` · `docs/diagnostics/oncar-bugs-2026-10-15.md` §3.
+        // 3.1.6 · R32 — CỐP (`getDoorState(6)`) đi chung nhịp thân xe: +20/phút (1 lượt / 3 s) khi xe 3D/bảng cửa/ô cốp hiện; nút
+        // `trunk` lấy luôn số ấy (KHÔNG đọc ở nhịp nhanh 1 s — bỏ dòng mirror ở `CarDataAdapter.readControls` thì +60 ⇒ đỏ).
+        assertTrue(d <= 600 + 56 + 20, "màn mặc định $d > 676 (600 trước 3.1.5 + 56 nhịp thân xe + 20 cốp 3.1.6 — không được phình thêm)")
+        assertTrue(q <= 474 + 56 + 20, "QA2 $q > 550: ô ẩn / thanh nút ẩn lại bị đọc")
         assertTrue(qFallen <= 72, "QA2 xe 3D lùi 2D $qFallen > 72 (= 4 kính + 8 datum chip thanh trên, × 6 nhịp): vẫn đọc nút ẩn/lốp của bản 3D")
     }
 
@@ -138,7 +144,7 @@ class HalLoadBudgetTest {
         h.publish(qa2, emptySet(), setOf("w_car3d"))
         val gw = AnswerAll(); var now = 0L; var s = CarStatus()
         val adapter = CarDataAdapter(HalBindingTable(gw), h::get, clock = { now }, controlDemand = h::controls)
-        for (t in 0 until 660) { if (t == 60) gw.reads = 0; if (t % 10 == 0) s = adapter.readSlow(s); if (adapter.fastNeeded()) s = adapter.readFast(s); now += 1_000 }
+        for (t in 0 until 660) { if (t == 60) gw.reads = 0; if (t % 10 == 0) s = adapter.readSlow(s); if (adapter.fastNeeded()) s = adapter.readFast(s); if (t % 3 == 0 && adapter.bodyNeeded()) s = adapter.readBody(s); now += 1_000 }
         return gw.reads / 10
     }
 }

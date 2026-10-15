@@ -47,12 +47,8 @@ data class Car3dHotspot(
  * Biến thể: trạng thái [read] (nhóm [group]) "khác nghỉ" ⇒ hiện nút khớp [open], ẩn nút khớp [closed] (và ngược lại).
  * [read] có thể là nhiều ô nối bằng `|` — bật khi BẤT KỲ ô nào bật (đèn đuôi sáng theo cốt HOẶC pha — bảng đèn của AVM).
  */
-data class Car3dVariant(val closed: String, val open: String, val group: String, val read: String) {
-    companion object {
-        /** Tiền tố [read] = "lệnh cuối Kachi đã gửi" cho mã nút sau nó (vật không có cảm biến — cốp). */
-        const val CMD = "cmd:"
-    }
-}
+data class Car3dVariant(val closed: String, val open: String, val group: String, val read: String)
+// ⚠ 3.1.6 · R32 — tiền tố `cmd:` (biến thể theo "lệnh cuối Kachi đã gửi") đã gỡ: chủ DUY NHẤT của nó là cốp, nay cốp có ô đọc.
 
 /** Kiểu vật liệu cho nguồn KHÔNG mang vật liệu (lưới AVM của BYD): màu rgba 0..1, kim loại, nhám, trong suốt, ảnh. */
 data class Car3dMaterialStyle(
@@ -159,8 +155,9 @@ object Car3dCatalog {
                 Car3dHotspot("door-$k", Car3dAnchor.Node("door${k}_paint", ty = 0.3), D, "", read = "door_$k", shownBy = "door$k*open*"),
             )
         } + listOf(
-            Car3dHotspot("trunk", Car3dAnchor.FirstOf(listOf(Car3dAnchor.Node("trunk_paint", ty = 0.7), Car3dAnchor.Node("trunk*", ty = 0.7))), W, "trunk",
-                shownBy = "trunk*"),
+            // 3.1.6 · R32 — cốp thuộc nhóm CỬA (có ô đọc `tailgate_status` = `getDoorState(6)`) ⇒ chấm/nắp theo SỐ ĐỌC, chạm vẫn bấm ô `trunk`.
+            Car3dHotspot("trunk", Car3dAnchor.FirstOf(listOf(Car3dAnchor.Node("trunk_paint", ty = 0.7), Car3dAnchor.Node("trunk*", ty = 0.7))), D, "trunk",
+                read = "tailgate_status", shownBy = "trunk*"),
             // POLISH2 [ĐO máy ảo 13/10]: ô đọc tường minh — `drl` khai `readKey = ""` nên điểm 3D lấy "lệnh cuối" (chưa gửi ⇒ TẮT)
             // trong khi hình đèn sáng theo `light_drl` ⇒ chạm đầu tiên gửi BẬT cho đèn đang sáng ("không tắt được"). Cùng cặp ô đọc
             // với bảng Đèn 2D (cùng icon — GroupIconBoard).
@@ -236,12 +233,13 @@ object Car3dCatalog {
     )
 
     /**
-     * Cửa: bản mở theo SỐ ĐỌC cửa thật. Cốp (owner 13/10 "3D có mở được cốp không"): KHÔNG có ô đọc cốp ⇒ theo LỆNH CUỐI Kachi
-     * đã gửi (`cmd:trunk` — cùng trạng thái chấm cốp của bảng Kính 2D); chưa gửi ⇒ hình đóng. Chỉ đời có `trunk*_open` [ĐO:
-     * eqeal · ew · paha · sc3e · sc3ebe · sthny; Seal KHÔNG có] mới thấy nắp mở.
+     * Cửa: bản mở theo SỐ ĐỌC cửa thật. Cốp (owner 13/10 "3D có mở được cốp không"): 3.1.6 · R32 — cũng theo SỐ ĐỌC
+     * (`tailgate_status` = `getDoorState(6)`; trước đó theo lệnh cuối Kachi đã gửi `cmd:` vì chưa có đường đọc). Chưa đọc được ⇒
+     * hình đóng (cùng luật cửa). Đời có `trunk*_open` [ĐO: eqeal · ew · paha · sc3e · sc3ebe · sthny] đổi bản; Seal (không có) ⇒ nắp
+     * cắt từ thân quay theo bản lề ([Car3dLid]).
      */
     private val DOORS: List<Car3dVariant> get() = listOf("lf", "rf", "lr", "rr").map { k -> Car3dVariant("door$k*", "door$k*open*", D, "door_$k") } +
-        Car3dVariant("trunk*", "trunk*open*", W, "${Car3dVariant.CMD}trunk")
+        Car3dVariant("trunk*", "trunk*open*", D, "tailgate_status")
 
     /** Đèn theo TÊN có nghĩa (mọi đời): xi-nhan, đèn cốt/pha/đuôi/sương mù có tên chữ. Đèn đánh số không thuộc đây (luôn tắt). */
     private fun namedLamps(): List<Car3dVariant> = listOf(

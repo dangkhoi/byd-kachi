@@ -16,7 +16,8 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * Tách khỏi [Car3dWidgetView] (trần 500 dòng). Quyết định thuần ở `:core` ([Car3dHotspots] chọn ô nút + chấm, [WindowCycle]
  * bước kính, [Car3dPick] chạm THẲNG vào bộ phận — owner 13/10: bộ phận mà hình 3D tự nói trạng thái thì không chấm). Ghi qua ô nút THẬT
  * gắn `GONE` ([MatrixKit.tile]): kính = đặt tường minh ([MatrixKit.set]) theo vòng 50 → 100 → 0; đèn = đảo cái đang thấy;
- * cốp = `performClick` ô cốp (qua cổng chạm `TileSafetyGate` — xe chưa chứng minh đứng yên ⇒ chặn, chấm lắc); cửa = chỉ xem.
+ * cốp = `performClick` ô cốp (qua cổng chạm `TileSafetyGate` — xe chưa chứng minh đứng yên ⇒ chặn, chấm lắc), nắp theo số đọc
+ * `tailgate_status` + đích giữ [LampHold] (3.1.6 R32); cửa = chỉ xem.
  * Mọi cú chạm ghi log `Car3d tap <điểm> → <mã nút>` (đo trên máy ảo/xe bằng logcat).
  */
 internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixKit, private val dots: Car3dDotsLayer) {
@@ -45,6 +46,7 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
         hotspots.filter { h -> resolved[h.id]?.actions?.any { it.id == id } == true }.forEach { h ->
             spots[h.id]?.takeIf { it.shown }?.let(dots::shake) ?: shakeHost()
         }
+        fill(last); changed()   // 3.1.6 · R32 — cổng đã bỏ đích giữ ([TileSafetyGate.refuse]) ⇒ nắp/chấm về số đọc ngay
     }
 
     /** Bộ phận không chấm bị từ chối/chỉ xem ⇒ cả khung lắc nhẹ (cùng nhịp lắc chấm: 4 dp, 240 ms). */
@@ -90,6 +92,10 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
         hotspots.filter { it.group == Car3dCatalog.GROUPS[1] && it.target.isNotEmpty() && it.shownBy != null }.forEach { h ->
             m.variants.filter { v -> v.read.isNotEmpty() && (v.open == h.shownBy || Car3dNames.matches(h.shownBy!!, v.open)) }
                 .forEach { v -> lampOf.putIfAbsent(v.read, h.target to h.read) }
+        }
+        // 3.1.6 · R32 — vật có nút + ô đọc RIÊNG (cốp `tailgate_status`): biến thể đọc ĐÚNG ô ấy giữ đích lạc quan như đèn.
+        hotspots.filter { it.target.isNotEmpty() && it.read != null }.forEach { h ->
+            m.variants.filter { it.read == h.read }.forEach { v -> lampOf.putIfAbsent(v.read, h.target to h.read) }
         }
         order = hotspots.map { it.id }
         hotspots.forEach { h ->
@@ -154,7 +160,7 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
     /** Biến thể ([Car3dVariant]) đang "khác nghỉ": ô đọc [read] (một hoặc nhiều `a|b`) của nhóm [group]; rỗng ⇒ không bao giờ. */
     fun active(group: String, read: String): Boolean {
         val cells = groups[group]?.cells ?: return false
-        val now = Car3dHotspots.activeAny(read, ControlTileState.shared::isOn) { id -> cells.firstOrNull { it.id == id } }
+        val now = Car3dHotspots.activeAny(read) { id -> cells.firstOrNull { it.id == id } }
         // POLISH2: đèn vừa chạm — đích lạc quan [LampHold] thắng số đọc cũ tới khi Ô ĐỌC CỦA NÚT xác nhận / ~3 s (cùng bộ với bảng
         // Đèn 2D). Xác nhận theo ô của nút (`light_drl`), không theo cả biểu thức biến thể (`light_drl|light_side`).
         val (id, own) = lampOf[read] ?: return now
@@ -170,7 +176,7 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
 
     private fun dot(h: Car3dHotspot, r: Car3dHotspots.Resolved): CarDots.Dot {
         live(h.id)?.let { return CarDots.ofCell(true, it / WindowCycle.FULL.toFloat(), GroupTone.NEUTRAL) }
-        r.actions.singleOrNull()?.takeIf { h.target != TRUNK && it.level == null }?.let { a ->
+        r.actions.singleOrNull()?.takeIf { it.level == null }?.let { a ->
             val read = r.cell?.takeIf { it.available }?.let { it.tone != GroupTone.NEUTRAL }
             LampHold.shared.held(a.id, read, SystemClock.uptimeMillis())?.let { return CarDots.ofCell(true, if (it) 1f else 0f, GroupTone.NEUTRAL) }
         }
@@ -228,9 +234,11 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
             is Car3dHotspots.Tap.Press -> {
                 val on = s?.dot?.kind == CarDots.Kind.OPEN
                 Log.i(TAG, "tap ${h.id} → ${t.action.id} ${if (on) "TẮT" else "BẬT"}")
-                // Cốp: performClick ô cốp như chấm cốp bảng Kính 2D (qua cổng chạm). Đèn: đặt tường minh theo cái đang thấy.
-                if (h.target == TRUNK || !kit.set(t.action.id, if (on) 0 else 1)) tile(t.action)?.performClick()
-                if (h.target != TRUNK) { LampHold.shared.put(t.action.id, !on, SystemClock.uptimeMillis()); host.postDelayed({ fill(last); changed() }, LampHold.HOLD_MS + 1) }
+                // Đèn: đặt tường minh theo cái đang thấy. Ô không đặt được (cốp — COVER): trí nhớ theo CÁI ĐANG THẤY (số đọc/đích giữ —
+                // R32) rồi performClick ô ⇒ ô đảo đúng chiều, qua cổng chạm. Giữ đích tới khi xe xác nhận / hết hạn của dòng ([LampHold]).
+                if (!kit.set(t.action.id, if (on) 0 else 1)) { ControlTileState.shared.setSel(t.action.id, if (on) 1 else 0); tile(t.action)?.performClick() }
+                LampHold.shared.put(t.action.id, !on, SystemClock.uptimeMillis())
+                host.postDelayed({ fill(last); changed() }, LampHold.shared.holdMsOf(t.action.id) + 1)
             }
             Car3dHotspots.Tap.None -> Log.i(TAG, "tap ${h.id}${if (double) " (đúp)" else ""} → không có bước")
         }
@@ -342,7 +350,6 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
 
     private companion object {
         const val TAG = "Car3d"
-        const val TRUNK = "trunk"
         /** Cùng hạn đích lạc quan với bảng Kính 2D (`ActionMatrixCompact.PENDING_MS`). */
         const val PENDING_MS = 12_000L
     }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ═══ BUILD HAL HELPER → app/src/main/assets/kachi_hal.jar ════════════════════════════════════════════════════
 #
-# Biên dịch `hal-helper/KachiHalMain.java` thành **dex trong jar**, chạy được bằng:
+# Biên dịch `hal-helper/*.java` (KachiHalMain + KachiHalEvents) thành **dex trong jar**, chạy được bằng:
 #   CLASSPATH=/data/local/tmp/kachi_hal.jar app_process / com.byd.clusternav.hal.KachiHalMain 19322
 #
 # Vì sao là script rời chứ không phải module Gradle: helper chạy dưới `app_process` NGOÀI app, không được mang
@@ -55,7 +55,7 @@ echo "▸ javac stub (chỉ để biên dịch, không đóng gói)"
 
 echo "▸ javac helper"
 "$JAVAC" -nowarn -source 8 -target 8 -bootclasspath "$ANDROID_JAR" \
-  -cp "$STUBS" -d "$CLASSES" "$SRC/KachiHalMain.java"
+  -cp "$STUBS" -d "$CLASSES" $(find "$SRC" -maxdepth 1 -name '*.java')   # 3.1.6: KachiHalMain + KachiHalEvents (trần 500 dòng/tệp)
 
 echo "▸ d8 → dex-in-jar"
 # Chỉ truyền class của HELPER làm đầu vào; stub đi qua --classpath nên không bị nhúng.
@@ -78,6 +78,7 @@ unzip -p "$OUT_JAR" classes.dex > "$DEX"
 
 MAIN_DESC="L${MAIN_CLASS//./\/};"
 grep -q "$MAIN_DESC" "$DEX" || die "dex không chứa $MAIN_CLASS"
+grep -q 'Lcom/byd/clusternav/hal/KachiHalEvents;' "$DEX" || die "dex không chứa KachiHalEvents (phần HAL-EVENTS)"
 
 # Stub PHẢI vắng mặt như một định nghĩa lớp. Chuỗi tên lớp vẫn xuất hiện (helper tham chiếu nó qua
 # Class.forName + extends) nên không thể grep tên; kiểm bằng cách đếm định nghĩa lớp mà d8 đã nhận vào.

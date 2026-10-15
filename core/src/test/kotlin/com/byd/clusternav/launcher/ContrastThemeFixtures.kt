@@ -11,6 +11,7 @@ internal class ThemeFixture(
     val name: String,
     val bg: Int,
     val ink: Int,
+    val ink2: Int,
     val mut: Int,
     val mut2: Int,
     val accentInk: Int,
@@ -24,11 +25,11 @@ internal class ThemeFixture(
         private val LIGHT_RAMP = SurfaceRamp.of(base = "#eef1f8", lift = "#ffffff", sink = "#d9dfe9", step = 0.5)
 
         val DARK = ThemeFixture(
-            "TỐI", c(DARK_RAMP.at(0)), c("#eaf0f8"), c("#9daabe"), c("#99a4b6"), c("#8ab2ff"), c("#000000"),
+            "TỐI", c(DARK_RAMP.at(0)), c("#eaf0f8"), c("#c3cee0"), c("#9daabe"), c("#99a4b6"), c("#8ab2ff"), c("#000000"),
             c(DARK_RAMP.at(2, 0xcc)), c(DARK_RAMP.at(-5, 0xcc)),
         )
         val LIGHT = ThemeFixture(
-            "SÁNG", c(LIGHT_RAMP.at(0)), c("#0f1620"), c("#4c5869"), c("#54606f"), c("#2b52d1"), c("#000000"),
+            "SÁNG", c(LIGHT_RAMP.at(0)), c("#0f1620"), c("#26303f"), c("#4c5869"), c("#54606f"), c("#2b52d1"), c("#000000"),
             c(LIGHT_RAMP.at(2, 0xcc)), c(LIGHT_RAMP.at(1, 0xcc)),
         )
         val BOTH = listOf(DARK, LIGHT)
@@ -37,20 +38,21 @@ internal class ThemeFixture(
     /** Bảng kia (để lấy mực đối cực). */
     val other: ThemeFixture get() = if (this === DARK) LIGHT else DARK
 
-    /** Mực TỐI hay SÁNG của bảng này — quyết định màu lớp đỡ đi kèm. */
-    private fun haloFor(ink: Int): Int = if (Luma.of(ink) > 0.18) DARK.bg else LIGHT.bg
-
-    private fun cand(ink: Int) = InkCandidate(ink, haloFor(ink))
-
     /**
-     * Ứng viên theo vai — đúng thứ tự pha 2 sẽ dựng ở `:app` (§R29 Design b): mực cùng vai của chủ đề → mực chính của chủ
-     * đề → cùng vai của bảng kia → mực chính bảng kia. Chữ phụ chỉ "lên" mực chính khi chính nó không đạt.
+     * Mực của vai [role] dưới bốn HỌ, đúng thứ tự pha 3 dựng ở `:app` (`InkModel.families`): mực của chủ đề → chủ đề với chữ
+     * phụ NÂNG một bậc (`mut` → `ink2`, cùng cực) → bảng kia → bảng kia nâng. Chữ phụ vẫn là chữ phụ cho tới khi nó tự trượt.
      */
-    fun candidates(role: InkRole): List<InkCandidate> = when (role) {
-        InkRole.TEXT, InkRole.LARGE_TEXT, InkRole.ICON -> listOf(cand(ink), cand(other.ink))
-        InkRole.SECONDARY_TEXT -> listOf(cand(mut), cand(ink), cand(other.mut), cand(other.ink))
-        InkRole.ACCENT_TEXT, InkRole.ACCENT_ICON -> listOf(cand(accentInk), cand(other.accentInk), cand(ink), cand(other.ink))
+    fun inks(role: InkRole): IntArray {
+        fun one(t: ThemeFixture, raised: Boolean) = when (role) {
+            InkRole.TEXT, InkRole.LARGE_TEXT, InkRole.ICON -> t.ink
+            InkRole.SECONDARY_TEXT -> if (raised) t.ink2 else t.mut
+            InkRole.ACCENT_TEXT, InkRole.ACCENT_ICON -> t.accentInk
+        }
+        return intArrayOf(one(this, false), one(this, true), one(other, false), one(other, true))
     }
+
+    /** Một mặt có ĐỦ mọi vai trên cùng nền [b] (thẻ có chữ, chữ phụ, số lớn, icon, nhấn). */
+    fun surface(b: ContrastBackdrop): List<InkNeed> = InkRole.entries.map { InkNeed(it, b, inks(it)) }
 
     /** Lớp làm tối ảnh nền ở mức [dimPct] % (cùng phép `WallArtBuilder`/`WallView`: `wallScrim` alpha = dim·255/100). */
     fun scrim(dimPct: Int) = ContrastBackdrop.Layer.Flat(ColorMath.withAlpha(wallScrim, dimPct.coerceIn(0, 90) * 255 / 100))

@@ -21,7 +21,7 @@ import kotlin.math.roundToInt
  * (phép trộn chạy trên giá trị sRGB, độ chói thì không tuyến tính) sai tỉ số tới **29 %** — đủ để khai 4.5 khi thật là 3.5.
  * Hộp `[lo, hi]` THEO TỪNG KÊNH (p10 R/G/B · p90 R/G/B) thì không cần giả định nào: phép trộn đơn điệu theo từng kênh, độ
  * chói đơn điệu theo từng kênh ⇒ MỌI điểm ảnh nằm trong hộp cho nền ghép có độ chói nằm giữa nền ghép của hai góc hộp.
- * Cái giá: ảnh rực màu (đỏ cạnh lam) ra hộp rộng hơn khoảng độ chói thật ⇒ đôi khi xin lớp đỡ dư — bảo thủ, không im lặng sai.
+ * Cái giá: ảnh rực màu (đỏ cạnh lam) ra hộp rộng hơn khoảng độ chói thật ⇒ đôi khi đổi họ mực sớm hơn cần — bảo thủ, không im lặng sai.
  *
  * ## Chi phí (owner 08/10 *perf-every-fix*)
  * Lưới ≤ [MAX_COLS] cột (1920×720 ⇒ 64×24 ô 30 px); thứ được LƯU chỉ là 2 mảng `Int` + 1 mảng `Float` cỡ lưới. Đọc ảnh MỘT

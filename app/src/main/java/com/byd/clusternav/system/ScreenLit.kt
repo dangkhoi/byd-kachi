@@ -17,6 +17,9 @@ object ScreenLit {
 
     fun read(ctx: Context): Boolean = ScreenLitRule.lit(ScreenInteractive.read(ctx), displayOn(ctx))
 
+    /** Bản FAIL-CLOSED ([ScreenLitRule.litStrict]) cho lệnh ghi xe tự khởi phát — không hỏi được ⇒ `false`. */
+    fun readStrict(ctx: Context): Boolean = ScreenLitRule.litStrict(ScreenInteractive.read(ctx), displayOn(ctx))
+
     private fun displayOn(ctx: Context): Boolean? = try {
         ctx.getSystemService(DisplayManager::class.java)?.getDisplay(Display.DEFAULT_DISPLAY)?.state?.let { it != Display.STATE_OFF }
     } catch (e: RuntimeException) {

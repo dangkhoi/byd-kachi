@@ -35,11 +35,20 @@ import com.byd.clusternav.launcher.CarDataAdapter
 internal class WakeOnWriteControl(
     private val inner: CarControlPort,
     private val data: CarDataAdapter,
+    /**
+     * 3.1.6 · SEAT-AUTO-OFF-REAPPLY — báo MỖI lệnh ghi (mã nút) cho bên cần biết *"Kachi vừa ghi"*: prod =
+     * `SeatAutoOffWatch.onControlWrite` (nút ghế ⇒ thôi canh ghế đó, kể cả lệnh giọng nói ở `:wake`). Mặc định rỗng cho
+     * container test thuần. Gọi từ [wake] nên cả sáu cửa ghi đều đi qua — `SeatAutoOffWiringContractTest` canh.
+     */
+    private val onWrite: (String) -> Unit = {},
 ) : CarControlPort by inner {
 
     // K1b (2026-09-25): quên CẢ khoá nút (đường readControls) lẫn khoá datum readKey (đường nhịp chậm) — phép
     // phân giải nằm ở :core ([CarDataAdapter.forgetAbsentControl]) để test thuần khoá được.
-    private fun wake(id: String) = data.forgetAbsentControl(id)
+    private fun wake(id: String) {
+        data.forgetAbsentControl(id)
+        runCatching { onWrite(id) }
+    }
 
     override fun toggle(id: String, on: Boolean): Boolean = inner.toggle(id, on).also { wake(id) }
     override fun step(id: String, value: Int): Boolean = inner.step(id, value).also { wake(id) }

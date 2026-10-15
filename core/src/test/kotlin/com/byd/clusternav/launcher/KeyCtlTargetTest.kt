@@ -144,12 +144,16 @@ class KeyCtlTargetTest {
     }
 
     /**
-     * Owner 03/10 *"phím đóng mở cốp không chung được à, phải 2 nút à?"*. [ĐO mã 03/10] cốp KHÔNG có đường đọc
-     * (`trunk.readKey` rỗng — `tailgate_status` gỡ 25/09, rỗng mọi arg trên xe owner) ⇒ Đảo của cốp quyết bằng lệnh
-     * cuối Kachi đã gửi (`ControlLastSent`). Mở · Đóng riêng VẪN còn, đứng trước (thứ tự hộp chọn không đổi).
+     * Owner 03/10 *"phím đóng mở cốp không chung được à, phải 2 nút à?"*. Tới 3.1.5 cốp KHÔNG có đường đọc (`tailgate_status` gỡ
+     * 25/09 vì `getHatchDoorStatus` — SAI TÊN getter, không có trên ROM) ⇒ Đảo quyết bằng lệnh cuối Kachi đã gửi.
+     * ═══ 3.1.6 · R32 (owner 15/10 *"có nhé, với cả làm luôn rồi lên xe test"*): `trunk.readKey = "tailgate_status"` =
+     * `getDoorState(6)` — [ĐO nguồn fw 2606] `BYDAutoBodyworkDevice.java:207,715-716` + [ĐO logcat xe 14/10] tiến trình BYD đọc 1/0
+     * theo lệnh Kachi (`docs/diagnostics/trunk-state-read-2026-10-15.md` §2). Đích phím KHÔNG đổi (Mở · Đóng · Đảo, đã sinh từ 2.87);
+     * cái đổi là NGUỒN của Đảo: chỉ số đọc, đọc không ra ⇒ không bắn (`KeyCtlPlanTest.R32 …`). Bài đỏ nếu cốp mất `readKey`.
      */
     @Test
     fun `cot co Mo, Dong rieng va mot phim Dao`() {
+        assertEquals("tailgate_status", trunk.readKey, "R32 — cốp đọc được (getDoorState(6)); mất readKey ⇒ Đảo lại đoán từ cờ RAM")
         assertEquals(
             listOf(KeyCtlTarget("trunk", KeyCtlAction.OPEN), KeyCtlTarget("trunk", KeyCtlAction.CLOSE), KeyCtlTarget("trunk", KeyCtlAction.FLIP)),
             KeyCtlTargets.actionsFor(trunk),

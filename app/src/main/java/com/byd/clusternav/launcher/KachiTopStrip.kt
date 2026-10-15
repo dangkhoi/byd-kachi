@@ -269,12 +269,13 @@ class KachiTopStrip(
         scaleType = ImageView.ScaleType.FIT_CENTER
         minimumWidth = dp(Bars.HEADER_BTN); minimumHeight = dp(Bars.HEADER_BTN)
         dp(Bars.HEADER_BTN_PAD).let { setPadding(it, it, it, it) }
-        // R22·R (owner 13/10): nút chính = đĩa TÔNG nhạt + icon mực nhấn, không còn đĩa gradient chàm→tím.
-        // R29: đĩa pill = MẶT (màu đĩa trên nền thanh đo được) ⇒ icon giải vai ACCENT_INK/INK trên đúng đĩa ([ĐO] Sáng 1,11 trước R29).
-        themed { val fill = if (primary) KachiTheme.ACCENT_SOFT else KachiTheme.CARD_FILL; background = KachiTheme.pill(context, fill); AdaptiveInk.fill(this, fades = false, variant = fill) { intArrayOf(c(fill)) }; AdaptiveInk.icon(this, if (primary) KachiTheme.ACCENT_INK else KachiTheme.INK) }
+        // R22·R (owner 13/10): đĩa TÔNG nhạt + icon mực nhấn. R29 (owner 15/10 "đồng đều"): mặt pill + icon theo HỌ của thanh trên.
+        themed { val face = KachiTheme.pill(context, if (primary) KachiTheme.ACCENT_SOFT else KachiTheme.CARD_FILL); background = face; pillInk(this, face, primary) }
         setOnClickListener { onClick() }
     }
 
+    private fun pillInk(v: ImageView, face: android.graphics.drawable.GradientDrawable, primary: Boolean) = (if (primary) KachiTheme.ACCENT_INK else KachiTheme.INK).let { ink ->
+        AdaptiveInk.face(v, ink, { p -> ColorMath.parse(if (primary) p.accentSoft else p.cardFill) }) { face.setColor(it) }; AdaptiveInk.icon(v, ink) }
     private fun chipLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Bars.CHIP_GAP) }
 
     private fun chip(text: String, iconName: String?, color: String): TextView = TextView(activity).apply {

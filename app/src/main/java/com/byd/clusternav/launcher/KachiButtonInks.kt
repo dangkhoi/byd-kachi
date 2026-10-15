@@ -26,10 +26,10 @@ import java.util.WeakHashMap
  *    nhấn đậm (`GRAD_FROM` trộn `INK_ON_ACCENT`) + glyph `ON_ACCENT` (bật/tắt khác nhau ở MẶT đĩa, không chỉ ở màu nét).
  * Chọn theo ĐỘ SÁNG NỀN của chính bảng màu (`bg`), không theo cờ đêm — bảng nào nền sáng thì dùng công thức nền sáng.
  *
- * 3.1.5 R29 T29-6 — nhánh cố định trên chỉ còn là MẶC ĐỊNH LÚC CHƯA ĐO (nút vừa dựng, chưa gắn cửa sổ). Đo được nền dưới nút
- * ([adapt] — mặt dò của [AdaptiveInk]) ⇒ [of] (p, nền) CHỌN công thức theo nền đó: công thức của bảng trước, công thức kia sau
- * (thứ tự giữ bảng Tối nguyên byte khi nền tối); không công thức nào đạt ⇒ đĩa kính tối đậm thêm tới mức [ContrastInk] tìm ra
- * (= lớp đỡ của glyph — đĩa CHÍNH LÀ lớp đỡ). Sàn glyph = sàn CHỮ 4,5 (không 3) — giữ đúng bảo đảm `Widget301LightContrastTest`.
+ * 3.1.6 R29 (làm lại 15/10) — nút là BỘ VẼ TỰ TÔ của mặt chứa nó ([AdaptiveInk.probe]): công thức đĩa/glyph theo HỌ mực của mặt
+ * ([of] (p, họ)), không theo từng nút ⇒ mọi nút trên một mặt cùng công thức, đổi cùng chữ của mặt. Nút chỉ GÓP điểm (glyph trên
+ * đĩa trên nền ĐO dưới nút) vào phép chọn họ; KHÔNG còn "đĩa đậm thêm" theo từng nút (owner 15/10: không vá từng phần tử). Hai
+ * công thức là hai mặt nút đã thiết kế: tông mềm (bảng Tối, mực sáng — giữ nguyên byte) và kính tối (mọi trường hợp khác).
  */
 internal data class KachiButtonInks(
     /** Đĩa nghỉ · đĩa BẬT (ARGB). */
@@ -76,60 +76,70 @@ internal data class KachiButtonInks(
             // bảng đối cực ([ĐO bài AdaptiveContrastContractTest] glyph tối trên kính tối 1,41).
             val glyph = p.onAccent.takeIf { Luma.of(ColorMath.parse(it)) > LIGHT_INK_LUMA } ?: InkModel.other(p).onAccent
             val white = ColorMath.withAlpha(ColorMath.parse(glyph), 255)
-            val deepen = ContrastInk.resolve(InkRole.TEXT, ContrastBackdrop(ToneBox.span(mixed)), listOf(InkCandidate(white, scrim))).haloAlpha
-            val on = if (deepen > 0) ColorMath.over(ColorMath.withAlpha(scrim, ContrastInk.alphaByte(deepen)), mixed) else mixed
+            val on = onFace(mixed, scrim, white)
             return KachiButtonInks(ColorMath.withAlpha(ColorMath.parse(p.wallScrim), restAlpha), on, glyph, glyph,
                 ColorMath.withAlpha(ColorMath.parse(p.accent), RIPPLE_ALPHA))
         }
 
         /**
-         * Glyph nghỉ đạt [GLYPH_FLOOR] trên đĩa nghỉ, glyph BẬT/NHẤN đạt [GLYPH_ON_FLOOR] trên đĩa BẬT — cả hai trên nền ĐO [under].
-         * Sàn BẬT = vai icon nhấn ([InkRole.ACCENT_ICON], 3:1) — cùng sàn "icon nhấn ≥ 3" `WindowControlIconContractTest` đã khoá.
+         * Công thức nút dưới HỌ [f] của mặt, kiểu đĩa [alt] (CHUNG cho mọi nút của mặt — [AdaptiveInk.Probe.group]): bảng Tối + họ
+         * mực SÁNG có hai kiểu đĩa đã thiết kế, cùng glyph sáng — 0 = tông mềm (đúng byte 3.1.4, cho mặt tối đồng màu), 1 = kính tối
+         * (đĩa đọc được trên ảnh — [ĐO máy ảo 15/10] tông mềm trên ảnh kéo cả lớp phủ 3D sang mực tối); mọi trường hợp khác (bảng
+         * Sáng — mặc định 3.1.x; hoặc mặt đổi sang họ mực tối vì nền sáng) ⇒ kính tối + glyph sáng.
          */
-        private fun reads(k: KachiButtonInks, under: ContrastBackdrop): Boolean =
-            under.with(Layer.Flat(k.rest)).worst(ColorMath.parse(k.glyph)) >= GLYPH_FLOOR &&
-                under.with(Layer.Flat(k.on)).worst(ColorMath.parse(k.glyphOn)) >= GLYPH_ON_FLOOR
+        fun of(p: KachiPalette, f: InkFamily, alt: Int = 0): KachiButtonInks = if (!lightSurface(p) && f.lightInk && alt == 0) soft(p) else glass(p)
 
-        /**
-         * R29 T29-6 — mực nút trên nền ĐO [under] (nền dưới nút, chưa gồm đĩa). Công thức của bảng [p] trước ([of] (p) — bảng Tối
-         * trên nền tối ra đúng từng byte cũ), công thức kia sau; không cái nào đạt ⇒ đĩa kính tối với alpha nhỏ nhất glyph trắng đạt
-         * sàn ([ContrastInk.resolve] — đĩa là lớp đỡ), không dưới [LIGHT_REST_ALPHA].
-         */
-        fun of(p: KachiPalette, under: ContrastBackdrop): KachiButtonInks {
-            val first = of(p)
-            val other = if (lightSurface(p)) soft(p) else glass(p)
-            if (reads(first, under)) return first
-            if (reads(other, under)) return other
-            val g = glass(p)
-            val white = ColorMath.withAlpha(ColorMath.parse(g.glyph), 255)
-            val r = ContrastInk.resolve(InkRole.TEXT, under, listOf(InkCandidate(white, ColorMath.withAlpha(g.rest, 255))))
-            return glass(p, maxOf(LIGHT_REST_ALPHA, ContrastInk.alphaByte(r.haloAlpha)))
-        }
+        /** Điểm của công thức [k] trên nền ĐO [under]: min(glyph nghỉ / [GLYPH_FLOOR], glyph BẬT / [GLYPH_ON_FLOOR]). */
+        fun score(k: KachiButtonInks, under: ContrastBackdrop): Double = minOf(
+            under.with(Layer.Flat(k.rest)).worst(ColorMath.parse(k.glyph)) / GLYPH_FLOOR,
+            under.with(Layer.Flat(k.on)).worst(ColorMath.parse(k.glyphOn)) / GLYPH_ON_FLOOR,
+        )
 
-        /** Mực đang áp trên nút [button] ([adapt]); chưa đo ⇒ mặc định bảng ([current]). */
+        /** Mực đang áp trên nút [button] ([adapt]); chưa chọn họ ⇒ mặc định bảng ([current]). */
         fun at(button: View): KachiButtonInks = applied[button] ?: current()
 
         /**
-         * R29 T29-6 — nút [button] (nền = [background]) tự chọn đĩa/glyph theo nền ĐO dưới nó: mặt dò ([AdaptiveInk.surface]
-         * `onUnder`) — chỉ khi nền dưới nút đổi (vùng · ảnh · chủ đề · độ đục · ảnh nền xe 3D). Lớp của mặt = đĩa nghỉ đang áp ⇒ nét
-         * khác nằm trong nút (icon lấy gió) giải trên đúng đĩa. [glyph] (ImageView/TextView) nhận bảng tint mới; [after] = chỗ gọi
-         * vẽ lại phần nó tự tô (icon lấy gió đọc [at]).
+         * Nút [button] (nền = [background]) theo HỌ của mặt chứa nó: mặt lớp ([AdaptiveInk.Scope.LAYER], đo cả nền DƯỚI nút) +
+         * bộ vẽ tự tô góp điểm công thức và nhận họ đã chọn. Lớp của mặt = đĩa nghỉ đang áp ⇒ nét khác trong nút (icon lấy gió)
+         * đo trên đúng đĩa. [glyph] nhận bảng tint mới; [after] = chỗ gọi vẽ lại phần nó tự tô (icon lấy gió đọc [at]).
          */
-        fun adapt(button: View, glyph: View?, after: () -> Unit = {}) =
-            AdaptiveInk.surface(button, listen = true, variant = ADAPT, onUnder = { under ->
-                val k = of(KachiTheme.palette, under)
-                if (applied[button] != k) {
+        fun adapt(button: View, glyph: View?, after: () -> Unit = {}) {
+            AdaptiveInk.surface(button, listen = true, scope = AdaptiveInk.Scope.LAYER, variant = ADAPT, under = true) {
+                listOf(listOf(listOf(Layer.Flat(at(button).rest))))
+            }
+            AdaptiveInk.probe(button, object : AdaptiveInk.Probe {
+                override val alts get() = 2
+                override val group get() = KachiButtonInks
+                override fun score(f: InkFamily, alt: Int): Double =
+                    AdaptiveInk.under(button)?.let { score(of(KachiTheme.palette, f, alt), it) } ?: Double.MAX_VALUE
+                override fun apply(f: InkFamily, alt: Int) {
+                    val k = of(KachiTheme.palette, f, alt)
+                    if (applied[button] == k) return
                     applied[button] = k
                     button.background = background(k)
                     when (glyph) { is ImageView -> glyph.imageTintList = glyphTint(k); is TextView -> glyph.setTextColor(glyphTint(k)) }
                     after()
                 }
-            }) { listOf(listOf(listOf(Layer.Flat(at(button).rest)))) }
+            })
+        }
 
         /** Mực đã áp theo nút (khoá yếu — nút gỡ thì rơi). CHỈ luồng chính. */
         private val applied = WeakHashMap<View, KachiButtonInks>()
         private const val ADAPT = "button-inks"
-        /** Mực "sáng" (độ chói > ngưỡng này) — cùng ngưỡng chọn lớp đỡ của [InkModel.haloFor]. */
+        /**
+         * Mặt đĩa BẬT (đục, cố định theo bảng — không theo nền): nhấn [mixed] phủ kính tối [scrim] ở alpha NHỎ NHẤT (bậc 5 %) để
+         * glyph [white] đạt [GLYPH_FLOOR]. Đây là MÀU của mặt nút (cả đĩa), tính một lần theo bảng; bảng Sáng đạt sẵn ⇒ giữ byte.
+         */
+        private fun onFace(mixed: Int, scrim: Int, white: Int): Int {
+            if (ColorMath.ratio(white, mixed) >= GLYPH_FLOOR) return mixed
+            for (k in 1..20) {
+                val face = ColorMath.over(ColorMath.withAlpha(scrim, ContrastInk.alphaByte(k * 0.05)), mixed)
+                if (ColorMath.ratio(white, face) >= GLYPH_FLOOR) return face
+            }
+            return ColorMath.withAlpha(scrim, 255)
+        }
+
+        /** Mực "sáng" (độ chói > ngưỡng này) — cùng ngưỡng [InkModel.light] dùng để chia cực bảng màu. */
         private const val LIGHT_INK_LUMA = 0.18
         /** Sàn glyph — sàn CHỮ (4,5), cao hơn sàn nét 3:1: cùng bảo đảm các bài nút đã khoá. */
         const val GLYPH_FLOOR = 4.5

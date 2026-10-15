@@ -2,11 +2,13 @@ package com.byd.clusternav.modules.voicekey
 
 import com.byd.clusternav.launcher.CarControlPort
 import com.byd.clusternav.launcher.CarStatus
+import com.byd.clusternav.launcher.ControlDef
 import com.byd.clusternav.launcher.ControlLastSent
 import com.byd.clusternav.launcher.ControlRegistry
 import com.byd.clusternav.launcher.ControlTileLogic
 import com.byd.clusternav.launcher.ControlTileState
 import com.byd.clusternav.launcher.HomeUiState
+import com.byd.clusternav.launcher.KeyCtlPlan
 import com.byd.clusternav.launcher.KeyCtlTargets
 import com.byd.clusternav.launcher.KeyCtlThrottle
 import com.byd.clusternav.launcher.VoiceControlDispatch
@@ -30,13 +32,17 @@ import org.junit.jupiter.api.Test
  */
 class KeyCtlSafetyTest {
 
-    private class Port(private val reads: Map<String, Int?> = emptyMap()) : CarControlPort {
+    private class Port(init: Map<String, Int?> = emptyMap()) : CarControlPort {
+        /** Số đọc giả; lệnh COVER thành công đổi số của nút có trong bảng (R32: cốp "chạy" như xe ⇒ lượt đọc lại khớp ngay). */
+        private val reads = HashMap(init)
         val fired = ArrayList<String>()
         var accept = true
         var absentPart = false
         override fun toggle(id: String, on: Boolean): Boolean { fired += "toggle:$id:$on"; return accept }
         override fun step(id: String, value: Int): Boolean { fired += "step:$id:$value"; return accept }
-        override fun cover(id: String, open: Boolean): Boolean { fired += "cover:$id:$open"; return accept }
+        override fun cover(id: String, open: Boolean): Boolean {
+            fired += "cover:$id:$open"; if (accept && reads[id] != null) reads[id] = if (open) 1 else 0; return accept
+        }
         override fun select(id: String, index: Int): Boolean { fired += "select:$id:$index"; return accept }
         override fun press(id: String): Boolean { fired += "press:$id"; return accept }
         override fun readState(id: String): Int? = reads[id]
@@ -49,7 +55,10 @@ class KeyCtlSafetyTest {
      * [speedKmh]/[gear] = số đọc TƯƠI của xe. Mặc định = xe đỗ (0 km/h, P): owner 13/10 *"làm theo luật mới hết đi"* ⇒ không
      * biết chuyển động = CHẶN MỞ cốp, nên bài không nói về cổng phải nói rõ xe đứng yên (tới 3.01 mặc định `null` = cho mở).
      */
-    private class Rig(reads: Map<String, Int?> = emptyMap(), speedKmh: Int? = 0, gear: String? = "P") {
+    private class Rig(
+        reads: Map<String, Int?> = emptyMap(), speedKmh: Int? = 0, gear: String? = "P",
+        resolve: (String) -> ControlDef? = ControlRegistry::byId,
+    ) {
         val port = Port(reads)
         val said = ArrayList<String>()
         val motionReads = ArrayList<String>()
@@ -65,11 +74,18 @@ class KeyCtlSafetyTest {
             ),
             port = { port },
             say = { said += it },
+            resolve = resolve,
         )
 
         fun press(spec: String, count: Int = 1) =
             runner.run(KeyCtlThrottle.Step.Fire(KeyCtlTargets.decode(spec) ?: error("mã hỏng $spec"), count))
     }
+
+    /**
+     * 3.1.6 · R32 — cốp thật nay có readKey (Đảo CHỈ theo số đọc — bài `R32 …` dưới). Các bài về luật TRÍ NHỚ (2.87 R-FL2 + P1) vẫn
+     * khoá luật ấy cho một bộ phận bị cổng tốc độ mà KHÔNG có đường đọc ⇒ chạy với bản `trunk` không readKey.
+     */
+    private val blind: (String) -> ControlDef? = { id -> ControlRegistry.byId(id)?.let { if (id == "trunk") it.copy(readKey = "") else it } }
 
     // ── Cổng tốc độ của cốp: MỞ chỉ khi đứng yên, ĐÓNG luôn được (CtlSafetyPolicy.REQUIRES_STATIONARY) ─────────
 
@@ -111,8 +127,8 @@ class KeyCtlSafetyTest {
     /** Đảo cốp từ TRÍ NHỚ khi không biết chuyển động ⇒ hướng an toàn (ĐÓNG), cùng phép — không kẹt MỞ-bị-chặn. */
     @Test
     fun `dao cop tu tri nho khi khong biet chuyen dong thi DONG`() {
-        Rig(speedKmh = null, gear = null).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:false"), it.port.fired) }
-        Rig(speedKmh = null, gear = "P").also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:true"), it.port.fired) }
+        Rig(speedKmh = null, gear = null, resolve = blind).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:false"), it.port.fired) }
+        Rig(speedKmh = null, gear = "P", resolve = blind).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:true"), it.port.fired) }
     }
 
     @Test
@@ -168,7 +184,7 @@ class KeyCtlSafetyTest {
 
     @Test
     fun `phim dao cot khong readKey mo roi dong, chi ghi bang khi thanh cong`() {
-        val r = Rig(speedKmh = 0)
+        val r = Rig(speedKmh = 0, resolve = blind)
         r.press("ctl:trunk:flip")
         assertEquals(listOf("cover:trunk:true"), r.port.fired, "tiến trình vừa bật ⇒ coi cốp đóng ⇒ MỞ")
         assertEquals(1, sent.index("trunk"))
@@ -187,7 +203,7 @@ class KeyCtlSafetyTest {
     fun `o va phim dung chung mot bang lenh cuoi`() {
         val tile = ControlTileState.shared
         tile.setSel("trunk", 1)                                  // cú chạm ô cốp: 0 → 1 (lạc quan; ghi thành công giữ nguyên)
-        Rig(speedKmh = 30).also {
+        Rig(speedKmh = 30, resolve = blind).also {
             it.press("ctl:trunk:flip")
             assertEquals(listOf("cover:trunk:false"), it.port.fired, "ô đã mở ⇒ phím Đảo ĐÓNG (đóng lúc chạy luôn được)")
         }
@@ -215,7 +231,7 @@ class KeyCtlSafetyTest {
      */
     @Test
     fun `dao cop tu tri nho luc xe chay thi DONG, khong ket o MO bi chan`() {
-        val r = Rig(speedKmh = 30)
+        val r = Rig(speedKmh = 30, resolve = blind)
         assertEquals(0, sent.index("trunk"), "trí nhớ CŨ: tiến trình nói 'đóng' (cốp thật đang mở bằng chìa)")
         r.press("ctl:trunk:flip")
         assertEquals(listOf("cover:trunk:false"), r.port.fired, "Đảo lúc chạy ⇒ ĐÓNG — hướng duy nhất cổng cho phép")
@@ -231,7 +247,30 @@ class KeyCtlSafetyTest {
         assertEquals(1, sent.index("trunk"), "lệnh hỏng ⇒ bảng giữ nguyên")
         // Xe dừng ⇒ Đảo theo trí nhớ như thường.
         sent.record("trunk", 0)
-        Rig(speedKmh = 0).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:true"), it.port.fired) }
+        Rig(speedKmh = 0, resolve = blind).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:true"), it.port.fired) }
+    }
+
+    /**
+     * ═══ 3.1.6 · R32 (owner 15/10) — Đảo cốp THẬT theo số đọc `getDoorState(6)`, chạy hết đường thi hành ════════════════════
+     * Đọc 0 ⇒ MỞ (đứng yên) · đọc 1 ⇒ ĐÓNG · đọc không ra ⇒ KHÔNG bắn, báo *"Chưa đọc được…"* · đọc 0 mà xe chạy ⇒ MỞ bị cổng
+     * tốc độ chặn y như 3.1.5 (không lệnh nào). Trí nhớ không tham gia: ô nói "mở" mà xe đọc 0 (đóng bằng nút vật lý) ⇒ vẫn MỞ.
+     */
+    @Test
+    fun `R32 dao cop theo so doc that, khong doc duoc thi khong ban, cong toc do giu nguyen`() {
+        Rig(reads = mapOf("trunk" to 0)).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:true"), it.port.fired) }
+        Rig(reads = mapOf("trunk" to 1)).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:false"), it.port.fired) }
+        sent.record("trunk", 1)   // trí nhớ "mở" (cũ) — người lái đã đóng bằng nút trên cốp
+        Rig(reads = mapOf("trunk" to 0)).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:true"), it.port.fired, "số đọc thắng trí nhớ") }
+        Rig(reads = mapOf("trunk" to null)).also {
+            assertEquals(KeyCtlPlan.Outcome.Unreadable, it.press("ctl:trunk:flip"))
+            assertTrue(it.port.fired.isEmpty(), "đọc không ra ⇒ không bắn: ${it.port.fired}")
+            assertTrue(it.said.single().startsWith("Chưa đọc được trạng thái"), "${it.said}")
+        }
+        Rig(reads = mapOf("trunk" to 0), speedKmh = 30).also {
+            it.press("ctl:trunk:flip")
+            assertTrue(it.port.fired.isEmpty(), "xe chạy ⇒ MỞ bị chặn ở tầng thi hành, như 3.1.5: ${it.port.fired}")
+            assertTrue(it.said.contains(STOP_TO_OPEN), "${it.said}")
+        }
     }
 
     @Test

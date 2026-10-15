@@ -144,6 +144,7 @@ internal class KeyCtlRunner(
         when (o) {
             is KeyCtlPlan.Outcome.Run -> controls.run(o.intent) {}
             KeyCtlPlan.Outcome.Invalid -> say(KeyCtlPlan.invalidReply(f.target.spec))
+            KeyCtlPlan.Outcome.Unreadable -> say(KeyCtlPlan.unreadableReply(def))   // 3.1.6 · R32 — cốp đọc không ra ⇒ không bắn
         }
         return o
     }

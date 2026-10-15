@@ -15,8 +15,8 @@ object ContrastStack {
     /**
      * Ghép NỀN cuối: [base] (hộp ảnh sắc) × tích các nhóm biến thể [groups] (theo đúng thứ tự vẽ: làm tối · dải che · thẻ ngoài ·
      * thẻ trong…). Một tổ hợp ⇒ chồng CHÍNH XÁC (giữ tương quan góc tối/sáng giữa ảnh sắc và ảnh mờ). Nhiều ⇒ HỢP hộp nền ghép
-     * của mọi tổ hợp — mỗi lớp đơn điệu từng kênh nên mọi điểm ảnh thật nằm trong hợp (bảo thủ: có thể xin lớp đỡ dư, không bao
-     * giờ khai đạt khi không đạt). Nhóm rỗng bị bỏ qua.
+     * của mọi tổ hợp — mỗi lớp đơn điệu từng kênh nên mọi điểm ảnh thật nằm trong hợp (bảo thủ: có thể đổi họ mực sớm hơn cần, không
+     * bao giờ khai đạt khi không đạt). Nhóm rỗng bị bỏ qua.
      */
     fun compose(base: ToneBox, groups: List<List<List<Layer>>>): ContrastBackdrop {
         var combos: List<List<Layer>> = listOf(emptyList())

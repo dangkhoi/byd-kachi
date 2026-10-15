@@ -24,7 +24,11 @@ class HalSignalDemand(
     private val acquire: () -> Unit,
     private val release: () -> Unit,
 ) {
-    enum class Source { CAMERA, LAMP_WIDGET }
+    /**
+     * 3.1.6 HAL-EVENTS thêm hai nguồn: [CAR_EVENTS] — màn chính bày ≥ 1 datum/nút có đường sự kiện ([HalEventMap]) VÀ màn sáng;
+     * [SEAT_WATCH] — `SeatAutoOffWatch` đang canh ghế (cần sự kiện ghế + dấu vân tay `0x095` dù màn đang bày gì).
+     */
+    enum class Source { CAMERA, LAMP_WIDGET, CAR_EVENTS, SEAT_WATCH }
 
     private val wanted = mutableSetOf<Source>()
     private var active = false

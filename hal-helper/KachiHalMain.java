@@ -3,6 +3,7 @@ package com.byd.clusternav.hal;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.hardware.bydauto.light.AbsBYDAutoLightListener;
+import android.os.Handler;
 import android.os.Looper;
 
 import java.io.IOException;
@@ -62,6 +63,8 @@ import java.util.List;
  * Chỉ phát khi trạng thái ĐỔI (chống trùng: một lượt rẽ có thể fire cả {@code onLightOn(4)} lẫn
  * {@code onTurnLightStateChanged(2)} — cùng nghĩa, hai callback).
  *
+ * ── 3.1.6 HAL-EVENTS: listener CHUNG theo feature-id mà app xin — xem {@link KachiHalEvents} ───────────────────────────
+ *
  * ── 3.01 LAMPLIVE: CÁC ĐÈN KHÁC trên CÙNG listener (owner 13/10 "nối luôn đi") ─────────────────────────────────────────────
  * {@code onLightOn/Off(type)} với {@code type} ngoài 4/5 (1 hông · 2 cốt · 3 pha · 6 sương mù trước · 7 sương mù sau — thang
  * {@code BYDAutoLightDevice.LIGHT_*}; [ĐO RE] app Kim {@code VehicleBridge.createLightListener} lưu đúng khoá {@code area} này)
@@ -86,7 +89,7 @@ public final class KachiHalMain {
     private static final String TOPIC_OFF = "light.onLightOff";
 
     /** Danh sách client đang nối. Mọi truy cập trong {@code synchronized (CLIENTS)}. */
-    private static final List<OutputStream> CLIENTS = new ArrayList<OutputStream>();
+    static final List<OutputStream> CLIENTS = new ArrayList<OutputStream>();
 
     private static volatile boolean left;
     private static volatile boolean right;
@@ -113,6 +116,9 @@ public final class KachiHalMain {
         // Looper TRƯỚC khi đăng ký: callback của HAL tới qua Binder/Handler, không có Looper thì đăng ký được
         // mà KHÔNG bao giờ fire — [ĐO] kinex HalApiServiceMain cũng prepareMainLooper() trước rồi loop().
         Looper.prepareMainLooper();
+        // 3.1.6 HAL-EVENTS: mọi lượt đăng ký/huỷ listener chạy trên main looper (device BYD dựng `Handler(getMainLooper())`
+        // — `BYDAutoDeviceManager.java:27` — và callback tới qua đó), không trên luồng đọc socket của từng client.
+        KachiHalEvents.MAIN = new Handler(Looper.getMainLooper());
 
         if (!startServer(port)) {
             // Cổng đã có người giữ ⇒ gần như chắc chắn là một bản helper khác đang chạy. Thoát để bên gọi
@@ -179,7 +185,23 @@ public final class KachiHalMain {
      * Context được truyền vào, nên bọc để nó không tự chặn. Lấy không được ⇒ trả {@code null}: kinex cũng có
      * nhánh truyền {@code null} cho {@code getInstance(Context)} và device vẫn cấp.
      */
-    private static Context systemContext() {
+    static Context systemContext() {
+        // 3.1.6 HAL-EVENTS: nhiều device dùng chung MỘT context — `ActivityThread.systemMain()` dựng một ActivityThread MỚI mỗi lần
+        // gọi, nên chỉ gọi một lần cho cả tiến trình.
+        synchronized (CTX_LOCK) {
+            if (!ctxResolved) {
+                ctx = resolveSystemContext();
+                ctxResolved = true;
+            }
+            return ctx;
+        }
+    }
+
+    private static final Object CTX_LOCK = new Object();
+    private static Context ctx;
+    private static boolean ctxResolved;
+
+    private static Context resolveSystemContext() {
         try {
             Class<?> at = Class.forName("android.app.ActivityThread");
             Object thread = at.getMethod("systemMain").invoke(null);
@@ -344,6 +366,7 @@ public final class KachiHalMain {
                 }
                 log("client nối, tổng=" + clientCount());
                 sendSnapshot(os);
+                KachiHalEvents.startReader(s, os);
             } catch (Throwable t) {
                 log("accept lỗi: " + t);
                 // Ngủ ngắn để một lỗi lặp lại không quay vòng 100% CPU.
@@ -368,6 +391,10 @@ public final class KachiHalMain {
                     if (OTHER[t] >= 0) os.write(line(OTHER[t] == 1 ? TOPIC_ON : TOPIC_OFF, t));
                 }
                 if (drl > 0) os.write(line(TOPIC_DRL, drl));
+                // 3.1.6 HAL-EVENTS: báo client helper hiểu `sub` + trạng thái đăng ký + giá trị cuối đã thấy (không chờ lần đổi kế).
+                os.write(line(KachiHalEvents.TOPIC_HELLO, KachiHalEvents.PROTOCOL));
+                for (String reg : KachiHalEvents.REG_LINES.values()) os.write(bytes(reg));
+                for (String ev : KachiHalEvents.LAST.values()) os.write(bytes(ev));
             }
             os.flush();
         } catch (IOException e) {
@@ -393,6 +420,31 @@ public final class KachiHalMain {
         log("phát " + topic + " type=" + type + " → " + clientCount() + " client");
     }
 
+    /** 3.1.6 HAL-EVENTS — phát một dòng dựng sẵn tới mọi client (không log mỗi dòng: sự kiện có thể dày). */
+    static void broadcastRaw(byte[] data) {
+        synchronized (CLIENTS) {
+            Iterator<OutputStream> it = CLIENTS.iterator();
+            while (it.hasNext()) {
+                OutputStream os = it.next();
+                try {
+                    os.write(data);
+                    os.flush();
+                } catch (IOException e) {
+                    it.remove();
+                    close(os);
+                }
+            }
+        }
+    }
+
+    static byte[] bytes(String s) {
+        try {
+            return s.getBytes("UTF-8");
+        } catch (java.io.UnsupportedEncodingException e) {
+            return s.getBytes();
+        }
+    }
+
     /** Một dòng giao thức. {@code topic} là hằng nội bộ nên không cần escape. */
     private static byte[] line(String topic, int type) {
         String s = "{\"topic\":\"" + topic + "\",\"type\":" + type + "}\n";
@@ -403,7 +455,7 @@ public final class KachiHalMain {
         }
     }
 
-    private static void drop(OutputStream os) {
+    static void drop(OutputStream os) {
         synchronized (CLIENTS) {
             CLIENTS.remove(os);
         }
@@ -424,7 +476,7 @@ public final class KachiHalMain {
         }
     }
 
-    private static void log(String msg) {
+    static void log(String msg) {
         System.out.println(TAG + ": " + msg);
         System.out.flush();
     }

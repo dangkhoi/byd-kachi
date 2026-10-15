@@ -67,6 +67,8 @@ class AppContainer internal constructor(
     // thuần (gateway giả) không dựng luồng nào và không chạm `filesDir`; [build] tiêm bản thật.
     private val releaseSchedulerInit: () -> WriteReleaseScheduler = { WriteReleaseScheduler.NONE },
     private val ctlJournalInit: () -> CtlJournal = { CtlJournal.NONE },
+    // 3.1.6 · SEAT-AUTO-OFF-REAPPLY — mỗi lệnh ghi nút xe báo `SeatAutoOffWatch` (nút ghế ⇒ thôi canh). Rỗng ở container test.
+    private val onControlWrite: (String) -> Unit = {},
     // 2.98 · R6-C — màn xe có đang SÁNG không (cổng đọc HAL của [carStatusRepository]). Mặc định `true` cho container test thuần.
     private val screenAwake: () -> Boolean = { true },
     // 3.01 LAMPLIVE — chủ DUY NHẤT helper HAL + socket 19322. Mặc định `null` ⇒ container test thuần không dựng luồng/socket nào.
@@ -93,7 +95,23 @@ class AppContainer internal constructor(
 
     /** Bảng nối HAL dùng CHUNG (1 gateway) cho cả đọc telemetry lẫn ghi control. */
     private val halBindingTable: HalBindingTable by lazy {
-        HalBindingTable(halGateway, releaseSchedulerInit(), ctlJournalInit())
+        // 3.1.6 HAL-EVENTS: đọc đi qua bộ nhớ SỰ KIỆN trước ([halEvents]); trượt / helper vắng ⇒ gateway thật (poll như cũ).
+        HalBindingTable(com.byd.clusternav.launcher.EventCachedGateway(halGateway, halEvents), releaseSchedulerInit(), ctlJournalInit())
+    }
+
+    /** 3.1.6 HAL-EVENTS — giá trị theo sự kiện của helper (một bản mỗi tiến trình). Rỗng/không chạy ⇒ mọi lượt đọc về gateway. */
+    val halEvents = com.byd.clusternav.launcher.HalEventCache()
+
+    /** 3.1.6 HAL-EVENTS — nhu cầu màn/canh ghế → kế hoạch sự kiện → helper; sự kiện → [carStatusRepository]. */
+    val carEvents: com.byd.clusternav.launcher.CarEventFeed by lazy {
+        com.byd.clusternav.launcher.CarEventFeed(
+            gateway = halGateway,
+            cache = halEvents,
+            want = { src, on -> halSignal?.want(src, on) },
+            subscribe = { line -> halSignal?.subscribe(line) },
+            onDatums = { ids -> carStatusRepository.onEvents(ids) },
+            log = { msg -> runCatching { android.util.Log.i("KachiHalEvent", msg) } },
+        )
     }
 
     /**
@@ -102,7 +120,7 @@ class AppContainer internal constructor(
      * Màn chính ghi ([collectHome] mỗi lượt state, [KachiHomeActivity.onStop] xoá); vòng poll đọc. `null` (mặc
      * định, và sau khi màn khuất) = đọc hết như mọi bản trước 1.67 — xem KDoc [CarDataDemand].
      */
-    val carDemand = com.byd.clusternav.launcher.CarDataDemand.Holder { lampWatch.demand(it) }
+    val carDemand: com.byd.clusternav.launcher.CarDataDemand.Holder = com.byd.clusternav.launcher.CarDataDemand.Holder { lampWatch.demand(it); carEvents.screen(it, carDemand.controls()) }
         .also { h -> com.byd.clusternav.launcher.WidgetFallbacks.shared.onChange = h::republish }   // PERF 3.1.5: widget lùi 2D ⇒ tính lại nhu cầu
 
     /**
@@ -114,10 +132,12 @@ class AppContainer internal constructor(
     }
 
     /** Chủ helper + client 19322 của tiến trình (`null` ở container test). Nguồn: camera xi-nhan + [lampWatch]. */
-    val halSignal: HalSignalHub? by lazy { halSignalInit() }
+    val halSignal: HalSignalHub? by lazy {
+        halSignalInit()?.also { h -> h.onHalEvents({ carEvents.onMessage(it) }, { carEvents.onLinkDown() }) }   // 3.1.6 HAL-EVENTS
+    }
 
     /** Adapter đọc xe: [CarDataPort] (widget cũ) + `CarStatusReader` (build [com.byd.clusternav.launcher.CarStatus]). */
-    private val carDataAdapter: CarDataAdapter by lazy { CarDataAdapter(halBindingTable, carDemand::get, controlDemand = carDemand::controls) }
+    private val carDataAdapter: CarDataAdapter by lazy { CarDataAdapter(halBindingTable, carDemand::get, controlDemand = carDemand::controls, covered = halEvents::covers) }
 
     /** Cổng đọc xe LIVE cho widget/thanh trạng thái — off-car mọi field null ⇒ "—". */
     val carData: CarDataPort get() = carDataAdapter
@@ -129,7 +149,7 @@ class AppContainer internal constructor(
      * (22/gió 4) tới 10 phút. Owner 2026-09-24: "khi có action phải chuyển NGAY". Quên nguội ⇒ nhịp poll kế đọc
      * lại tức thì (grace-window của tile chặn đọc-rách giữa lúc HAL chưa settle). KHÔNG đọc thẳng ở đây (giữ mô
      * hình luồng: đọc nằm ở vòng poll của repo). */
-    val carControl: CarControlPort by lazy { WakeOnWriteControl(CarControlAdapter(halBindingTable), carDataAdapter) }
+    val carControl: CarControlPort by lazy { WakeOnWriteControl(CarControlAdapter(halBindingTable), carDataAdapter, onControlWrite) }
 
     /**
      * Đọc MỘT datum theo id → chuỗi hiển thị kèm đơn vị (cho công cụ kiểm tra từng nút). `null` = off-car / chưa map.
@@ -145,7 +165,7 @@ class AppContainer internal constructor(
     val carStatusRepository: CarStatusRepository by lazy {
         // 2.98 · R6-C: chỉ đọc HAL khi màn xe SÁNG; không hỏi được ⇒ đọc như cũ (fail-open). Màn sáng lại ⇒ `wake()` (KachiHomeWiring).
         // 3.01 LAMPLIVE: cùng một lượt hỏi màn (không thêm binder) báo luôn cho [lampWatch] — màn tắt ⇒ thôi giữ helper sau ân hạn.
-        CarStatusRepository(carDataAdapter, carScope, awake = { screenAwake().also { lampWatch.screen(it) } })
+        CarStatusRepository(carDataAdapter, carScope, awake = { screenAwake().also { lampWatch.screen(it); carEvents.lit(it) } })
     }
 
     /**
@@ -241,6 +261,7 @@ class AppContainer internal constructor(
             },
             // FIX286 · SR6 — nhật ký bền mỗi lệnh ghi xe (`ctl-writes.log` + logcat ⇒ `usage-*.log`).
             ctlJournalInit = { CtlJournalStore.journal(app) },
+            onControlWrite = { id -> com.byd.clusternav.comfort.SeatAutoOffWatch.onControlWrite(app, id) },
             screenAwake = { com.byd.clusternav.system.ScreenLit.read(app) },
             halSignalInit = { HalSignalHub(ensure = { HalHelperLauncher.ensure(app) }) },
         )

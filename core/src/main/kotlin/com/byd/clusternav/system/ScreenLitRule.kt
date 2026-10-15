@@ -7,4 +7,10 @@ package com.byd.clusternav.system
  */
 object ScreenLitRule {
     fun lit(interactive: Boolean?, displayOn: Boolean?): Boolean = interactive != false && displayOn != false
+
+    /**
+     * 3.1.6 (soát Pass 6) — bản FAIL-CLOSED cho một lệnh GHI xe tự khởi phát (bật lại ghế): cần ít nhất MỘT nguồn nói SÁNG và không
+     * nguồn nào nói TẮT. Không hỏi được cả hai ⇒ KHÔNG ghi (khác [lit]: đọc thì fail-open, ghi thì không).
+     */
+    fun litStrict(interactive: Boolean?, displayOn: Boolean?): Boolean = lit(interactive, displayOn) && (interactive == true || displayOn == true)
 }
