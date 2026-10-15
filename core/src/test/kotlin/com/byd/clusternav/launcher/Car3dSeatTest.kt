@@ -6,20 +6,47 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.math.abs
 
-/** POLISH2 — một widget 3D (một Engine) · cổng cỡ ô lúc dựng · hàng nút chân canh GIỮA. */
+/** POLISH2 — một widget 3D (một Engine) · cổng cỡ ô lúc dựng · hàng nút chân canh GIỮA · 3.1.8 bên thua CHỜ, không lùi 2D. */
 class Car3dSeatTest {
 
     @Test
-    fun `nguoi moi thang - chu cu bi day ve 2D truoc khi nguoi moi dung Engine`() {
-        // [ĐO xe 14/10 08:01:38] bật màn ⇒ HOME dựng lại ô: widget mới xin chỗ khi widget cũ còn giữ ⇒ luật cũ đẩy widget ĐANG HIỆN về 2D.
+    fun `chu khuat thi nguoi moi thang - chu cu bi day TRUOC khi nguoi moi dung Engine, roi cho`() {
+        // [ĐO xe 14/10 08:01:38] bật màn ⇒ HOME dựng lại ô: bản mới xin chỗ khi bản cũ (khuất) còn giữ ⇒ bản mới phải thắng.
         val seat = Car3dSeat(); val a = Any(); val b = Any(); val log = ArrayList<String>()
-        assertTrue(seat.claim(a) { log += "a evicted" }); assertTrue(seat.claim(a), "chủ xin lại vẫn được, không tự đuổi")
+        var aShown = true
+        assertTrue(seat.claim(a, { aShown }, { log += "a woken" }) { log += "a evicted" }); assertTrue(seat.claim(a), "chủ xin lại vẫn được, không tự đuổi")
         assertTrue(log.isEmpty())
-        assertTrue(seat.claim(b) { log += "b evicted" }); log += "b builds Engine"
+        aShown = false
+        assertTrue(seat.claim(b, wake = { log += "b woken" }) { log += "b evicted" }); log += "b builds Engine"
         assertEquals(listOf("a evicted", "b builds Engine"), log, "chủ cũ huỷ Engine TRƯỚC khi người mới dựng ⇒ tối đa một Engine")
-        assertTrue(seat.holds(b)); assertFalse(seat.holds(a))
+        assertTrue(seat.holds(b)); assertFalse(seat.holds(a)); assertTrue(seat.waits(a), "bị đẩy ⇒ CHỜ (3.1.8), không lùi 2D")
         seat.release(a); assertTrue(seat.holds(b), "không phải chủ thì không trả được chỗ")
         seat.release(b); assertFalse(seat.holds(b))
+        assertEquals("a woken", log.last(), "chỗ trống ⇒ bản bị đẩy được đánh thức để dựng lại 3D")
+    }
+
+    @Test
+    fun `chu dang hien thi nguoi xin cho - khong bao gio day widget dang hien, cho trong thi danh thuc`() {
+        // 3.1.8 CAR3D-FALLBACK-STICKY [ĐO máy ảo 15/10, 3.1.6]: hai ô w_car3d ⇒ ô chính thành bảng 2D, bung ô chính vẫn 2D (không ai đánh thức).
+        val seat = Car3dSeat(); val main = Any(); val second = Any(); val log = ArrayList<String>()
+        assertTrue(seat.claim(main, { true }, { log += "main woken" }) { log += "main evicted" })
+        assertFalse(seat.claim(second, { true }, { log += "second woken" }, evict = { log += "second evicted" }), "chủ đang hiện ⇒ người xin chờ")
+        assertTrue(seat.holds(main) && seat.waits(second) && log.isEmpty(), "không đẩy chủ đang hiện: $log")
+        seat.release(main)   // ô chính khuất (ô kia bung R30) ⇒ nhả Engine
+        assertEquals(listOf("second woken"), log, "chỗ trống ⇒ bản chờ được đánh thức")
+        assertFalse(seat.waits(second), "đánh thức xong ⇒ rời hàng chờ (xin lại qua claim)")
+        assertTrue(seat.claim(second, { true }, { log += "second woken" }))
+    }
+
+    @Test
+    fun `roi cua so thi ra khoi hang cho - khong danh thuc view chet`() {
+        val seat = Car3dSeat(); val a = Any(); val gone = Any(); val log = ArrayList<String>()
+        assertTrue(seat.claim(a))
+        assertFalse(seat.claim(gone, wake = { log += "gone woken" }))
+        seat.leave(gone); assertFalse(seat.waits(gone))
+        seat.release(a)
+        assertTrue(log.isEmpty(), "view đã rời cửa sổ không được đánh thức: $log")
+        seat.leave(a); assertFalse(seat.holds(a))
     }
 
     @Test

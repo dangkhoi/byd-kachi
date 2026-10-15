@@ -89,6 +89,15 @@ class HalSignalHub(
     fun background(task: () -> Unit) = exec.execute { runCatching(task).onFailure { logW("việc nền ném: $it") } }
 
     /**
+     * 3.1.8 · HAL-EVENTS-SUB-NARROW — hẹn [task] sau [ms] trên CÙNG luồng hub (không dựng luồng mới), trả hàm huỷ. `CarEventFeed`
+     * dùng để hoãn thu hẹp tập xin (`CarEventFeed.NARROW_HOLD_MS`).
+     */
+    fun after(ms: Long, task: () -> Unit): () -> Unit {
+        val f = exec.schedule({ runCatching(task).onFailure { logW("việc hẹn ném: $it") } }, ms, TimeUnit.MILLISECONDS)
+        return { f.cancel(false); Unit }
+    }
+
+    /**
      * 3.1.6 HAL-EVENTS — nơi nhận dòng `hal.*` (chào · đăng ký · sự kiện) và tín hiệu mất dây của client DUY NHẤT. Gán một lần
      * (`AppContainer` → `CarEventFeed`); callback chạy trên luồng đọc socket.
      */

@@ -107,9 +107,9 @@ class GroupTileWiringContractTest {
             // 3.01 R20: lưới bố trí (cột/dạng theo bề rộng đo được) — nhận ô con / nút ĐÃ dựng từ GroupTileView/actionsRow,
             // không đọc GroupBoard/GroupCell, không dựng nội dung nhóm. Bài `o chen cho trong…` quét riêng tệp này.
             "GroupCellGrid.kt" to "chỉ bố trí ô con / nút đã dựng theo kế hoạch GroupCellFit — không dựng ô nhóm",
-            // 3.01 R25: widget xe 3D — đọc GroupBoard.of để `Car3dHotspots.resolve` chọn ô nút/ô xem SẴN CÓ cho từng điểm chạm và
-            // lùi bảng 2D qua GroupTiles.build; không tự dựng ô nhóm. Bảng ràng buộc quét riêng ở Car3dBindingTest/Car3dSealTest.
-            "Car3dWidgetView.kt" to "widget xe 3D R25 — chỉ gọi GroupTiles.build để lùi 2D; quét riêng ở Car3dBindingTest",
+            // 3.01 R25: điểm chạm xe 3D — đọc GroupBoard.of để `Car3dHotspots.resolve` chọn ô nút/ô xem SẴN CÓ cho từng điểm chạm;
+            // không tự dựng ô nhóm. Bảng ràng buộc quét riêng ở Car3dBindingTest/Car3dSealTest. (3.1.8: `Car3dWidgetView` không còn
+            // bản lùi 2D qua GroupTiles.build ⇒ không còn trong danh sách này — bài `318 khong bao gio lui bang 2D` khoá điều đó.)
             "Car3dTaps.kt" to "điểm chạm xe 3D R25 — GroupBoard.of → Car3dHotspots (ô nút sẵn có); quét riêng ở Car3dBindingTest",
         )
         val builders = java.nio.file.Files.list(dir).use { s ->

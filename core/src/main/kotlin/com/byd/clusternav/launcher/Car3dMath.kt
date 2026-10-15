@@ -172,6 +172,16 @@ object Car3dMath {
         return listOf(l, t, r, bb)
     }
 
+    /**
+     * Camera khung widget (chuyển từ `Car3dWidgetView` — trần 500 dòng, 3.1.8): lùi đủ xa cho CẢ HAI phép — ngẩng cao không cắt
+     * ([frameDistance]) · xoay không đổi cỡ ([steadyDistance]). Khung chưa có cỡ ⇒ `null`.
+     */
+    fun camera(b: Car3dBounds, fovDeg: Double, zoom: Double, w: Int, h: Int, o: Car3dOrbit): Car3dCamera? {
+        if (w <= 0 || h <= 0) return null
+        val dist = maxOf(frameDistance(b, fovDeg, w, h, zoom), steadyDistance(b, fovDeg, w, h, o.pitchMin, o.pitchMax))
+        return Car3dCamera(V3.ZERO, dist, o.yaw, o.pitch, fovDeg)
+    }
+
     private const val GROUND_POINTS = 16
     private const val SHADOW_GROW = 1.06
 }

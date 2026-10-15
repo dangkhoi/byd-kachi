@@ -25,7 +25,8 @@ class Car3dLiveGateContractTest {
         }
         assertTrue(widget.contains("ScreenLit.watch(") && widget.substringAfter("ScreenLit.watch(").substringBefore("\n").contains("syncLive()"),
             "màn tắt ([ĐO] SLEEP không đổi độ hiện cửa sổ) phải đi qua syncLive")
-        assertTrue(gate.contains("!windowHidden") && gate.contains("!viewHidden") && gate.contains("!screenOff"), "sống = cửa sổ hiện ∧ view hiện ∧ màn sáng")
+        val live = widget.substringAfter("private fun liveNow() =").substringBefore("\n")
+        assertTrue(gate.contains("liveNow()") && live.contains("!windowHidden") && live.contains("!viewHidden") && live.contains("!screenOff"), "sống = cửa sổ hiện ∧ view hiện ∧ màn sáng")
         assertTrue(gate.substringBefore("return").contains("stop()"), "khuất ⇒ stop() (huỷ renderer + Engine), không chỉ huỷ khung")
         assertTrue(gate.contains("start()"), "hiện lại ⇒ start() nạp lại từ tệp đệm")
         assertTrue(gate.contains("WidgetFallbacks.shared.shown(this, live)"), "khuất ⇒ nhu cầu HAL của widget về 0")

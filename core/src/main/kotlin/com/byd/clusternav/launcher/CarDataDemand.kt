@@ -164,15 +164,15 @@ object CarDataDemand {
      *
      * THUẦN — không Android, không đọc đĩa; test off-device bằng một [HomeUiState] dựng tay.
      */
-    fun of(state: HomeUiState, degraded: Set<String> = emptySet(), hidden: Set<String> = emptySet()): Set<String>? {
+    fun of(state: HomeUiState, hidden: Set<String> = emptySet()): Set<String>? {
         val out = LinkedHashSet<String>()
         state.topStrip.ids.forEach { if (!expand(it, out)) return null }
         dockIds(state).forEach { if (!expand(it, out)) return null }
         val shown = shownSlots(state)
         shown.forEach { slot ->
-            if (slot is SlotContent.Widget) slot.ids.forEach { if (it !in hidden && !expand(fallbackOf(it, degraded) ?: it, out)) return null }
+            if (slot is SlotContent.Widget) slot.ids.forEach { if (it !in hidden && !expand(it, out)) return null }
         }
-        if (state.colorChoice.carTyres && "w_car3d" !in degraded && "w_car3d" !in hidden && shown.any { it is SlotContent.Widget && "w_car3d" in it.ids }) out += CAR3D_TYRES
+        if (state.colorChoice.carTyres && "w_car3d" !in hidden && shown.any { it is SlotContent.Widget && "w_car3d" in it.ids }) out += CAR3D_TYRES
         val companions = out.flatMap { COMPANION[it].orEmpty() }   // sau khi gom XONG — xem ⚠ ở KDoc [COMPANION]
         out += companions
         return out
@@ -193,7 +193,7 @@ object CarDataDemand {
      *
      * THUẦN — cùng ba bề mặt với [of] (thanh trên KHÔNG mang nút; chip chỉ nhận mục ĐỌC — RW0).
      */
-    fun controlsOf(state: HomeUiState, degraded: Set<String> = emptySet(), hidden: Set<String> = emptySet()): Set<String> {
+    fun controlsOf(state: HomeUiState, hidden: Set<String> = emptySet()): Set<String> {
         val out = LinkedHashSet<String>()
         fun scan(id: String) {
             val def = ControlRegistry.byId(id) ?: return
@@ -206,7 +206,7 @@ object CarDataDemand {
         }
         dockIds(state).forEach(::scan)
         shownSlots(state).forEach { slot ->
-            if (slot is SlotContent.Widget) slot.ids.forEach { id -> if (id !in hidden) { scan(id); if (id !in degraded) HOSTED[id]?.forEach(::scan) } }
+            if (slot is SlotContent.Widget) slot.ids.forEach { id -> if (id !in hidden) { scan(id); HOSTED[id]?.forEach(::scan) } }
         }
         return out
     }
@@ -221,14 +221,6 @@ object CarDataDemand {
 
     /** PERF 3.1.5 — thanh nút ẨN ([DockConfig.visible] `false`) không có trong cây view (`DockAreaPlan.target`) ⇒ không đọc. */
     private fun dockIds(state: HomeUiState): List<String> = if (state.dock.visible) state.dock.enabled else emptyList()
-
-    /**
-     * PERF 3.1.5 (backlog `CAR3D-FALLBACK-DEMAND`) — widget đang bày BẢN LÙI 2D ([WidgetFallbacks]) thì đọc đúng thứ bản lùi bày:
-     * xe 3D lùi về ô nhóm đầu của [Car3dCatalog.GROUPS] (`WidgetViews`: `GroupTiles.build(…, GROUPS.first(), …)`) — không lốp,
-     * không ô nút ẩn [HOSTED]. Mã không có bản lùi khai ở đây ⇒ `null` = đọc như bản đầy đủ (fail-open, hụt hiệu năng chứ không hụt số).
-     */
-    private fun fallbackOf(id: String, degraded: Set<String>): String? =
-        if (id !in degraded) null else when (id) { "w_car3d" -> Car3dCatalog.GROUPS.first(); else -> null }
 
     /**
      * Thêm vào [out] các datum mà một **mã khả năng** [id] bày ra. Trả `false` nghĩa là *"không biết mã này bày gì"*
@@ -300,21 +292,22 @@ object CarDataDemand {
 
         fun set(v: Set<String>?) { value = v; onScreen(v) }
 
-        /** Ảnh màn đã công bố gần nhất ([publish]) — để [republish] tính lại khi một widget lùi 2D mà state không đổi. */
+        /** Ảnh màn đã công bố gần nhất ([publish]) — để [republish] tính lại khi một widget khuất/thôi vẽ mà state không đổi. */
         @Volatile private var shownState: HomeUiState? = null
 
         /**
-         * PERF 3.1.5 — công bố nhu cầu của màn [state] (datum + nút) một chỗ, kèm tập widget đang lùi 2D [degraded]. Chỗ gọi DUY
+         * PERF 3.1.5 — công bố nhu cầu của màn [state] (datum + nút) một chỗ. Chỗ gọi DUY
          * NHẤT là luồng thu state của màn chính (`KachiHomeWiring.collectHome`) — thay hai lời gọi `set(of)` + `setControls(controlsOf)`.
-         * [hidden] = widget KHUẤT dù còn gắn (ô khác bung, owner 14/10 *"car 3D không bao giờ chạy nền"*) ⇒ 0 lượt đọc cho nó.
+         * [hidden] = widget KHUẤT dù còn gắn (ô khác bung, owner 14/10 *"car 3D không bao giờ chạy nền"*) hoặc KHÔNG VẼ (3.1.8 —
+         * xe 3D chờ/không khả thi, [WidgetFallbacks]) ⇒ 0 lượt đọc cho nó.
          */
-        fun publish(state: HomeUiState, degraded: Set<String>, hidden: Set<String> = emptySet()) {
+        fun publish(state: HomeUiState, hidden: Set<String> = emptySet()) {
             shownState = state
-            setControls(controlsOf(state, degraded, hidden)); set(of(state, degraded, hidden))
+            setControls(controlsOf(state, hidden)); set(of(state, hidden))
         }
 
-        /** Một widget vừa lùi 2D / khuất / hiện lại ([WidgetFallbacks]) ⇒ tính lại cho ảnh màn đang công bố; màn đã rời ([clear]) ⇒ thôi. */
-        fun republish(degraded: Set<String>, hidden: Set<String> = emptySet()) { shownState?.let { publish(it, degraded, hidden) } }
+        /** Một widget vừa khuất / thôi vẽ / hiện lại ([WidgetFallbacks]) ⇒ tính lại cho ảnh màn đang công bố; màn đã rời ([clear]) ⇒ thôi. */
+        fun republish(hidden: Set<String>) { shownState?.let { publish(it, hidden) } }
 
         /** Đặt tập nút đang hiện (từ [controlsOf]). Màn rời tiền cảnh ⇒ [clear] xoá về rỗng = không đọc control nào. */
         fun setControls(ids: Set<String>) { controls = ids }

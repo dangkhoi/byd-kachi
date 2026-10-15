@@ -133,6 +133,9 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
     /** POLISH2 — có đèn khoang ([Car3dHotspot.glow]) đang BẬT (đích lạc quan / lệnh cuối) ⇒ nội thất hắt sáng. */
     fun glowing(): Boolean = hotspots.any { it.glow && spots[it.id]?.dot?.kind == CarDots.Kind.OPEN }
 
+    /** 3.1.8: widget thôi vẽ (chờ/không khả thi) ⇒ nút trợ năng bộ phận ẩn (không bấm được chỗ xe không còn hiện); [project] hiện lại. */
+    fun hide() = nodes.values.forEach { it.visibility = View.INVISIBLE }
+
     fun clear() { model = null; hotspots.clear(); spots.clear(); restBox.clear(); dotAt.clear(); nodes.clear(); hidden.clear(); targets.clear(); order = emptyList() }
 
     /** Mức kính đang thấy của điểm [id] (lệnh vừa gửi thắng số đọc; chưa đọc ⇒ `null`) — kính 3D tụt theo nó. */

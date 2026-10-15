@@ -32,6 +32,8 @@ class HalEventCache(
     private val seenDevice = HashSet<String>()
     private val eventAt = HashMap<Int, Long>()
     private val registered = HashSet<Int>()
+    /** Tập id đăng ký theo device (`hal.reg` gần nhất) — để [onReg] gỡ id thôi đăng ký. */
+    private val regByDevice = HashMap<String, Set<Int>>()
     private var hello = false
 
     /** Dấu vân tay ngoài datum (vd `0x095…` của ghế): id → mốc thấy gần nhất. */
@@ -141,9 +143,21 @@ class HalEventCache(
     /** Helper chào (`hal.hello`) — nối được và hiểu giao thức. */
     @Synchronized fun onHello() { hello = true }
 
-    /** Kết quả đăng ký của một device (`hal.reg`): id ok được ghi nhận, id bị từ chối/lỗi bị gỡ. */
+    /**
+     * Kết quả đăng ký của một device (`hal.reg`): id ok được ghi nhận, id bị từ chối/lỗi bị gỡ.
+     *
+     * 3.1.8 · HAL-EVENTS-SUB-NARROW — `ok` của helper là TOÀN BỘ tập đang đăng ký của [device] (`KachiHalEvents.publishReg`), không
+     * phải phần thêm ⇒ [device] biết thì THAY tập của device ấy (id thôi đăng ký — vd `ok=—` lúc thu hẹp — rời [registered]). Trước
+     * đây chỉ cộng/trừ ⇒ id đã huỷ trên helper vẫn được coi là "đăng ký" mãi tới khi đứt dây ([ĐO] xe 15/10 16:13:55: 7 device về
+     * `ok=—`; [SUY từ nguồn] app vẫn giữ id của chúng trong [registered]).
+     */
     @Synchronized
-    fun onReg(ok: Set<Int>, rejected: Set<Int>) {
+    fun onReg(ok: Set<Int>, rejected: Set<Int>, device: String? = null) {
+        // Soát Pass 8 [P3]: dòng `hal.reg` thiếu `dev` ⇒ `HalEventWire` trả "" — không khoá tập theo "" (mọi device dồn một khoá, dòng sau
+        // xoá tập của dòng trước); thiếu device ⇒ cộng/trừ như cũ (fail-open về poll, không gỡ nhầm).
+        if (!device.isNullOrEmpty()) {
+            regByDevice.put(device, ok)?.let { prev -> registered -= (prev - ok) }
+        }
         registered += ok
         registered -= rejected
     }
@@ -152,7 +166,7 @@ class HalEventCache(
     @Synchronized
     fun linkDown() {
         hello = false
-        registered.clear(); values.clear(); at.clear(); seen.clear(); seenDevice.clear(); eventAt.clear(); signalAt.clear()
+        registered.clear(); regByDevice.clear(); values.clear(); at.clear(); seen.clear(); seenDevice.clear(); eventAt.clear(); signalAt.clear()
     }
 
     private fun compose(b: HalEventMap.Binding): String? {

@@ -111,6 +111,7 @@ class AppContainer internal constructor(
             subscribe = { line -> halSignal?.subscribe(line) },
             onDatums = { ids -> carStatusRepository.onEvents(ids) },
             log = { msg -> runCatching { android.util.Log.i("KachiHalEvent", msg) } },
+            schedule = { ms, task -> halSignal?.after(ms, task) },   // 3.1.8 HAL-EVENTS-SUB-NARROW: hoãn thu hẹp trên luồng hub
         )
     }
 
@@ -121,7 +122,7 @@ class AppContainer internal constructor(
      * định, và sau khi màn khuất) = đọc hết như mọi bản trước 1.67 — xem KDoc [CarDataDemand].
      */
     val carDemand: com.byd.clusternav.launcher.CarDataDemand.Holder = com.byd.clusternav.launcher.CarDataDemand.Holder { lampWatch.demand(it); carEvents.screen(it, carDemand.controls()) }
-        .also { h -> com.byd.clusternav.launcher.WidgetFallbacks.shared.onChange = h::republish }   // PERF 3.1.5: widget lùi 2D ⇒ tính lại nhu cầu
+        .also { h -> com.byd.clusternav.launcher.WidgetFallbacks.shared.onChange = h::republish }   // PERF 3.1.5: widget khuất / thôi vẽ ⇒ tính lại nhu cầu
 
     /**
      * 3.01 LAMPLIVE (owner 13/10 *"nối luôn đi"*) — helper HAL giữ chạy khi màn chính BÀY đèn (bảng Đèn · xe 3D · ô `light_*`, suy

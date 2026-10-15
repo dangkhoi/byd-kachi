@@ -194,3 +194,42 @@ Nhật ký Kachi (`usage-*.log`), tag `KachiHalEvent`:
 Tệp `/data/local/tmp/kachi_hal.log` của helper (ClusterDiag): `đăng ký … type=… ok=[…] rej=[…] err=…`, `sự kiện đầu … id=0x… v=…`.
 
 Thao tác tự nhiên của chuyến là đủ: mở/đóng cửa, mở cốp, bật điều hoà/quạt, chờ +10′ (ghế). Bảng §4 được chứng minh theo từng dòng `sự kiện ĐẦU`.
+
+## 9. Đo xe 15/10 16:13 (Seal, Kachi 3.1.7 vừa cài) — đăng ký 8/8 device + lỗi thu hẹp tập xin (`HAL-EVENTS-SUB-NARROW`)
+
+Nguồn: `kachi_hal.log` của helper, nhật ký Kachi `usage-*.log` (tiến trình chính pid 22824, `:wake` pid 22966), logcat hệ thống cùng chuyến.
+
+### 9.1 Đã chứng minh [ĐO]
+
+| Mốc | Dòng | Kết luận |
+|---|---|---|
+| 16:13:54.276 | `KachiHalSignal: đã nối 127.0.0.1:19322` | client tiến trình chính nối helper |
+| 16:13:54.298 | `KachiHalEvent: chế độ=SỰ KIỆN · helper giao thức v2` | helper mới chào, app vào chế độ sự kiện |
+| 16:13:54.497–.649 | 8 dòng `đăng ký …` , tất cả `từ-chối=—`, `err=` rỗng | **đăng ký listener chung chạy cho 8/8 device** (uid shell, `registerListener(IBYDAutoListener, int[])`): PM2p5 4 id · Setting 6 · Statistic 2 · Instrument 13 · Tyre 13 · Bodywork 11 · Ac 6 · Light 1 = 56 id |
+| 16:13:54.676 | `sự kiện ĐẦU BYDAutoPM2p5Device 0x4f600010 v=7 → pm25_outside` | sự kiện native tới tiến trình helper (uid shell) cho device ngoài Light — §5 dòng 2 chuyển từ [SUY mạnh] sang [ĐO] cho PM2p5 |
+| 16:13:55.13–.23 | helper `sub nhận: 1 device` rồi 8 dòng `đăng ký`: chỉ Setting còn `ok=950000f,9500022,4fa00008,4fa0000b`, 7 device `ok=—` | tập xin bị thu về 4 id canh ghế (`SEAT_WATCH`) |
+
+- Chỉ MỘT client: helper `phát light.* → 1 client`; mọi dòng `KachiHalEvent`/`KachiHalSignal` là pid 22824; `:wake` 0 dòng `KachiHal` ⇒ **giả thuyết C (client thứ hai từ `:wake`) bị loại**.
+- 4 id còn lại đúng bằng phần `SEAT_WATCH` (2 dấu `0x095` + 2 id ghế); dòng `sub` một client đã HỢP màn ∪ ghế trong `CarEventFeed.replan` ⇒ **giả thuyết B (SEAT_WATCH thay hợp) bị loại** — cái mất là phần MÀN.
+- Phần màn mất vì HOME `onStop`: 16:13:52.897 `KachiAutoNav` luật r3 giao "Nhà" cho Google Maps → 16:13:53.605 `am start --display 0 --windowingMode 1 … MapsActivity` → 16:13:53.907 `Activity pause timeout for … KachiHome` → 16:13:55.031 Maps lên đỉnh → **16:13:55.13 dòng `sub` mới** → 16:13:55.543 `Car3d: dừng`. `onStop` ⇒ `forgetCarDemand` ⇒ `CarEventFeed.screen(null)` ⇒ dòng `sub` chỉ còn ghế. Đây là **giả thuyết A, nửa đầu** — và là ĐÚNG luật thiết kế (màn khuất ⇒ không xin cho màn).
+- Sau 16:13:55 tới hết log (16:17) KHÔNG có lần focus/top nào về `KachiHome` (16:14:09 `ClusterBlackActivity` display 1, 16:14:13 VietMap đỉnh display 0, 16:15:44 AVC), và tiến trình chính không gọi getter Bodywork/Ac nào (vòng poll của HOME dừng theo `repeatOnLifecycle(STARTED)`). ⇒ Nửa sau giả thuyết A ("HOME quay lại mà không xin lại") **chưa có dữ liệu**: HOME không quay lại trong cửa sổ log. Đọc nguồn [SUY]: HOME `onStart` ⇒ `collectHome` phát lại ảnh state ⇒ `publish` ⇒ `screen(ids)` ⇒ dòng `sub` đủ — đường xin lại có.
+- `KachiPerf` (`thay-bằng-sự-kiện=` / `sự-kiện=`): **0 dòng** trong các tệp chuyến này [ĐO grep] — phiên quá ngắn / chưa tới nhịp in.
+
+### 9.2 Lỗi và sửa (3.1.8)
+
+1. **Thu hẹp tức thì** — mỗi lần HOME khuất/dựng lại (cài đặt, AutoNav mở app, màn chớp, ảnh state trung gian) là một vòng huỷ rồi đăng ký lại cả bus, và bộ nhớ sự kiện của datum màn bị xoá (`setPlan` giữ lại đúng kế hoạch) ⇒ HOME về là poll lạnh tới sự kiện/đối soát kế. Sửa `CarEventFeed`: tập gửi = HỢP mọi nguồn; THÊM id ⇒ gửi ngay; BỚT id ⇒ giữ cũ ∪ mới, hẹn `NARROW_HOLD_MS` = 10 s trên luồng hub (`HalSignalHub.after`, không luồng mới); trong hạn nhu cầu quay lại ⇒ huỷ hẹn, 0 dòng `sub`; hết hạn ⇒ thu về đúng nhu cầu (id ghế đang canh không bao giờ bị bỏ). Nguồn helper `CAR_EVENTS` cũng chỉ nhả lúc thu thật.
+2. **`registered` không co** — `hal.reg` mang TOÀN BỘ tập của device, nhưng `HalEventCache.onReg` chỉ cộng/trừ ⇒ id helper đã huỷ (`ok=—`) vẫn được coi là đăng ký tới khi đứt dây [SUY từ nguồn]. Sửa: thay tập theo device (`onReg(ok, rej, device)`).
+3. **Log mỗi lần đổi** — `KachiHalEvent: đăng ký sự kiện: <n> id / <m> device (+a −b) · lý do: <màn rời/chưa công bố | nhu cầu màn … | màn xe tắt/sáng | canh ghế … | thôi canh ghế | hết hoãn thu hẹp>` (+ `· hoãn thu hẹp 10 s` khi đang giữ).
+
+Helper không đổi (đã HỢP đúng theo client: `SUBS.put(os, want)` / `SUBS.remove(os)` / `reconcile` cộng mọi client) ⇒ `kachi_hal.jar` giữ nguyên.
+
+Chi phí: 0 luồng mới, 0 lượt HAL thêm. Thêm: tối đa 10 s sự kiện của datum màn đã rời đi tiếp qua socket loopback. Bớt: mỗi lần HOME khuất < 10 s không còn 2 vòng huỷ/đăng ký (8 device × 2 lời gọi binder) và không còn poll lạnh lúc về.
+
+Bài kiểm: `core/src/test/…/HalEventsSubNarrowTest.kt` (6 bài: hợp màn ∪ ghế · khuất ngắn không huỷ, về không gửi lại · hết hạn thu hẹp, ghế giữ, lý do được log, về sau khi thu xin lại ngay · thêm id gửi ngay khi đang hoãn · không bộ hẹn ⇒ thu ngay · `hal.reg` thay tập theo device). Thử ĐỎ [ĐO 15/10]: bỏ nhánh hoãn ⇒ 3/6 ĐỎ; nhánh hoãn gửi `target` ⇒ 3/6 ĐỎ; bỏ khối `device` của `onReg` ⇒ 1/6 ĐỎ. `app/src/test/…/HalEventsContractTest.kt`: helper hợp mọi client + app nối bộ hẹn vào luồng hub.
+
+### 9.3 Soi trên xe lần sau (grep `KachiHalEvent` trong `usage-*.log`)
+
+- `đăng ký sự kiện: … lý do: màn rời/chưa công bố · hoãn thu hẹp 10 s` ngay sau lúc mở app khác từ HOME; quay lại HOME trong 10 s ⇒ KHÔNG có dòng `đăng ký sự kiện` mới và helper KHÔNG có `sub nhận` mới.
+- Ở ngoài HOME > 10 s ⇒ `… lý do: hết hoãn thu hẹp` (−N id); về HOME ⇒ `… lý do: nhu cầu màn … (+N …)` ngay lượt state đầu, kèm 8 dòng `đăng ký … ok=` đủ lại.
+- `sự kiện ĐẦU` cho Bodywork/Ac/Tyre (chưa thấy chuyến này vì HOME khuất 0,5 s sau đăng ký) — mở/đóng cửa khi HOME đang hiện.
+- `KachiPerf … thay-bằng-sự-kiện=… · sự-kiện=…` sau ≥ 1 phút ở HOME.

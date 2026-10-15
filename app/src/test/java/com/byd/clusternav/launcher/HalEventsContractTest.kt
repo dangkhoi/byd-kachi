@@ -57,6 +57,23 @@ class HalEventsContractTest {
         assertTrue(client.contains("HalEventWire.parse(line)") && client.contains("send(subscription)"))
     }
 
+    /**
+     * 3.1.8 · HAL-EVENTS-SUB-NARROW — (1) helper HỢP tập xin của MỌI client (mỗi client một mục theo luồng ra, dòng `sub` mới THAY mục
+     * của chính client đó, client đứt ⇒ rút mục) — nên trong MỘT tiến trình mọi nguồn phải đi chung một dòng (`CarEventFeed`);
+     * (2) app nối bộ hẹn thu hẹp vào luồng hub (không dựng luồng mới).
+     */
+    @Test
+    fun `helper hop tap xin moi client, app hoan thu hep tren luong hub`() {
+        assertTrue(helper.contains("SUBS.put(os, want);"), "mỗi client một mục — dòng mới thay mục của chính client đó")
+        assertTrue(helper.contains("SUBS.remove(os);"), "client đứt ⇒ rút phần của nó")
+        assertTrue(Regex("""for \(Map<String, Set<Integer>> m : SUBS\.values\(\)\)[\s\S]{0,300}u\.addAll\(e\.getValue\(\)\);""").containsMatchIn(helper),
+            "reconcile = HỢP mọi client")
+        val app = SourceRoots.codeOf("src/main/java/com/byd/clusternav/AppContainer.kt")
+        assertTrue(app.contains("schedule = { ms, task -> halSignal?.after(ms, task) }"), "CarEventFeed có bộ hẹn ⇒ thu hẹp có hoãn")
+        val hub = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/camera/HalSignalHub.kt")
+        assertTrue(SourceRoots.body(hub, "fun after(").contains("exec.schedule("), "hẹn trên executor của hub")
+    }
+
     @Test
     fun `canh ghe xin su kien va hoi dau van tay theo luong su kien`() {
         val w = SourceRoots.codeOf("src/main/java/com/byd/clusternav/comfort/SeatAutoOffWatch.kt")

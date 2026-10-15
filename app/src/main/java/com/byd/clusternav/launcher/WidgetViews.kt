@@ -54,7 +54,7 @@ object WidgetViews {
         "w_board" -> board(ctx, data)
         "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
         "w_apps" -> ShortcutIconsView(ctx, grid = true, scrollKey = scrollKey)   // F1 R1.3 — tự nghe danh sách lối tắt (ShortcutHub)
-        "w_car3d" -> car3d(ctx, data)   // 3.01 R25 — xe 3D (lùi bảng Kính 2D khi không có mô hình / máy yếu)
+        "w_car3d" -> car3d(ctx, data)   // 3.01 R25 — xe 3D (không vẽ được ⇒ khung trống, không bảng 2D — 3.1.8)
         // G1·T3: NHÓM khả năng → ba bộ vẽ dùng chung. Đặt TRƯỚC nhánh hành động (thứ tự y như
         // [CapabilityCatalog.kindOf]); bảng 4 bánh truyền vào bằng lambda để KHÔNG có bản dựng thứ hai.
         else -> if (CapabilityGroups.byId(id) != null) GroupTiles.build(ctx, id, data) { c, d -> tyreBoard(c, d) }
@@ -66,8 +66,7 @@ object WidgetViews {
 
     /** 3.01 R25 — widget xe 3D; đổ tại chỗ qua [WidgetRefreshers.live] (không dựng lại — Filament sống theo view). */
     private fun car3d(ctx: Context, data: WidgetData): View =
-        Car3dWidgetView(ctx, data) { d -> GroupTiles.build(ctx, Car3dCatalog.GROUPS.first(), d) { c, dd -> tyreBoard(c, dd) } }
-            .let { v -> WidgetRefreshers.live(v) { d -> v.fill(d) } }
+        Car3dWidgetView(ctx, data).let { v -> WidgetRefreshers.live(v) { d -> v.fill(d) } }   // 3.1.8: không bản lùi 2D (owner 15/10)
 
     /**
      * Nội dung ô widget: **1** widget → to, lấp ô; **2..8** → lưới ô đều nhau. L5 WIDGET-FIT-ALL (2.87): số cột/hàng,

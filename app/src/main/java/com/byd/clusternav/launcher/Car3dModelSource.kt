@@ -21,7 +21,7 @@ import java.nio.channels.FileChannel
  *    Thư mục theo `car.type` ([BydAvmModels], bảng chép từ mã AVM).
  * 2. **Bản `vehicleTest`** — thêm một chỗ: `assets/oem-3d/<group>/CarModel/<folder>/…` của CHÍNH app (chỉ có trong
  *    `src/vehicleTest`, `.gitignore`; `OemCarArtSourceSetContractTest` canh) để thử trên máy ảo không có gói BYD.
- * Không có cả hai / tệp hỏng ⇒ `null` ⇒ widget lùi bảng 2D (không sập, không mô hình giả).
+ * Không có cả hai ⇒ `null` ⇒ widget giữ khung 3D trống "không khả dụng" (không sập, không mô hình giả, không bảng 2D — 3.1.8).
  *
  * Lưới → `.glb` trong bộ nhớ ([Car3dGlb]) một lần, ghi đệm `cacheDir` (khoá = nguồn + phiên bản gói + đường dẫn); lần sau
  * ánh xạ tệp đệm thẳng thành đệm trực tiếp (không qua heap Java). Chạy trên luồng NỀN.
@@ -40,7 +40,7 @@ object Car3dModelSource {
 
     private val lock = Any()
 
-    /** Bỏ tệp đệm (gltfio từ chối tệp đệm ⇒ lần gắn sau dựng lại thay vì lùi 2D vĩnh viễn với một tệp hỏng). */
+    /** Bỏ tệp đệm (gltfio từ chối tệp đệm ⇒ lượt thử lại dựng lại từ lưới thay vì kẹt với một tệp hỏng). */
     fun invalidate(ctx: Context) = synchronized(lock) { purge(ctx) }
 
     /** Xoá mọi tệp của widget trong `cacheDir` ([Car3dCache.owned]) — gọi trong [lock]. */
@@ -48,13 +48,20 @@ object Car3dModelSource {
         ctx.cacheDir.listFiles { f -> Car3dCache.owned(f.name) }?.forEach { Log.i(TAG, "xoá ${it.name} (${it.length()} B)"); it.delete() }
     }
 
+    /**
+     * `null` = đời xe này KHÔNG có mô hình dùng được (không gói AVM / bản đóng gói, trượt [Car3dSanity]) — sự thật của dữ liệu,
+     * widget coi là không khả thi. NÉM = lỗi lúc chạy (đĩa thiếu chỗ, đọc hỏng giữa chừng…) — 3.1.8 `CAR3D-FALLBACK-STICKY`: widget
+     * thử lại có lùi dần ([Car3dHold]); trước đây nuốt thành `null` ⇒ bảng 2D vĩnh viễn.
+     */
     private fun loadLocked(ctx: Context): Loaded? {
+        var failure: Throwable? = null
         for (m in Car3dCatalog.ORDER) {
             val r = runCatching { when (m.source) { Car3dSource.BydAvm -> fromAvm(ctx, m) } }
-                .onFailure { Log.w(TAG, "nguồn ${m.id} hỏng — lùi 2D", it) }.getOrNull()
+                .onFailure { Log.w(TAG, "nguồn ${m.id} hỏng", it); failure = it }.getOrNull()
             if (r != null) { Log.i(TAG, "model=${m.id} origin=${r.origin} bytes=${r.glb.capacity()}"); return r }
         }
-        Log.w(TAG, "không nguồn mô hình nào nạp được ⇒ bảng 2D")
+        failure?.let { throw it }
+        Log.w(TAG, "không nguồn mô hình nào cho xe này")
         return null
     }
 
@@ -80,7 +87,7 @@ object Car3dModelSource {
         val dupes = Car3dDupes.aggregates(merged)
         val mesh0 = Car3dDupes.without(merged, dupes)
         Log.i(TAG, "bỏ bộ phận gộp: $dupes")
-        // Kiểm hợp lý (hộp thân · 4 bánh trong hốc · neo kính) TRƯỚC khi ghi tệp đệm: trượt ⇒ bảng 2D + log phép kiểm hỏng.
+        // Kiểm hợp lý (hộp thân · 4 bánh trong hốc · neo kính) TRƯỚC khi ghi tệp đệm: trượt ⇒ không khả thi (khung 3D trống) + log phép kiểm hỏng.
         // Tệp đệm chỉ được ghi khi qua ⇒ lần sau nạp từ đệm không cần kiểm lại (khoá đệm gồm CACHE_VERSION).
         val verdict = Car3dSanity.check(mesh0, m)
         Log.i(TAG, "sanity ${m.id} ${src.entry.group}: ${if (verdict.ok) "OK" else "FAIL ${verdict.failures}"} · ${verdict.notes}")
@@ -111,7 +118,7 @@ object Car3dModelSource {
         val texels = m.materials.values.filter { it.emissive != null }.mapNotNull { it.texture }.distinct()
             .mapNotNull { name -> tex[name]?.let { b -> texels(b)?.let { name to it } } }.toMap()
         val glb = Car3dGlb.write(cabin.mesh, styles, tex, m.partStyles + lamps, m.uvOriginBottom, hinges, cabin.lid, texels) { n ->
-            // Tệp THƯA: hết chỗ lúc ghi trang ánh xạ = SIGBUS (HOME sập). Thiếu chỗ ⇒ ném ⇒ [load] trả `null` ⇒ bảng 2D.
+            // Tệp THƯA: hết chỗ lúc ghi trang ánh xạ = SIGBUS (HOME sập). Thiếu chỗ ⇒ ném ⇒ [load] ném ⇒ widget thử lại có lùi dần.
             val usable = ctx.cacheDir.usableSpace
             if (!Car3dCache.roomFor(n.toLong(), usable)) throw IOException("cacheDir thiếu chỗ: cần $n B, còn $usable B")
             RandomAccessFile(tmp, "rw").use { f -> f.setLength(n.toLong()); f.channel.map(FileChannel.MapMode.READ_WRITE, 0, n.toLong()) }

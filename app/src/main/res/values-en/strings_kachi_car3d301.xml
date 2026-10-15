@@ -3,6 +3,8 @@
      chỉ có chữ cho trợ năng). Tên màu theo tên dòng `car_body_color.csv` của AVM; dòng lạ ⇒ kcar3d_paint_other. Cùng khoá ở cả 5 thư mục. -->
 <resources>
     <string name="kcar3d_title">3D car</string>
+    <!-- 3.1.8 CAR3D-FALLBACK-STICKY: đời xe/máy không vẽ được 3D (không bảng 2D thay thế) — một dòng trung tính trong khung trống -->
+    <string name="kcar3d_unavailable">3D is not available on this car</string>
     <string name="kcar3d_paint_row">3D car colour</string>
     <string name="kcar3d_paint_white">White</string>
     <string name="kcar3d_paint_black">Black</string>
