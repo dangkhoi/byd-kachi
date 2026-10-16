@@ -31,6 +31,10 @@ class WakeAsrGoldenTest {
         "tháng a ấy", "tới hai mươi bốn giờ có ngày", "tối thì bao tiêu", "từ hồi năm hai mươi sáu",
         // Mẻ 2 negative — câu thường / "ca sĩ" KHÔNG được khớp (cay/ca sĩ hay lẫn trong nói chuyện).
         "ca sĩ cá", "lại một cách khác lại", "tỉnh lại ca",
+        // [ĐO xe 16/10] giọng DẪN ĐƯỜNG (TTS app bản đồ, không phải người nói) qua bộ nghe nền — "chỉ có camera" từng NỔ
+        // ("chi" + "co"). Hai cổng cùng chặn ca này (mỗi cổng có bài đỏ riêng): "co" ra khỏi `HEAD` (`WakeAsrHarnessTextsTest`)
+        // và luật (d) đòi lõi toàn âm-wake (`WakeAsrMatcherTest` — "chỉ ca sĩ"). Gỡ cả hai ⇒ bài này đỏ.
+        "phía trước có camera", "có camera theo dõi", "có camera", "chỉ có camera", "có camera phản đối",
     )
 
     @Test fun `positive khop cao`() {

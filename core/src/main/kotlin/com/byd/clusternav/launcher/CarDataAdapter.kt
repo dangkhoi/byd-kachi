@@ -51,13 +51,30 @@ class CarDataAdapter(
     @Volatile private var eventGate: CarReadGate? = null
     @Volatile private var eventIds: Set<String>? = null
 
-    /** 3.1.6 HAL-EVENTS — đọc lại CHỈ [ids] ∩ nhu cầu qua ba thân nhịp (giá trị từ `HalEventCache` ⇒ 0 HAL) + nút mượn chúng. */
+    /**
+     * 3.1.6 HAL-EVENTS — đọc lại CHỈ [ids] ∩ nhu cầu (giá trị từ `HalEventCache` ⇒ 0 HAL) + nút mượn chúng.
+     *
+     * 3.1.10 · EVENT-PATH-SCOPED — chỉ chạy NHỊP SỞ HỮU một id của lô (nhanh: [CarDataDemand.FAST_IDS] hoặc khoá đọc của một nút đang
+     * hiện · thân xe: [CarDataDemand.BODY_IDS] · chậm: phần còn lại). Nhịp không sở hữu id nào của lô trả NGUYÊN `prev` dưới cổng sự
+     * kiện (mọi field "không trong lô" ⇒ giữ), nên bỏ nó là cùng kết quả, ít đối tượng hơn. [ĐO xe 16/10] bụi mịn `0x4f600010` ~1 Hz
+     * chạy cả ba nhịp + dựng 3 `CarStatus` mỗi sự kiện. Kết quả BẰNG `prev` ⇒ trả CHÍNH `prev` (không đối tượng mới, repo không phát).
+     */
     override fun readEvents(prev: CarStatus, ids: Set<String>): CarStatus {
         // Nút cốp mượn `tailgate_status` dù màn không bày datum ấy ⇒ readKey của nút mirror cũng thuộc lượt này (mirrorBody chép vào nút).
         val want = demand()?.let { d -> val k = d + mirrored().map { it.readKey }; ids.filterTo(HashSet()) { it in k } } ?: ids
+        val fast = want.any { it in CarDataDemand.FAST_IDS } || controlDemand().any { readPathOf(it)?.id in ids }
+        val body = want.any { it in CarDataDemand.BODY_IDS }
+        val slow = want.any { it !in CarDataDemand.FAST_IDS && it !in CarDataDemand.BODY_IDS }
+        if (!fast && !body && !slow) return prev
         eventGate = CarReadGate(table, want, absent, clock(), count = false)
         eventIds = ids
-        return try { readBody(readSlow(readFast(prev))) } finally { eventGate = null; eventIds = null }
+        return try {
+            var s = prev
+            if (fast) s = readFast(s)
+            if (slow) s = readSlow(s)
+            if (body) s = readBody(s)
+            CarStatusDelta.share(prev, s)   // cụm không đổi ⇒ CHÍNH đối tượng cũ; bằng nhau toàn phần ⇒ `prev`
+        } finally { eventGate = null; eventIds = null }
     }
 
     /**
@@ -168,7 +185,7 @@ class CarDataAdapter(
         // 3.1.9 — chỉ lượt ĐỌC THẬT (màn/ghim cần tốc độ) mới góp; `null` (đọc hỏng / đang nguội) không ghi đè. Nhịp này KHÔNG đọc từ mẫu chung.
         if (g.wants("speed")) speedShare?.offer(speed?.toDouble())
         return prev.copy(
-            drivetrain = CarStatus.Drivetrain(
+            drivetrain = d.copy(
                 speedKmh = speed,
                 gear = g.str("gear", d.gear),
             ),
@@ -226,6 +243,8 @@ class CarDataAdapter(
     }
 
     // ── NHỊP CHẬM (~10s): pin/tầm/sạc · khí hậu · lốp · thân xe · đèn · danh tính ────────────────────────
+    // 3.1.10 · CARSTATUS-PASS-COPY — MỌI cụm đi `copy` từ ảnh cũ (cả ba nhịp): nhịp chỉ ghi field CỦA NÓ, field khác (kể cả field thêm
+    // sau cho nhịp khác) giữ theo cấu trúc — cùng hình đã làm rơi `tailgateOpen` (§ ở `body` dưới). Khoá: `CarStatusPassCopyTest`.
     override fun readSlow(prev: CarStatus): CarStatus {
         val g = gate()
         if (eventGate == null) reportPolls()
@@ -247,7 +266,7 @@ class CarDataAdapter(
                 // gỡ 2026-09-25 cùng bốn datum năng lượng chết khác — nhật ký ở `TelemetryRegistry`.)
                 volt12v = g.dbl("volt_12v", e.volt12v),
             ),
-            climate = CarStatus.Climate(
+            climate = c.copy(
                 pm25Level = g.int("pm25_level", c.pm25Level),
                 pm25ValueUgm3 = g.int("pm25_value", c.pm25ValueUgm3),
                 // 1.85 — ô [1] của CÙNG getter (`HalReadTables.ARRAY_INDEX`). Hai lượt `g.int` = hai lời gọi HAL
@@ -281,20 +300,23 @@ class CarDataAdapter(
                 acWindAutoRaw = g.int("ac_wind_auto", c.acWindAutoRaw),   // 1.85 — chỉ báo gió auto (0 = AUTO)
             ),
             tyres = readTyres(g, t),
-            body = CarStatus.Body(
+            // 3.1.9 · TRUNK-3D-HOLD-CONTRADICT — `copy`, KHÔNG dựng `Body(...)` mới: cửa + cốp thuộc nhịp THÂN XE ([readBody]); nhịp này chỉ
+            // ghi field CỦA NÓ, mọi field khác giữ nguyên theo cấu trúc. Bản dựng-mới chép tay bốn cửa mà quên `tailgateOpen` (thêm 3.1.6 R32)
+            // ⇒ MỌI lượt chậm và MỌI lượt sự kiện không phải cốp (`readEvents` chạy qua đây — vd bụi mịn ~1 Hz) xoá cốp về `null`; nhịp thân
+            // xe nghỉ vì cốp có sự kiện ⇒ nắp 3D đóng sập ~1 s sau khi mở trong khi ô cốp (`controls`, giữ số cũ) vẫn MỞ. [ĐO xe 16/10 10:41:12–13]
+            // `docs/diagnostics/trunk-state-read-2026-10-15.md` §8.
+            body = b.copy(
                 windowLfPct = g.int("window_lf", b.windowLfPct),
                 windowRfPct = g.int("window_rf", b.windowRfPct),
                 windowLrPct = g.int("window_lr", b.windowLrPct),
                 windowRrPct = g.int("window_rr", b.windowRrPct),
-                // 3.1.6 — cửa đọc ở nhịp THÂN XE ([readBody], ~3 s), không ở đây: GIỮ giá trị của nhịp ấy.
-                doorLfOpen = b.doorLfOpen, doorRfOpen = b.doorRfOpen, doorLrOpen = b.doorLrOpen, doorRrOpen = b.doorRrOpen,
                 sunshadePct = g.int("sunshade_pct", b.sunshadePct),
                 powerLevel = g.int("power_level", b.powerLevel),
                 vehicleType = g.str("vehicle_type", b.vehicleType),
                 sunroofOpen = g.bool("sunroof_state", b.sunroofOpen),
                 emergencyAlarm = g.bool("emergency_alarm", b.emergencyAlarm),
             ),
-            lights = CarStatus.Lights(
+            lights = l.copy(
                 lowBeam = g.bool("light_low_beam", l.lowBeam),
                 highBeam = g.bool("light_high_beam", l.highBeam),
                 frontFog = g.bool("light_front_fog", l.frontFog),
@@ -305,13 +327,13 @@ class CarDataAdapter(
                 rightTurn = g.bool("light_right_turn", l.rightTurn),
                 sideLight = g.bool("light_side", l.sideLight),
             ),
-            identity = CarStatus.Identity(
+            identity = i.copy(
                 vin = g.str("vin", i.vin),
                 oilLevelPct = g.int("oil_level", i.oilLevelPct),
             ),
             // A9 — âm lượng Android (`AudioManager`), nhịp CHẬM: nó chỉ đổi khi người ta bấm, và đọc nó không tốn
             // một lời gọi HAL nào nên không cần nhịp nhanh.
-            infotainment = CarStatus.Infotainment(
+            infotainment = prev.infotainment.copy(
                 mediaVolume = g.int("media_vol", prev.infotainment.mediaVolume),
             ),
         )
@@ -340,7 +362,7 @@ class CarDataAdapter(
         fun state(id: String, prev: Int?) = if (due || prev == null) g.int(id, prev) else prev
         fun ifNeed(c: Int?, id: String, prev: Int?) = if (c != TyreJudge.COLOUR_WHITE) state(id, prev) else null
         val clusterJudgedAll = listOf(cFl, cFr, cRl, cRr).all { it in CLUSTER_COLOURS }
-        return CarStatus.Tyres(
+        return t.copy(
             pFlKpa = g.dbl("tyre_p_fl", t.pFlKpa),
             pFrKpa = g.dbl("tyre_p_fr", t.pFrKpa),
             pRlKpa = g.dbl("tyre_p_rl", t.pRlKpa),

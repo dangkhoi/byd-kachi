@@ -212,7 +212,10 @@ internal class VoiceCapture(private val ctx: Context) {
         // Bộ ngắt câu của lượt này: Silero VAD nếu dựng được, lùi về bộ RMS (xem [VoiceTurnEndpoint]). Dựng SAU
         // khi micro đã mở: nó tốn vài chục–vài trăm ms nạp ONNX, và trả cái giá ấy trước khi biết có mở được
         // micro hay không là trả cho một lượt có thể không bao giờ chạy.
-        val ep = VoiceTurnEndpoint.open(ctx, endpointer)
+        // VOICE-CAPTURE-EP-OUTSIDE-TRY — `open` đứng TRƯỚC `try/finally` dưới ⇒ nó ném thì micro (có thể là micro ĐANG GHI
+        // nhận từ bộ nghe) rò tới khi tiến trình chết. Ném ⇒ đóng micro rồi ném tiếp (không nuốt lỗi).
+        val ep = runCatching { VoiceTurnEndpoint.open(ctx, endpointer) }
+            .getOrElse { closeRecord(record, tailBeep = false); throw it }
         var ducked = false   // 3.0 R4 hạ nhạc khi nghe — chỉ trả ở `finally` nếu lượt này đã thuê (KDoc [VoiceMusicDuck])
         try {
             if (handed == null) runCatching { record.startRecording() }.onFailure {

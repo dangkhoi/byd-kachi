@@ -1,0 +1,118 @@
+# Harness wake 16/10 (scripts/voice/wake-harness, máy ảo API 29, TTS macOS Linh tổng hợp, cabin yên): tệp <TAB> mọi chữ ASR cửa sổ (|). Bản 3.1.9 nổ: xem cột 2.
+clean_pos_0_140	1	hai ca|hay kach
+clean_pos_0_180	1	hai|hay kach
+clean_pos_0_220	1	hai ca|hay kach
+clean_pos_1_140	1	hai ca|hai ca chi
+clean_pos_1_180	1	hai ca|hai ca chi
+clean_pos_1_220	1	hai ca|hay ca chi
+clean_pos_10_140	1	hai ca|hai ca chi
+clean_pos_10_180	1	hai ca|hai ca chi
+clean_pos_10_220	1	hai ca|hay ca chi
+clean_pos_11_140	1	hai ca|hay cả chi
+clean_pos_11_180	1	hai|hay cà chi
+clean_pos_11_220	1	hay cả
+clean_pos_12_140	0	hê|hê chi|ê chi
+clean_pos_12_180	0	hê|hê chi
+clean_pos_12_220	0	ca|hê chi
+clean_pos_13_140	1	này khác|này ka chi
+clean_pos_13_180	1	này khác|này ka chi
+clean_pos_13_220	1	này kha
+clean_pos_14_140	1	chi|cả chi ơi
+clean_pos_14_180	0	là chi|chi ơi
+clean_pos_14_220	0	là chi ơ|chi ơi
+clean_pos_15_140	1	hai ca|hay cay o
+clean_pos_15_180	1	hai ca|hay ca tri ơ
+clean_pos_15_220	1	hai ca|hai ca chi ơi
+clean_pos_16_140	1	ka
+clean_pos_16_180	1	kach
+clean_pos_16_220	1	kach
+clean_pos_17_140	1	hai ca|hay kach
+clean_pos_17_180	1	hai|hay kach
+clean_pos_17_220	1	hai ca|hay kach
+clean_pos_18_140	1	hai ca|hay kach
+clean_pos_18_180	1	hai|hay kach
+clean_pos_18_220	1	hai ca|hay kach
+clean_pos_2_140	1	hê|hê tri|ê ka chi
+clean_pos_2_180	0	hê|hê chi
+clean_pos_2_220	0	ca|hê chi
+clean_pos_3_140	1	hơi ca|hây cá
+clean_pos_3_180	1	hơi ca|hây ca
+clean_pos_3_220	1	hơi ca|hây ca
+clean_pos_4_140	0	chi|chi
+clean_pos_4_180	1	kach
+clean_pos_4_220	1	kach
+clean_pos_5_140	1	kach
+clean_pos_5_180	1	kach
+clean_pos_5_220	1	kach
+clean_pos_6_140	1	kach
+clean_pos_6_180	1	kach
+clean_pos_6_220	1	kach
+clean_pos_7_140	1	ok|học kach
+clean_pos_7_180	1	ok|ka
+clean_pos_7_220	1	ca|kach
+clean_pos_8_140	1	ok|ok ca
+clean_pos_8_180	1	ok|ok ca
+clean_pos_8_220	1	ok|ok ca chi
+clean_pos_9_140	1	cực kỳ|ơ kể cả|ka chi
+clean_pos_9_180	1	cực kỳ|ơ kể cả chi
+clean_pos_9_220	1	rất là kỳ|kể kachi
+clean_neg_0_140	0	xin trân|xin chào
+clean_neg_0_180	0	xin chào|xin chào
+clean_neg_0_220	0	xin chào|xin chào
+clean_neg_1_140	0	hôm|hôm nay trời|nay trời đẹp
+clean_neg_1_180	0	hôm nay|hôm nay trời đã|nay trời đẹp
+clean_neg_1_220	0	hôm nay|hôm nay trời đẹp|hôm nay trời đẹp
+clean_neg_10_140	0	kê khai|kê khai thuế|kê khai thuế
+clean_neg_10_180	0	kê khai|kê khai thuế
+clean_neg_10_220	0	kê khai|kê khai thuế
+clean_neg_11_140	0	con cá|con cá chìu|cá chìu
+clean_neg_11_180	0	con cá|con cá chìm|con cá chìm
+clean_neg_11_220	0	con cá|con cá chìm
+clean_neg_12_140	0	khác anh|các anh
+clean_neg_12_180	0	các anh|các anh
+clean_neg_12_220	0	các anh|các anh
+clean_neg_13_140	0	cà phê|cà phê sữa|cà phê sữa
+clean_neg_13_180	0	cà phê|cà phê sữa
+clean_neg_13_220	0	cà phê|cà phê xuống
+clean_neg_14_140	0	kỳ nghỉ|kỳ nghỉ
+clean_neg_14_180	0	kỳ nghỉ|kỳ nghỉ
+clean_neg_14_220	0	kỳ nghỉ|kỳ nghỉ
+clean_neg_2_140	0	mở nhạc|mở nhạc đi|mở nhạc đi
+clean_neg_2_180	0	mở nhạc|mở nhạc đi
+clean_neg_2_220	0	mở nhạc|mở nhạc đi
+clean_neg_3_140	0	bật điều|bật điều hòa|bật điều hòa
+clean_neg_3_180	0	bật điều|bật điều hòa|bật điều hòa
+clean_neg_3_220	0	bật điều hai|bật điều hòa
+clean_neg_4_140	0	cảm ơn|cảm ơn nhé|cảm ơn nhé
+clean_neg_4_180	0	cảm ơn|cảm ơn nhé|cảm ơn nhé
+clean_neg_4_220	0	cảm ơn|cảm ơn nhé
+clean_neg_5_140	0	dẫn đường|dẫn đường về|về nhà
+clean_neg_5_180	0	dẫn đường|dẫn đường về nhà|về nhà
+clean_neg_5_220	0	dẫn đường|dẫn đường về nhà|dẫn đường về nhà
+clean_neg_6_140	0	một cách|một cách khác|một cách khác
+clean_neg_6_180	0	một cách|một cách khác
+clean_neg_6_220	0	một cách|một cách khác
+clean_neg_7_140	0	ca sĩ|ca sĩ hát|h hai
+clean_neg_7_180	0	ca sĩ|ca sĩ hát|h hai
+clean_neg_7_220	0	ca sĩ hà|ca sĩ hát hai|ca sĩ hát hai
+clean_neg_8_140	0	cái dế|cái dế này|ghế này
+clean_neg_8_180	0	cái gì|cái dế này|cái dế này
+clean_neg_8_220	0	cái dến|cái ghế này
+clean_neg_9_140	0	khác|khác sản
+clean_neg_9_180	0	khác xa|khác sản
+clean_neg_9_220	0	khác xả|khác sạc
+clean_neg_16_140	0	phía trước|phía trước có|phía trước có ka mê|nước có camera|đam mê ra
+clean_neg_16_180	0	phía trước|phía trước có cao|phía trước có camera|mê ra
+clean_neg_16_220	0	phía trước|phía trước có camera|phía trước có camera|camera
+clean_neg_17_140	1	chỉ có
+clean_neg_17_180	1	chỉ có
+clean_neg_17_220	1	chỉ có
+clean_neg_18_140	0	có ca|có camera|có camera theo dõi|và theo dõi
+clean_neg_18_180	0	có ca|có camera|có camera theo dõi|và theo dõi
+clean_neg_18_220	0	có cam|có camera theo|ra theo dõi
+clean_neg_19_140	0	phía trước|phía trước có|phía trước có camera|trước có camera giám|camera giám sát|ra giám sát tốc độ|sát tốc độ
+clean_neg_19_180	0	phía trước|phía trước có cao|phía trước có camera|có camera giám sát|camera giám sát tốc độ|sát tốc độ
+clean_neg_19_220	0	phía trước|phía trước có camera|phía trước có camera giám|có camera giám sát tốc|giám sát tốc độ
+clean_neg_20_140	1	có chị
+clean_neg_20_180	1	có chỉ
+clean_neg_20_220	1	có chị có

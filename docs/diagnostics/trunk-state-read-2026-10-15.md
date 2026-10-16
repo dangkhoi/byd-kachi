@@ -3,7 +3,7 @@
 > **Trạng thái**: Current · 2026-10-15 · backlog `TRUNK-STATE-READ` (nối `KEYCTL-TRUNK-READ`, OQ14 của `specs/kachi-286-field-fixes.html`).
 > **Yêu cầu owner 15/10**: *"xem có đọc được cốp không nhé, lần trước test thì fail, vì sẽ có trường hợp đóng cốp bằng
 > nút vật lý thật của xe, thì lúc đó mình không đóng được trạng thái cốp thật, gây conflict"*.
-> **Phạm vi phiên này**: nghiên cứu + kế hoạch đo trên xe (CLAUDE.md §14 tầng 1). **Cập nhật cùng ngày: đã nối dây ở 3.1.6 (R32) theo quyết định owner — xem §5.**
+> **Phạm vi phiên này**: nghiên cứu + kế hoạch đo trên xe (CLAUDE.md §14 tầng 1). **Cập nhật cùng ngày: đã nối dây ở 3.1.6 (R32) theo quyết định owner — xem §5.** **16/10: nắp 3D đóng sập sau khi mở — gốc + sửa ở §8.**
 
 ## 0. Kết luận ngắn
 
@@ -214,3 +214,87 @@ null ⇒ trí nhớ · xe chạy + trí nhớ ⇒ đóng) · `KeyCtlPlanTest.dao
 - Lọc 255 cho lượt đọc của nút `trunk` (mượn datum `door_rr`): cần bài kiểm off-car (§4.1).
 - ~~Có hiện lại dòng "Cốp" ở bảng Cửa / widget `w_car` không~~ — owner 15/10: có (§5).
 - Đường listener: ngoài phạm vi, chỉ làm nếu poll không đủ nhanh.
+
+## 8. Nắp 3D đóng sập sau khi mở trong khi cốp thật đang MỞ (`TRUNK-3D-HOLD-CONTRADICT`, sửa trên 3.1.9)
+
+Owner 16/10 ~10:40 (xe Seal, bản 3.1.9 (214)): *"vừa mở đống cửa, thấy xe 3D hiện nhanh, cốp mở nháy mở xong lại đóng mất, trong
+khi thực tế thì đã mở"*. Dữ liệu: logcat xe chụp 10:41:24 (bộ đệm `main` bắt đầu từ 10:40:46.6), tiến trình chính Kachi + tiến trình
+helper HAL của Kachi (cùng tập feature-id đăng ký với `KachiHalEvent … đăng ký BYDAutoBodyworkDevice` lúc 10:21:04 và 10:37:05).
+
+### 8.1 Dòng thời gian [ĐO logcat xe 16/10]
+
+Nắp 3D đọc từ dòng `Car3d … dots …` (ghi khi một đợt vẽ dừng): chấm `trunk` đi theo nắp đang vẽ. [ĐO máy ảo emulator-5556, 3.1.9,
+mô hình byd-avm-eke, yaw ≈ 170°] nắp đóng ⇒ chấm `y ≈ 499`, nắp mở ⇒ `y ≈ 436`, ảnh chụp hai trạng thái khác nhau rõ; một lần vẽ lại
+vì cửa mở KHÔNG dời chấm cốp ⇒ chấm là thước đo trung thực của nắp. Trên xe (yaw 172): đóng `trunk@641,477`, mở `trunk@644,429`.
+
+| Giờ | Nguồn | Sự kiện |
+|---|---|---|
+| ~10:40:45.0 | `ctl #6` (mất khỏi bộ đệm; `ctl-after #6 after=1` lúc 48.04) | lệnh cốp thứ nhất trong khoảng trống 10:37–10:40:46 |
+| 10:40:46.94 | `Car3d dots` | nắp ĐÓNG — trong khi số đọc cốp là 1 (`ctl-after #6 after=1`, `ctl #7 before=1`) |
+| 10:40:52.715 | `ctl #7 args=[3] before=1` | phím Đảo ⇒ ĐÓNG; giá đỡ cốp chạy 53.35 (`40100012=2`), chốt khoá 58.60 (`2940001a=0`) |
+| 10:41:11.73–11.77 | luồng phím | lượt đọc tươi cho cổng tốc độ (`getCurrentSpeed`, cửa 2/3/4 thật; cốp lấy từ bộ nhớ sự kiện = 0) |
+| 10:41:11.772 | `ctl #8 args=[1] before=0` | phím Đảo ⇒ MỞ; `ControlWriteEcho` giữ đích MỞ 10 s |
+| ~11.78 → 12.79 | `Car3d đợt vẽ 9 khung` | nắp xoay MỞ (900 ms), dừng ở `trunk@644,429` |
+| 10:41:12.049 | helper `postEvent 2940001a = 1` | bus báo cốp MỞ (SystemUI `TrunkItem` + `ReminderService area=6 state=1` cùng ms) |
+| 10:41:12.650 | helper `postEvent 4f600010` | bụi mịn trong xe — sự kiện KHÁC cốp (~1 lần/s suốt buổi) |
+| ~12.85 → 13.81 | `Car3d đợt vẽ 10 khung` | nắp xoay về ĐÓNG (`trunk@641,477`) — cốp thật đang nâng (`40100012=1` từ 12.33) |
+| 10:41:14.776 | `ctl-after #8 after=1` | Kachi đọc cốp MỞ (đường đọc của NÚT, không phải của 3D) |
+| 10:41:16.818 | `ctl #9 args=[3] before=1` | owner bấm lần nữa (thấy 3D đóng) ⇒ Đảo theo số xe = ĐÓNG; chốt 22.68 (`2940001a=0`) |
+
+Mỗi sự kiện bụi mịn của helper đi tiếp tới Kachi (`HalEventCache.onEvent` → `CarStatusRepository.onEvents` → +150 ms một lượt
+`readEvents`) ⇒ lượt đổ số ~12.80 là lượt đặt nắp về ĐÓNG. Ca 10:40:46.94 cùng hình: nắp đóng trong khi số cốp là 1.
+
+### 8.2 Gốc [ĐO phát lại adapter + bộ nhớ sự kiện THẬT · ĐO mã]
+
+`CarDataAdapter.readSlow` dựng `CarStatus.Body(...)` MỚI và chép tay bốn cửa từ ảnh cũ, nhưng không chép `tailgateOpen` (field thêm ở
+3.1.6 · R32, chủ là `readBody`). Hệ quả:
+
+- MỌI lượt chậm (10 s) và MỌI lượt `readEvents` của datum KHÁC cốp (`readEvents` = `readBody(readSlow(readFast(prev)))`; `readBody`
+  chỉ đọc lại cốp khi cốp nằm trong lô) xoá `body.tailgateOpen` về `null`;
+- nhịp thân xe 3 s NGHỈ vì cốp có sự kiện (`bodyNeeded` — `covered`) ⇒ không ai đọc lại; cốp chỉ hiện đúng trong ~0,6 s giữa sự kiện
+  cốp và sự kiện bụi mịn kế;
+- nắp 3D + bảng Cửa + widget `w_car` đọc `body.tailgateOpen` ⇒ `null` = "chưa đọc" = nắp ĐÓNG; ô cốp đọc `controls["trunk"]`
+  (`mirrorBody` GIỮ số cũ khi `null`) ⇒ vẫn MỞ. Hai bề mặt nói hai điều.
+
+Phát lại (bài `TrunkLidStaleTest`, gateway giả có getter cốp = 0 trước lệnh): đọc tươi `tail=false` → sự kiện `2940001a=1`
+`tail=true trunk=1` → sự kiện bụi mịn `tail=null trunk=1`.
+
+**Vì sao không thấy trên máy ảo**: xe giả (`DummyCarReceiver`) đè `tailgateOpen` qua `CarStatusTap` ở MỖI lượt — không đi qua
+`CarDataAdapter`. [ĐO máy ảo 16/10, bản 3.1.9 trước sửa] chạm cốp 3D ⇒ `ctl #1 args=[1]`, xe giả nhại MỞ sau 300 ms, nắp mở và đứng yên
+(một đợt vẽ duy nhất) ⇒ máy ảo KHÔNG tái hiện được lỗi này; bằng chứng tái hiện là bài phát lại ở `:core`.
+
+### 8.3 Các nghi vấn đã loại
+
+| Nghi vấn | Kết luận | Mức |
+|---|---|---|
+| Đích giữ (LampHold) trái với sự thật đè số đọc 10 s | Với số đọc HAI mức, đích chỉ sống khi số đọc = ngược đích (khớp ⇒ thả ngay ở lần hỏi đầu); mọi sự kiện mới (= đổi mức) đều thả nó. Ở #8 đích MỞ được thả lúc sự kiện 12.05; nắp đóng ở 12.85 là do số đọc `null`, không do đích | [ĐO mã + bài] |
+| Bộ nhớ sự kiện / đối soát 60 s trả 0 cũ | Không có lượt getter cốp thật nào của Kachi trong cửa sổ; bộ nhớ giữ "1" từ 12.049 | [ĐO logcat] |
+| Hoạt cảnh nắp đảo chiều khi đích giữ và số đọc xen nhau | Hai đợt vẽ là hai lần xoay trọn (9–10 khung ≈ 900 ms trên xe); lần hai do lượt đổ số `null` | [ĐO logcat + máy ảo] |
+| Cửa mở cùng lúc đổ lại số cốp cũ | Không có sự kiện cửa nào trong bộ đệm 10:40:46–10:41:24 | [ĐO logcat] |
+| Ca 10:40:46.94 (lệnh #6) | Cùng gốc (bụi mịn ~1 Hz xoá cốp). Lệnh #6 là MỞ hay ĐÓNG thì [CHƯA BIẾT] — dòng `ctl #6` đã trôi khỏi bộ đệm | [SUY] |
+
+### 8.4 Sửa (generic — không `if (cốp)`)
+
+`readSlow`: `body = b.copy(...)` chỉ ghi field CỦA nhịp chậm (kính · rèm · nguồn · loại xe · cửa sổ trời · báo động). Field của nhịp
+khác (bốn cửa + cốp) giữ nguyên THEO CẤU TRÚC — field thêm sau này không bị rơi vì một danh sách chép tay. `LampHold` / `Car3dTaps` /
+`ControlWriteEcho` KHÔNG đổi: luật *"đích giữ chỉ che lúc chưa có xác nhận"* đã đúng (§8.3) — khoá lại bằng bài.
+
+Chi phí: 0 lượt HAL, 0 luồng, 0 nhịp mới (chỉ đổi phép dựng đối tượng).
+
+### 8.5 Bài khoá — `core/src/test/kotlin/com/byd/clusternav/launcher/TrunkLidStaleTest.kt`
+
+- `luot cham khong xoa field than xe cua nhip khac` — `Body` đủ mọi field, cổng nhu cầu rỗng ⇒ `readSlow` trả NGUYÊN thân xe.
+- `xe 16-10 su kien bui min sau khi cop mo khong dong nap 3D, nap va o cung noi MO` — phát lại §8.1 qua adapter + `HalEventCache` +
+  `EventCachedGateway` thật; nắp (phép của `Car3dTaps.active`) và ô (phép của `ControlTileFactory.tileCover`) cùng MỞ sau sự kiện bụi
+  mịn và sau một lượt chậm.
+- `dich giu chi che luc chua xac nhan, su kien moi luon thang` — giữ ĐÓNG rồi bus báo 1 ⇒ MỞ · giữ MỞ, bus 1 ⇒ MỞ, đã thả · giữ ĐÓNG,
+  xe không làm theo, không sự kiện ⇒ trong hạn ĐÓNG, hết 10 s số đọc (MỞ) thắng.
+
+Thử ĐỎ [ĐO 16/10]: trả `readSlow` về `CarStatus.Body(...)` dựng mới ⇒ hai bài đầu ĐỎ (`expected <true> but was <null>`); bỏ vế
+thả-khi-khớp của `LampHold.held` ⇒ bài ba ĐỎ; bỏ vế hết-hạn ⇒ bài ba ĐỎ.
+
+### 8.6 Kiểm trên xe (bản kế, đỗ, số P)
+
+Bấm phím Đảo cốp một lần (MỞ), chờ ≥ 15 s không bấm gì: nắp 3D phải mở và ĐỨNG mở (logcat `Car3d … dots` sau đợt vẽ đầu giữ
+chấm cốp ở vị trí MỞ — yaw 172: `y ≈ 429`, không có đợt vẽ thứ hai đưa về `y ≈ 477`); bảng Cửa hiện "Cốp · Mở"; bấm lần nữa ⇒ ĐÓNG, nắp đóng ngay
+(đích giữ), cốp chốt ~6 s sau.

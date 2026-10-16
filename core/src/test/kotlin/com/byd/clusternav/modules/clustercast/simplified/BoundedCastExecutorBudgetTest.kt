@@ -47,28 +47,64 @@ class BoundedCastExecutorBudgetTest {
         }
     }
 
+    /**
+     * Bộ hẹn giờ TAY — hạn chỉ bắn khi test gọi [advance], và bắn ĐỒNG BỘ trên luồng test. 3.1.10 · TEST-FLAKY-CAST-BUDGET [ĐO,
+     * tái hiện 3/200 dưới tải 48 luồng quay + rác trong JVM]: bản cũ dùng giờ thật, và luồng hẹn giờ làm HAI bước `cancel(true)` rồi
+     * `onTimeout` — bước 1 ngắt thân ⇒ thân đếm `b` ⇒ luồng test đọc `timeouts` TRƯỚC khi luồng hẹn giờ (bị tải đẩy ra) kịp làm bước
+     * 2 ⇒ `"cast" in timeouts` sai. Cùng họ, chưa thấy nhưng cùng gốc: worker nhận việc trễ > 150 ms (việc hết hạn khi còn chờ) hoặc
+     * luồng dừng qua cả hai mốc (thân ngủ xong trước khi bị ngắt). Nay thứ tự do test quyết, không do bộ lập lịch của máy.
+     */
+    private class ManualTimer : BoundedCastExecutor.CastTimer {
+        private var now = 0L
+        private val due = ArrayList<Pair<Long, () -> Unit>>()
+
+        override fun after(delayMs: Long, action: () -> Unit) {
+            synchronized(this) { due += (now + delayMs) to action }
+        }
+
+        /** Tiến đồng hồ [ms] và chạy (trên luồng test) mọi hạn đã tới, theo thứ tự hạn. */
+        fun advance(ms: Long) {
+            val fire = synchronized(this) {
+                now += ms
+                due.filter { it.first <= now }.sortedBy { it.first }.also { due.removeAll(it.toSet()) }
+            }
+            fire.forEach { it.second() }
+        }
+    }
+
     /** Lượt mở dài hơn hạn chung KHÔNG bị ngắt khi gửi với hạn riêng — và bị ngắt nếu gửi với hạn chung (đường cũ). */
     @Test
     fun `han rieng giu luot dai song qua han chung, han chung thi ngat`() {
         val timeouts = CopyOnWriteArrayList<String>()
-        val ex = BoundedCastExecutor(castTimeoutMs = 150L, stopTimeoutMs = 100L, onTimeout = { timeouts += it })
+        val timer = ManualTimer()
+        val ex = BoundedCastExecutor(castTimeoutMs = 150L, stopTimeoutMs = 100L, onTimeout = { timeouts += it }, timer = timer)
         try {
             val longOk = AtomicReference<String>("chưa chạy")
+            val aRunning = CountDownLatch(1)
+            val aRelease = CountDownLatch(1)
             val a = CountDownLatch(1)
             ex.submit("open", 2_000L) {
-                try { Thread.sleep(400); longOk.set("xong") } catch (e: InterruptedException) { longOk.set("bị ngắt") }
+                aRunning.countDown()
+                try { aRelease.await(); longOk.set("xong") } catch (e: InterruptedException) { longOk.set("bị ngắt") }
                 a.countDown()
             }
+            assertTrue(aRunning.await(5, TimeUnit.SECONDS))
+            timer.advance(400L)                                  // quá hạn chung 150 ms, chưa tới hạn riêng 2 s
+            aRelease.countDown()
             assertTrue(a.await(5, TimeUnit.SECONDS))
             assertEquals("xong", longOk.get())
             assertFalse("open" in timeouts)
 
             val shortRun = AtomicReference<String>("chưa chạy")
+            val bRunning = CountDownLatch(1)
             val b = CountDownLatch(1)
             ex.submit("cast") {
-                try { Thread.sleep(400); shortRun.set("xong") } catch (e: InterruptedException) { shortRun.set("bị ngắt") }
+                bRunning.countDown()
+                try { CountDownLatch(1).await(); shortRun.set("xong") } catch (e: InterruptedException) { shortRun.set("bị ngắt") }
                 b.countDown()
             }
+            assertTrue(bRunning.await(5, TimeUnit.SECONDS))     // thân ĐANG chạy rồi mới cho hạn bắn — không đua với worker
+            timer.advance(400L)
             assertTrue(b.await(5, TimeUnit.SECONDS))
             assertEquals("bị ngắt", shortRun.get(), "hạn chung 150 ms ⇒ ngắt")
             assertTrue("cast" in timeouts)
@@ -77,9 +113,78 @@ class BoundedCastExecutorBudgetTest {
         }
     }
 
+    /**
+     * 3.1.10 · TEST-FLAKY-CAST-BUDGET — đường (a) của bài trên là lỗi THẬT của mã chạy: thao tác hết hạn khi còn chờ bị huỷ IM
+     * LẶNG (không TIMEOUT, không DISCARDED). Nay: báo [BoundedCastExecutor] `onDiscard`, vẫn không TIMEOUT giả (F4), thân không
+     * chạy. Thử ĐỎ: bỏ nhánh `else reportDiscard(...)` trong `armTimeout`.
+     */
+    @Test
+    fun `thao tac het han khi con cho thi bao BO, khong TIMEOUT gia, khong chay`() {
+        val timeouts = CopyOnWriteArrayList<String>()
+        val discards = CopyOnWriteArrayList<String>()
+        val timer = ManualTimer()
+        val ex = BoundedCastExecutor(
+            castTimeoutMs = 15_000L, onTimeout = { timeouts += it }, onDiscard = { tag, why -> discards += "$tag|$why" }, timer = timer,
+        )
+        val running = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val ranB = AtomicReference(false)
+        try {
+            ex.submit("openProjection", BoundedCastExecutor.OPEN_TIMEOUT_MS) { running.countDown(); release.await(5, TimeUnit.SECONDS) }
+            assertTrue(running.await(5, TimeUnit.SECONDS))
+            ex.submit("cast-slot") { ranB.set(true) }           // chờ sau lượt mở; hạn 15 s tính từ lúc gửi
+            timer.advance(16_000L)                               // lượt mở vẫn trong hạn 25 s; cast-slot quá hạn khi còn chờ
+            assertEquals(1, discards.size, "phải có ĐÚNG một dấu bỏ: $discards")
+            assertTrue(discards.single().startsWith("cast-slot|hết hạn 15000 ms khi còn chờ"), discards.single())
+            assertTrue(timeouts.isEmpty(), "chưa từng chạy ⇒ không TIMEOUT: $timeouts")
+            release.countDown()
+            val deadline = System.currentTimeMillis() + 2_000
+            while (!ex.isIdle && System.currentTimeMillis() < deadline) Thread.sleep(10)
+            assertTrue(ex.isIdle)
+            assertFalse(ranB.get(), "thao tác đã bỏ không được chạy muộn")
+        } finally {
+            release.countDown()
+            ex.shutdown()
+        }
+    }
+
+    /**
+     * Soát Pass 11 [P1] — thao tác hết hạn khi còn chờ phải RỜI hàng, không nằm lại như "ma": hàng 1 chỗ, lần gửi kế đẩy nó ra qua
+     * `DiscardOldestLogged` ⇒ dấu bỏ THỨ HAI cùng tag ⇒ `SimpleCastCoordinator.onDiscard` gọi `resizeQueue.dropped(tag)` ⇒ yêu cầu −/+
+     * vừa xếp của chính lần gửi ấy bị DROPPED dù nó sẽ chạy. Thử ĐỎ: bỏ `executor.remove(future)` ⇒ `discards.size == 2`.
+     */
+    @Test
+    fun `thao tac het han khi con cho roi khoi hang - lan gui ke khong bi bao bo lan hai va van chay`() {
+        val discards = CopyOnWriteArrayList<String>()
+        val timer = ManualTimer()
+        val ex = BoundedCastExecutor(castTimeoutMs = 15_000L, onDiscard = { tag, why -> discards += "$tag|$why" }, timer = timer)
+        val running = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val ranC = AtomicReference(false)
+        try {
+            ex.submit("openProjection", BoundedCastExecutor.OPEN_TIMEOUT_MS) { running.countDown(); release.await(5, TimeUnit.SECONDS) }
+            assertTrue(running.await(5, TimeUnit.SECONDS))
+            ex.submit("resize") { }                              // chờ sau lượt mở
+            timer.advance(16_000L)                               // hết hạn khi còn chờ ⇒ một dấu bỏ
+            assertEquals(1, discards.size, discards.toString())
+            ex.submit("resize") { ranC.set(true) }               // cú bấm kế: KHÔNG được đẩy "ma" ra và báo bỏ lần hai cùng tag
+            assertEquals(1, discards.size, "thao tác đã hết hạn phải rời hàng — không 'bị thay bởi' lần hai: $discards")
+            release.countDown()
+            val deadline = System.currentTimeMillis() + 2_000
+            while (!ex.isIdle && System.currentTimeMillis() < deadline) Thread.sleep(10)
+            assertTrue(ex.isIdle)
+            assertTrue(ranC.get(), "cú bấm kế chạy bình thường sau lượt mở")
+            assertEquals(1, discards.size, discards.toString())
+        } finally {
+            release.countDown()
+            ex.shutdown()
+        }
+    }
+
     @Test
     fun `thao tac qua han ma than con chay noc - van tinh la BAN`() {
-        val ex = BoundedCastExecutor(castTimeoutMs = 100L)
+        val timer = ManualTimer()
+        val ex = BoundedCastExecutor(castTimeoutMs = 100L, timer = timer)
         val release = CountDownLatch(1)
         val running = CountDownLatch(1)
         try {
@@ -91,7 +196,7 @@ class BoundedCastExecutorBudgetTest {
                 }
             }
             assertTrue(running.await(2, TimeUnit.SECONDS))
-            Thread.sleep(300)                                    // đã quá hạn 100 ms ⇒ future bị huỷ
+            timer.advance(300L)                                  // đã quá hạn 100 ms ⇒ future bị huỷ (bắn đồng bộ trên luồng này)
             assertFalse(ex.isIdle, "thân còn gửi lệnh tới cụm ⇒ BẬN")
             release.countDown()
             val deadline = System.currentTimeMillis() + 2000

@@ -32,13 +32,36 @@ internal object VoiceMediaNavParse {
      * *"tìm"* · TỪ-NHẠC ngay sau (*"tìm trạm xăng"* không có ⇒ `null`, không đoán) · còn tên bài. */
     fun mediaSearch(t: List<Token>, terms: List<VoiceTerm> = emptyList()): VoiceIntent? {
         val head = SEARCH_HEADS.firstOrNull { VoiceLexicon.phraseAt(t, 0, it) } ?: return null
-        val rest = dropFillers(t.subList(head.size, t.size))
-        val mw = VoiceSynonyms.MEDIA_WORDS.map { it.split(" ") }.sortedByDescending { it.size }
-            .firstOrNull { VoiceLexicon.phraseAt(rest, 0, it) } ?: return null
-        val after = dropFillers(rest.subList(mw.size, rest.size))
+        val after = afterMediaWord(dropFillers(t.subList(head.size, t.size))) ?: return null
         if (after.isEmpty()) return null
         return media(VoiceVerb.PLAY, after, "", terms)
     }
+
+    /**
+     * ═══ VOICE-MEDIA-IMPLIED-VERB — *"&lt;từ-nhạc&gt; &lt;tên&gt; trên &lt;app nhạc&gt;"* KHÔNG động từ ⇒ phát (đo xe 16/10) ═══════════════
+     *
+     * [ĐO xe 16/10] câu dạng *"nhạc &lt;tên&gt; trên youtube"* (rụng/không nói *"mở"*) ⇒ `NO_VERB` ⇒ hỏi lại lệch sang đèn. Cùng
+     * lẽ [VoiceSlotNoVerb]: khi câu có CẢ một TỪ-NHẠC ở đầu ([VoiceSynonyms.MEDIA_WORDS]) VÀ một mệnh đề *"trên/bằng &lt;app&gt;"*
+     * khớp một app NHẠC đã biết ([VoiceTailClause.appAfterMarker] — đúng phép khớp của câu nói đủ), thì việc duy nhất hai mảnh ấy
+     * cùng mang nghĩa là PHÁT ⇒ động từ suy ra được, không đoán. Đi CÙNG đường [media] với động từ [VoiceVerb.PLAY] (một đường).
+     *
+     * Hai cổng: thiếu mệnh đề app (*"nhạc to quá"* · *"nhạc &lt;tên&gt;"*) ⇒ `null` (vẫn `NO_VERB`, hỏi lại); còn tên trống
+     * (*"nhạc trên youtube"*) ⇒ PLAY app ấy — đúng như *"mở nhạc trên youtube"*. Chi phí: một phép so tiền tố + một lượt
+     * [VoiceTailClause.appAfterMarker] chỉ trên câu đã rơi tới nhánh không-động-từ (không phải đường nóng).
+     */
+    fun impliedPlay(t: List<Token>, terms: List<VoiceTerm> = emptyList()): VoiceIntent? {
+        val after = afterMediaWord(t) ?: return null
+        VoiceTailClause.appAfterMarker(after, VoiceAppKind.MUSIC, terms) ?: return null
+        return media(VoiceVerb.PLAY, after, "", terms)
+    }
+
+    /** Phần sau TỪ-NHẠC dài nhất ở vị trí 0 của [t] (đã bỏ tiếng đệm đầu), `null` khi [t] không mở đầu bằng từ-nhạc. */
+    private fun afterMediaWord(t: List<Token>): List<Token>? {
+        val mw = MEDIA_HEADS.firstOrNull { VoiceLexicon.phraseAt(t, 0, it) } ?: return null
+        return dropFillers(t.subList(mw.size, t.size))
+    }
+
+    private val MEDIA_HEADS: List<List<String>> = VoiceSynonyms.MEDIA_WORDS.map { it.split(" ") }.sortedByDescending { it.size }
 
     /**
      * Dẫn đường: phần đuôi là ĐIỂM ĐẾN, trừ mệnh đề *"bằng &lt;app&gt;"* ở cuối nếu có.

@@ -122,7 +122,7 @@ class CastResizeQueueTest {
     fun `viec xa cho qua han coi nhu da chet va duoc xep lai`() {
         val h = Harness(staleMs = 1_000L)
         h.queue.offer(full(1900))
-        h.jobs.clear()                                   // executor huỷ vì hết hạn — KHÔNG có onDiscard cho ca này
+        h.jobs.clear()                                   // executor huỷ vì hết hạn mà onDiscard không tới — lưới staleMs
         h.now = 500L
         h.queue.offer(full(1880))
         assertEquals(0, h.jobs.size, "chưa quá hạn ⇒ vẫn tin việc xả cũ")

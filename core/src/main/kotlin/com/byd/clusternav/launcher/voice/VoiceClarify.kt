@@ -257,6 +257,8 @@ object VoiceClarify {
             .map { it.norm }
             .filterNot { it in VoiceQuestion.FRAME_WORDS }
             .toHashSet()
+        // VOICE-CLARIFY-TITLE-FOLD [ĐO xe 16/10] — chữ TỪ VỰNG MỞ (tên bài, thân trước "trên <app>") không là đầu họ nút.
+        val open = VoiceTailClause.openSpan(tokens, terms)
         val heads = tokens.indices.filter { i ->
             // ⚠ BỎ QUA ĐỘNG TỪ. [ĐO off-car] không có điều kiện này thì *"mở kính"* hỏi *"Mở nào — Mô-men mô-tơ
             // trước, Mở cửa cảnh báo trái, hay Mở cửa cảnh báo phải?"*: chữ `mo` là chữ mở đầu của hàng chục
@@ -267,16 +269,16 @@ object VoiceClarify {
             // tả), còn ở đây thứ cần là *"hỏi lại cho ra một câu dùng được"* — mà một cụm đã khớp trọn vẫn có thể
             // là đầu một họ. [ĐO off-car 2026-09-18] thêm điều kiện đó làm *"kính lái đang mở bao nhiêu"* mất hẳn
             // ứng viên `kinh` (vì *"kính lái"* khớp trọn nút `window`) ⇒ câu hỏi lại rơi sang một họ khác.
-            tokens[i].norm !in VERB_HEADS && familyIds(tokens[i].norm, terms).size >= 2
+            tokens[i].norm !in VERB_HEADS && i !in open && familyOf(tokens[i], terms).size >= 2
         }
         val carry = carryFor(tokens, asking, asked)
         // Đi theo mức ủng hộ giảm dần, nhưng vẫn **thử tiếp** nếu một đầu họ không đủ hai nhãn đọc được — giữ
         // đúng hành vi "quét tới khi tìm được" của bản cũ, chỉ đổi THỨ TỰ quét.
-        heads.sortedByDescending { i -> support(familyIds(tokens[i].norm, terms), words - tokens[i].norm, terms) }
+        heads.sortedByDescending { i -> support(familyOf(tokens[i], terms), words - tokens[i].norm, terms) }
             .forEach { i ->
                 val head = tokens[i]
                 val others = words - head.norm
-                val labels = readsFirst(familyIds(head.norm, terms), asking)
+                val labels = readsFirst(familyOf(head, terms), asking)
                     .sortedByDescending { id -> support(listOf(id), others, terms) }
                     .mapNotNull { labelOf(it, lang) }
                     .distinct()
@@ -399,6 +401,10 @@ object VoiceClarify {
         .map { it.id }
         .distinct()
         .sortedBy { rank(it) }
+
+    /** VOICE-CLARIFY-TONE-FOLD [ĐO xe 16/10] — [familyIds] trừ mã mà chữ MANG DẤU [tok] viết khác chữ đầu nhãn VI ([VoiceHomograph.leadsLabel]). */
+    private fun familyOf(tok: VoiceLexicon.Token, terms: List<VoiceTerm>): List<String> =
+        familyIds(tok.norm, terms).filter { VoiceHomograph.leadsLabel(tok, labelOf(it, Lang.VI)) }
 
     /**
      * ═══ D1 · Câu này nêu một **HỌ** thứ mà chưa nói cái nào ══════════════════════════════════════════════

@@ -229,6 +229,7 @@ class VoiceWakeListener(
         // Không mở được mic (app khác giữ phần cứng dù chốt đã cho) ⇒ lượt này **không** khoẻ: xoá mốc khoẻ để
         // bậc nghỉ ở vòng ngoài tăng dần, thay vì xin lại đều đặn 2 s suốt thời gian sự cố.
         val rec = openRecord() ?: run { lastSessionFrames = 0; return Inner.ERROR }
+        controller.onMicOpened()   // WAKE-TAIL-STALE-FINISH — đuôi câu của lượt nghe trước không phát FINISH trên cửa sổ cũ
         var frames = 0
         var handed = false   // micro đã GIAO cho phiên lệnh ⇒ `finally` KHÔNG được stop/release (phiên sở hữu nó)
         try {

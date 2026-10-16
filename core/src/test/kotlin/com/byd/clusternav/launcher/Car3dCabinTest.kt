@@ -16,6 +16,9 @@ import java.nio.ByteOrder
  */
 class Car3dCabinTest {
 
+    /** Số băm đầu ra [Car3dCabin.hits] trên lưới mẫu ứng với [Car3dCabin.RULES] = c1 (xem `day bao RULES`). */
+    private val RULES_DIGEST = -5096490549957274320L
+
     private fun block(kind: Int, name: String, mat: String, count: Int, body: ByteArray): ByteArray {
         val h = ByteBuffer.allocate(BydAvmMesh.HEADER).order(ByteOrder.LITTLE_ENDIAN)
         h.putInt(BydAvmMesh.HEADER + body.size).putInt(kind).put(name.toByteArray().copyOf(32)).put(mat.toByteArray().copyOf(32))
@@ -227,6 +230,64 @@ class Car3dCabinTest {
         assertTrue(byPart.filterKeys { it.startsWith("door") }.values.all { Car3dCabin.MATERIAL !in it }, "$byPart")
     }
 
+
+    /**
+     * 3.1.10 `CAR3D-CABIN-BUILD-COST` — kết quả phân loại nhớ theo khoá suy từ ĐẦU VÀO ([Car3dCabin.key]): cùng lưới ⇒ cùng khoá,
+     * lần sau đọc bản nhớ (không phủ lại); lệch một đỉnh ứng viên / đổi lớp vật liệu của bộ phận ⇒ khoá khác; bản nhớ hỏng hoặc lệch
+     * ứng viên ⇒ tính lại, không dùng. Đảo (bỏ băm hình học, bỏ cờ lớp, hoặc dùng byte không kiểm) ⇒ đỏ.
+     */
+    @Test
+    fun `nho phan loai theo dau vao - cung luoi doc ban nho, luoi doi thi tinh lai`() {
+        class Rec : Car3dCabin.Memo {
+            val store = HashMap<String, ByteArray>(); var gets = 0; var puts = 0
+            override fun get(key: String): ByteArray? { gets++; return store[key] }
+            override fun put(key: String, bytes: ByteArray) { puts++; store[key] = bytes }
+        }
+        val memo = Rec()
+        val plain = Car3dCabin.apply(car())
+        val first = Car3dCabin.apply(car(), memo = memo)
+        assertEquals(1 to 1, memo.gets to memo.puts)
+        val second = Car3dCabin.apply(car(), memo = memo)
+        assertEquals(2 to 1, memo.gets to memo.puts, "cùng lưới ⇒ đọc bản nhớ, không ghi lại")
+        for (r in listOf(first, second)) assertEquals(mat(plain.mesh, "doorlf_paint") to plain.blackened, mat(r.mesh, "doorlf_paint") to r.blackened)
+        // Bản nhớ ĐƯỢC dùng thật: đổi byte hợp lệ (mọi tam giác KEEP) ⇒ kết quả theo bản nhớ.
+        val key = memo.store.keys.single()
+        val m = car(); val scene = m.parts.filter { !it.name.contains("open") }
+        val cands = scene.filter { it.material == "paint" }
+        memo.store[key] = Car3dCabin.encode(cands.associateWith { p -> Array(p.indexCount / 3) { Car3dCabin.Kind.KEEP } }, cands)
+        assertTrue(Car3dCabin.apply(m, memo = memo).blackened.isEmpty())
+        // Byte hỏng / lệch số tam giác ⇒ không dùng, tính lại như không có bản nhớ.
+        memo.store[key] = byteArrayOf(1, 2, 3)
+        assertEquals(plain.blackened, Car3dCabin.apply(car(), memo = memo).blackened)
+        memo.store[key] = Car3dCabin.encode(cands.associateWith { p -> Array(p.indexCount / 3 + 1) { Car3dCabin.Kind.KEEP } }, cands)
+        assertEquals(plain.blackened, Car3dCabin.apply(car(), memo = memo).blackened)
+        // Khoá: cùng đầu vào ⇒ bằng nhau; dời tấm kính 1 mm ⇒ khác; tập ứng viên đổi (lớp vật liệu của bộ phận) ⇒ khác.
+        fun keyOf(mesh: BydAvmMesh, shell: (BydAvmMesh.Part) -> Boolean = { it.material == "paint" }): String {
+            val sc = mesh.parts.filter { !it.name.contains("open") }
+            return Car3dCabin.key(Car3dCabin.pack(mesh, sc)!!, sc.filter(shell), Car3dCabin.VIEWS, Car3dCabin.RES)
+        }
+        assertEquals(keyOf(car()), keyOf(car()))
+        val shifted = car().let { c -> BydAvmMesh(c.buffers.map { b -> if (b.name == "glass") BydAvmMesh.Buffer(b.name, b.pivot, b.count, b.src, b.posAt, b.attrAt, b.nrmAt, V3(0.0, 0.0, 0.001)) else b }, c.parts, 0) }
+        assertTrue(keyOf(car()) != keyOf(shifted), "hình học đổi ⇒ khoá đổi")
+        assertTrue(keyOf(car()) != keyOf(car()) { it.name == "doorlf_paint" }, "tập ứng viên đổi ⇒ khoá đổi")
+        assertTrue(keyOf(car()) != keyOf(car()) { it.name == "doorlf_paint" || it.name == "doorlf_glass" }, "cùng SỐ ứng viên, khác bộ phận ⇒ khoá đổi")
+    }
+
+    /**
+     * 3.1.10 — dây báo [Car3dCabin.RULES]: số điểm ảnh từng tam giác ứng viên trên lưới mẫu [car] được băm và khoá cùng [RULES].
+     * Đổi MÃ luật (đếm, ngưỡng, hướng nhìn) mà quên đổi [RULES] ⇒ bản nhớ cũ trên xe bị dùng lại sai ⇒ bài này đỏ: đổi [RULES] VÀ
+     * cập nhật số băm. [ĐO] đỏ khi bỏ nhánh hướng đối (`−d`) của [Car3dCabin.hits].
+     */
+    @Test
+    fun `day bao RULES - dau ra phan loai tren luoi mau khop phien ban luat`() {
+        val m = car(); val scene = m.parts.filter { !it.name.contains("open") && it.indexCount >= 3 }
+        val cands = scene.filter { it.material == "paint" }
+        val h = Car3dCabin.hits(Car3dCabin.pack(m, scene)!!, cands, Car3dCabin.VIEWS, Car3dCabin.RES)
+        var d = 17L
+        for (p in cands) { val x = h.getValue(p)
+            for (a in listOf(x.directFront, x.directBack, x.viaFront, x.viaBack, x.onGlass)) d = d * 31 + a.contentHashCode() }
+        assertEquals("c1:$RULES_DIGEST", "${Car3dCabin.RULES}:$d", "đổi luật ⇒ đổi Car3dCabin.RULES + số băm ở đây")
+    }
 
     /**
      * 3.1.5 — kim loại/crôm (lớp `metal` của [Car3dMaterials.classOf]) cùng luật tầm nhìn với sơn: nẹp kim loại mặt trong khung kính

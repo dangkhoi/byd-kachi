@@ -155,6 +155,21 @@ internal object VoiceTailClause {
         return if (i in 1 until body.size) text(body.subList(i, body.size)) else text(body)
     }
 
+    /**
+     * VOICE-CLARIFY-TITLE-FOLD [ĐO xe 16/10] — chỉ số các token thuộc TỪ VỰNG MỞ của câu: chữ giao nguyên văn cho một app ([queryText] ·
+     * điểm đến), không phải tên một nút — mọi token SAU một từ-nhạc ([VoiceTermKind.MEDIA]) và mọi token TRƯỚC mệnh đề *"trên/bằng
+     * &lt;app&gt;"* chạm cuối câu ([appAfterMarker], nhạc hoặc dẫn đường). [VoiceClarify] không lấy chúng làm đầu họ để hỏi lại (hỏi
+     * *"Đèn nào …?"* cho một chữ trong tên bài là viết lại tên bài thành lệnh xe). Rỗng khi câu không có hai dấu hiệu ấy.
+     */
+    internal fun openSpan(tokens: List<Token>, terms: List<VoiceTerm>): Set<Int> {
+        val out = HashSet<Int>()
+        val media = tokens.indices.firstOrNull { i -> VoiceGrammar.matchAt(tokens, i, terms).any { it.kind == VoiceTermKind.MEDIA } }
+        if (media != null) for (i in media until tokens.size) out += i
+        val app = appAfterMarker(tokens, VoiceAppKind.MUSIC, terms) ?: appAfterMarker(tokens, VoiceAppKind.NAV, terms)
+        if (app != null) for (i in 0 until app.second) out += i
+        return out
+    }
+
     /** Từ chỉ tác giả đứng đầu chữ tìm nhạc (đã bỏ dấu): "của" · "bởi". */
     private val QUERY_ATTRIBUTION = setOf("cua", "boi")
     private val QUERY_ROLE = listOf("ca", "si")

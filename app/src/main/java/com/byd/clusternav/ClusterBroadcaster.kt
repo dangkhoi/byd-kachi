@@ -54,6 +54,8 @@ object ClusterBroadcaster {
     // D4 (closeout 1.28): last-emitted icon|seg|road for log-on-change — the ~4/sec heartbeat re-emits identical
     // frames; only Log.i when this key changes (kills per-frame spam, keeps a low-rate signal). Main-thread only.
     private var lastEmitLaneKey: String? = null
+    /** Soát Pass 11: mốc trạng thái (icon · đường · byd) đã ghi mức I — không có `seg`. */
+    private var lastEmitLaneStateKey: String? = null
     private val hudController = HudMirrorController()
 
     private val emissionArbiter by lazy {
@@ -169,14 +171,23 @@ object ClusterBroadcaster {
         // unconditional). sendFrame runs single-threaded on the main looper (Handler) → no lock needed.
         val emitIcon = frame.getIntExtra("NEW_ICON", -1)
         val emitSeg = frame.getIntExtra("SEG_REMAIN_DIS", -1)
-        val emitRoad = frame.getStringExtra("NEXT_ROAD_NAME")
         // 2.98 · R6: khoá theo TÊN ĐƯỜNG ĐẦY ĐỦ (`lastCleanRoad`), không theo cửa sổ chạy chữ — marquee BẬT dịch cửa sổ
         // mỗi MARQUEE_STEP_MS (700 ms) nên khoá cũ đổi gần như mọi nhịp ⇒ [ĐO log xe SL6 08/10] 2 799 dòng / 37 phút
         // (~75/phút, tag nhiều nhất của Kachi). Khung gửi đi KHÔNG đổi — chỉ dòng nhật ký.
         val emitKey = "$emitIcon|$emitSeg|$lastCleanRoad"
         if (emitKey != lastEmitLaneKey) {
             lastEmitLaneKey = emitKey
-            Log.i(TAG, "emit lane icon=$emitIcon seg=$emitSeg raw='${s.distance}' road='$emitRoad' byd=$byd")
+            // LOG-VOLUME 3.1.10: mức D — `seg` là số đo (xem `SessionLogGate`); đổi icon/đường vẫn ghi ngay. Ghi TÊN
+            // ĐẦY ĐỦ (`lastCleanRoad`, cùng khoá ở trên) chứ không phải cửa sổ chạy chữ: cửa sổ là hàm tất định của tên +
+            // thời gian (`NavFormat.roadWindow`), mà in nó thì mỗi dòng một chữ khác ⇒ không cổng nào gộp được.
+            Log.d(TAG, "emit lane icon=$emitIcon seg=$emitSeg raw='${s.distance}' road='$lastCleanRoad' byd=$byd")
+        }
+        // Soát Pass 11 [P2]: `icon` 2 chữ số ⇒ ở mức D cổng coi đổi icon như đổi số đo (≤ 1 dòng/10 s) — mốc trạng thái (icon · đường ·
+        // byd) đi mức I khi đổi, vài dòng/chuyến, để hai lần rẽ trong 10 s không mất lần giữa trong tệp usage.
+        val stateKey = "$emitIcon|$lastCleanRoad|$byd"
+        if (stateKey != lastEmitLaneStateKey) {
+            lastEmitLaneStateKey = stateKey
+            Log.i(TAG, "emit lane turn icon=$emitIcon road='$lastCleanRoad' byd=$byd")
         }
     }
 

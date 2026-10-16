@@ -48,6 +48,16 @@ object VoiceHomograph {
     }
 
     /**
+     * VOICE-CLARIFY-TONE-FOLD [ĐO xe 16/10] — token [tok] có thể là chữ ĐẦU của nhãn [label] (tiếng Việt, có dấu) không. Bỏ dấu thì
+     * *"đen"* (màu) = *"đèn"* ⇒ câu hỏi lại *"Đen nào — Đèn đọc …?"* gập một chữ của tên bài vào họ nút đèn. Cùng luật [spelledOk]:
+     * token không dấu ⇒ có (không dữ liệu để phân biệt); nhãn rỗng hoặc chữ đầu khác bản bỏ dấu (họ sinh từ một cách nói) ⇒ không ràng.
+     */
+    fun leadsLabel(tok: Token, label: String?): Boolean {
+        val first = label?.let { VoiceLexicon.tokenize(it).firstOrNull() } ?: return true
+        return first.norm != tok.norm || spelledOk(tok, spelling(first.raw))
+    }
+
+    /**
      * Senior review wave 2A Pass 1 [P3] — khoá so một âm tiết KHÔNG phụ thuộc CHỖ đặt dấu thanh: *"hoà"* ↔ *"hòa"*, *"thuỷ"* ↔
      * *"thủy"*, *"khoẻ"* ↔ *"khỏe"* là CÙNG một chữ (cùng âm, cùng thanh — hai quy ước chính tả) nhưng là hai chuỗi Unicode khác
      * nhau kể cả sau NFC ⇒ so chuỗi thẳng làm tên GIỌNG đã dạy trượt khi nguồn chữ (bàn phím, bản ghi khác) đặt dấu kiểu kia — hồi

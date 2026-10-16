@@ -48,9 +48,13 @@ class InkCoalescer<K : Any>(private val post: (Runnable) -> Unit, private val so
     private val ran = HashSet<K>()
     private val pending = LinkedHashSet<K>()
     private var armed = false
+    private var inTurn = false
 
     /** `true` ⇒ chỗ gọi giải [k] NGAY; `false` ⇒ đã dồn (hoặc đã có hẹn) cho lượt kế. */
     fun request(k: K): Boolean {
+        // INK-COALESCER-EMPTY-TURN (soát Pass 9 [P3]): không hẹn nào đang chờ và không ở trong lượt hẹn ⇒ [ran] là của một
+        // lượt ĐÃ XONG ⇒ xoá tại đây, thay vì hẹn thêm một lượt rỗng chỉ để `ran.clear()` sau mỗi lô.
+        if (!armed && !inTurn) ran.clear()
         arm()
         if (ran.add(k)) return true
         pending += k
@@ -59,9 +63,11 @@ class InkCoalescer<K : Any>(private val post: (Runnable) -> Unit, private val so
 
     private fun arm() { if (!armed) { armed = true; post(turn) } }
 
+    /** Lượt hẹn: giải lô đã dồn. Chỉ hẹn tiếp khi chính lượt giải sinh lời xin mới (qua [request] ⇒ [arm]). */
     private val turn = Runnable {
         armed = false; ran.clear()
         val batch = pending.toList(); pending.clear()
-        for (k in batch) { arm(); ran += k; solve(k) }
+        inTurn = true
+        try { for (k in batch) { ran += k; solve(k) } } finally { inTurn = false }
     }
 }

@@ -140,7 +140,10 @@ class AppContainer internal constructor(
     /** Adapter đọc xe: [CarDataPort] (widget cũ) + `CarStatusReader` (build [com.byd.clusternav.launcher.CarStatus]). */
     private val carDataAdapter: CarDataAdapter by lazy {
         CarDataAdapter(
-            halBindingTable, carDemand::get, controlDemand = carDemand::controls, covered = halEvents::covers,
+            // 3.1.10 · TURN-POLL-SERVED: datum mà hộp socket `LampLive` đang ĐÈ (xi-nhan + đèn helper đã báo) không đọc HAL — số đọc của
+            // chúng không bao giờ tới màn (`LampLive.overlay` ở `collectHome`). Hộp tắt ⇒ tập rỗng ⇒ đọc lại ở nhịp chậm kế.
+            halBindingTable, { carDemand.get()?.let { it - com.byd.clusternav.launcher.LampLive.shared.served() } },
+            controlDemand = carDemand::controls, covered = halEvents::covers,
             // 3.1.9 HAL-POLL-COVERED: tốc độ thật của nhịp nhanh ⇒ mẫu chung cho nhịp tim dẫn đường (`SpeedProvider.mps`); dòng "còn poll gì".
             speedShare = com.byd.clusternav.navigation.SpeedShare.PROCESS, trust = halEvents::trust,
             log = { msg -> runCatching { android.util.Log.i("KachiHalEvent", msg) } },
@@ -174,6 +177,10 @@ class AppContainer internal constructor(
         // 2.98 · R6-C: chỉ đọc HAL khi màn xe SÁNG; không hỏi được ⇒ đọc như cũ (fail-open). Màn sáng lại ⇒ `wake()` (KachiHomeWiring).
         // 3.01 LAMPLIVE: cùng một lượt hỏi màn (không thêm binder) báo luôn cho [lampWatch] — màn tắt ⇒ thôi giữ helper sau ân hạn.
         CarStatusRepository(carDataAdapter, carScope, awake = { screenAwake().also { lampWatch.screen(it); carEvents.lit(it) } })
+    }.also {
+        // Soát Pass 11 [P2] (TURN-POLL-SERVED): hộp socket đứt ⇒ datum nó vừa đè (không poll suốt lúc hộp sống) đọc lại NGAY một lượt
+        // qua đường sự kiện (chỉ datum màn đang bày; không chờ nhịp chậm 10 s bày số cũ). Nối lúc dựng container — trước mọi lần đứt.
+        com.byd.clusternav.launcher.LampLive.shared.onServedDropped = { ids -> carStatusRepository.onEvents(ids) }
     }
 
     /**

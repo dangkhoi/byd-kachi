@@ -179,7 +179,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         // P9: số ô THỰC TẾ (bố cục tự vẽ có thể khác bố cục sẵn). Đọc từ bố cục sẵn ở đây sẽ làm bộ quyết định thấy 'số view lệch
         // số ô' mọi lần render ⇒ dựng lại TẤT CẢ liên tục. 2.97 · R5: luật đỗ chỉ nhìn ô ĐANG HIỆN (`shown`) — ô ngoài bố cục không nhận lại ai.
         val shown = s.slots.take(EffectiveLayout.slotCount(displayed.preset, customLayout))
-        when (val plan = WorkspaceRenderPlanner.decide(old, s, slotViews.size, status != oldStatus, embedChanged, slotCount = shown.size, swap = swap)) {
+        val delta = CarStatusDelta.of(oldStatus, status); when (val plan = WorkspaceRenderPlanner.decide(old, s, slotViews.size, status != oldStatus, embedChanged, slotCount = shown.size, swap = swap)) {
             WorkspaceRenderPlan.RebuildAll -> { rebuild(); EmptySlotLog.note(displayed.slots, slotViews.size); return }
             is WorkspaceRenderPlan.PerSlot -> (plan.rebuild + plan.swap).sorted().forEach { i ->   // 2.89-thử1: đặt tạm cũng dựng lại ô (ô 7 đỗ app cũ)
                 val nc = s.slots.getOrElse(i) { SlotContent.Empty }
@@ -188,6 +188,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 // đúng những ô con là mục ĐỌC. Giữ nguyên view của nút và của widget trình chiếu ⇒ không mất cú bấm,
                 // không đặt lại vòng quay ảnh. Không thay được con nào ⇒ lùi về dựng lại cả ô (an toàn).
                 val onlyValues = !embedChanged && WorkspaceRenderPlanner.sameContent(oc, nc)
+                if (onlyValues && nc is SlotContent.Widget && !delta.touches(CarDataDemand.interestOf(nc.ids))) return@forEach   // 3.1.10 EVENT-PATH-SCOPED: đổi ở datum ô KHÔNG bày ⇒ 0 lượt đổ
                 if (onlyValues && nc is SlotContent.Widget &&
                     WidgetViews.refreshRead(slotViews[i], widgetData()) > 0
                 ) return@forEach          // refresh SỐ tại chỗ — widget tự invalidate, KHÔNG relayout workspace

@@ -106,7 +106,7 @@ object KachiLog {
         var written = 0L
         var resumes = 0
         var lastStamp: String? = null
-        val throttle = LogLineThrottle()
+        val gate = SessionLogGate()
     }
 
     /** Một lượt `logcat` tới khi hết dòng. Trả `true` khi dừng vì chạm [USAGE_CAP_BYTES] (không được nối lại). */
@@ -119,7 +119,7 @@ object KachiLog {
                 while (line != null) {
                     val src = line
                     val now = System.currentTimeMillis()
-                    val toWrite = throttled(src, now, c.throttle)
+                    val toWrite = throttled(src, now, c.gate)
                     if (toWrite != null) {
                         w.write(toWrite); w.newLine()
                         c.written += toWrite.length + 1
@@ -189,43 +189,21 @@ object KachiLog {
     private const val STAMP_LEN = 18
 
     /**
-     * ═══ LOG-41KB — dòng nào thật sự phải xuống thẻ ═══════════════════════════════════════════════════════════
+     * ═══ Dòng nào thật sự phải xuống thẻ — LOG-41KB (2.73) → LOG-VOLUME (3.1.10) ════════════════════════════════
      *
-     * Trả dòng cần ghi (có thể kèm hậu tố *"[+N lặp]"*), hoặc `null` = bỏ. Luật + số đo ở KDoc [LogLineThrottle];
-     * ở đây chỉ hai quyết định thuộc về tầng này:
+     * Trả dòng cần ghi (có thể kèm hậu tố đếm, hoặc nhiều dòng nối `\n` khi một bản ghi nhiều dòng thả lại các dòng
+     * vừa giữ), hoặc `null` = bỏ. Toàn bộ luật + số đo ở KDoc [SessionLogGate] (thuần, `:core`): F/A luôn ghi ·
+     * I/W/E tiết chế nguyên văn 10 s · D/V theo khuôn (số đo 10 s, lặp y nguyên 60 s, đổi trạng thái ghi ngay) ·
+     * vết gọi nhiều dòng không bao giờ bị cắt giữa.
      *
-     *  1. **W/E/F/A không bao giờ bị bỏ.** Đây đúng là tập dòng mà [startCapture] tồn tại để cứu (*"có ngữ cảnh
-     *     khi patch lỗi trên xe"*, xem [mustFlushNow]); và một cảnh báo lặp lại 100 lần là **thông tin** (nó
-     *     đang lặp), không phải rác. Dòng W/E còn có `ShellRunFailureLog` tiết chế ở chính chỗ sinh ra nó.
-     *  2. **Khoá = phần sau dấu thời gian** ([SEVERITY_COL] là cột đầu của phần đó trong `logcat -v time`): cùng
-     *     một câu ở hai giây khác nhau phải ra cùng một khoá, nếu không thì không có gì trùng để mà tiết chế.
-     *  3. **Dòng KHÔNG phải đầu bản ghi thì đi thẳng** ([isRecordHead]) — [SOÁT Pass 3 · P2 · 2026-09-26]. Một
-     *     `Log.w(TAG, msg, throwable)` ra **nhiều dòng**: dòng đầu có mức ở [SEVERITY_COL], còn mọi dòng
-     *     `\tat com.byd…` của vết gọi thì **không có dấu thời gian, không có mức**. Đưa chúng vào bộ tiết chế là
-     *     đúng cái bẫy mà luật 1 lập ra để tránh: hai ngoại lệ khác nhau trong cùng 10 s thường **trùng phần
-     *     đuôi vết gọi** (`at java.lang.Thread.run(…)`) ⇒ dòng W qua được mà vết gọi bị cắt giữa, và người đọc
-     *     log không có cách nào biết nó bị cắt ở đâu. Một dòng phụ **thuộc về** bản ghi phía trên nó, nên nó
-     *     thừa hưởng mức của bản ghi ấy: không khoá, không đếm, luôn ghi. Dòng mốc của logcat
-     *     (`--------- beginning of main`) cũng đi qua đường này — nó là một dữ kiện về phiên, không phải rác.
-     *
-     * THUẦN (đồng hồ truyền vào) ⇒ `KachiLogThrottleTest` khoá cả bốn nhánh off-device.
+     * [SOÁT 3.1.10] KDoc cũ ở đây nói dòng `\tat …` của vết gọi "không có dấu thời gian, không có mức" — [ĐO tệp
+     * usage 09-17 → 10-06] sai với `logcat -v time`: mọi dòng đều mang đủ đầu dòng. Luật "vết gọi không bị cắt" nay
+     * dựa vào đầu dòng trùng nhau ([SessionLogGate] §Vết gọi), không dựa vào dòng không-mốc.
      */
-    fun throttled(line: String, nowMs: Long, throttle: LogLineThrottle): String? {
-        if (!isRecordHead(line)) return line
-        if (line[SEVERITY_COL] in SEVERITY_FLUSH_NOW) return line
-        val skipped = throttle.suppressedBefore(line.substring(SEVERITY_COL), nowMs) ?: return null
-        return line + LogLineThrottle.repeatSuffix(skipped)
-    }
+    fun throttled(line: String, nowMs: Long, gate: SessionLogGate): String? = gate.offer(line, nowMs)
 
-    /**
-     * Dòng này có phải **đầu một bản ghi** `logcat -v time` (`09-26 18:12:30.100 D/Tag(17149): …`) hay không.
-     *
-     * Hình dạng đủ chặt và đủ rẻ: ký tự mức ở [SEVERITY_COL] thuộc [SEVERITY_ALL] **và** ngay sau nó là `/` (tên
-     * tag). Mọi dòng khác là dòng phụ của bản ghi trên nó (vết gọi ngoại lệ, chuỗi nhiều dòng) hoặc dòng mốc của
-     * chính logcat — xem luật 3 ở KDoc [throttled].
-     */
-    private fun isRecordHead(line: String): Boolean =
-        line.length > SEVERITY_COL + 1 && line[SEVERITY_COL] in SEVERITY_ALL && line[SEVERITY_COL + 1] == '/'
+    /** Đầu bản ghi `logcat -v time` (mức ở [SEVERITY_COL], ngay sau là `/`) — một định nghĩa, ở [SessionLogGate]. */
+    private fun isRecordHead(line: String): Boolean = SessionLogGate.isRecordHead(line)
 
     /**
      * ═══ H3 (PERF 2026-09-16) — có phải ghi xuống thẻ NGAY ở dòng này không ═══════════════════════════════════
@@ -249,13 +227,10 @@ object KachiLog {
         line.getOrNull(SEVERITY_COL) in SEVERITY_FLUSH_NOW || sinceLastFlushMs >= FLUSH_EVERY_MS
 
     /** Cột ký tự mức trong `logcat -v time` (`09-16 09:01:53.708 W/Tag(pid): …`). */
-    const val SEVERITY_COL = 19
+    const val SEVERITY_COL = SessionLogGate.SEVERITY_COL
 
     /** Mức phải xả ngay: Warning · Error · Fatal (Assert). */
     private val SEVERITY_FLUSH_NOW = setOf('W', 'E', 'F', 'A')
-
-    /** Mọi ký tự mức mà `logcat -v time` in ra — dùng để nhận DẠNG một đầu bản ghi (xem [isRecordHead]). */
-    private val SEVERITY_ALL = setOf('V', 'D', 'I', 'W', 'E', 'F', 'A')
 
     /** Trần thời gian giữa hai lần xả cho dòng D/I — cửa sổ mất mát tối đa khi app chết đột ngột. */
     const val FLUSH_EVERY_MS = 2_000L

@@ -13,10 +13,25 @@ package com.byd.clusternav.launcher
 object Car3dCache {
 
     const val PREFIX = "car3d-"
+    private const val MEMO_PREFIX = PREFIX + "cabin-"
+    private const val MEMO_SUFFIX = ".bin"
     private val SUFFIXES = listOf(".glb", ".glb.part", ".tmp")
 
-    /** Tệp [name] trong `cacheDir` là của widget 3D (bản đệm · bản dở · bản chép tạm). */
-    fun owned(name: String): Boolean = name.startsWith(PREFIX) && SUFFIXES.any { name.endsWith(it) }
+    /** Tệp [name] trong `cacheDir` là của widget 3D (bản đệm · bản dở · bản chép tạm · bản nhớ phân loại khoang). */
+    fun owned(name: String): Boolean = name.startsWith(PREFIX) && (SUFFIXES.any { name.endsWith(it) } || isMemo(name))
+
+    /**
+     * 3.1.10 `CAR3D-CABIN-BUILD-COST` — bản nhớ kết quả [Car3dCabin] (lượt đắt nhất của lần dựng: 24,6/33,6 s trên xe 15/10 [ĐO
+     * log]) theo khoá suy từ đầu vào ([Car3dCabin.key]). Sống QUA lần đổi khoá đệm GLB: chỉ GLB đổi (vật liệu, đèn) ⇒ không chạy lại.
+     */
+    fun memo(key: String): String = MEMO_PREFIX + key + MEMO_SUFFIX
+    fun isMemo(name: String): Boolean = name.startsWith(MEMO_PREFIX) && name.endsWith(MEMO_SUFFIX)
+
+    /** Dọn TRƯỚC khi dựng GLB mới: mọi tệp của widget TRỪ bản nhớ khoang (nó tự kiểm khớp khoá; cũ thì [staleMemo] dọn). */
+    fun stale(name: String): Boolean = owned(name) && !isMemo(name)
+
+    /** Bản nhớ khoang KHÁC khoá [key] vừa dùng ⇒ bỏ (một bản duy nhất, ~0,1 MB). */
+    fun staleMemo(name: String, key: String): Boolean = isMemo(name) && name != memo(key)
 
     /**
      * Đủ chỗ ghi [bytes] khi đĩa còn [usable] byte: chừa [MARGIN_BYTES] cho hệ thống (Android coi `/data` dưới vài chục MB

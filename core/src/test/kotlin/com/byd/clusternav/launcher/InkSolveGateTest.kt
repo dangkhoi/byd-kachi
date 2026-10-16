@@ -84,9 +84,20 @@ class InkSolveGateTest {
         assertEquals(1, q.size, "một hẹn duy nhất mỗi lượt")
         q.toList().also { q.clear() }.forEach { it.run() }
         assertEquals(1, solved)
-        q.toList().also { q.clear() }.forEach { it.run() }   // lượt kế không ai xin ⇒ không chạy gì, không hẹn tiếp
-        assertEquals(1, solved); assertEquals(0, q.size)
+        // INK-COALESCER-EMPTY-TURN — lượt giải lô KHÔNG sinh lời xin mới ⇒ không hẹn thêm lượt rỗng (bản cũ: 1 hẹn chỉ để xoá `ran`).
+        assertEquals(0, q.size, "lô giải xong mà không ai xin ⇒ không hẹn lượt rỗng")
         assertEquals(true, g.request("root"), "lượt mới ⇒ lời đầu chạy ngay")
+    }
+
+    @Test
+    fun `5b - bo gop - loi xin sinh ra TRONG luot hen van don sang luot ke, khong chay de quy`() {
+        val q = ArrayList<Runnable>()
+        var solved = 0
+        lateinit var g: InkCoalescer<String>
+        g = InkCoalescer({ q += it }) { k -> solved++; assertEquals(false, g.request(k), "trong lượt hẹn ⇒ dồn, không chạy ngay") }
+        assertEquals(true, g.request("root")); assertEquals(false, g.request("root"))
+        q.toList().also { q.clear() }.forEach { it.run() }
+        assertEquals(1, solved); assertEquals(1, q.size, "lời xin mới trong lượt giải ⇒ đúng một hẹn kế")
     }
 
     @Test

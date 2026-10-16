@@ -64,8 +64,23 @@ class LampLive {
     /** Chỉ xi-nhan (số giả `vehicleTest`, test cũ) — các đèn khác `null` ⇒ giữ getter. */
     fun publish(left: Boolean, right: Boolean) = publish(Lamps(left, right))
 
-    /** Socket không còn nối ⇒ không còn biết ⇒ bảng lùi về số đọc của `CarStatus`. */
-    fun clear() { flow.value = null }
+    /**
+     * Socket không còn nối ⇒ không còn biết ⇒ bảng lùi về số đọc của `CarStatus`. Soát Pass 11 [P2] (TURN-POLL-SERVED): số đọc của
+     * datum hộp vừa đè đã KHÔNG được poll suốt lúc hộp sống ⇒ có thể cũ hàng giờ, và màn sẽ bày nó tới nhịp chậm kế (≤ 10 s) — báo
+     * tập ấy qua [onServedDropped] để vòng poll đọc lại NGAY một lượt (đường `CarStatusRepository.onEvents`: ≤ 8 getter, chỉ datum màn
+     * đang bày). Hộp không đè gì ⇒ không báo.
+     */
+    fun clear() {
+        val was = served(flow.value)
+        flow.value = null
+        if (was.isNotEmpty()) onServedDropped(was)
+    }
+
+    /** Tập datum hộp vừa thôi đè (xem [clear]) — `AppContainer` nối vào `CarStatusRepository.onEvents`. Mặc định: không ai nghe. */
+    @Volatile var onServedDropped: (Set<String>) -> Unit = {}
+
+    /** 3.1.10 · TURN-POLL-SERVED — datum hộp đang đè LÚC NÀY ([served]); đọc giá trị, không thu dòng (chỗ thu duy nhất vẫn là `collectHome`). */
+    fun served(): Set<String> = served(flow.value)
 
     companion object {
         /** Thang `type` của `onLightOn/Off` = `getLightStatus` — `BYDAutoLightDevice.LIGHT_*` (jadx-tmap :44-62). */
@@ -84,6 +99,23 @@ class LampLive {
          * Đè `lights` bằng trạng thái socket khi có: xi-nhan LUÔN đè; đèn khác chỉ đè khi trường socket khác `null`. `null` (không
          * socket) hoặc không đổi gì ⇒ trả NGUYÊN [s] (cùng đối tượng — không phát thêm lượt vẽ).
          */
+        /**
+         * 3.1.10 · TURN-POLL-SERVED — datum mà [overlay] ĐÈ khi hộp đang sống: số đọc của chúng không bao giờ tới màn ⇒ vòng poll không
+         * đọc chúng (`AppContainer` trừ khỏi nhu cầu của `CarDataAdapter`). Xi-nhan luôn đè; đèn khác chỉ khi helper đã báo (field ≠ null).
+         * Hộp `null` (helper vắng/đứt) ⇒ rỗng ⇒ nhịp chậm kế đọc lại như cũ. Cùng một bảng với [overlay] — `LampLiveServedTest` đo khớp.
+         */
+        fun served(t: Lamps?): Set<String> {
+            if (t == null) return emptySet()
+            val out = HashSet<String>(); out += "light_left_turn"; out += "light_right_turn"
+            if (t.lowBeam != null) out += "light_low_beam"
+            if (t.highBeam != null) out += "light_high_beam"
+            if (t.frontFog != null) out += "light_front_fog"
+            if (t.rearFog != null) out += "light_rear_fog"
+            if (t.side != null) out += "light_side"
+            if (t.drl != null) out += "light_drl"
+            return out
+        }
+
         fun overlay(s: CarStatus, t: Lamps?): CarStatus {
             if (t == null) return s
             val l = s.lights

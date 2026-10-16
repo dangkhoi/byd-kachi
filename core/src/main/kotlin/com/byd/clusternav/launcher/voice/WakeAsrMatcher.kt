@@ -13,7 +13,8 @@ package com.byd.clusternav.launcher.voice
  * ## Vì sao khớp MỜ, không khớp đúng chuỗi
  * ASR tiếng Việt phát ra "kachi" nhưng cũng "ca chi" · "ka chi" · "ga chi" · "cà chi" (thanh/phụ âm trượt — cùng
  * họ [VoicePhoneticConfusions]). Khớp đúng một chuỗi thì rớt hầu hết. Nên: bỏ dấu + gom mọi biến thể 2 âm tiết
- * mở đầu bằng `ca/ka/ga/co/cu/ga` và kết bằng `chi/che/chy`. Người Việt hay thêm "ơi"/"ok" ⇒ nhận cả cụm đó.
+ * mở đầu bằng `ca/ka/ga/kha/cha` (nguyên âm giữ «a» — `co/cu` là chữ thường, bỏ [ĐO 16/10], xem [HEAD]) và kết bằng
+ * `chi/che/chy`. Người Việt hay thêm "ơi"/"ok" ⇒ nhận cả cụm đó.
  *
  * ## Chống nổ nhầm
  * Chỉ nhận khi cụm khớp là MỘT-HAI TỪ đứng (không lẫn giữa câu dài) — cabin ồn cho ra chuỗi rác dài, còn "kachi"
@@ -21,8 +22,14 @@ package com.byd.clusternav.launcher.voice
  */
 object WakeAsrMatcher {
 
-    /** Âm tiết đầu chấp nhận cho "ka" (đã bỏ dấu) — ka/ca/ga/co/cu/kha/gha… (thanh + phụ âm đầu trượt). */
-    private val HEAD = setOf("ka", "ca", "ga", "co", "cu", "kha", "gha", "cha", "kar", "car", "kach", "cach", "kacha", "cac")
+    /**
+     * Âm tiết đầu chấp nhận cho "ka" (đã bỏ dấu) — ka/ca/ga/kha/gha/cha… (thanh + phụ âm đầu trượt, nguyên âm GIỮ "a").
+     *
+     * ⚠ [ĐO xe 16/10 + harness 16/10] bỏ "co"/"cu": đổi NGUYÊN ÂM (a→o/u) không phải một lỗi nghe của "ka" — không câu gọi nào
+     * trong golden 23/09 (2 mẻ) lẫn 57 tệp harness ra "co/cu" — mà "có"/"cô"/"cũng" là chữ thông dụng nhất của câu thường: TTS
+     * dẫn đường *"chỉ có camera"* ra cửa sổ "chỉ có" ⇒ tail "chi" + head "co" ⇒ NỔ; *"có chị …"* ⇒ (c) liền nhau ⇒ NỔ.
+     */
+    private val HEAD = setOf("ka", "ca", "ga", "kha", "gha", "cha", "kar", "car", "kach", "cach", "kacha", "cac")
 
     /** Âm tiết sau cho "chi" (đã bỏ dấu). "chi"/"che"/"chì"→chi · "chị"→chi (các chị). */
     private val TAIL = setOf("chi", "che", "chy", "chri", "ti", "tri", "chie")
@@ -70,8 +77,11 @@ object WakeAsrMatcher {
         for (i in 0 until core.size - 1) {
             if (core[i] in HEAD && core[i + 1] in TAIL) return true
         }
-        // (d) có CẢ một head và một tail trong lõi ngắn (không cần liền) — "cá chì cá", "ka che ca".
-        if (core.any { it in HEAD } && core.any { it in TAIL }) return true
+        // (d) có CẢ một head và một tail trong lõi ngắn (không cần liền) — "cá chì cá", "ka che ca", "a chi hay ka".
+        // ⚠ [ĐO xe 16/10] TTS dẫn đường *"chỉ có camera"* NỔ qua đây: "chi"(tail) + "co"(head) KHÔNG liền, giữa một câu
+        // thường. Head/tail rời nhau là bằng chứng YẾU (cả hai đều là tiếng Việt thông dụng) ⇒ cùng luật thống trị của (e):
+        // MỌI từ lõi phải là âm-wake. Lõi còn một từ lạ ("camera") = đang nói câu khác. Liền nhau ((c)) vẫn nhận như cũ.
+        if (core.any { it in HEAD } && core.any { it in TAIL } && core.all { wakeToken(it) }) return true
         // (e) WAKE-DOMINATION (golden mẻ 2 2026-09-23): model rụng "ch" ra "kat/katy/cay/ky". Các từ này TRÙNG
         // tiếng Việt thường ("cay", "ký") ⇒ chỉ nhận khi CỤM NGẮN và MỌI từ không-đệm đều là âm-wake + có ≥1 từ
         // wake thật. "hay cay ca"/"ok cay ky ca"/"hay kat hay kat" ⇒ nổ; "ca sĩ cá" (có "si"), "một cách khác"
@@ -82,13 +92,13 @@ object WakeAsrMatcher {
         // rụng "ka" của "hê kachi" → "hê kach"/"hê ka". "này em"/"ok anh" không có fragment mạnh ⇒ không nổ.
         if (words.size >= 2 && words.size <= WAKE_MAX_WORDS && words[0] in CALL_LEAD) {
             val next = words[1]
-            // k-start / strongWake: nhận trong cụm tới WAKE_MAX_WORDS. c-start HEAD ("ca"/"cac"/"co" — lẫn "cà"
+            // k-start / strongWake: nhận trong cụm tới WAKE_MAX_WORDS. c-start HEAD ("ca"/"cac" — lẫn "cà"
             // /"các") CHỈ nhận khi cụm ĐÚNG 2 từ (lead+head, câu gọi ngắn dứt khoát) ⇒ "ok cà phê"/"này các bạn"
             // (≥3 từ) KHÔNG lọt.
             if (strongWake(next) || (next in HEAD && next.startsWith("k"))) return true
             if (words.size == 2 && next in HEAD) return true
         }
-        // (g) Cụm RẤT ngắn (lõi ≤2) mà MỌI lõi là HEAD k-start ("ka"/"ku"…, KHÔNG "kha"=«khá»). Model rụng "chi"
+        // (g) Cụm RẤT ngắn (lõi ≤2) mà MỌI lõi là HEAD k-start ("ka"/"kar"…, KHÔNG "kha"=«khá»). Model rụng "chi"
         // của "ka chi" → "ka". NEG "kê khai"/"kỳ nghỉ"/"khá hay" ⇒ có từ non-wake / "kha" bị loại ⇒ không nổ.
         if (core.size in 1..2 && core.all { it in HEAD && it.startsWith("k") && it != "kha" }) return true
         return false

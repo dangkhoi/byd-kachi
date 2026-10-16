@@ -294,7 +294,10 @@ object VoiceSynonyms {
     )
 
     /** Cụm chỉ **loại đối tượng**, không chỉ một mã — dùng để gỡ nghĩa cho động từ quá tải (RE Kiki §7c: *"Mở"*). */
-    val MEDIA_WORDS: List<String> = listOf("bai hat", "bai", "nhac", "ca khuc", "song", "music", "track")
+    // 3.1.10 · VOICE-MEDIA-VIDEO-WORD — *"video"* là từ chỉ loại như *"nhạc"/"bài"*: *"video <tên> trên youtube"* · *"tắt video"* ·
+    // *"phát tiếp video"* (bản cũ: QUERY "video" ⇒ đi TÌM chữ "video"). Đứng CUỐI bảng: thứ tự so khớp do độ dài quyết, mục đầu
+    // không đổi (CLAUDE.md §6). Không dạng có dấu riêng ⇒ `SherpaSpokenWords.NO_VI_FORM` (chưa đo mô hình in token này ⇒ không bias).
+    val MEDIA_WORDS: List<String> = listOf("bai hat", "bai", "nhac", "ca khuc", "song", "music", "track", "video")
 
     /** Cụm mở đầu một ĐIỂM ĐẾN (đứng sau một động từ không phải NAV, vd *"tìm đường tới …"*). */
     val NAV_WORDS: List<String> = listOf("duong den", "duong toi", "destination")

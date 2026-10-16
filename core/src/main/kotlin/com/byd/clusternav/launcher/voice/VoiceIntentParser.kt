@@ -247,6 +247,7 @@ object VoiceIntentParser {
         // (b''') [ĐO log 1.79] "tìm + TỪ-NHẠC" → tra nhạc; "tìm <phi-nhạc>" giữ NO_VERB. Đứng sau headMatch nên "tìm đường đến X" (NAV) đã giải trước — xem [mediaSearch].
         if (verbHit == null) {
             VoiceMediaNavParse.mediaSearch(t, terms)?.let { return it }
+            VoiceMediaNavParse.impliedPlay(t, terms)?.let { return it }   // "nhạc <tên> trên <app nhạc>" ⇒ phát (động từ ngầm)
             // "hạ [cái] cốp [sau]" → ĐÓNG cốp — scoped: "hạ" mơ hồ theo vật (hạ kính=MỞ) nên KHÔNG vào bảng verb chung.
             if (VoiceControlParse.lowersAt0(t) && t.any { it.norm == "cop" }) return VoiceIntent.Control("trunk", 0)
             // Hướng KÍNH "hạ/kéo/nâng … [lên/xuống]" (owner phương ngữ) — chi tiết ở [VoiceControlParse.rewriteWindowDirection].

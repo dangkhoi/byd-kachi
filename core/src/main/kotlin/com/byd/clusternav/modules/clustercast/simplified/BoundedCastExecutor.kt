@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference
  * - Background probes go through [submitIfIdle] (2.96 · R5): enqueued only when nothing runs/waits ⇒ never evict a user intent.
  * - [submitStop] is PRIORITY: cancels active + clears pending, then executes stop immediately.
  * - Every operation has a hard deadline. On timeout: [Future.cancel(true)] + callback.
+ *   Deadline expired while still QUEUED (never ran) ⇒ cancelled + reported via [onDiscard], never a fake TIMEOUT (3.1.10).
  * - Dedicated thread (daemon) — does not block the main/UI thread.
  *
  * 2.93 · CAST-OPEN-TIMEOUT — hạn của MỖI thao tác đi kèm thao tác đó: [submit] nhận hạn riêng (lượt mở chiếu dùng
@@ -36,7 +37,22 @@ class BoundedCastExecutor(
      * có dấu. Mặc định `null` = không báo.
      */
     private val onDiscard: ((String, String) -> Unit)? = null,
+    /**
+     * 3.1.10 · TEST-FLAKY-CAST-BUDGET — bộ hẹn giờ của MỌI hạn (hạn thao tác, hạn Dừng, [schedule]). Mặc định = scheduler chung
+     * (hành vi cũ, không đổi). Test truyền bộ hẹn giờ tay để bắn hạn ĐÚNG lúc muốn — không đua giữa hai mốc giờ thật.
+     */
+    private val timer: CastTimer = CastTimer.SHARED,
 ) {
+    /** Hẹn [action] sau [delayMs] ms trên một luồng KHÔNG phải worker của executor. */
+    fun interface CastTimer {
+        fun after(delayMs: Long, action: () -> Unit)
+
+        companion object {
+            /** Scheduler chung (một luồng daemon `CastTimeout`) — đường duy nhất của bản phát hành. */
+            val SHARED = CastTimer { delayMs, action -> TIMEOUT_SCHEDULER.schedule(Runnable { action() }, delayMs, TimeUnit.MILLISECONDS) }
+        }
+    }
+
     /** Thao tác mang tên — để lượt bỏ khỏi hàng ([DiscardOldestLogged], [submitStop]) nói được CÁI GÌ bị bỏ. */
     private class TaggedTask(val tag: String, body: Callable<Unit>) : FutureTask<Unit>(body)
 
@@ -156,16 +172,27 @@ class BoundedCastExecutor(
      */
     private fun idleNow(): Boolean = isIdle && runningFuture.get() == null
 
-    private fun armTimeout(tag: String, future: Future<*>, started: AtomicBoolean, timeoutMs: Long) {
+    private fun armTimeout(tag: String, future: FutureTask<Unit>, started: AtomicBoolean, timeoutMs: Long) {
         activeFuture.set(future)
-        TIMEOUT_SCHEDULER.schedule({
+        timer.after(timeoutMs) {
             if (!future.isDone) {
                 future.cancel(true)
                 // Review CAST Pass 1 F4: thao tác bị bỏ khỏi hàng (chưa từng chạy) không được báo `TIMEOUT` giả — log hiện trường
                 // chỉ được có `TIMEOUT: <tag>` khi thao tác ấy THẬT SỰ chạy quá hạn.
-                if (started.get()) onTimeout?.invoke(tag)
+                if (started.get()) {
+                    onTimeout?.invoke(tag)
+                } else {
+                    // 3.1.10 · TEST-FLAKY-CAST-BUDGET [ĐO mã]: hạn tính từ lúc GỬI ⇒ thao tác chờ sau một thao tác dài (lượt mở 25 s)
+                    // có thể hết hạn khi CHƯA chạy. Bản cũ huỷ nó IM LẶNG — không TIMEOUT, không DISCARDED — trái hợp đồng R5
+                    // "mỗi lần bỏ đều báo", và hàng gộp −/+ chỉ biết nhờ đoán `staleMs` ở lần bấm sau. Nay báo như mọi lần bỏ khác.
+                    // Soát Pass 11 [P1]: RÚT nó khỏi hàng luôn — thao tác đã huỷ mà còn chiếm ô chờ duy nhất thì lần gửi kế
+                    // (`DiscardOldestLogged`) đẩy nó ra và BÁO BỎ LẦN HAI cùng tag ⇒ `CastCoalescingQueue.dropped(tag)` xoá yêu cầu
+                    // vừa xếp của chính lần gửi ấy (cú bấm −/+ kế bị DROPPED dù sẽ chạy). Một thao tác = một dấu bỏ; ô chờ trống ngay.
+                    executor.remove(future)
+                    reportDiscard(future, "hết hạn $timeoutMs ms khi còn chờ trong hàng (chưa từng chạy)")
+                }
             }
-        }, timeoutMs, TimeUnit.MILLISECONDS)
+        }
     }
 
     /**
@@ -193,12 +220,12 @@ class BoundedCastExecutor(
         //    thao tác trước chạy nốt (mỗi lệnh có hạn đọc riêng); tính từ lúc gửi (bản cũ) thì Dừng bị huỷ trước khi kịp chạy.
         val future = enqueue(tag) {
             val me = runningFuture.get()
-            TIMEOUT_SCHEDULER.schedule({
+            timer.after(stopTimeoutMs) {
                 if (me != null && !me.isDone) {
                     me.cancel(true)
                     onTimeout?.invoke(tag)
                 }
-            }, stopTimeoutMs, TimeUnit.MILLISECONDS)
+            }
             runGuarded(tag, nowMs() + stopTimeoutMs, block)
         }
         activeFuture.set(future)
@@ -231,16 +258,17 @@ class BoundedCastExecutor(
      */
     fun schedule(delayMs: Long, block: () -> Unit) {
         if (isShutdown) return
-        TIMEOUT_SCHEDULER.schedule({
+        timer.after(delayMs) {
             if (!isShutdown) runGuarded("scheduled", null, block)
-        }, delayMs, TimeUnit.MILLISECONDS)
+        }
     }
 
     /** Drain queue and shut down. Blocks up to 2s for active operation to finish. */
     fun shutdown() {
         isShutdown = true
         activeFuture.getAndSet(null)?.cancel(true)
-        executor.shutdownNow()
+        // Thao tác còn chờ: huỷ cho `Future` xong hẳn — bộ hẹn giờ của chúng thấy `isDone`, không báo bỏ/TIMEOUT sau khi đã tắt.
+        executor.shutdownNow().forEach { (it as? Future<*>)?.cancel(false) }
         executor.awaitTermination(2, TimeUnit.SECONDS)
     }
 

@@ -58,6 +58,8 @@ class NavigationHudOwner(private val appContext: Context) : AutoCloseable {
     // content (and mode=OFF re-clears every frame); only Log.i when the key changes → kills per-frame spam, keeps
     // a low-rate signal. Touched only on the single "hud-hal-delivery" worker thread.
     @Volatile private var lastClusterNavLogKey: String? = null
+    /** Soát Pass 11: mốc trạng thái (icon · đường · mode · rc) đã ghi mức I — không có `seg`. */
+    @Volatile private var lastClusterNavStateKey: String? = null
 
     // J1 keep-alive: OEM HUD/centre tự blank nếu quá lâu không có frame mới (đoạn dài không rẽ). Nhịp tim nội bộ
     // re-assert frame đã-applied (bypass dedup) — làn cụm có nhịp 400ms riêng, đường HAL này trước đây thì không.
@@ -122,11 +124,20 @@ class NavigationHudOwner(private val appContext: Context) : AutoCloseable {
                     )
                     HudWriteRecord.note(if (realPush) HudWriteRecord.Kind.GUIDE else HudWriteRecord.Kind.KEEPALIVE, rc)
                     // D4 (closeout 1.28): log-on-change — the 250ms keep-alive re-asserts identical content; only
-                    // Log.i when icon|seg|road|mode changes (rc reflects the actual write just done).
+                    // log when icon|seg|road|mode changes (rc reflects the actual write just done).
+                    // LOG-VOLUME 3.1.10: mức D — `seg` đếm lùi mỗi giây lúc chạy là SỐ ĐO; tệp usage để `SessionLogGate`
+                    // ghi giá trị hiện tại ≤ 1 lần/10 s, còn đổi icon/đường/mode/rc (lỗi ghi) vẫn ghi ngay.
                     val logKey = "$icon|$seg|$road|$mode"
                     if (logKey != lastClusterNavLogKey) {
                         lastClusterNavLogKey = logKey
-                        Log.i(TAG, "cluster-nav icon=$icon seg=$seg road='$road' mode=$mode keepAlive=${!realPush} → $rc")
+                        Log.d(TAG, "cluster-nav icon=$icon seg=$seg road='$road' mode=$mode keepAlive=${!realPush} → $rc")
+                    }
+                    // Soát Pass 11 [P2]: mã icon là 2 chữ số (10–49, `Maneuver`) ⇒ ở mức D cổng coi đổi icon như đổi SỐ ĐO (≤ 1 dòng/10 s):
+                    // hai lần rẽ trong 10 s mất lần giữa. Mốc TRẠNG THÁI (icon · đường · mode · rc) đi mức I khi đổi — vài dòng/chuyến.
+                    val stateKey = "$icon|$road|$mode|$rc"
+                    if (stateKey != lastClusterNavStateKey) {
+                        lastClusterNavStateKey = stateKey
+                        Log.i(TAG, "cluster-nav turn icon=$icon road='$road' mode=$mode → $rc")
                     }
                     // Commit applied state only on successful delivery (no exception thrown).
                     synchronized(dedupLock) {

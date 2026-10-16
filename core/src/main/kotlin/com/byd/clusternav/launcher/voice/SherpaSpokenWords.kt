@@ -407,6 +407,9 @@ object SherpaSpokenWords {
         "state of charge",
         "tailgate",
         "track",
+        // 3.1.10 · VOICE-MEDIA-VIDEO-WORD — từ chỉ loại mới của `VoiceSynonyms.MEDIA_WORDS`; chưa [ĐO] mô hình VN có in token
+        // `VIDEO` không ⇒ chưa bias (thêm dòng hotword là đổi T2 cho mọi câu nhạc — phải đo như 2.99 R5 trước).
+        "video",
         "windows",
         // ── H3 · tên app viết NGUYÊN BẢN tiếng Anh ───────────────────────────────────────────────────
         // Cùng lý do với khối trên, có thêm một phép đo: [ĐO] `voice-mishear-2026-09-16.md` §4 — kiểu nói

@@ -404,7 +404,8 @@ class NavNotificationListener : NotificationListenerService() {
         val navKey = "${state.distance}|${state.road}|${state.eta}"
         if (navKey != lastNavLogKey) {
             lastNavLogKey = navKey
-            Log.i(TAG, "nav dist='${state.distance}' road='${state.road}' eta='${state.eta}'")
+            // LOG-VOLUME 3.1.10: mức D — cự ly/ETA là số đo (xem `SessionLogGate`); đổi đường vẫn ghi ngay.
+            Log.d(TAG, "nav dist='${state.distance}' road='${state.road}' eta='${state.eta}'")
         }
     }
 

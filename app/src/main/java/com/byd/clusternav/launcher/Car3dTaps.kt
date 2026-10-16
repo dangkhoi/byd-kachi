@@ -294,19 +294,31 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
             (v.layoutParams as FrameLayout.LayoutParams).let { lp -> if (lp.width != rw || lp.height != rh) { lp.width = rw; lp.height = rh; v.layoutParams = lp } }
         }
         dots.invalidate()
-        if (!logged) { logged = true; dump("dots (frame px ${w}x$h)") }
+        if (!logged) { logged = true; dump("dots (frame px ${w}x$h)", full = true) }
     }
 
     /** Ghi vị trí chấm MỘT lần sau khi nạp (đo trên máy ảo/xe bằng logcat), không ghi mỗi khung. */
     private var logged = false
 
-    /** Một dòng log vị trí chấm hiện tại (gọi khi nạp xong và khi một đợt xoay dừng — không mỗi khung). */
-    fun dump(head: String) = Log.i(TAG, "$head: " + order.joinToString { id ->
+    /** Chữ ký (bộ phận → loại chấm) của lần [dump] đầy đủ gần nhất — không gồm toạ độ (đổi theo mọi lần xoay). */
+    private var lastKinds: String? = null
+
+    /**
+     * Một dòng log vị trí chấm hiện tại (gọi khi nạp xong và khi một đợt xoay dừng — không mỗi khung). 3.1.10 (log xe: ~700 ký tự
+     * mỗi đợt xoay, 55 KB/7 phút): danh sách đầy đủ CHỈ khi tập loại chấm đổi (hiện/ẩn/khuất) hoặc [full]; còn lại chỉ [head].
+     */
+    fun dump(head: String, full: Boolean = false) {
         // `dot` = chấm đang hiện · `part`/`part-hidden` = không chấm (chỉ xem / khuất), chạm thẳng bộ phận (thấy/khuất).
-        val vis = cam?.let { c -> camBounds?.let { b -> targets[id]?.let { Car3dPick.visible(c, it, b) } } } == true
-        val kind = if (spots[id]?.shown == true) "dot" else if (vis) "part" else "part-hidden"
-        spots[id]?.let { "$id@${it.x.toInt()},${it.y.toInt()}:$kind" } ?: id
-    })
+        val items = order.map { id ->
+            val vis = cam?.let { c -> camBounds?.let { b -> targets[id]?.let { Car3dPick.visible(c, it, b) } } } == true
+            val kind = if (spots[id]?.shown == true) "dot" else if (vis) "part" else "part-hidden"
+            id to (spots[id]?.let { "$id@${it.x.toInt()},${it.y.toInt()}:$kind" } ?: id)
+        }
+        val kinds = items.joinToString { (id, s) -> id + ":" + s.substringAfterLast(':') }
+        if (!full && kinds == lastKinds) { Log.i(TAG, "$head (chấm không đổi loại)"); return }
+        lastKinds = kinds
+        Log.i(TAG, "$head: " + items.joinToString { it.second })
+    }
 
     private fun describe() {
         hotspots.forEach { h ->

@@ -63,7 +63,9 @@ class Car3dLifecycleContractTest {
     @Test
     fun `nap dung mot luong mot luc va don rac va kiem cho trong`() {
         assertTrue(source.contains("fun load(ctx: Context): Loaded? = synchronized(lock)"), "single-flight: hai luồng cùng ghi car3d-src.tmp ⇒ SIGBUS")
-        assertTrue(source.contains("Car3dCache.owned("), "dọn cả .glb.part / .tmp của lần dựng bị giết")
+        // 3.1.10: dọn qua `Car3dCache.stale` = mọi tệp của widget (`owned`: .glb.part / .tmp của lần dựng bị giết) TRỪ bản nhớ khoang.
+        assertTrue(source.contains("Car3dCache.stale("), "dọn cả .glb.part / .tmp của lần dựng bị giết")
+        assertTrue(source.contains("Car3dCabin.apply(mesh, lid, cabinMemo(ctx))"), "lượt khoang đi qua bản nhớ theo khoá đầu vào")
         val alloc = source.substringAfter("Car3dGlb.write(").substringBefore("force()")
         assertTrue(alloc.indexOf("Car3dCache.roomFor(") in 0 until alloc.indexOf("FileChannel.MapMode.READ_WRITE"),
             "kiểm chỗ trống TRƯỚC khi ánh xạ ghi tệp thưa (đĩa đầy = SIGBUS)")

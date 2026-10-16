@@ -18,7 +18,17 @@ class LampHold(private val holdMs: Long = HOLD_MS) {
     private val held = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     /** Vừa gửi [on] cho nút [id] lúc [now] (ms, đồng hồ đơn điệu). Hạn = [holdMsOf] (cửa sổ xác nhận của dòng, nếu có). */
-    fun put(id: String, on: Boolean, now: Long) { held[id] = on to now + holdMsOf(id) }
+    fun put(id: String, on: Boolean, now: Long) { held[id] = on to now + holdMsOf(id); onPut() }
+
+    /**
+     * 3.1.10 · HOLD-EXPIRY-REDRAW — báo người vẽ một đích vừa đặt (luồng nào cũng được: chạm ô · phím · giọng nói — [ControlWriteEcho]).
+     * Người vẽ hẹn MỘT lượt vẽ lại ở [nextExpiryIn]. Trước bản này không ai hẹn: đích hết hạn chỉ hiện ra khi trạng thái xe tình cờ
+     * đổi — trên xe là sự kiện bụi mịn ~1 Hz, mà 3.1.10 đã thôi vẽ lại bề mặt vì datum nó không bày.
+     */
+    @Volatile var onPut: () -> Unit = {}
+
+    /** Còn bao lâu (ms, > 0) tới lúc đích giữ SỚM NHẤT hết hạn; `null` = không còn đích nào sắp hết hạn. */
+    fun nextExpiryIn(now: Long): Long? = held.values.asSequence().map { it.second - now }.filter { it > 0 }.minOrNull()
 
     /**
      * 3.1.6 · R32 — hạn giữ của nút [id]: [ControlDef.confirmMs] của dòng registry (cốp 10 s — [ĐO] đóng ~5,8 s mới đọc 0), không

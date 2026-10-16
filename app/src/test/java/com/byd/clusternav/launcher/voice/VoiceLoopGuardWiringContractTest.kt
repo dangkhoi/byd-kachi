@@ -198,6 +198,23 @@ class VoiceLoopGuardWiringContractTest {
         assertTrue(body.contains("var beepPending = false"), "không bíp lại trong vòng đọc (đã bíp trước mic)")
     }
 
+    /**
+     * VOICE-CAPTURE-EP-OUTSIDE-TRY (soát Pass 9 [P3]) — bộ ngắt câu dựng SAU khi đã cầm micro mà TRƯỚC `try/finally` đóng nó: dựng
+     * ném thì micro (có thể là micro ĐANG GHI nhận từ bộ nghe) rò tới khi tiến trình chết. Đỏ khi gỡ nhánh đóng-micro-rồi-ném.
+     */
+    @Test
+    fun `dung bo ngat cau nem thi micro van duoc dong`() {
+        val body = SourceRoots.body(capture, "private fun listenGranted(")
+        val openIdx = body.indexOf("VoiceTurnEndpoint.open(ctx, endpointer)")
+        val tryIdx = body.indexOf("try {")
+        assertTrue(openIdx in 0 until tryIdx, "mốc: bộ ngắt câu vẫn dựng trước `try` (nếu dời vào trong `try`, sửa bài này)")
+        val guard = body.substring(openIdx, tryIdx)
+        assertTrue(
+            guard.contains(".getOrElse { closeRecord(record, tailBeep = false); throw it }"),
+            "dựng bộ ngắt câu ném ⇒ phải đóng micro rồi ném tiếp (không rò micro, không nuốt lỗi)",
+        )
+    }
+
     @Test
     fun `bip cuoi khong bam sang luot noi ke tiep`() {
         assertTrue(capture.contains("tailBeep: Boolean"), "đường đóng mic phải biết có được bíp cuối hay không")

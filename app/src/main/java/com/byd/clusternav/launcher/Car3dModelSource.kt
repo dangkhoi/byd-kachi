@@ -43,9 +43,31 @@ object Car3dModelSource {
     /** Bỏ tệp đệm (gltfio từ chối tệp đệm ⇒ lượt thử lại dựng lại từ lưới thay vì kẹt với một tệp hỏng). */
     fun invalidate(ctx: Context) = synchronized(lock) { purge(ctx) }
 
-    /** Xoá mọi tệp của widget trong `cacheDir` ([Car3dCache.owned]) — gọi trong [lock]. */
+    /**
+     * Xoá mọi tệp của widget trong `cacheDir` ([Car3dCache.stale]) — gọi trong [lock]. Bản nhớ khoang ([Car3dCache.memo]) ở lại:
+     * nó tự khớp khoá đầu vào, cũ thì [cabinMemo] dọn khi ghi bản mới.
+     */
     private fun purge(ctx: Context) {
-        ctx.cacheDir.listFiles { f -> Car3dCache.owned(f.name) }?.forEach { Log.i(TAG, "xoá ${it.name} (${it.length()} B)"); it.delete() }
+        ctx.cacheDir.listFiles { f -> Car3dCache.stale(f.name) }?.forEach { Log.i(TAG, "xoá ${it.name} (${it.length()} B)"); it.delete() }
+    }
+
+    /**
+     * 3.1.10 — nhớ kết quả [Car3dCabin] trong `cacheDir` (một tệp ~0,1 MB): ghi tệp tạm rồi đổi tên (bị giết giữa chừng ⇒ tệp
+     * `.tmp` bị [purge] dọn lần sau); đọc hỏng ⇒ `null` ⇒ tính lại. Lỗi đĩa khi GHI chỉ log — bản GLB vẫn dựng đúng.
+     */
+    private fun cabinMemo(ctx: Context) = object : Car3dCabin.Memo {
+        override fun get(key: String): ByteArray? =
+            runCatching { File(ctx.cacheDir, Car3dCache.memo(key)).takeIf { it.isFile }?.readBytes() }.getOrNull()
+                .also { Log.i(TAG, "nhớ khoang ${Car3dCache.memo(key)}: ${if (it == null) "chưa có" else "${it.size} B"}") }
+
+        override fun put(key: String, bytes: ByteArray) {
+            val f = File(ctx.cacheDir, Car3dCache.memo(key)); val tmp = File(ctx.cacheDir, f.name + ".tmp")
+            runCatching {
+                tmp.writeBytes(bytes)
+                if (!tmp.renameTo(f)) throw IOException("đổi tên ${tmp.name}")
+                ctx.cacheDir.listFiles { x -> Car3dCache.staleMemo(x.name, key) }?.forEach { it.delete() }
+            }.onFailure { tmp.delete(); Log.w(TAG, "không ghi được bản nhớ khoang", it) }
+        }
     }
 
     /**
@@ -77,7 +99,7 @@ object Car3dModelSource {
         // Một bản đệm duy nhất: bản của khoá cũ (đổi phiên bản AVM / CACHE_VERSION) + bản dở/bản chép của lần dựng bị giết
         // giữa chừng ([Car3dCache.owned]) bỏ TRƯỚC khi dựng (trong [lock] ⇒ không luồng nào đang dùng chúng).
         purge(ctx)
-        val t0 = System.nanoTime()
+        val t0 = System.nanoTime(); val cpu0 = android.os.Debug.threadCpuTimeNanos()
         val assets = src.assets
         val body = BydAvmMesh.parse(native(ctx, assets, path("car.mesh")))
         val wheels = runCatching { BydAvmMesh.parse(native(ctx, assets, path("wheel.mesh"))) }
@@ -112,8 +134,10 @@ object Car3dModelSource {
         // Mặt sơn chỉ thấy QUA KÍNH (mặt trong khung kính, sơn dưới nẹp trụ/nóc) ⇒ đen như nội thất (đo tầm nhìn — [Car3dCabin]).
         // SAU bản lề + vai đèn (khớp theo tên — phần tách giữ tên), giữ tư cách nắp cốp của phần tách.
         val tc = System.nanoTime()
-        val cabin = Car3dCabin.apply(mesh, lid)
-        Log.i(TAG, "mặt sơn qua kính → đen: ${cabin.blackened} · tách mặt ${cabin.backed} · ${(System.nanoTime() - tc) / 1_000_000} ms")
+        val cc = android.os.Debug.threadCpuTimeNanos()
+        val cabin = Car3dCabin.apply(mesh, lid, cabinMemo(ctx))
+        Log.i(TAG, "mặt sơn qua kính → đen: ${cabin.blackened} · tách mặt ${cabin.backed} · ${(System.nanoTime() - tc) / 1_000_000} ms" +
+            " (CPU luồng ${(android.os.Debug.threadCpuTimeNanos() - cc) / 1_000_000} ms)")
         // Ảnh của kiểu PHÁT SÁNG (đèn, nội thất, mâm) giải mã thu nhỏ để đo: UV của bộ phận rơi vào vùng đen ⇒ bản trơn ([Car3dMaterials]).
         val texels = m.materials.values.filter { it.emissive != null }.mapNotNull { it.texture }.distinct()
             .mapNotNull { name -> tex[name]?.let { b -> texels(b)?.let { name to it } } }.toMap()
@@ -127,7 +151,8 @@ object Car3dModelSource {
         if (!tmp.renameTo(cache)) { tmp.delete(); Log.w(TAG, "không ghi được tệp đệm ${cache.name}") }
         Log.i(TAG, "AVM ${path("car.mesh")}: ${mesh.buffers.size} bộ đỉnh ${mesh.buffers.sumOf { it.count }} đỉnh · ${cabin.mesh.parts.size} bộ phận · " +
             "${tex.size} ảnh · ${paints.size} màu sơn · glb ${glb.capacity()} B · " +
-            "đọc+phân tích ${(t1 - t0) / 1_000_000} ms · dựng ${(System.nanoTime() - t1) / 1_000_000} ms")
+            "đọc+phân tích ${(t1 - t0) / 1_000_000} ms · dựng ${(System.nanoTime() - t1) / 1_000_000} ms" +
+            " · CPU luồng ${(android.os.Debug.threadCpuTimeNanos() - cpu0) / 1_000_000} ms")
         Log.i(TAG, "bộ phận: ${mesh.parts.joinToString(",") { it.name }}")
         return Loaded(m, glb, "avm:${path("car.mesh")}", paints)
     }
@@ -222,8 +247,11 @@ object Car3dModelSource {
     /** Thư mục lưới BYD trong assets của bản vehicleTest (dưới nó là `<group>/CarModel/<folder>/car.mesh`). */
     const val BUNDLED = "oem-3d/"
     private const val FALLBACK_TYPE = "138"
-    /** Tăng khi đổi cách dựng GLB / bảng vật liệu ⇒ đệm cũ tự bỏ. */
-    private const val CACHE_VERSION = "v27"   // v27: đèn khoang theo bản đã dựng (extras.glow — nội thất trơn SL6 không cháy kem) · bản đèn sáng không biến thể nào nhận ⇒ kiểu tắt (§15) · v26: gỡ v25 (#49 rãnh ô kính — không đổi gì thấy được trên máy ảo, owner 14/10 chọn dò từng bộ phận trước) ⇒ nội dung = v24, khoá mới để máy đã dựng v25 dựng lại · v24: kim loại (lớp metal) chỉ thấy qua kính → đen như sơn (Car3dCabin.isShell) · v23: mặt đen chỉ thấy qua kính KHÔNG chiếu sáng (KHR_materials_unlit — hết vạch xám phản xạ gương, #45) · v22: mặt đục nằm TRÊN tấm kính → đen (Car3dCabin.PLANE; sơn chỉ khi ở TRƯỚC kính) — bản thử máy ảo v21 mang tệp đệm khác · v20: ảnh đèn tối ⇒ trơn theo CẢ lưới (Seal body_lamp_15on giữ ảnh) · trơn phát sáng kẹp ×1 (đuôi không cháy trắng) · v19: vật liệu mọi đời (lớp theo từ chung · ảnh chỉ gắn khi đo dùng được · kính đèn đuôi đỏ sẫm — SL6) · v18: mặt sơn chỉ thấy qua kính → đen (Car3dCabin) · v17: mâm phát sáng nền 0,8 (mép dưới không tối; 1,5 cháy trắng) · v16: thử 1,5 · v15: lòng cốp một màu đen sâu · v14: dải sau khoang cũng ẩn kết cấu trong · v13: khoang quấn đúng pháp tuyến · v12: khoang: ẩn theo trọng tâm trong lòng vách · dải sàn sau hẹp · v11: khoang sạch (ẩn kết cấu trong theo đo) · mâm điện môi · v10: khoang cốp lùi vào trong vỏ nắp · v9: nội thất khai phát sáng (đèn đọc) · v8: nắp cốp theo khe tấm + khoang · nẹp metal đen · v7: bỏ bộ phận gộp · nắp cốp · vai đèn + phát sáng theo ảnh · v6: lật UV · mipmap · bảng đèn AVM · kiểm hợp lý · vật liệu theo khai báo · bản lề · phát sáng
+    /**
+     * Tăng khi đổi cách dựng GLB / bảng vật liệu ⇒ đệm cũ tự bỏ. Lượt khoang ([Car3dCabin], phần đắt nhất) KHÔNG theo khoá này mà
+     * theo khoá suy từ đầu vào ([Car3dCabin.key], bản nhớ [Car3dCache.memo]) ⇒ đổi khoá này chỉ tốn phần dựng còn lại.
+     */
+    private const val CACHE_VERSION = "v28"   // v28: Car3dCabin cặp hướng đối nhau (3.1.10, §17 — khác v27 dưới nhiễu) + bản nhớ khoang theo khoá đầu vào (đổi khoá GLB không chạy lại lượt khoang) · v27: đèn khoang theo bản đã dựng (extras.glow — nội thất trơn SL6 không cháy kem) · bản đèn sáng không biến thể nào nhận ⇒ kiểu tắt (§15) · v26: gỡ v25 (#49 rãnh ô kính — không đổi gì thấy được trên máy ảo, owner 14/10 chọn dò từng bộ phận trước) ⇒ nội dung = v24, khoá mới để máy đã dựng v25 dựng lại · v24: kim loại (lớp metal) chỉ thấy qua kính → đen như sơn (Car3dCabin.isShell) · v23: mặt đen chỉ thấy qua kính KHÔNG chiếu sáng (KHR_materials_unlit — hết vạch xám phản xạ gương, #45) · v22: mặt đục nằm TRÊN tấm kính → đen (Car3dCabin.PLANE; sơn chỉ khi ở TRƯỚC kính) — bản thử máy ảo v21 mang tệp đệm khác · v20: ảnh đèn tối ⇒ trơn theo CẢ lưới (Seal body_lamp_15on giữ ảnh) · trơn phát sáng kẹp ×1 (đuôi không cháy trắng) · v19: vật liệu mọi đời (lớp theo từ chung · ảnh chỉ gắn khi đo dùng được · kính đèn đuôi đỏ sẫm — SL6) · v18: mặt sơn chỉ thấy qua kính → đen (Car3dCabin) · v17: mâm phát sáng nền 0,8 (mép dưới không tối; 1,5 cháy trắng) · v16: thử 1,5 · v15: lòng cốp một màu đen sâu · v14: dải sau khoang cũng ẩn kết cấu trong · v13: khoang quấn đúng pháp tuyến · v12: khoang: ẩn theo trọng tâm trong lòng vách · dải sàn sau hẹp · v11: khoang sạch (ẩn kết cấu trong theo đo) · mâm điện môi · v10: khoang cốp lùi vào trong vỏ nắp · v9: nội thất khai phát sáng (đèn đọc) · v8: nắp cốp theo khe tấm + khoang · nẹp metal đen · v7: bỏ bộ phận gộp · nắp cốp · vai đèn + phát sáng theo ảnh · v6: lật UV · mipmap · bảng đèn AVM · kiểm hợp lý · vật liệu theo khai báo · bản lề · phát sáng
     private const val HINGE_LOG = 12
     private const val TEXEL_MAX = 256
     private const val CHUNK = 64 * 1024

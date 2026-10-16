@@ -44,4 +44,18 @@ class VoiceWakeHandoffWiringContractTest {
             "feed, observe và lượt cuối (finish) đều phải báo CPU thật")
         assertTrue(inner.contains("val hit = kws.finish()"), "sườn tiếng→im ⇒ lượt giải mã cuối (VOICE-WAKE-TAIL-UNDECODED)")
     }
+
+    /**
+     * WAKE-TAIL-STALE-FINISH (soát Pass 9 [P3] → 3.1.10) — mỗi lần MỞ micro cho một lượt nghe mới, đuôi câu của lượt trước phải
+     * được xoá TRƯỚC khung đầu tiên (`VoiceWakeController.onMicOpened`). Cơ chế thuần khoá ở `VoiceWakeControllerTest`; bài này
+     * khoá DÂY NỐI (CLAUDE.md §8 — hàm mới phải có chỗ gọi, và đúng chỗ). Đỏ khi gỡ dòng gọi hoặc dời nó xuống sau `onFrame`.
+     */
+    @Test fun `mo micro thi xoa duoi cau cua luot truoc, truoc khung dau tien`() {
+        val inner = SourceRoots.body(listener, "private fun inner(kws: WakeEngine?): Inner")
+        val open = inner.indexOf("openRecord()")
+        val cleared = inner.indexOf("controller.onMicOpened()")
+        val frame = inner.indexOf("controller.onFrame(")
+        assertTrue(open in 0 until cleared && cleared in 0 until frame,
+            "onMicOpened phải đứng SAU openRecord và TRƯỚC khung đầu tiên (onFrame): open=$open cleared=$cleared frame=$frame")
+    }
 }

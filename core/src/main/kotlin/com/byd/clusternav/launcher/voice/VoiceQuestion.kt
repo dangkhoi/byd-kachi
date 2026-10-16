@@ -56,7 +56,37 @@ internal object VoiceQuestion {
     fun askAt(t: List<Token>): Pair<Int, Int>? =
         ASK_PHRASES.firstNotNullOfOrNull { words ->
             t.indices.firstOrNull { VoiceLexicon.phraseAt(t, it, words) }?.let { it to words.size }
-        }
+        } ?: whatAt(t)
+
+    /**
+     * ═══ 3.1.10 · VOICE-QUESTION-TAIL-GI — chữ hỏi *"gì"* (`gi`) ═══════════════════════════════════════════════════════════
+     *
+     * [SUY từ mã, soát Pass 10] *"nhạc gì đang phát trên youtube"* · *"bài gì đây"* không có cụm hỏi nào ở [ASK_PHRASES] ⇒ rơi
+     * xuống `impliedPlay` ⇒ `Media(QUERY "gì đang phát")` = đi TÌM chữ *"gì đang phát"*. Một câu hỏi chỉ được trả lời, không làm.
+     *
+     * Chữ *"gì"* KHÔNG được quét mọi vị trí như [ASK_PHRASES]: tên bài có *"gì"* rất thường (*"mở bài &lt;… gì …&gt;"*). Ba cổng:
+     *  1. **không có động từ HÀNH ĐỘNG ở đầu** (sau tiếng đệm) — *"mở/phát bài &lt;… gì&gt;"* vẫn là lệnh, như cổng (4) của [isChoice];
+     *  2. `gi` là **từ CUỐI** (*"chế độ lái là gì"*), HOẶC
+     *  3. `gi` đứng **NGAY SAU từ chỉ loại ở đầu câu** ([VoiceSynonyms.MEDIA_WORDS]: *"nhạc gì …"* · *"bài hát gì"* · *"video gì"*)
+     *     — từ chỉ loại là chỗ một TÊN tự do bắt đầu, nên *"&lt;loại&gt; gì"* là dạng hỏi; còn *"&lt;loại&gt; &lt;tên … gì …&gt; trên app"*
+     *     có chữ của tên chen giữa ⇒ không khớp, vẫn phát.
+     * Ca mơ hồ thật (tên bài MỞ ĐẦU bằng *"Gì"*, nói không động từ) nghiêng về HỎI = không làm gì: hỏng an toàn, nói lại có *"mở"* là được.
+     */
+    private fun whatAt(t: List<Token>): Pair<Int, Int>? {
+        val body = VoiceLexicon.dropLeadingFillers(t)
+        val off = t.size - body.size
+        if (body.size < 2 || actionAtHead(body)) return null
+        if (body.last().norm == WHAT) return t.size - 1 to 1
+        val head = CATEGORY_HEADS.firstOrNull { VoiceLexicon.phraseAt(body, 0, it) } ?: return null
+        return if (body.size > head.size && body[head.size].norm == WHAT) off + head.size to 1 else null
+    }
+
+    /** `gì` sau khi bỏ dấu ([VoiceLexicon.deaccent]). */
+    private const val WHAT = "gi"
+
+    /** Từ chỉ loại mở đầu một TÊN tự do — đúng bảng của bộ phân tích nhạc (một bảng, không bản sao), dài trước. */
+    private val CATEGORY_HEADS: List<List<String>> =
+        VoiceSynonyms.MEDIA_WORDS.map { it.split(" ") }.sortedByDescending { it.size }
 
     /**
      * Từ dựng nên bộ khung của một câu hỏi lựa chọn — **không** mang nghĩa về xe, nên cắt ra là an toàn.
@@ -218,6 +248,7 @@ internal object VoiceQuestion {
         ASK_PHRASES.forEach { addAll(it) }
         addAll(SCAFFOLD)
         addAll(BARE_ASK)
+        add(WHAT)
     }
 
     /**

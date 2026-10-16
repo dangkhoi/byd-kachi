@@ -41,6 +41,29 @@ internal fun KachiHomeActivity.resyncTiles() {
     workspace.widgetData().let { d -> workspace.slotViews.forEach { WidgetViews.refreshRead(it, d) } }
 }
 
+/**
+ * 3.1.10 · HOLD-EXPIRY-REDRAW — đích giữ [LampHold] (chạm ô · phím · giọng nói qua [ControlWriteEcho]) hết hạn thì số đọc phải thắng
+ * NGAY, không chờ trạng thái xe tình cờ đổi (trên xe trước 3.1.10: sự kiện bụi mịn ~1 Hz vẽ lại mọi thứ và che lỗ này). [on] = màn ở
+ * trước: nghe [LampHold.onPut]; mỗi lần có đích mới ⇒ hẹn ĐÚNG MỘT lượt [resyncTiles] lúc đích sớm nhất hết hạn trên `handler` có sẵn
+ * (một tin nhắn mang [HoldExpiryToken], hẹn lại thay hẹn cũ — không vòng đếm theo nhịp). Màn rời ⇒ gỡ nghe + huỷ hẹn.
+ */
+internal fun KachiHomeActivity.watchHoldExpiry(on: Boolean) {
+    handler.removeCallbacksAndMessages(HoldExpiryToken)
+    // Soát Pass 11 [P2]: lời báo đích mới cũng mang [HoldExpiryToken] — một `post` trần đã xếp trước lúc màn rời sẽ sống qua
+    // `removeCallbacksAndMessages(token)`, chạy `armHoldExpiry` sau khi đã gỡ và hẹn lại `resyncTiles` cho màn đang khuất.
+    LampHold.shared.onPut = if (on) ({ handler.postAtTime({ armHoldExpiry() }, HoldExpiryToken, android.os.SystemClock.uptimeMillis()) }) else ({})
+    if (on) armHoldExpiry()
+}
+
+private object HoldExpiryToken
+
+private fun KachiHomeActivity.armHoldExpiry() {
+    handler.removeCallbacksAndMessages(HoldExpiryToken)
+    val now = android.os.SystemClock.uptimeMillis()
+    val wait = LampHold.shared.nextExpiryIn(now) ?: return
+    handler.postAtTime({ resyncTiles(); armHoldExpiry() }, HoldExpiryToken, now + wait)
+}
+
 internal fun KachiHomeActivity.render(state: HomeUiState) {
     val prev = shownState
     // #10 (2026-09-23) GIỮ STATE: theme đổi ⇒ restyle tại chỗ (không recreate=không giết ô app); chỉ LANG mới recreate.
@@ -74,7 +97,10 @@ internal fun KachiHomeActivity.render(state: HomeUiState) {
         topStrip.refreshChips(state.carStatus, unitPrefs, state.topStrip)
         // RW0/Đ4: thanh nút cũng cần trạng thái xe để ô ĐỌC sống được ở đó. CHỈ đổ lại số của ô đọc — KHÔNG
         // dựng lại thanh (C5: dựng lại mỗi nhịp 1/giây sẽ nháy + mất trạng thái ô vừa bấm).
-        dock.setCarStatus(state.carStatus, unitPrefs)
+        // 3.1.10 · EVENT-PATH-SCOPED — trạng thái xe đổi ở datum/nút thanh KHÔNG bày ⇒ không đổ (cùng luật ô giữa màn, `WorkspaceView`).
+        if (prev == null || prev.topStrip != state.topStrip ||
+            CarStatusDelta.of(prev.carStatus, state.carStatus).touches(CarDataDemand.interestOf(state.dock.enabled))
+        ) dock.setCarStatus(state.carStatus, unitPrefs)
         workspace.setUnitPrefs(unitPrefs)   // R11: ô giữa màn cũng theo lựa chọn đơn vị (tự bỏ qua nếu không đổi)
         cameraSignal.tick()   // camera theo xi-nhan (tự đọc xi-nhan qua HAL — findings 2026-09-23; pref mặc định TẮT)
     }

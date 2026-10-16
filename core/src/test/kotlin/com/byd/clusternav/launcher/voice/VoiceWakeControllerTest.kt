@@ -115,6 +115,25 @@ class VoiceWakeControllerTest {
         assertEquals(1, second.count { it == VoiceWakeController.Frame.FINISH })
     }
 
+    /**
+     * WAKE-TAIL-STALE-FINISH (soát Pass 9 [P3]) — nói giữa chừng thì phiên lệnh xin micro (YIELD), listener nhả mic; mở lại sau
+     * đó thì khung im ĐẦU không được phát FINISH cho đoạn tiếng của lượt TRƯỚC. Red-proof: gỡ `onMicOpened` ⇒ khung đầu = FINISH.
+     */
+    @Test fun `mo lai micro thi duoi cau cua luot truoc khong phat FINISH`() {
+        val c = VoiceWakeController(
+            loadGuard = VoiceLoadGuard(suspendAbove = 6.0, resumeBelow = 4.0, resumeStableReads = 1), tailMs = 600L,
+        )
+        var t = 0L
+        repeat(5) { c.onFrame(10_000.0, 1.0, t); t += 100 }   // đang có tiếng thì bị nhường micro
+        t += 5_000L                                            // micro nhả ~5 s (phiên lệnh)
+        c.onMicOpened()
+        val got = (0 until 10).map { c.onFrame(0.0, 1.0, t).also { t += 100 } }
+        assertTrue(got.none { it == VoiceWakeController.Frame.FINISH }, "lượt nghe mới bắt đầu bằng im ⇒ không FINISH cũ: $got")
+        // lượt mới vẫn có đuôi câu như thường
+        repeat(5) { c.onFrame(10_000.0, 1.0, t); t += 100 }
+        assertEquals(1, (0 until 10).count { c.onFrame(0.0, 1.0, t).also { t += 100 } == VoiceWakeController.Frame.FINISH })
+    }
+
     @Test fun `khong co tieng truoc thi khong FINISH, no ngan sach thi khong FINISH`() {
         val c = VoiceWakeController(loadGuard = VoiceLoadGuard(suspendAbove = 6.0, resumeBelow = 4.0, resumeStableReads = 1))
         assertTrue((0 until 30).none { c.onFrame(0.0, 1.0, it * 100L) == VoiceWakeController.Frame.FINISH }, "im từ đầu ⇒ không lượt nào")

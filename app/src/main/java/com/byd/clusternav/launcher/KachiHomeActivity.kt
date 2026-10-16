@@ -193,7 +193,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     internal var shownState: HomeUiState? = null   // view-side diff cache của collector (KHÔNG phải nguồn sự thật)
 
     internal lateinit var wall: WallView
-    private val handler = Handler(Looper.getMainLooper())
+    internal val handler = Handler(Looper.getMainLooper())   // internal: hẹn vẽ lại lúc đích giữ hết hạn (`watchHoldExpiry`)
     private val tick = object : Runnable {
         override fun run() {
             topStrip.updateClock()

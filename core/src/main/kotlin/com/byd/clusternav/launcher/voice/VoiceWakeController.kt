@@ -99,6 +99,13 @@ class VoiceWakeController(
      */
     fun onInferenceCost(cpuMs: Long, nowMs: Long) = budget.charge(cpuMs, nowMs)
 
+    /**
+     * WAKE-TAIL-STALE-FINISH (soát Pass 9 [P3]) — listener vừa MỞ micro cho một lượt nghe mới (sau YIELD/SUSPEND/HANDED/lỗi).
+     * Đuôi câu của lượt TRƯỚC không còn nghĩa: không xoá thì khung im ĐẦU của lượt này (đã quá [tailMs]) phát một `FINISH`
+     * trên cửa sổ cũ. Một phép gán mỗi lần mở micro — không tốn gì trên nhịp khung.
+     */
+    fun onMicOpened() { tailPending = false }
+
     /** Tổng ms CPU suy diễn đã tính + số dư hiện tại — cho dòng nhật ký định kỳ của `:app`. */
     fun chargedCpuMs(): Long = budget.chargedMs
     fun budgetCreditMs(): Double = budget.creditMs()

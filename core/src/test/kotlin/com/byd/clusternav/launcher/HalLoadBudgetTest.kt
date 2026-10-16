@@ -83,7 +83,7 @@ class HalLoadBudgetTest {
      * datum sống bằng đối soát 60 s / 30 s). Gateway trả lời mọi getter (trần trên), đếm ở cửa gateway THẬT (sau `EventCachedGateway`) =
      * `KachiPerf.Counter.HAL_READ`.
      */
-    private fun eventMode(state: HomeUiState, proven: Boolean): Pair<Int, Map<String, Int>> {
+    private fun eventMode(state: HomeUiState, proven: Boolean, lamps: LampLive.Lamps? = null): Pair<Int, Map<String, Int>> {
         val gw = AnswerAll()
         var now = 0L
         val holder = CarDataDemand.Holder()
@@ -95,7 +95,8 @@ class HalLoadBudgetTest {
         val byDev = plan.groupBy { it.device }
         byDev.forEach { (d, bs) -> cache.onReg(bs.flatMap { it.ids }.toSet(), emptySet(), d) }
         if (proven) byDev.values.forEach { bs -> cache.onEvent(bs.first().ids.first(), 1, 1.0) }
-        val adapter = CarDataAdapter(HalBindingTable(EventCachedGateway(gw, cache)), holder::get, clock = { now },
+        // 3.1.10 · TURN-POLL-SERVED — cùng phép trừ của `AppContainer`: datum hộp socket `LampLive` đang đè không đọc HAL.
+        val adapter = CarDataAdapter(HalBindingTable(EventCachedGateway(gw, cache)), { holder.get()?.let { it - LampLive.served(lamps) } }, clock = { now },
             controlDemand = holder::controls, covered = cache::covers)
         var s = CarStatus()
         fun second(t: Int) {
@@ -125,6 +126,24 @@ class HalLoadBudgetTest {
             assertTrue(ev < 100, "chế độ sự kiện $ev ≥ 100/phút — phần còn lại theo device: $per")
             assertTrue((per["BYDAutoAcDevice"] ?: 0) <= 12, "ô AC còn bị đọc như nhịp 1 s: $per")
         }
+    }
+
+    /**
+     * 3.1.10 · TURN-POLL-SERVED — [ĐO xe 16/10] xi-nhan là datum DUY NHẤT còn poll ngoài đường sự kiện (`poll còn lại`, Light 30–36 lượt/
+     * phút). Xi-nhan của màn đến bằng hộp socket `LampLive` (đè số đọc ở `collectHome`) ⇒ lúc hộp sống, lượt đọc xi-nhan là thuần lãng phí.
+     * Màn 3D QA2, mọi device đã chứng minh: hộp sống (chỉ xi-nhan) ⇒ Light bớt đúng 2 id × 6 nhịp chậm = 12/phút; hộp báo đủ đèn ⇒ Light
+     * còn đúng đối soát `headlight_feedback` (không có ở helper) [ĐO bài này: 87 → 75 → 64/phút; Light 25 → 13 → 2]. Hộp tắt ⇒ y như trước (đọc lại ở nhịp chậm kế — không gate bằng dữ liệu tự làm mới).
+     */
+    @Test
+    fun `3110 xi-nhan khong poll khi hop socket dang de`() {
+        val (off, perOff) = eventMode(qa2, proven = true)
+        val (turn, perTurn) = eventMode(qa2, proven = true, lamps = LampLive.Lamps(left = false, right = false))
+        val all = LampLive.Lamps(false, false, lowBeam = true, highBeam = false, frontFog = false, rearFog = false, side = false, drl = true)
+        val (lamps, perAll) = eventMode(qa2, proven = true, lamps = all)
+        println("HAL/phút QA2 sự kiện: hộp tắt=$off (Light ${perOff["BYDAutoLightDevice"]}) · hộp xi-nhan=$turn (Light ${perTurn["BYDAutoLightDevice"]}) · hộp đủ đèn=$lamps (Light ${perAll["BYDAutoLightDevice"]})")
+        assertTrue(off - turn == 12, "hộp sống ⇒ đúng 12/phút xi-nhan bớt ($off → $turn)")
+        assertTrue((perAll["BYDAutoLightDevice"] ?: 0) <= 2, "hộp đủ đèn ⇒ Light chỉ còn đối soát `headlight_feedback` (2/phút): $perAll")
+        assertTrue(lamps <= 64, "màn 3D QA2 sự kiện + hộp đủ đèn $lamps > 64/phút")
     }
 
     @Test

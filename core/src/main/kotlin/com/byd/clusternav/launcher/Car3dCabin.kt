@@ -47,9 +47,17 @@ import kotlin.math.sqrt
  *    táp-lô) ⇒ chỉ tam giác có điểm ảnh trên-kính ≥ 1/[PLANE_SHARE] số còn lại (thấy thẳng + qua kính) mới sang đen.
  * Đèn ([Car3dLamps] — tên/vật liệu có "lamp") không bao giờ là ứng viên (bóng đèn nằm sát kính đèn là đúng).
  *
- * Chi phí: MỘT lần lúc dựng tệp đệm GLB (luồng nền) — [ĐO] ~1,0–1,4 s JVM máy Mac trên lưới Seal; bộ đệm độ sâu 2 × [RES]² số thực
- * (~2 MB) + 2 bộ đếm Int theo tam giác sơn (~0,4 MB); đọc đỉnh thẳng từ đệm nguồn (không chép lưới ra heap). Lúc chạy: 0 (thêm
- * ≤ 9 nút GLB, không tham số/nhịp mới).
+ * Chi phí: MỘT lần lúc dựng tệp đệm GLB (luồng nền) — bộ đệm độ sâu 4 × [RES]² số thực (~4 MB) + bộ đếm Int theo tam giác ứng
+ * viên; lúc chạy: 0 (thêm ≤ 9 nút GLB, không tham số/nhịp mới).
+ *
+ * ## 3.1.10 — giá dựng (`CAR3D-CABIN-BUILD-COST`, docs/diagnostics/widget-3d-301-2026-10-13.md §17)
+ * [ĐO log xe 15/10] lần dựng GLB sau đổi khoá đệm mất 33,6 s, riêng lượt này 24,6 s (73 %). Hai chữa ở tầng chung, không đổi luật:
+ *  • **Cặp hướng đối nhau dùng chung MỘT lần phủ**: ảnh trực giao nhìn theo `d` và `−d` có cùng lưới điểm ảnh — mặt gần nhất của
+ *    `−d` là mặt XA nhất của `d` ⇒ mỗi lần phủ giữ cả min lẫn max độ sâu ([VIEWS]/2 trục Fibonacci nửa cầu trên + điểm đối của
+ *    chúng = [VIEWS] hướng như cũ). [ĐO JVM lưới Seal] lượt này 1,40 → 0,80 s; khác bản 64 hướng cũ 283 tam giác — dưới nhiễu của
+ *    chính bản cũ khi đổi 64 → 62/66 hướng hoặc 512 → 520 điểm ảnh (~1 450–1 490 tam giác).
+ *  • **Nhớ kết quả theo đầu vào thật** ([Memo], [key]): khoá = băm hình học đã gói + cờ kính/ứng viên + hằng số + [RULES] ⇒ đổi
+ *    vật liệu/đèn/ghi GLB (đổi khoá đệm GLB) KHÔNG chạy lại lượt này; chỉ đổi lưới hoặc luật mới chạy.
  */
 object Car3dCabin {
 
@@ -58,11 +66,23 @@ object Car3dCabin {
     /** Phân loại một tam giác sơn. */
     enum class Kind { KEEP, CABIN, BACK_OF_FRONT, BACK_OF_BACK }
 
-    fun apply(mesh: BydAvmMesh, lid: Car3dLid.Result? = null): Result {
+    /**
+     * Nơi nhớ kết quả phân loại giữa các lần dựng (`:app` = tệp trong `cacheDir`, [Car3dCache.memo]). [get] trả `null` khi chưa
+     * có; byte hỏng/lệch ⇒ [decode] trả `null` ⇒ tính lại (không bao giờ dùng kết quả không khớp ứng viên).
+     */
+    interface Memo {
+        fun get(key: String): ByteArray?
+        fun put(key: String, bytes: ByteArray)
+    }
+
+    fun apply(mesh: BydAvmMesh, lid: Car3dLid.Result? = null, memo: Memo? = null): Result {
         val scene = mesh.parts.filter { !it.name.contains(OPEN) && it.indexCount >= 3 }
         val cands = scene.filter { isShell(it) || isTrim(it) }
         if (cands.isEmpty()) return Result(mesh, lid, emptyMap())
-        val kinds = classify(mesh, scene, cands)
+        val pack = pack(mesh, scene) ?: return Result(mesh, lid, emptyMap())
+        val key = key(pack, cands, VIEWS, RES)
+        val kinds = memo?.get(key)?.let { decode(it, cands) }
+            ?: classify(pack, cands, VIEWS, RES).also { memo?.put(key, encode(it, cands)) }
         if (kinds.values.all { k -> k.all { it == Kind.KEEP } }) return Result(mesh, lid, emptyMap())
         val byName = mesh.parts.groupBy { it.name }
         val split = java.util.IdentityHashMap<BydAvmMesh.Part, Array<Kind>>()
@@ -133,8 +153,8 @@ object Car3dCabin {
      * đen một mặt vào trong; còn lại [Kind.KEEP].
      */
     internal fun classify(
-        mesh: BydAvmMesh, scene: List<BydAvmMesh.Part>, cands: List<BydAvmMesh.Part>, views: Int = VIEWS, res: Int = RES,
-    ): Map<BydAvmMesh.Part, Array<Kind>> = hits(mesh, scene, cands, views, res).mapValues { (p, h) ->
+        pack: Pack, cands: List<BydAvmMesh.Part>, views: Int = VIEWS, res: Int = RES,
+    ): Map<BydAvmMesh.Part, Array<Kind>> = hits(pack, cands, views, res).mapValues { (p, h) ->
         val paint = isShell(p)
         Array(h.directFront.size) { t ->
             val df = h.directFront[t]; val db = h.directBack[t]; val vf = h.viaFront[t]; val vb = h.viaBack[t]; val on = h.onGlass[t]
@@ -161,21 +181,23 @@ object Car3dCabin {
         val onGlass = IntArray(n)
     }
 
-    /** Số điểm ảnh (cộng mọi hướng) mỗi tam giác sơn: (thấy thẳng, thấy qua kính). */
-    internal fun hits(
-        mesh: BydAvmMesh, scene: List<BydAvmMesh.Part>, cands: List<BydAvmMesh.Part>, views: Int, res: Int,
-    ): Map<BydAvmMesh.Part, Hits> {
+    /**
+     * Hình học cảnh gói MỘT lần: toạ độ tam giác lượng tử Short (~0,1 mm theo bán kính cầu bao — Seal 207 k tam giác ⇒ ~3,7 MB;
+     * [ĐO máy ảo 14/10] đọc đỉnh qua đệm ánh xạ mỗi hướng nhìn = 6,8 s trên ART), cờ kính, tam giác đầu của mỗi bộ phận. Cũng là
+     * đầu vào của [key].
+     */
+    internal class Pack(
+        val pk: ShortArray, val isGl: BooleanArray, val start: java.util.IdentityHashMap<BydAvmMesh.Part, Int>,
+        val total: Int, val radius: Double, val qs: Double,
+    )
+
+    internal fun pack(mesh: BydAvmMesh, scene: List<BydAvmMesh.Part>): Pack? {
         val mn = DoubleArray(3) { Double.MAX_VALUE }; val mx = DoubleArray(3) { -Double.MAX_VALUE }
         for (p in scene) { val b = mesh.buffer(p.buffer) ?: continue
             for (i in 0 until p.indexCount) { val v = p.index(i); for (k in 0..2) { val x = b.position(v, k).toDouble(); if (x < mn[k]) mn[k] = x; if (x > mx[k]) mx[k] = x } } }
-        if (mn[0] > mx[0]) return emptyMap()
+        if (mn[0] > mx[0]) return null
         val c = DoubleArray(3) { (mn[it] + mx[it]) / 2 }
         val radius = sqrt((0..2).sumOf { (mx[it] - mn[it]) * (mx[it] - mn[it]) }) / 2
-        val pix = maxOf(2 * radius / res, MIN_PIX)
-        val n = ceil(2 * radius / pix).toInt() + 2
-        val opaque = FloatArray(n * n); val glass = FloatArray(n * n)
-        // Toạ độ tam giác GÓI một lần (Short lượng tử ~0,1 mm theo bán kính cầu bao — Seal 206 k tam giác ⇒ ~3,7 MB): [ĐO máy ảo
-        // 14/10] đọc đỉnh qua đệm ánh xạ mỗi hướng nhìn = 6,8 s trên ART; mảng thường nhanh hơn nhiều lần.
         val total = scene.sumOf { it.indexCount / 3 }
         val pk = ShortArray(total * 9); val isGl = BooleanArray(total); val start = java.util.IdentityHashMap<BydAvmMesh.Part, Int>()
         val qs = radius / Short.MAX_VALUE
@@ -193,11 +215,69 @@ object Car3dCabin {
                 at++
             }
         }
+        return Pack(pk, isGl, start, total, radius, qs)
+    }
+
+    /**
+     * Khoá nhớ của phân loại = băm FNV-1a 64 bit của MỌI đầu vào của [classify]: [RULES], số hướng/điểm ảnh, hằng số ngưỡng, tên
+     * [Kind], hình học đã gói (toạ độ + cờ kính), mỗi ứng viên (tam giác đầu, số tam giác, lớp vỏ hay ốp). Đổi lưới/lớp vật liệu
+     * của bộ phận ⇒ khoá đổi tự động; đổi MÃ luật ⇒ đổi [RULES] (bài `Car3dCabinMemoTest` đỏ khi kết quả trên lưới mẫu đổi mà
+     * [RULES] giữ nguyên).
+     */
+    internal fun key(pack: Pack, cands: List<BydAvmMesh.Part>, views: Int, res: Int): String {
+        var h = FNV_OFFSET
+        fun mix(v: Long) { h = (h xor v) * FNV_PRIME }
+        fun mix(s: String) { s.forEach { mix(it.code.toLong()) }; mix(-1L) }
+        mix(RULES); mix(views.toLong()); mix(res.toLong())
+        mix(DIRECT_RATIO.toLong()); mix(PLANE_SHARE.toLong()); mix(EPS.toRawBits().toLong()); mix(PLANE.toRawBits().toLong())
+        mix(MIN_PIX.toRawBits()); Kind.entries.forEach { mix(it.name) }
+        mix(pack.radius.toRawBits()); mix(pack.total.toLong())
+        for (v in pack.pk) mix(v.toLong())
+        for (g in pack.isGl) mix(if (g) 1L else 0L)
+        mix(cands.size.toLong())
+        for (p in cands) { mix(pack.start.getValue(p).toLong()); mix((p.indexCount / 3).toLong()); mix(if (isShell(p)) 1L else 0L) }
+        return "%016x".format(h)
+    }
+
+    /** Kết quả [classify] thành byte (đầu `MEMO_MAGIC` + số ứng viên; mỗi ứng viên: số tam giác + một byte [Kind] mỗi tam giác). */
+    internal fun encode(kinds: Map<BydAvmMesh.Part, Array<Kind>>, cands: List<BydAvmMesh.Part>): ByteArray {
+        val n = cands.sumOf { 4 + kinds.getValue(it).size }
+        val out = java.nio.ByteBuffer.allocate(8 + n)
+        out.putInt(MEMO_MAGIC).putInt(cands.size)
+        for (p in cands) { val k = kinds.getValue(p); out.putInt(k.size); k.forEach { out.put(it.ordinal.toByte()) } }
+        return out.array()
+    }
+
+    /** Ngược của [encode]; `null` khi byte không khớp ĐÚNG các ứng viên này (đầu, số ứng viên, số tam giác, giá trị [Kind]). */
+    internal fun decode(bytes: ByteArray, cands: List<BydAvmMesh.Part>): Map<BydAvmMesh.Part, Array<Kind>>? {
+        val b = java.nio.ByteBuffer.wrap(bytes)
+        if (bytes.size < 8 || b.getInt() != MEMO_MAGIC || b.getInt() != cands.size) return null
+        val kinds = Kind.entries
+        val out = LinkedHashMap<BydAvmMesh.Part, Array<Kind>>()
+        for (p in cands) {
+            if (b.remaining() < 4) return null
+            val n = b.getInt()
+            if (n != p.indexCount / 3 || b.remaining() < n) return null
+            out[p] = Array(n) { kinds.getOrNull(b.get().toInt()) ?: return null }
+        }
+        return if (b.hasRemaining()) null else out
+    }
+
+    /**
+     * Số điểm ảnh (cộng mọi hướng) mỗi tam giác ứng viên. [views] hướng = [views]/2 trục Fibonacci nửa cầu trên (y > 0) + điểm
+     * ĐỐI của mỗi trục: hai hướng đối nhau có cùng lưới điểm ảnh trực giao ⇒ một lần phủ giữ độ sâu gần nhất (min — nhìn theo `d`)
+     * và xa nhất (max — gần nhất khi nhìn theo `−d`).
+     */
+    internal fun hits(pack: Pack, cands: List<BydAvmMesh.Part>, views: Int, res: Int): Map<BydAvmMesh.Part, Hits> {
+        val pk = pack.pk; val isGl = pack.isGl; val total = pack.total; val radius = pack.radius; val qs = pack.qs
+        val pix = maxOf(2 * radius / res, MIN_PIX)
+        val n = ceil(2 * radius / pix).toInt() + 2
+        val near = FloatArray(n * n); val glass = FloatArray(n * n); val far = FloatArray(n * n); val glassFar = FloatArray(n * n)
         val hits = cands.associateWith { Hits(it.indexCount / 3) }
         val gold = Math.PI * (3 - sqrt(5.0))
         val q = DoubleArray(9)
-        for (vi in 0 until views) {
-            // Hướng nhìn thứ vi (Fibonacci trên mặt cầu) + hai trục ảnh vuông góc.
+        for (vi in 0 until (views + 1) / 2) {
+            // Trục thứ vi (Fibonacci của [views] điểm — vi < views/2 ⇒ nửa cầu trên) + hai trục ảnh vuông góc.
             val y = 1 - 2 * (vi + 0.5) / views; val r = sqrt(1 - y * y); val th = gold * vi
             val d = V3(cos(th) * r, y, sin(th) * r)
             val ref = if (kotlin.math.abs(d.y) < 0.9) V3(0.0, 1.0, 0.0) else V3(1.0, 0.0, 0.0)
@@ -205,37 +285,46 @@ object Car3dCabin {
             val su = qs / pix; val off = radius / pix + 1
             val ux = u.x * su; val uy = u.y * su; val uz = u.z * su; val wx = w.x * su; val wy = w.y * su; val wz = w.z * su
             val dx = -d.x * qs; val dy = -d.y * qs; val dz = -d.z * qs
-            opaque.fill(Float.MAX_VALUE); glass.fill(Float.MAX_VALUE)
+            near.fill(Float.MAX_VALUE); glass.fill(Float.MAX_VALUE); far.fill(-Float.MAX_VALUE); glassFar.fill(-Float.MAX_VALUE)
             fun load(t: Int) {
                 for (k in 0..2) {
                     val o = t * 9 + k * 3
                     val px = pk[o].toDouble(); val py = pk[o + 1].toDouble(); val pz = pk[o + 2].toDouble()
                     q[k * 3] = px * ux + py * uy + pz * uz + off
                     q[k * 3 + 1] = px * wx + py * wy + pz * wz + off
-                    q[k * 3 + 2] = px * dx + py * dy + pz * dz   // nhỏ = gần mắt
+                    q[k * 3 + 2] = px * dx + py * dy + pz * dz   // nhỏ = gần mắt (nhìn theo d); lớn = gần mắt nhìn theo −d
                 }
             }
-            for (t in 0 until total) { val buf = if (isGl[t]) glass else opaque; load(t); raster(q, n) { i, z -> if (z < buf[i]) buf[i] = z } }
+            for (t in 0 until total) {
+                val nb = if (isGl[t]) glass else near; val fb = if (isGl[t]) glassFar else far
+                load(t); raster(q, n) { i, z -> if (z < nb[i]) nb[i] = z; if (z > fb[i]) fb[i] = z }
+            }
             for (p in cands) {
-                val s0 = start.getValue(p); val h = hits.getValue(p); val paint = isShell(p)
+                val s0 = pack.start.getValue(p); val h = hits.getValue(p); val paint = isShell(p)
                 for (t in 0 until p.indexCount / 3) {
                     load(s0 + t)
-                    // Mặt TRƯỚC (quấn ngược kim đồng hồ) quay về mắt ⇔ diện tích có dấu > 0 trong hệ (u, w), mắt ở +d.
-                    val front = (q[3] - q[0]) * (q[7] - q[1]) - (q[6] - q[0]) * (q[4] - q[1]) > 0
-                    val s = if (front) h.directFront else h.directBack; val g = if (front) h.viaFront else h.viaBack
+                    // Mặt TRƯỚC (quấn ngược kim đồng hồ) quay về mắt ⇔ diện tích có dấu > 0 trong hệ (u, w), mắt ở +d; nhìn theo −d
+                    // cùng hệ (u, w) ⇒ đảo dấu.
+                    val area = (q[3] - q[0]) * (q[7] - q[1]) - (q[6] - q[0]) * (q[4] - q[1])
                     raster(q, n) { i, z ->
-                        if (z <= opaque[i] + EPS) {
-                            val gz = glass[i]
-                            // Sơn: chỉ phía TRƯỚC kính (gờ khung lòi ra) — sơn sát SAU kính đã bị lớp kính phủ, giữ cách đếm cũ (§14 #44b).
-                            val on = gz != Float.MAX_VALUE && (if (paint) z < gz && gz - z <= PLANE else kotlin.math.abs(gz - z) <= PLANE)
-                            if (on) h.onGlass[t]++
-                            else if (gz < z - EPS) g[t]++ else s[t]++
-                        }
+                        if (z <= near[i] + EPS) count(h, t, paint, area > 0, z, glass[i])
+                        // Hướng đối: độ sâu −z; đục gần nhất −far; kính gần nhất −glassFar (không kính ⇒ MAX như hướng thuận).
+                        val gf = glassFar[i]
+                        if (-z <= -far[i] + EPS) count(h, t, paint, area < 0, -z, if (gf == -Float.MAX_VALUE) Float.MAX_VALUE else -gf)
                     }
                 }
             }
         }
         return hits
+    }
+
+    /** Một điểm ảnh thấy được của tam giác ứng viên [t] ở độ sâu [z]; [gz] = kính gần nhất ở điểm ảnh đó (`MAX_VALUE` = không kính). */
+    private fun count(h: Hits, t: Int, paint: Boolean, front: Boolean, z: Float, gz: Float) {
+        // Sơn: chỉ phía TRƯỚC kính (gờ khung lòi ra) — sơn sát SAU kính đã bị lớp kính phủ, giữ cách đếm cũ (§14 #44b).
+        val on = gz != Float.MAX_VALUE && (if (paint) z < gz && gz - z <= PLANE else kotlin.math.abs(gz - z) <= PLANE)
+        if (on) h.onGlass[t]++
+        else if (gz < z - EPS) (if (front) h.viaFront else h.viaBack)[t]++
+        else (if (front) h.directFront else h.directBack)[t]++
     }
 
     /**
@@ -272,7 +361,7 @@ object Car3dCabin {
 
     /** Vật liệu đen sâu của mặt sơn chỉ thấy qua kính (`Car3dCatalog` có kiểu cùng tên; bên vẽ KHÔNG tô màu sơn lên nó). */
     const val MATERIAL = "cabin"
-    /** Số hướng nhìn (Fibonacci trên mặt cầu) — xem đo độ ổn định ở đầu tệp. */
+    /** Số hướng nhìn ([VIEWS]/2 trục Fibonacci nửa cầu trên + điểm đối) — xem đo độ ổn định ở đầu tệp. */
     const val VIEWS = 64
     /** Ảnh độ sâu RES×RES theo đường kính cầu bao xe (Seal ~5,1 m ⇒ ~1 cm/điểm ảnh). */
     const val RES = 512
@@ -289,6 +378,14 @@ object Car3dCabin {
     /** Tỉ lệ "trên tấm kính" so với phần còn lại để một tam giác sang đen (xem đầu tệp). [ĐO §14] 2 ⇒ còn 76/495 điểm ảnh sáng. */
     const val PLANE_SHARE = 2
     private const val IN = 1e-9
+    /**
+     * Phiên bản MÃ luật phân loại (phần không băm được vào [key]). Đổi bất kỳ luật nào của [classify]/[hits] ⇒ đổi chuỗi này
+     * (`Car3dCabinMemoTest` khoá đầu ra trên lưới mẫu). c1 = 3.1.10 (cặp hướng đối nhau).
+     */
+    const val RULES = "c1"
+    private const val MEMO_MAGIC = 0x43334B31   // "C3K1"
+    private const val FNV_OFFSET = -0x340d631b7bdddcdbL
+    private const val FNV_PRIME = 0x100000001b3L
     private const val OPEN = "open"
     private const val PAINT = "paint"
     private const val GLASS = "glass"

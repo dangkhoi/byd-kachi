@@ -195,21 +195,54 @@ object CarDataDemand {
      */
     fun controlsOf(state: HomeUiState, hidden: Set<String> = emptySet()): Set<String> {
         val out = LinkedHashSet<String>()
-        fun scan(id: String) {
-            val def = ControlRegistry.byId(id) ?: return
-            if (def.readKey.isNotBlank()) out += id
-            // UX4 — ô có mặt TỰ ĐỘNG ([ControlDef.autoId]) phải đọc CẢ nút phụ ấy, nếu không `ClimateAuto` chỉ nhận
-            // được `null` và ô **không bao giờ** dám nói AUTO (đúng, nhưng tính năng câm). Chỉ nạp khi nút phụ có
-            // đường đọc thật — khai một mã chưa nối datum thì đọc cũng chỉ ra `null`, mà lại tốn một lượt HAL.
-            val auto = def.autoId.takeIf { it.isNotBlank() }?.let { ControlRegistry.byId(it) }
-            if (auto != null && auto.readKey.isNotBlank()) out += auto.id
-        }
-        dockIds(state).forEach(::scan)
+        dockIds(state).forEach { scanControl(it, out) }
         shownSlots(state).forEach { slot ->
-            if (slot is SlotContent.Widget) slot.ids.forEach { id -> if (id !in hidden) { scan(id); HOSTED[id]?.forEach(::scan) } }
+            if (slot is SlotContent.Widget) slot.ids.forEach { id -> if (id !in hidden) { scanControl(id, out); HOSTED[id]?.forEach { scanControl(it, out) } } }
         }
         return out
     }
+
+    /** Nút [id] (và nút phụ AUTO của nó) có đường đọc ⇒ vào [out]. Một luật cho [controlsOf] và [interestOf]. */
+    private fun scanControl(id: String, out: MutableSet<String>) {
+        val def = ControlRegistry.byId(id) ?: return
+        if (def.readKey.isNotBlank()) out += id
+        // UX4 — ô có mặt TỰ ĐỘNG ([ControlDef.autoId]) phải đọc CẢ nút phụ ấy, nếu không `ClimateAuto` chỉ nhận
+        // được `null` và ô **không bao giờ** dám nói AUTO (đúng, nhưng tính năng câm). Chỉ nạp khi nút phụ có
+        // đường đọc thật — khai một mã chưa nối datum thì đọc cũng chỉ ra `null`, mà lại tốn một lượt HAL.
+        val auto = def.autoId.takeIf { it.isNotBlank() }?.let { ControlRegistry.byId(it) }
+        if (auto != null && auto.readKey.isNotBlank()) out += auto.id
+    }
+
+    /**
+     * ═══ 3.1.10 · EVENT-PATH-SCOPED — tập MỘT bề mặt bày (datum + mã nút), cho luật vẽ lại của fan-out ═══
+     *
+     * Cùng phép tra với nhu cầu đọc ([expand] + [COMPANION] + [HOSTED] + [scanControl]) nhưng cho MỘT bề mặt (một ô widget, thanh
+     * nút): trạng thái xe đổi ở datum ngoài tập ⇒ [CarStatusDelta.Delta.touches] `false` ⇒ bề mặt không đổ lại. `null` = *"không
+     * biết bề mặt bày gì"* ⇒ luôn đổ (fail-open như [of]): mã lạ, hoặc widget đọc nguồn KHÔNG phải xe ([NON_CAR_FED]).
+     * Xe 3D luôn tính cả [CAR3D_TYRES] (công tắc lốp của hồ sơ không có ở bề mặt vẽ — tập rộng hơn chỉ là thêm một lượt vẽ khi lốp đổi).
+     */
+    fun interestOf(ids: Collection<String>): Interest? {
+        val datums = LinkedHashSet<String>()
+        val controls = LinkedHashSet<String>()
+        for (id in ids) {
+            if (id in NON_CAR_FED || !expand(id, datums)) return null
+            if (id == CAR3D_ID) datums += CAR3D_TYRES
+            scanControl(id, controls); HOSTED[id]?.forEach { scanControl(it, controls) }
+        }
+        datums += datums.flatMap { COMPANION[it].orEmpty() }
+        return Interest(datums, controls)
+    }
+
+    /** Tập một bề mặt bày — [interestOf]. */
+    data class Interest(val datums: Set<String>, val controls: Set<String>)
+
+    private const val CAR3D_ID = "w_car3d"
+
+    /**
+     * Widget đổ cả nguồn KHÔNG phải xe trong hàm đổ của nó (nhạc: `MediaWidgetView` · bảng tổng hợp `w_board`) — trước 3.1.10 nhịp
+     * trạng thái xe là đường làm mới duy nhất của phần ấy ⇒ giữ nguyên: đổ lại mỗi lượt trạng thái xe đổi ([interestOf] `null`).
+     */
+    val NON_CAR_FED: Set<String> = setOf("w_media", "w_board")
 
     /**
      * PERF 3.1.5 [ĐO máy ảo 14/10, hồ sơ QA2 = bố cục 1 ô + 2 ô ẩn + thanh nút ẩn] — CHỈ ô đang HIỆN, đúng phép cắt của
@@ -302,9 +335,16 @@ object CarDataDemand {
          * xe 3D chờ/không khả thi, [WidgetFallbacks]) ⇒ 0 lượt đọc cho nó.
          */
         fun publish(state: HomeUiState, hidden: Set<String> = emptySet()) {
-            shownState = state
+            // 3.1.10 · EVENT-PATH-SCOPED — nhu cầu KHÔNG phụ thuộc trạng thái xe: lượt state chỉ đổi `carStatus` (mỗi sự kiện HAL, ~1 Hz
+            // trên xe) không tính lại [of]/[controlsOf] và không báo lại [onScreen] (đèn helper · kế hoạch sự kiện). Màn đã rời ([clear])
+            // ⇒ `shownState` null ⇒ tính lại.
+            val last = shownState
+            if (last != null && hidden == shownHidden && last.copy(carStatus = state.carStatus) == state) { shownState = state; return }
+            shownState = state; shownHidden = hidden
             setControls(controlsOf(state, hidden)); set(of(state, hidden))
         }
+
+        @Volatile private var shownHidden: Set<String> = emptySet()
 
         /** Một widget vừa khuất / thôi vẽ / hiện lại ([WidgetFallbacks]) ⇒ tính lại cho ảnh màn đang công bố; màn đã rời ([clear]) ⇒ thôi. */
         fun republish(hidden: Set<String>) { shownState?.let { publish(it, hidden) } }

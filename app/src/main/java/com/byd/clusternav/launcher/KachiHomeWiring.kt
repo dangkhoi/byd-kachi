@@ -412,7 +412,8 @@ internal fun collectHome(
     var seen = ControlLastSent.shared.relayed.value
     owner.lifecycleScope.launch {
         owner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            ControlLastSent.shared.relayed.collect { v -> if (v != seen) { seen = v; resyncTiles() } }
+            val hold = owner as? KachiHomeActivity   // 3.1.10 HOLD-EXPIRY-REDRAW: nghe đích giữ khi màn ở trước (`watchHoldExpiry`)
+            hold?.watchHoldExpiry(true); try { ControlLastSent.shared.relayed.collect { v -> if (v != seen) { seen = v; resyncTiles() } } } finally { hold?.watchHoldExpiry(false) }
         }
     }
     owner.lifecycleScope.launch {
