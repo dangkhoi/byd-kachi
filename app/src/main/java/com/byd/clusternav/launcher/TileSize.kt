@@ -80,7 +80,19 @@ enum class TileSize(
      */
     val stepIconDp: Int = iconDp,
 ) {
-    DOCK(Sp.ICON_M, 11.5f, 15f, 12.5f, KachiBars.DOCK_PAD, Sp.RADIUS_L, iconOnly = true, stepIconDp = Sp.ICON_S),
+    /**
+     * Ô của THANH NÚT XE (`ControlDockView`). 3.1.11 DOCK-LABELS-310 — ĐÃ CÓ NHÃN lại, đúng hình 3.0 (204) đã chạy ngoài hiện trường
+     * (icon [Sp.ICON_S] + nhãn hai dòng). 3.1.1 R22·R gắn `iconOnly` cho cả thanh; 3.1.1–3.1.9 là bản thử nên người dùng OTA thấy lần
+     * đầu ở 3.1.10 (3.0 → 3.1.10) và owner 16/10 hỏi lại: *"taskbar … mất hết chữ rồi? trước có chữ mà"*. Lối chỉ-icon của R22·R
+     * giữ cho ô nút TRONG widget ([MINI] · [GROUP]). Doc `docs/diagnostics/dock-labels-310-2026-10-16.md`.
+     */
+    DOCK(Sp.ICON_S, 11.5f, 15f, 12.5f, KachiBars.DOCK_PAD, Sp.RADIUS_L),
+
+    /**
+     * Ô nút trong LƯỚI NÉN của ô widget (`WidgetViews.mini`). Tách khỏi [DOCK] ở 3.1.11 (DOCK-LABELS-310): đúng số của [DOCK] 3.1.1–3.1.10
+     * — R22·R chỉ icon ([Sp.ICON_M]), nhãn ở `contentDescription`; ô STEP giữ icon [Sp.ICON_S] (R23).
+     */
+    MINI(Sp.ICON_M, 11.5f, 15f, 12.5f, KachiBars.DOCK_PAD, Sp.RADIUS_L, iconOnly = true, stepIconDp = Sp.ICON_S),
     BIG(Sp.ICON_L, 15f, 26f, 16f, Sp.L, Sp.RADIUS_L),
 
     /**

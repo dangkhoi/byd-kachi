@@ -52,7 +52,10 @@ class ControlDockView(
     var onLauncherAction: (String) -> Unit = {}
     private var config = ControlRegistry.defaultDock()
     // Trạng thái xe + lựa chọn đơn vị: CHỈ dùng cho ô ĐỌC. Bơm từ Activity (một chiều, từ HomeUiState.carStatus).
-    private var carStatus: CarStatus = CarStatus()
+    // 3.1.11 DOCK-LABELS-310: ảnh LUÔN mới nhất ([SurfaceFeed.offer] gán mọi lượt); chỉ việc ĐỔ LẠI ô mới theo tập bày — `rebuild`
+    // (đổi cấu hình/hồ sơ/chủ đề) không bao giờ dựng ô từ ảnh của lượt chạm cuối.
+    private val feed = SurfaceFeed(config.enabled)
+    private val carStatus: CarStatus get() = feed.latest
     private var unitPrefs: UnitPrefs = UnitPrefs.DEFAULT
     // Ô ĐỌC đang hiện, theo mã. Giữ tham chiếu để cập nhật TẠI CHỖ (xem setCarStatus) thay vì dựng lại.
     private val readTiles = LinkedHashMap<String, ReadTile>()
@@ -84,7 +87,7 @@ class ControlDockView(
 
     /** Cỡ đổi ⇒ dựng lại [ui] + bộ dựng ô + nền (bo góc theo cỡ) rồi ô; không đổi ⇒ chỉ dựng lại ô như trước B3. */
     fun setConfig(cfg: DockConfig) {
-        config = cfg
+        config = cfg; feed.scope(cfg.enabled)
         if (BarScale.snap(cfg.scalePct) != uiPct) rescale() else rebuild()
     }
 
@@ -116,10 +119,18 @@ class ControlDockView(
      * xe, nên ô đọc không thể sống ở đây). Chỉ đổ lại **số của ô ĐỌC**; ô hành động không bị chạm tới.
      */
     fun setCarStatus(status: CarStatus, prefs: UnitPrefs = unitPrefs) {
-        carStatus = status; unitPrefs = prefs
+        feed.offer(status); unitPrefs = prefs
         readTiles.forEach { (id, tile) -> tile.bind(readout(id)) }
         // 2026-09-17 — ô HÀNH ĐỘNG cũng đọc giá trị THẬT của xe (nhiệt/gió/gió-trong/cốp…), cập nhật tại chỗ.
         actionRefreshers.values.forEach { it(status) }
+    }
+
+    /**
+     * 3.1.10 EVENT-PATH-SCOPED (nhịp xe của màn chính) — như [setCarStatus] nhưng chỉ ĐỔ LẠI ô khi đổi chạm tập thanh bày (hoặc đơn vị
+     * đổi). Ảnh vẫn LUÔN được giữ ([SurfaceFeed]) — 3.1.11 DOCK-LABELS-310: bản 3.1.10 bỏ cả ảnh ở `KachiHomeRender` ⇒ dựng lại thanh ra số cũ.
+     */
+    fun offerCarStatus(status: CarStatus, prefs: UnitPrefs) {
+        if (feed.offer(status) || prefs != unitPrefs) setCarStatus(status, prefs)   // lần `offer` thứ hai cùng ảnh ⇒ `===` ⇒ 0 việc
     }
 
     /**

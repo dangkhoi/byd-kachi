@@ -192,6 +192,12 @@ internal object SettingsCatalogEntries {
         SettingsEntry("vm_bubble_autostart", SettingsGroup.NAV, "Tự mở VietMap cho bong bóng", "vm_bubble_enabled", "Auto-open VietMap for the bubble"),
         // vm_bubble_placement_container · VmOverlayPosition.set ghi CẶP x/y rồi broadcast sang bản mod
         SettingsEntry("vm_bubble_pos", SettingsGroup.NAV, "Vị trí bong bóng", "vm_bubble_x", "Bubble position"),
+        // 3.1.11 · CLUSTER-NOW-PLAYING — công tắc NGỦ (mặc định TẮT, chờ đo xe W1/W2). Khoá `cluster_now_playing` ở `clusternav_prefs`,
+        // THEO XE (`ClusterNowPlayingKeys.DEVICE_KEYS`), đi qua `bridge.setNowPlayingEnabled` (`SettingsNowPlayingRows`).
+        SettingsEntry(
+            "nav_now_playing", SettingsGroup.NAV, "Tên bài hát lên cụm đồng hồ",
+            "cluster_now_playing", "Song title on the instrument cluster",
+        ),
 
         // ── Chiếu màn lên cụm ──
         // switch_cast_enabled · SimpleCastRuntime.coordinator(app).prefs.setCastEnabled

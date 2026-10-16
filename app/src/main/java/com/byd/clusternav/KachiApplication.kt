@@ -82,6 +82,9 @@ class KachiApplication : Application() {
         // 2.98 · R6-E/G/H — dọn MỘT lần mỗi tiến trình (= mỗi lần nổ máy), luồng nền ưu tiên thấp, trễ 30 s: bộ dọn chẩn
         // đoán · APK OTA đã cài · khoá chiếu của app đã gỡ. Chỉ hẹn một luồng, không I/O ở đây. TRƯỚC dòng chốt cuối.
         com.byd.clusternav.housekeeping.StartupHousekeeping.install(this)
+        // 3.1.11 · CLUSTER-NOW-PLAYING — tên bài lên cụm (NGỦ, mặc định TẮT): TẮT + không dấu bền ⇒ chỉ đọc prefs, không luồng; còn
+        // dấu (tiến trình trước chết giữa lúc ghi đè) ⇒ trả nguồn cụm trên luồng `kachi-np`. TRƯỚC dòng chốt cuối.
+        com.byd.clusternav.modules.clustercast.ClusterNowPlaying.install(this)
         // READY-AT-HOME R2.1 — nối kênh shell NGAY khi tiến trình bật (cả lượt BYD dựng lại Kachi lúc màn tắt), CHỈ khi
         // xe đã duyệt khoá này (dấu bền còn tươi); không thì để F4 hỏi đúng lúc. Đường MỚI ⇒ dòng CUỐI (CLAUDE.md §6).
         EarlyShellChannel.start(this)

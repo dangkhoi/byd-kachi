@@ -173,7 +173,7 @@
     <string name="kachi_row_boot_profile">Lên bằng hồ sơ</string>
     <string name="kachi_profile_boot_last">Gần nhất</string>
     <string name="kachi_boot_profile_note">"Gần nhất" = lên đúng hồ sơ bạn đang dùng lúc tắt máy. Chọn một hồ sơ cụ thể thì mỗi lần nổ máy Kachi đều đổi về hồ sơ đó, kể cả khi chuyến trước bạn đã đổi sang hồ sơ khác.</string>
-    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền (riêng Tự mở Kachi khi nổ máy, Chạy dịch vụ nền khi nổ máy, Mở app khi nổ máy và Tự mở nhạc khi lên xe vẫn theo hồ sơ), hầu hết nhóm Giọng nói, App dẫn đường mặc định, Kính thật (làm mờ nền), Kéo app thoát ô về lại ô (thử nghiệm), Tự sấy kính khi mưa, phần chỉnh camera theo xe (xoay, lật gương, góc nhìn), và Giới thiệu — đều lưu cho hồ sơ «%1$s», kể cả chiếu lên cụm, khung và DPI từng app, nút nổi và camera. Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đổi ngay; khung và DPI khi chiếu đổi từ lần chiếu sau, còn bật/tắt chiếu đổi từ lần nổ máy sau.</string>
+    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền (riêng Tự mở Kachi khi nổ máy, Chạy dịch vụ nền khi nổ máy, Mở app khi nổ máy và Tự mở nhạc khi lên xe vẫn theo hồ sơ), hầu hết nhóm Giọng nói, App dẫn đường mặc định, Kính thật (làm mờ nền), Kéo app thoát ô về lại ô (thử nghiệm), Tên bài hát lên cụm đồng hồ, Tự sấy kính khi mưa, phần chỉnh camera theo xe (xoay, lật gương, góc nhìn), và Giới thiệu — đều lưu cho hồ sơ «%1$s», kể cả chiếu lên cụm, khung và DPI từng app, nút nổi và camera. Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đổi ngay; khung và DPI khi chiếu đổi từ lần chiếu sau, còn bật/tắt chiếu đổi từ lần nổ máy sau.</string>
     <string name="kachi_delete">Xoá</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -1082,4 +1082,19 @@
     <string name="kachi_cast_frame_step">Bước</string>
     <string name="kachi_cast_geom_resize_failed">Không áp được khung lên cụm — số đã trở về khung thật.</string>
     <string name="kachi_cast_geom_overflow_note" formatted="false">Mép phải/dưới được vượt khung cụm (tối đa +50 %) để giấu thanh dưới của app; mép trái/trên không âm được (Android chặn).</string>
+    <!-- 3.1.11 · CLUSTER-NOW-PLAYING -->
+    <string name="kachi_np_title">Tên bài hát lên cụm đồng hồ</string>
+    <string name="kachi_np_sub">Hiện tên bài của YouTube, YouTube Music và app nhạc ngoài lên ô nhạc của cụm. Đang thử nghiệm, mặc định tắt — tắt là cụm về như cũ.</string>
+    <string name="kachi_np_st_off">Đang tắt — không ghi gì lên cụm.</string>
+    <string name="kachi_np_st_unsupported">Đầu xe này chưa hỗ trợ (chưa có số liệu cụm cho đời xe này) — bật cũng không ghi gì.</string>
+    <string name="kachi_np_st_no_access">Chưa có quyền đọc thông báo — không đọc được bài đang phát.</string>
+    <string name="kachi_np_st_no_media">Đang chờ: chưa có app nào phát nhạc.</string>
+    <string name="kachi_np_st_system_app">Đang chờ: app đang phát là app của xe — cụm tự hiện, Kachi không ghi.</string>
+    <string name="kachi_np_st_no_title">Đang chờ: bài đang phát chưa có tên.</string>
+    <string name="kachi_np_st_paused">Đang chờ: nhạc đang dừng.</string>
+    <string name="kachi_np_st_power_off">Đang chờ: xe chưa bật máy.</string>
+    <string name="kachi_np_st_already_shown">Cụm đã hiện ô nhạc với nguồn này (%1$s) — Kachi không ghi.</string>
+    <string name="kachi_np_st_marker_failed">Không lưu được dấu hoàn tác — Kachi không ghi lên cụm.</string>
+    <string name="kachi_np_st_active">Lần ghi cuối %1$s: %2$s</string>
+    <string name="kachi_np_st_restored">Đã trả cụm về như cũ lúc %1$s (%2$s).</string>
 </resources>

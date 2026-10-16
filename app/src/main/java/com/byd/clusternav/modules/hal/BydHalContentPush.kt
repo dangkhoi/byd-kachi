@@ -143,4 +143,13 @@ object BydHalContentPush {
         }
         return rc.toString().trim()
     }
+
+    /**
+     * 3.1.11 · CLUSTER-NOW-PLAYING — ghi MỘT feature hiển thị nhạc (nguồn/trạng thái int · tên bài bytes) lên [instr]. Cùng
+     * nguyên thuỷ có cache từ chối (`PhysicalHudOwnershipTest`: chỉ tệp này + `BydHal` gọi nguyên thuỷ ghi). Chủ DUY NHẤT:
+     * `ClusterNowPlaying` (doc `cluster-now-playing-2026-10-16.md` §8).
+     */
+    fun pushMusicInt(instr: Any, id: Int, value: Int): String = cachedSetInt(instr, id, value)
+
+    fun pushMusicBytes(instr: Any, id: Int, bytes: ByteArray): String = cachedSetBytes(instr, id, bytes)
 }

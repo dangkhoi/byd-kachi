@@ -9,6 +9,7 @@ import com.byd.clusternav.modules.navaccess.AccessibilityRebind
 import com.byd.clusternav.SysProps
 import com.byd.clusternav.modules.clustercast.simplified.CastContentShift
 import com.byd.clusternav.modules.clustercast.simplified.CastStyle
+import com.byd.clusternav.modules.clustercast.nowplaying.ClusterNowPlayingIds
 import com.byd.clusternav.modules.clustercast.simplified.ClusterCarType
 import com.byd.clusternav.modules.clustercast.simplified.ProjectionRecipe
 
@@ -106,6 +107,11 @@ data class ClusterProfile(
      * [export]/[parse] (chuỗi share không được bật cơ chế đổi stack).
      */
     val escapeReturn: EscapeReturnApi? = EscapeReturnApi.ANDROID_10_R47,
+    /**
+     * 3.1.11 · CLUSTER-NOW-PLAYING — feature-id + tập nguồn cụm cho hiện ô nhạc ([ClusterNowPlayingIds]). Chỉ đời đã đọc
+     * firmware cụm (Seal DL3 fw 2606) mới có; `null` ⇒ tính năng báo "chưa hỗ trợ". Không vào [export]/[parse] (gán theo id).
+     */
+    val nowPlaying: ClusterNowPlayingIds? = null,
 ) {
     /** Đời xe này cho chọn Bo tròn / Chữ nhật không — UI dựa vào đây để hiện hay ẩn lựa chọn (B1b). */
     val supportsStyle: Boolean get() = projectionRecipe().let { it.offers(CastStyle.CURVED) && it.offers(CastStyle.RECT) }
@@ -230,7 +236,11 @@ data class ClusterProfile(
             // ĐỜI DUY NHẤT đã đo đường cong kính (2.77) ⇒ đời duy nhất được mang bảng `leftEdge`.
             band = ClusterBandSpec.SEAL_DL3,
             cameraSignature = AccessibilityRebind.CAMERA_SCREEN_SIGNATURE,
+            nowPlaying = ClusterNowPlayingIds.FW2606,
         )
+
+        /** Số liệu tên-bài-lên-cụm theo `id` seed — cùng luật [cameraFor]: chỉ đời ĐÃ ĐỌC firmware cụm; khác ⇒ `null`. */
+        fun nowPlayingFor(id: String): ClusterNowPlayingIds? = if (id == SEAL_DL3.id) SEAL_DL3.nowPlaying else null
 
         /** Mã binder theo đời DiLink (chỉ cho đường trả R7): 5 (Android 12) ⇒ `null`; còn lại = A10 r47 (vẫn bị chặn theo API lúc chạy). */
         fun taskBinderFor(diLink: Int): TaskBinderCodes? = if (diLink >= 5) null else TaskBinderCodes.ANDROID_10_R47
@@ -328,7 +338,7 @@ data class ClusterProfile(
             return ClusterProfile(
                 id, diLink, w, h, castLeft, tear, hint, svc, style, native,
                 camera = cameraFor(id), band = bandFor(id), cameraSignature = cameraSignatureFor(id), taskBinder = taskBinderFor(diLink),
-                escapeReturn = escapeReturnFor(diLink),
+                escapeReturn = escapeReturnFor(diLink), nowPlaying = nowPlayingFor(id),
             )
         }
 

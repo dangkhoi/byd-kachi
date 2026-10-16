@@ -53,6 +53,9 @@ class SettingsNavSection(
     /** FIX286 R-HUD (S4) — ba dòng tình trạng HUD (tệp riêng: trần 500 dòng). */
     private val hud = SettingsNavHudRows(context, rows) { bridge }
 
+    /** 3.1.11 · CLUSTER-NOW-PLAYING — công tắc tên bài lên cụm + dòng tình trạng (tệp riêng: trần 500 dòng). */
+    private val nowPlaying = SettingsNowPlayingRows(context, rows) { bridge }
+
     /** Hai stepper vị trí biển báo + khung kéo-thả — giữ tham chiếu để ba bề mặt nói CÙNG một toạ độ. */
     private var badgeX: SettingsRows.Stepper? = null
     private var badgeY: SettingsRows.Stepper? = null
@@ -65,6 +68,7 @@ class SettingsNavSection(
 
     fun build(body: LinearLayout) {
         nav(body)
+        nowPlaying.build(body)
         badge(body)
         bubble(body)
     }

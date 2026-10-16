@@ -172,8 +172,8 @@ object WidgetViews {
             "w_car3d"  -> miniCard(ctx, data, "ic-car", KachiTheme.ACCENT) { MiniValue(ctx.getString(R.string.kcar3d_title)) }   // ô nén không vẽ 3D
             // G1·T3: nhóm trong ô nén ⇒ TÓM TẮT (xem KDoc GroupTiles.mini), không vẽ dải/bảng thu nhỏ.
             else       -> if (CapabilityGroups.byId(id) != null) GroupTiles.mini(ctx, id, data)
-            else if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.DOCK)
-            else if (LauncherActions.isCamera(id)) cameraDemandTile(ctx, id, TileSize.DOCK)   // 2.93 CAMERA-WIDGET-TILE (ô tự lo)
+            else if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.MINI)
+            else if (LauncherActions.isCamera(id)) cameraDemandTile(ctx, id, TileSize.MINI)   // 2.93 CAMERA-WIDGET-TILE (ô tự lo)
             else telemetryMini(ctx, id, car, data.units)
         }
     }

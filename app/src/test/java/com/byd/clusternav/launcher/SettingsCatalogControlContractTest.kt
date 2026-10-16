@@ -127,6 +127,8 @@ class SettingsCatalogControlContractTest {
             "vm_bubble_enabled" to ("SettingsSectionsNav" to "bridge.setVmBubbleShown("),
             "vm_bubble_autostart" to ("SettingsSectionsNav" to "bridge.setVmBubbleAutostart("),
             "vm_bubble_pos" to ("SettingsSectionsNav" to "bridge.setVmBubblePos("),
+            // 3.1.11 · CLUSTER-NOW-PLAYING — công tắc ở tệp riêng (`SettingsSectionsNav` sát trần 500 dòng).
+            "nav_now_playing" to ("SettingsNowPlayingRows" to "bridge().setNowPlayingEnabled("),
             // Sổ địa chỉ (docs/specs/kachi-voice-addresses.html) — cùng nhóm NAV nhưng ở **tệp section riêng**:
             // `SettingsSectionsNav` đã 409 dòng, và hai khối không liên quan nhau (một bên là cấu hình cụm đọc
             // `bridge`, một bên là dữ liệu của hồ sơ đi qua `deps`).
@@ -223,6 +225,7 @@ class SettingsCatalogControlContractTest {
             "SettingsSectionsHome" to home,
             "SettingsSectionsBars" to bars,
             "SettingsSectionsNav" to nav,
+            "SettingsNowPlayingRows" to code("src/main/java/com/byd/clusternav/launcher/SettingsNowPlayingRows.kt"),
             "SettingsSectionsCast" to cast,
             "SettingsSectionsCastStyle" to code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCastStyle.kt"),
             "SettingsBarScaleSection" to code("src/main/java/com/byd/clusternav/launcher/SettingsBarScaleSection.kt"),

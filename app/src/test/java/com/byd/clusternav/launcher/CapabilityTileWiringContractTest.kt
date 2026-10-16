@@ -55,7 +55,8 @@ class CapabilityTileWiringContractTest {
             Regex("""fun setCarStatus\([^)]*prefs:\s*UnitPrefs""").containsMatchIn(dock),
             "phải nhận lựa chọn đơn vị của người dùng (R11) — không thì thanh nút tự ép đơn vị",
         )
-        assertTrue(dock.contains("private var carStatus"), "thanh nút phải giữ trạng thái xe đã bơm để dựng ô đọc")
+        // 3.1.11 DOCK-LABELS-310: ảnh giữ trong `SurfaceFeed` (LUÔN ảnh mới nhất, kể cả lượt không phải đổ ô) — không còn `var` tự gán.
+        assertTrue(dock.contains("private val carStatus: CarStatus get() = feed.latest"), "thanh nút phải giữ trạng thái xe đã bơm để dựng ô đọc")
     }
 
     @Test

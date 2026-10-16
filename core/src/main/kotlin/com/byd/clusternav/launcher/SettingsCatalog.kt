@@ -92,6 +92,7 @@ object SettingsCatalog {
     val NOT_SETTINGS: Map<String, String> = buildMap {
         // F2/F3 — sổ chuyến lên xe + kết quả + mốc khởi động: trạng thái máy, lý do khai ở chỗ chủ ([TripGate.DEVICE_KEYS]).
         putAll(TripGate.DEVICE_KEYS)
+        putAll(com.byd.clusternav.modules.clustercast.nowplaying.ClusterNowPlayingKeys.NOT_SETTINGS)   // 3.1.11 — dấu bền, lý do ở chỗ chủ
         // [SOÁT Opus 2026-09-27 · UX5b] Mốc *"phép di trú chip thanh trên đã chạy cho hồ sơ này"*
         // (`WorkspacePrefs.K_STRIP_MIGRATED`). Cùng họ `migrated_scenes_v1`: một dấu vết của LƯỢT CHUYỂN ĐỔI, không
         // phải một lựa chọn. Lên UI thì nó là một công tắc mà bật/tắt đều làm danh sách chip của người dùng bị xếp

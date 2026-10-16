@@ -26,10 +26,12 @@ class YoutubeSaveOnChangeWiringContractTest {
 
     @Test
     fun `MediaBridge bam theo doi metadata va tu bam lai`() {
-        val w = SourceRoots.body(bridge, "fun watchPackages(pkgs: Set<String>, handler: Handler, onPlayback: () -> Unit = {}, onChange: () -> Unit)")
+        // 3.1.11 · CLUSTER-NOW-PLAYING: thân bám/gỡ chuyển vào `watchWhere` (một cơ chế cho cả watchPackages lẫn watchAll).
+        assertTrue(bridge.contains("watchWhere({ it in pkgs }, handler, onPlayback, onChange)"), "watchPackages chỉ đúng gói app đích")
+        val w = SourceRoots.body(bridge, "private fun watchWhere(")
         assertTrue(w.contains("override fun onMetadataChanged(metadata: MediaMetadata?) = onChange()"), w)
         assertTrue(w.contains("addOnActiveSessionsChangedListener(listener, comp, handler)"), w)
-        assertTrue(w.contains("it.packageName in pkgs"), "chỉ đúng gói app đích")
+        assertTrue(w.contains("filter { accept(it.packageName) }"), "lọc theo phép nhận của bên gọi")
         assertTrue(w.contains("catch (e: SecurityException)"), "không quyền ⇒ không nổ, còn nhịp định kỳ")
     }
 }

@@ -449,7 +449,7 @@ internal class FitGridLayout private constructor(
         private const val MAX_ITEMS = 8
 
         /**
-         * Trần `k` của LƯỚI (≥ 2 mục, ô nén cỡ `TileSize.DOCK`): ×2 ⇒ icon 40dp, nhãn 23sp ≈ ô to `BIG` × 1,5 — khung to
+         * Trần `k` của LƯỚI (≥ 2 mục, ô nén cỡ `TileSize.MINI`): ×2 ⇒ icon 40dp, nhãn 23sp ≈ ô to `BIG` × 1,5 — khung to
          * với ít mục thì ô giãn tới cỡ ô đơn lớn nhất, không thành chữ khổng lồ. [ĐỀ XUẤT, owner chốt].
          */
         const val MAX_SCALE_GRID = 2.0

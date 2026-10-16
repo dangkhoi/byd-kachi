@@ -98,9 +98,9 @@ internal fun KachiHomeActivity.render(state: HomeUiState) {
         // RW0/Đ4: thanh nút cũng cần trạng thái xe để ô ĐỌC sống được ở đó. CHỈ đổ lại số của ô đọc — KHÔNG
         // dựng lại thanh (C5: dựng lại mỗi nhịp 1/giây sẽ nháy + mất trạng thái ô vừa bấm).
         // 3.1.10 · EVENT-PATH-SCOPED — trạng thái xe đổi ở datum/nút thanh KHÔNG bày ⇒ không đổ (cùng luật ô giữa màn, `WorkspaceView`).
-        if (prev == null || prev.topStrip != state.topStrip ||
-            CarStatusDelta.of(prev.carStatus, state.carStatus).touches(CarDataDemand.interestOf(state.dock.enabled))
-        ) dock.setCarStatus(state.carStatus, unitPrefs)
+        // 3.1.11 DOCK-LABELS-310: cổng nằm TRONG thanh ([SurfaceFeed]) — thanh LUÔN giữ ảnh mới, chỉ việc đổ ô theo tập bày; bản 3.1.10
+        // chặn ở đây làm thanh giữ ảnh của lượt chạm cuối ⇒ `setConfig`/`restyle` dựng ô từ số cũ. Lượt đầu ⇒ đổ hết.
+        if (prev == null) dock.setCarStatus(state.carStatus, unitPrefs) else dock.offerCarStatus(state.carStatus, unitPrefs)
         workspace.setUnitPrefs(unitPrefs)   // R11: ô giữa màn cũng theo lựa chọn đơn vị (tự bỏ qua nếu không đổi)
         cameraSignal.tick()   // camera theo xi-nhan (tự đọc xi-nhan qua HAL — findings 2026-09-23; pref mặc định TẮT)
     }

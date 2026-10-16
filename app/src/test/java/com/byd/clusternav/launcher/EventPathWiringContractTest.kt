@@ -20,7 +20,21 @@ class EventPathWiringContractTest {
         assertTrue(w.contains("if (onlyValues && nc is SlotContent.Widget && !delta.touches(CarDataDemand.interestOf(nc.ids))) return@forEach"),
             "ô không bày datum đổi ⇒ không đổ (và KHÔNG lùi về dựng lại)")
         val r = src("launcher/KachiHomeRender.kt")
-        assertTrue(r.contains("CarStatusDelta.of(prev.carStatus, state.carStatus).touches(CarDataDemand.interestOf(state.dock.enabled))"), "thanh nút")
+        assertTrue(r.contains("if (prev == null) dock.setCarStatus(state.carStatus, unitPrefs) else dock.offerCarStatus(state.carStatus, unitPrefs)"), "thanh nút")
+    }
+
+    /**
+     * 3.1.11 DOCK-LABELS-310 — cổng của thanh nút ở TRONG thanh: ảnh trạng thái xe LUÔN được giữ ([SurfaceFeed.offer]), chỉ việc đổ ô
+     * theo tập bày; tập tính lại khi đổi cấu hình (không mỗi sự kiện). Thử ĐỎ: đặt lại cổng `CarStatusDelta…touches` trước
+     * `dock.setCarStatus` ở `KachiHomeRender` (bản 3.1.10) ⇒ bài trên đỏ; bỏ `feed.scope(cfg.enabled)` ⇒ bài này đỏ.
+     */
+    @Test fun `thanh nut luon giu anh moi, chi do o theo tap bay`() {
+        val d = src("launcher/ControlDockView.kt")
+        assertTrue(d.contains("private val feed = SurfaceFeed(config.enabled)") && d.contains("private val carStatus: CarStatus get() = feed.latest"), "ảnh của thanh = feed")
+        assertTrue(d.contains("config = cfg; feed.scope(cfg.enabled)"), "đổi cấu hình ⇒ tập bày mới")
+        val offer = SourceRoots.body(d, "fun offerCarStatus(status: CarStatus, prefs: UnitPrefs)")
+        assertTrue(offer.contains("if (feed.offer(status) || prefs != unitPrefs) setCarStatus(status, prefs)"), offer)
+        assertFalse(src("launcher/KachiHomeRender.kt").contains("touches(CarDataDemand.interestOf(state.dock.enabled))"), "không còn cổng ngoài thanh")
     }
 
     @Test fun `dich giu het han hen mot luot ve lai tren handler co san`() {

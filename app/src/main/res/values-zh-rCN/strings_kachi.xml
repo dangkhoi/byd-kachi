@@ -122,7 +122,7 @@
     <string name="kachi_row_boot_profile">上电时使用</string>
     <string name="kachi_profile_boot_last">上次使用</string>
     <string name="kachi_boot_profile_note">“上次使用”会以下电时正在使用的档案启动。固定某个档案后，每次上电都会回到该档案，即使上一趟行程中切换过档案。</string>
-    <string name="kachi_home_profile_note">设置中的所有项目——除了“系统与权限”（但“上电自动打开Kachi”“上电运行后台服务”“上电时打开应用”和“上车自动播放音乐”仍跟随档案）、“语音”的大部分、“默认导航应用”、“真实玻璃效果（背景模糊）”、“将跳出框的应用拉回框内（实验性）”、“雨天自动除霜”、按车辆调校的摄像头（旋转、镜像、视角）以及“关于”——都保存到档案“%1$s”，包括仪表投屏、每个应用的框和DPI、悬浮按钮和摄像头。在“驾驶员档案”中切换到其他档案后，布局、格位内容、顶栏标签、车控栏、主题和单位会立即改变；投屏框和DPI从下次投屏起改变，投屏开启/关闭从下次上电起改变。</string>
+    <string name="kachi_home_profile_note">设置中的所有项目——除了“系统与权限”（但“上电自动打开Kachi”“上电运行后台服务”“上电时打开应用”和“上车自动播放音乐”仍跟随档案）、“语音”的大部分、“默认导航应用”、“真实玻璃效果（背景模糊）”、“将跳出框的应用拉回框内（实验性）”、“歌曲名显示在仪表盘”、“雨天自动除霜”、按车辆调校的摄像头（旋转、镜像、视角）以及“关于”——都保存到档案“%1$s”，包括仪表投屏、每个应用的框和DPI、悬浮按钮和摄像头。在“驾驶员档案”中切换到其他档案后，布局、格位内容、顶栏标签、车控栏、主题和单位会立即改变；投屏框和DPI从下次投屏起改变，投屏开启/关闭从下次上电起改变。</string>
     <string name="kachi_delete">删除</string>
     <string name="kachi_sec_recirc">内循环</string>
     <string name="kachi_recirc_title">上电时自动开启内循环</string>
@@ -927,4 +927,19 @@
     <string name="kachi_cast_frame_step">步长</string>
     <string name="kachi_cast_geom_resize_failed">无法将框应用到仪表 — 数值已恢复为实际框。</string>
     <string name="kachi_cast_geom_overflow_note" formatted="false">右/下边缘可超出仪表（最多 +50 %）以隐藏应用底栏；左/上边缘不能为负（Android 禁止）。</string>
+    <!-- 3.1.11 · CLUSTER-NOW-PLAYING -->
+    <string name="kachi_np_title">歌曲名显示在仪表盘</string>
+    <string name="kachi_np_sub">在仪表盘音乐栏显示 YouTube、YouTube Music 及其他音乐应用的歌曲名。实验功能，默认关闭——关闭后仪表盘恢复原样。</string>
+    <string name="kachi_np_st_off">已关闭——不向仪表盘写入任何内容。</string>
+    <string name="kachi_np_st_unsupported">此车机暂不支持（没有此车型的仪表数据）——开启也不会写入。</string>
+    <string name="kachi_np_st_no_access">没有通知读取权限——无法读取正在播放的歌曲。</string>
+    <string name="kachi_np_st_no_media">等待中：没有应用在播放音乐。</string>
+    <string name="kachi_np_st_system_app">等待中：正在播放的是车机应用——仪表盘自行显示，Kachi 不写入。</string>
+    <string name="kachi_np_st_no_title">等待中：正在播放的曲目没有标题。</string>
+    <string name="kachi_np_st_paused">等待中：音乐已暂停。</string>
+    <string name="kachi_np_st_power_off">等待中：车辆未启动。</string>
+    <string name="kachi_np_st_already_shown">仪表盘已为此音源（%1$s）显示音乐栏——Kachi 不写入。</string>
+    <string name="kachi_np_st_marker_failed">无法保存撤销标记——Kachi 不向仪表盘写入。</string>
+    <string name="kachi_np_st_active">最近写入 %1$s：%2$s</string>
+    <string name="kachi_np_st_restored">已于 %1$s 恢复仪表盘（%2$s）。</string>
 </resources>

@@ -181,7 +181,7 @@ class LauncherActionTileWiringContractTest {
         }
         val widgets = code("src/main/java/com/byd/clusternav/launcher/WidgetViews.kt")
         assertTrue(SourceRoots.body(widgets, "fun build(").contains("cameraDemandTile(ctx, id, TileSize.BIG)"), "ô widget đơn")
-        assertTrue(SourceRoots.body(widgets, "private fun mini(").contains("cameraDemandTile(ctx, id, TileSize.DOCK)"), "ô lưới nén")
+        assertTrue(SourceRoots.body(widgets, "private fun mini(").contains("cameraDemandTile(ctx, id, TileSize.MINI)"), "ô lưới nén (3.1.11 DOCK-LABELS-310: cỡ riêng, không mượn DOCK)")
         val tile = SourceRoots.body(code("src/main/java/com/byd/clusternav/launcher/LauncherTile.kt"), "internal fun cameraDemandTile(")
         assertTrue(tile.contains(".launcherTile(pick) { CameraDemandDispatch.tap(ctx, id) }"),
             "CÙNG bộ dựng ô launcher + CÙNG đường thi hành của nút thanh nút / phím vật lý")

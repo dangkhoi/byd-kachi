@@ -78,9 +78,9 @@ class BarScaleBudgetContractTest {
                 val d = density(base, p)
                 val pad2 = 2 * px(dock.padDp, d)
                 val chrome = pad2 + px(dock.iconDp, d) + px(KachiSpace.XS, d)
-                // R22·R (owner 13/10 "giảm text đi em, làm các icon"): ô thanh nút CHỈ icon — nhãn GONE khi có icon
-                // (`ControlTileFactory`: `size.iconOnly && icons`), nhãn 2 dòng chỉ còn ở kiểu "không icon". Luật cũ
-                // "icon + nhãn 2 dòng" bị owner thay ⇒ khoá cả hai kiểu thật đang có.
+                // 3.1.11 DOCK-LABELS-310: ô thanh nút lại là "icon + nhãn 2 dòng" (hình 3.0, `DockLabelsContractTest`) ⇒ nhánh
+                // dưới là nhánh sống; nhánh `iconOnly` giữ để bài vẫn đúng nếu cỡ thanh đổi lại (3.1.1–3.1.10 R22·R: nhãn GONE khi
+                // có icon — `ControlTileFactory`: `size.iconOnly && icons`; nay chỉ còn cho `TileSize.MINI`/`GROUP` trong widget).
                 val twoLines = if (dock.iconOnly) maxOf(chrome.toFloat(), pad2 + 2 * line(dock.labelSp, d))
                 else chrome + 2 * line(dock.labelSp, d)                                            // TOGGLE/COVER/BUTTON (reserveTwoLines)
                 // Ô STEP giữ icon [TileSize.stepIconDp] (R23: ICON_M + hàng −/+ = 63 dp tràn ô dọc 60 dp — đỏ thật, đã sửa ở mã).

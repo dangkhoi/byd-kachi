@@ -153,7 +153,8 @@ class LangCoverageTest {
         // *"Dạy tên app"* / *"Teach app names"* (khoá `voice_app_names` theo hồ sơ).
         // 2.98 · R18 (owner 10/10: OTA với R18 tắt mặc định): **84 → 85 (+1)** = `home_escape_return` *"Kéo app thoát ô về lại ô (thử
         // nghiệm)"* / *"Pull apps that leave a frame back in (experimental)"* (khoá `escape_return_enabled` theo XE).
-        assertEquals(85, SettingsCatalog.ENTRIES.size)
+        // 3.1.11 · CLUSTER-NOW-PLAYING: **85 → 86 (+1)** = `nav_now_playing` *"Tên bài hát lên cụm đồng hồ"* (khoá `cluster_now_playing` theo XE).
+        assertEquals(86, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -265,7 +266,8 @@ class LangCoverageTest {
         // 2.98 · R18 (2026-10-10): **269 → 270 (+1)** = mục Cài đặt `home_escape_return`, EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
         // 3.01 R25 (2026-10-13): **270 → 271 (+1)** = widget `w_car3d` ("Xe 3D" / "3D car"), EN tại chỗ khai + dòng zh/th/ms.
         // 3.1.6 · R32: **271 → 272 (+1)** = datum `tailgate_status` ("Cốp sau" / "Tailgate"), EN tại chỗ khai + dòng zh/th/ms có sẵn.
-        assertEquals(272, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 3.1.11 · CLUSTER-NOW-PLAYING: **272 → 273 (+1)** = mục Cài đặt `nav_now_playing`, EN tại chỗ khai + dòng zh/th/ms.
+        assertEquals(273, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

@@ -40,6 +40,7 @@ internal object TestBridgeNoHome {
             TestBridgeCommands.CTLLOG -> TestBridgeCtlLog.run(app, cmd, reply)
             TestBridgeCommands.WAKELOG -> TestBridgeWakeLog.run(app, cmd, reply)
             TestBridgeScreenCommands.DIAG_SCREEN -> TestBridgeScreens.run(app, cmd, reply)
+            TestBridgeNowPlayingCommands.NP -> TestBridgeNowPlaying.run(app, cmd, reply)   // 3.1.11 · chỉ prefs + luồng `kachi-np`
             else -> return false
         }
         return true

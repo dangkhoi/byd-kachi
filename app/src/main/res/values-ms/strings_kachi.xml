@@ -122,7 +122,7 @@
     <string name="kachi_row_boot_profile">Mula dengan</string>
     <string name="kachi_profile_boot_last">Terakhir digunakan</string>
     <string name="kachi_boot_profile_note">“Terakhir digunakan” bermula dengan profil yang aktif semasa anda mematikan kereta. Sematkan profil tertentu dan setiap kali kereta dihidupkan Kachi kembali kepadanya, walaupun anda menukar profil pada perjalanan sebelumnya.</string>
-    <string name="kachi_home_profile_note">Setiap tetapan dalam Tetapan — kecuali Sistem &amp; kebenaran (namun Mula Kachi secara automatik semasa kereta dihidupkan, Jalankan perkhidmatan latar semasa kereta dihidupkan, Buka apl semasa kereta dihidupkan dan Mainkan muzik apabila masuk kereta tetap mengikut profil), kebanyakan Suara, Apl navigasi lalai, Kaca sebenar (kaburkan latar), Tarik semula apl yang keluar dari bingkai (percubaan), Penyahbeku automatik semasa hujan, pelarasan kamera bagi setiap kereta (putaran, pencerminan, pandangan), dan Perihal — disimpan untuk profil «%1$s», termasuk pancaran ke panel instrumen, bingkai dan DPI setiap apl, butang terapung dan kamera. Tukar ke profil lain dalam Profil pemandu dan susun atur, kandungan petak, cip, bar butang, tema serta unit bertukar serta-merta; bingkai dan DPI pancaran bertukar mulai pancaran seterusnya, dan hidup/mati pancaran mulai kereta dihidupkan semula.</string>
+    <string name="kachi_home_profile_note">Setiap tetapan dalam Tetapan — kecuali Sistem &amp; kebenaran (namun Mula Kachi secara automatik semasa kereta dihidupkan, Jalankan perkhidmatan latar semasa kereta dihidupkan, Buka apl semasa kereta dihidupkan dan Mainkan muzik apabila masuk kereta tetap mengikut profil), kebanyakan Suara, Apl navigasi lalai, Kaca sebenar (kaburkan latar), Tarik semula apl yang keluar dari bingkai (percubaan), Tajuk lagu pada kluster instrumen, Penyahbeku automatik semasa hujan, pelarasan kamera bagi setiap kereta (putaran, pencerminan, pandangan), dan Perihal — disimpan untuk profil «%1$s», termasuk pancaran ke panel instrumen, bingkai dan DPI setiap apl, butang terapung dan kamera. Tukar ke profil lain dalam Profil pemandu dan susun atur, kandungan petak, cip, bar butang, tema serta unit bertukar serta-merta; bingkai dan DPI pancaran bertukar mulai pancaran seterusnya, dan hidup/mati pancaran mulai kereta dihidupkan semula.</string>
     <string name="kachi_delete">Padam</string>
     <string name="kachi_sec_recirc">Peredaran dalaman</string>
     <string name="kachi_recirc_title">Peredaran dalaman semasa kereta dihidupkan</string>
@@ -927,4 +927,19 @@
     <string name="kachi_cast_frame_step">Langkah</string>
     <string name="kachi_cast_geom_resize_failed">Bingkai tidak dapat dikenakan pada panel instrumen — nombor kembali ke bingkai sebenar.</string>
     <string name="kachi_cast_geom_overflow_note" formatted="false">Tepi kanan/bawah boleh melepasi panel instrumen (sehingga +50 %) untuk menyembunyikan bar bawah aplikasi; kiri/atas tidak boleh negatif (disekat Android).</string>
+    <!-- 3.1.11 · CLUSTER-NOW-PLAYING -->
+    <string name="kachi_np_title">Tajuk lagu pada kluster instrumen</string>
+    <string name="kachi_np_sub">Paparkan tajuk lagu daripada YouTube, YouTube Music dan apl muzik lain dalam kotak muzik kluster. Percubaan, mati secara lalai — matikan dan kluster kembali seperti biasa.</string>
+    <string name="kachi_np_st_off">Mati — tiada apa ditulis ke kluster.</string>
+    <string name="kachi_np_st_unsupported">Belum disokong pada unit kepala ini (tiada data kluster untuk model ini) — menghidupkannya tidak menulis apa-apa.</string>
+    <string name="kachi_np_st_no_access">Tiada akses pemberitahuan — lagu yang dimainkan tidak dapat dibaca.</string>
+    <string name="kachi_np_st_no_media">Menunggu: tiada apl memainkan muzik.</string>
+    <string name="kachi_np_st_system_app">Menunggu: apl yang dimainkan ialah apl kereta — kluster memaparkannya sendiri, Kachi tidak menulis.</string>
+    <string name="kachi_np_st_no_title">Menunggu: lagu yang dimainkan tiada tajuk.</string>
+    <string name="kachi_np_st_paused">Menunggu: muzik dijeda.</string>
+    <string name="kachi_np_st_power_off">Menunggu: kereta belum dihidupkan.</string>
+    <string name="kachi_np_st_already_shown">Kluster sudah memaparkan kotak muzik untuk sumber ini (%1$s) — Kachi tidak menulis.</string>
+    <string name="kachi_np_st_marker_failed">Tidak dapat menyimpan penanda buat asal — Kachi tidak menulis ke kluster.</string>
+    <string name="kachi_np_st_active">Tulisan terakhir %1$s: %2$s</string>
+    <string name="kachi_np_st_restored">Kluster dipulihkan pada %1$s (%2$s).</string>
 </resources>

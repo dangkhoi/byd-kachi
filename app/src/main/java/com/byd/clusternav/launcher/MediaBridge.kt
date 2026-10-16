@@ -161,12 +161,32 @@ class MediaBridge(context: Context) : MediaTransport {
      * chạm trên [handler].
      * @return hàm gỡ (bỏ mọi callback + listener), hoặc `null` khi không nghe được.
      */
-    fun watchPackages(pkgs: Set<String>, handler: Handler, onPlayback: () -> Unit = {}, onChange: () -> Unit): (() -> Unit)? {
+    fun watchPackages(pkgs: Set<String>, handler: Handler, onPlayback: () -> Unit = {}, onChange: () -> Unit): (() -> Unit)? =
+        watchWhere({ it in pkgs }, handler, onPlayback, onChange)
+
+    /**
+     * 3.1.11 · CLUSTER-NOW-PLAYING — như [watchPackages] nhưng cho MỌI phiên (tên bài lên cụm là generic, không theo gói):
+     * [onEvent] khi bất kỳ phiên nào đổi bài / đổi trạng thái phát, và khi danh sách phiên đổi (phiên mất cũng phải báo — trả
+     * nguồn cụm). Cùng MỘT cơ chế bám/gỡ ([watchWhere]); chỉ đăng ký khi công tắc bật. `null` = chưa có quyền đọc thông báo.
+     * Một lượt bám lại = MỘT lời báo (phiên mới ⇒ qua `onPlayback`; không phiên mới ⇒ qua `onListChanged`).
+     */
+    fun watchAll(handler: Handler, onEvent: () -> Unit): (() -> Unit)? =
+        watchWhere({ true }, handler, onEvent, onEvent, onListChanged = onEvent)
+
+    /** Phiên đang chọn ([pick]: đang phát trước) → gói · tên · đang phát. `null` = không có phiên / không đọc được. */
+    fun nowPlaying(): Triple<String, String?, Boolean>? = runCatching {
+        val c = activeControllers()?.map { Real(it) }?.let { pick(it) } as? Real ?: return null
+        Triple(c.c.packageName, c.title(), c.playing())
+    }.getOrNull()
+
+    private fun watchWhere(
+        accept: (String) -> Boolean, handler: Handler, onPlayback: () -> Unit, onChange: () -> Unit, onListChanged: () -> Unit = {},
+    ): (() -> Unit)? {
         val msm = app.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager ?: return null
         val comp = ComponentName(app, NavNotificationListener::class.java)
         val attached = HashMap<MediaSession.Token, Pair<MediaController, MediaController.Callback>>()
         fun reattach(list: List<MediaController>?) {
-            val want = list.orEmpty().filter { it.packageName in pkgs }
+            val want = list.orEmpty().filter { accept(it.packageName) }
             val tokens = want.map { it.sessionToken }.toSet()
             attached.keys.filter { it !in tokens }.forEach { t ->
                 attached.remove(t)?.let { (c, k) -> runCatching { c.unregisterCallback(k) } }
@@ -180,8 +200,9 @@ class MediaBridge(context: Context) : MediaTransport {
                 }
                 runCatching { c.registerCallback(k, handler) }.onSuccess { attached[c.sessionToken] = c to k }
             }
-            // Phiên MỚI có thể đã đang phát trước khi kịp gắn ⇒ xét một lần ngay (R2d).
-            if (fresh.isNotEmpty()) onPlayback()
+            // Phiên MỚI có thể đã đang phát trước khi kịp gắn ⇒ xét một lần ngay (R2d). Không có phiên mới (phiên mất / danh sách
+            // rỗng lúc bám đầu) ⇒ báo [onListChanged] — một lời báo cho một lượt bám lại, không hai (Soát Pass 12 [P3]).
+            if (fresh.isNotEmpty()) onPlayback() else onListChanged()
         }
         val listener = MediaSessionManager.OnActiveSessionsChangedListener { reattach(it) }
         try {

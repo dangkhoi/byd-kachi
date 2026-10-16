@@ -282,3 +282,163 @@ Xe **ON** (QML cần `powerGear==3`). Dừng ở lần bất thường đầu ti
   chưa làm vì phạm vi chỉ cho phép tạo một file.
 - Lượt RE sau (off-car): lần chỗ gọi `"ICON_MUSIC change, clear mediaInfoString"`, và kiểm tập nguồn của
   `libBydDataSource.so` 2602/2506 (đời firmware khác) trước khi đưa tập vào `ClusterProfile`.
+
+---
+
+## 7. Kịch bản xe — `scripts/oncar/cluster-now-playing.sh`
+
+> Thêm 2026-10-16 theo yêu cầu owner: *"chuẩn bị hết hàng họ đi, để lên xe chỉ test thôi"*. Script chạy M0–M6, W1, W1b
+> của §5 theo đúng thứ tự. Mỗi bước in **một dòng việc** cho owner, chờ Enter rồi tự chụp. Mọi thứ ghi vào một thư mục
+> có mốc giờ. Script đã qua `bash -n` + `shellcheck` sạch; **chưa chạy trên xe hay máy ảo** [CHƯA BIẾT hành vi thật].
+
+### 7.1 Cần gì — KHÔNG cần APK mới
+
+- Kachi **3.1.10 (215)** đã phát hành là đủ cho M0–M6 + W1 + W1b [ĐO code]:
+  - đọc: `hal getid` (`TestBridgeHal.kt` `OP_GETID`);
+  - ghi số nguyên: `hal setev` (`OP_SETEV`, cổng `--ez auto_confirm true`).
+- Cầu 3.1.10 **không ghi được byte[]** [ĐO code]: `setev` → `BydHalGateway.featureSet(…, value: Int)`;
+  `setarr`/`setisa` gọi một method nhận `int[]`, mà `BYDAutoInstrumentDevice` fw 2606 không có method nào như vậy
+  (chỉ có `sendMusicInfo(byte[])`/`sendMusicName(String)`, cả hai là no-op, §1(3)). ⇒ Script **không ghi tên bài**.
+  Chữ tên bài là do chính MediaController gửi khi đổi bài (W1b). Owner đã bỏ phép thử ghi một tên bài cố định.
+- Mac có `adb` + `python3`, đã nối xe qua cầu nc (`docs/diagnostics/adb-car-tunnel-macos.md`).
+- **Chế độ kiểm thử qua adb** phải BẬT bằng tay trên xe: Kachi › Cài đặt › Hệ thống & quyền › Nâng cao. Không bật
+  được bằng broadcast (có chủ ý). Tự tắt sau 60 phút hoặc khi tắt máy. Script kiểm bằng `--es cmd state` (phải trả
+  `"ok":true`) ở bước B0, và kiểm lại trước mỗi bước cần cầu. Nếu cầu đã tắt thì nhắc owner bật lại một lần.
+
+### 7.2 Cách chạy
+
+```bash
+scripts/oncar/cluster-now-playing.sh                       # serial 127.0.0.1:15555, ra docs/diagnostics/oncar-cluster-np-<ts>/
+scripts/oncar/cluster-now-playing.sh 127.0.0.1:15555 <thư-mục-ra>
+```
+
+Ra: `session.log` (mọi dòng + câu trả lời c/k) · `summary.tsv` (bước → câu hỏi → trả lời → bằng chứng) ·
+`hal-reads.tsv` (mọi `getid`) · `bridge.log` (lời đáp thô của cầu) · `NN-<bước>-<tên>-<ts>.txt` (logcat lát theo
+bước, lọc MediaController, `dumpsys media_session`, `dumpsys audio` + Audio Focus stack, crash buffer).
+
+**Dừng ở bất thường đầu tiên.** Sau mỗi bước, script so pid `surfaceflinger`/`system_server`/Kachi với mốc, đọc
+`logcat -b crash` từ mốc, và hỏi owner cụm có bình thường không. Thấy bất thường ⇒ chụp logcat ⇒ hoàn tác ⇒ thoát mã 3.
+`trap EXIT` luôn trả nguồn = 26 nếu W1 đã ghi, kể cả khi bấm Ctrl-C.
+
+### 7.3 Từng bước — việc của owner và kết quả kỳ vọng
+
+| Bước | Owner làm | Script chụp | Kỳ vọng (nếu H1 đúng) |
+|---|---|---|---|
+| B0 | Nổ máy, bật Chế độ kiểm thử | `cmd state` | `ok:true` |
+| M0 | — | getprop build / `forbidsend`, versionName Kachi + mediacontroller | `forbidsend` rỗng/false; mediacontroller 1.5.0.0 |
+| M1 | Tắt chiếu cụm, phát nhạc **Bluetooth**, chuyển bài | logcat, media_session, focus, 5 `getid` | Cụm **hiện** tên (widget còn sống) |
+| M2-ytm | YT Music phát, bấm bài kế | như trên | Log có `com.google.android.apps.youtube.music` + `sendMusicName result`; cụm **không** hiện |
+| M2-yt | YouTube phát, chuyển video kế | như trên | Như YTM |
+| M5 | — | `logcat -d \| grep CLUSTER_LOG…` | `m_can33fMediaSource=26` + hide (có thể im vì cổng mức log) |
+| M6-bt / M6-ytm | Bật chiếu cụm, lặp BT rồi YTM | như M1/M2 | Giống lúc tắt chiếu ⇒ loại H3 |
+| W1 | Tắt chiếu, YTM đang phát; **gõ `GHI`** | `setev 871366704=11`, `setev 1138753546=1`, đọc lại | rc hợp lệ; ô nhạc hiện icon 14 (có thể chưa có chữ) |
+| W1b | Bấm bài kế | logcat + đọc lại | Cụm hiện **tên bài mới** chỉ nhờ nguồn = 11; ô không chớp |
+| W1-restore | — | `setev 871366704=26`, đọc lại | Ô nhạc ẩn lại |
+| W2 | (chỉ khi ≥ 3.1.11 + `KACHI_NP_CMD`) **gõ `BAT`**, YTM/YT/chiếu | như M2 | Tên hiện cho cả YTM và YT, kể cả khi chiếu; tắt ⇒ ẩn lại |
+
+W1 chỉ chạy khi M1 = c (hoặc `FORCE_W1=1`) và cầu đang mở. M1 = k thì ghi nguồn không trả lời được câu hỏi nào (§5).
+
+### 7.4 Bảng quyết định (kết quả → Kachi làm gì)
+
+| Kết quả đo | Kết luận | Kachi làm |
+|---|---|---|
+| M0 `forbidsend` = true | H5: MediaController tắt toàn cục | Dừng hướng A; ghi bẫy vào project-context, hỏi owner |
+| M1 = k (BT cũng không hiện, chiếu tắt) | Widget/cổng khác chưa thấy [CHƯA BIẾT] | KHÔNG làm A; RE thêm `libBydDataSource` (cờ +0x1179, `powerGear`) |
+| M1 = c, M2 log **không** có YTM/YT | H2: MediaController không bắt phiên | A không đủ; cần Kachi tự gửi tên ⇒ cần đường ghi byte (op cầu/gateway mới, 3.1.11+), đo lại |
+| M1 = c, M6 = k | H3: lớp chiếu của Kachi đè ô nhạc | Việc riêng: chừa vùng (780,148,386) hoặc ẩn lớp khi có nhạc |
+| W1 setev bị từ chối (rc sentinel / `no permission`) | HAL/ECU chặn 0x33F00030 | Phương án A chết; xét B (§4) với owner |
+| W1 = c, W1b = c, không chớp | **"Chỉ ghi nguồn = 11" là đủ** [ĐO khi có kết quả] | 3.1.11: Kachi chỉ ghi nguồn (+ trạng thái) khi phiên app không-hệ-thống đang PLAYING; không ghi tên |
+| W1 = c, W1b = k | Ô hiện nhưng chữ bị xoá / MediaController không gửi lại | Kachi phải ghi lại tên sau khi đổi nguồn ⇒ cần đường ghi byte trong app (đã có `BydHal.cachedSetBytes`) |
+| W1b = c nhưng ô chớp/tự tắt | r2: giằng co với MediaController | Kachi ghi lại nguồn sau một nhịp ngắn khi thấy focus đổi; đo lại |
+| W1-restore = k (ô không ẩn) | Tín hiệu bền hơn dự kiến | Thêm marker prefs + dọn lúc khởi động (CLAUDE.md §5) trước khi ship |
+| W2 = c cả YTM/YT/chiếu, tắt ⇒ ẩn | Tính năng 3.1.11 đạt | Mở công tắc mặc định theo quyết định owner; cập nhật BACKLOG |
+
+### 7.5 Hợp đồng W2 với agent tính năng (3.1.11)
+
+Script đọc hai biến môi trường. Đây là các extra đặt **sau** `am broadcast -n <gói>/<receiver> -a com.byd.launcher.TEST`:
+
+- `KACHI_NP_CMD`: lệnh cầu bật tính năng, vd `--es cmd prefs_set --es key <khoá> --es text true`.
+- `KACHI_NP_OFF_CMD`: lệnh tắt (trap dùng nó để hoàn tác).
+
+**ĐÃ ĐIỀN (3.1.11, 216):** script mặc định `KACHI_NP_CMD='--es cmd np --es op on --ez auto_confirm true'` và
+`KACHI_NP_OFF_CMD='--es cmd np --es op off'` (lệnh cầu `np`, §8.5). `on` đi đúng đường của công tắc Cài đặt
+(`ClusterNowPlaying.setEnabled` → gắn bộ nghe phiên NGAY trên luồng `kachi-np`, không chờ khởi động lại) — KHÔNG dùng
+`prefs_set` (chỉ ghi pref, `install` chỉ đọc nó lúc khởi động). Đọc tình trạng: `--es cmd np`; các dòng ghi HAL: `--es cmd ctllog`.
+
+~~TODO(CLUSTER-NOW-PLAYING):~~ (lịch sử) lúc viết mục này, cầu chưa có lệnh hay khoá nào cho tính năng (grep
+`now_playing|nowPlaying|np_` trong `testbridge/` rỗng). Agent tính năng điền tên khoá/lệnh vào đây và vào khối
+TODO đầu script. Ứng viên đang dựng [ĐO code chưa commit, 16/10]: công tắc `cluster_now_playing` (`clusternav_prefs`, mặc định TẮT, `SettingsCatalogEntries.kt:195-199`). Chưa xác nhận `prefs_set` có kích hoạt tính năng ngay hay phải đi qua `bridge.setNowPlayingEnabled` [CHƯA BIẾT], nên script chưa điền sẵn. Bỏ trống ⇒ W2 tự bỏ qua. Khi đó muốn thử thì bật tay công tắc trong Cài đặt rồi chạy lại script: M2/M6 sẽ đo luôn tính năng. Ký tự shell `; | & \` $ < >` trong hai biến ⇒ script từ chối chạy.
+
+---
+
+## 8. Triển khai 3.1.11 (216) — mã đã chuẩn bị, công tắc TẮT, chờ 🚗 W1/W2
+
+> **Sai lệch §14 có owner duyệt (16/10):** *"chuẩn bị hết hàng họ đi, để lên xe chỉ test thôi, lấy tên từ youtube và yt
+> music, chạy lên cụm ấy nhé"* ⇒ mã tầng 2–4 viết TRƯỚC phép đo tầng 1, CHỈ với điều kiện công tắc mặc định TẮT. Script §7
+> quyết. Mọi hành vi trên xe vẫn [CHƯA BIẾT] tới W1/W2.
+
+### 8.1 Thiết kế đã dựng
+- **Số liệu theo đời xe** — `ClusterNowPlayingIds` (`:core` `modules/clustercast/nowplaying/`): nguồn `0x33F00030`, tên
+  `0x43FB1008`, trạng thái `0x43E0000A`, ghi đè 11, tập cụm cho hiện {1…19 trừ 8, 22, 29, 30, 171}, trả về mặc định 26,
+  trần 255 byte. Gắn vào `ClusterProfile.nowPlaying` CHỈ cho `seal_dl3` (`nowPlayingFor(id)`, cả với override). DL5 /
+  generic ⇒ `null` ⇒ dòng tình trạng "Đầu xe này chưa hỗ trợ" (fail-loud).
+- **Cổng (generic, không tên gói)** — `ClusterNowPlayingPlan.onMedia`: công tắc BẬT · hồ sơ có số liệu · phiên đang chọn
+  (`MediaBridge.pick`: đang phát trước) là app NGOÀI hệ thống (`NowPlayingOwner`: không phải ảnh `/system` chưa cập nhật,
+  không ký khoá nền tảng, uid ≥ 10000 — YouTube cài sẵn rồi cập nhật vẫn là app ngoài) · đang phát · có tên · cấp nguồn
+  đọc được thì phải ON/OK (không đọc được ⇒ không chặn; cụm tự cổng `powerGear==3`) · đọc được nguồn hiện tại mà nó đã
+  nằm trong tập cho hiện ⇒ không đụng (BT/Spotify/CarPlay giữ nguyên).
+- **Thứ tự ghi một bài mới**: đọc nguồn → **dấu bền** `cluster_now_playing_marker` = `<id>:<nguồn cũ>:<11>` (commit đồng
+  bộ, TRƯỚC lần ghi đè đầu; ghi hỏng ⇒ không ghi đè) → nguồn 11 → tên (UTF-16LE, cắt ở biên điểm mã ≤ 255 B) → trạng thái 1
+  → đọc lại nguồn. Đọc lại ra ≠ 11 ⇒ ghi lại nguồn + tên **một** lần cho bài đó. ⇒ 3 lượt ghi + 2 lượt đọc / bài; cùng bài
+  cùng trạng thái ⇒ 0 việc. Tạm dừng ⇒ trạng thái 2 + MỘT lượt hẹn 15 s; phát lại cùng bài ⇒ trạng thái 1.
+- **Trả lại (§5)** — ghi lại nguồn cũ (không đọc được lúc vào ⇒ 26) khi: tạm dừng > 15 s · hết phiên · công tắc TẮT ·
+  `ACTION_SHUTDOWN` · xe về OFF/ACC. **Không ghi** khi đọc lại thấy giá trị ≠ 11 (MediaController đã ghi của nó) hoặc khi
+  phiên chuyển sang app hệ thống (MediaController tự ghi nguồn mới vì khác giá trị nó nhớ — ghi đè lúc đó có thể giấu ô
+  của chính app BYD). Khởi động lại còn dấu ⇒ chỉ ghi khi đọc lại đúng 11; không đọc được ⇒ không ghi mù (nguồn 11 sót lại
+  vô hại: cụm vẫn hiện tên, MediaController ghi đè ở lần đổi nguồn kế) — **[Quyết định tự chủ]** thay cho "luôn ghi lại":
+  ghi 26 mù lên trên nguồn BT mà MediaController đang nhớ sẽ giấu ô BT tới lần đổi nguồn sau.
+- **Chi phí**: TẮT ⇒ `install` chỉ đọc 2 khoá prefs, không luồng, không bộ nghe, 0 HAL. BẬT ⇒ 1 luồng `kachi-np` + 1 bộ nghe
+  phiên (`MediaBridge.watchAll`, chung cơ chế bám/gỡ `watchWhere` với `watchPackages`), không nhịp định kỳ.
+
+### 8.2 CLAUDE.md §4 — bốn câu
+1. *Display nào?* Không display. Chỉ `BYDAutoInstrumentDevice.set(int[]{id}, EventValue)` (device 1007) qua
+   `BydHalContentPush.pushMusicInt/pushMusicBytes` (nguyên thuỷ có cache từ chối `cachedSetInt/cachedSetBytes`) + đọc `BydHal.readFeature`. Không `am`/`wm`/`service call`.
+2. *App nào?* Không đụng app nào — chỉ ĐỌC phiên nhạc (NotificationListener sẵn có).
+3. *Stack nào?* Không lệnh stack.
+4. *Hoàn tác?* §8.1 "Trả lại" + dấu bền. Tắt công tắc = trả ngay.
+
+### 8.3 Nhật ký trên xe (CLAUDE.md §11)
+Mỗi lượt để một dòng ở nhật ký lệnh ghi xe (`CtlJournalStore`: logcat `KachiCtl` + `files/diag/ctl-writes.log`, đọc bằng
+cầu `ctllog`), không chứa tên bài (chỉ độ dài/byte):
+`np write src=0x33f00030 v=11 rc=… title=0x43fb1008 len=… bytes=… rc=… state=0x43e0000a v=1 rc=… before=… back=… prior=…`
+· `np pause …` · `np resume …` · `np restore why=… v=… rc=… cur=…` · `np startup restore …` · `np handoff …`.
+
+### 8.4 Giao diện
+*Cài đặt › Dẫn đường & cụm đồng hồ* — công tắc **"Tên bài hát lên cụm đồng hồ"** (mục `nav_now_playing`, khoá
+`cluster_now_playing`, THEO XE, mặc định TẮT) + một dòng tình trạng (lần ghi cuối + rc, hoặc vì sao chưa chạy). Chuỗi vi/en/
+zh/th/ms (`kachi_np_*`).
+
+### 8.5 Cầu kiểm thử — lệnh `np`
+```
+am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd np --es op on --ez auto_confirm true
+am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd np            # status
+am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd np --es op off
+```
+Lời đáp: `enabled` · `kind` (`OFF`/`UNSUPPORTED`/`NO_ACCESS`/`NO_MEDIA`/`SYSTEM_APP`/`NO_TITLE`/`PAUSED`/`POWER_OFF`/
+`ALREADY_SHOWN`/`MARKER_FAILED`/`ACTIVE`/`RESTORED`) · `detail` (rc) · `at_ms`. `on` thiếu `auto_confirm` ⇒ `needs_confirm`.
+Không cần màn chính; sau công tắc *Chế độ kiểm thử qua adb*.
+
+### 8.6 Bằng chứng off-car
+- Test: `ClusterNowPlayingPlanTest` (thứ tự ghi, khử trùng lặp, đổi bài, ghi lại một lần khi đọc lại lệch, cắt UTF-16LE,
+  công tắc tắt, hồ sơ chưa hỗ trợ, cổng app hệ thống/không tên/xe tắt/đã hiện, dấu hỏng, tạm dừng + ân hạn, trả lại ở mọi
+  lối, không ghi đè MediaController, dấu lúc khởi động, phép quyết app ngoài, số liệu fw2606) · `TestBridgeNowPlayingCommandsTest`
+  · `ClusterProfileNowPlayingTest` · `ClusterNowPlayingWiringContractTest` (chỗ gọi `watchAll`→`evaluate`→`onMedia`, đường
+  HAL chuẩn, `install` trước dòng chốt, `np on` = đường công tắc).
+- Máy ảo: **BỎ QUA** (owner 16/10: máy bận; xe giả trên máy ảo không có HAL instrument nên không chứng minh thêm được gì).
+- Senior review Pass 12 (16/10, `kachi-301-cast-steps-dialog-ia.html` §10): 1 P1 vá (sự kiện dừng lặp lại dời mốc trả 15 s vô hạn
+  ⇒ chỉ lượt dừng đầu hẹn) · 2 P2 vá (BẬT xong tình trạng vẫn OFF ⇒ NO_ACCESS không bao giờ hiện; xe OFF/ACC sự kiện trùng vẫn đọc
+  HAL) · 3 P3 vá (hai lượt `evaluate` cho một lượt bám; W2 đọc lại trước khi `np off` kịp trả; chú thích lệch) · 2 P3 ghi nhận
+  (luồng `kachi-np` đỗ sau BẬT→TẮT — cố ý; cache phép quyết app ngoài theo tiến trình).
+- Còn 🚗: W1 (nguồn 11 làm hiện ô nhạc), W2 (tính năng bật bằng `np on` ⇒ tên YouTube/YT Music lên cụm, `np off` trả về),
+  đọc ngược `0x33F00030` có dùng được không (ảnh hưởng cổng "đã hiện" + trả lại).
+

@@ -208,7 +208,7 @@ class YoutubeResumeWiringContractTest {
         assertTrue("if (late !== p) return false" in SourceRoots.body(smp, "private fun settle("), "chỉ lượt còn đúng [late] mới chốt")
         val mb = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/MediaBridge.kt")
         assertTrue("override fun onPlaybackStateChanged(state: PlaybackState?) = onPlayback()" in mb && "if (fresh.isNotEmpty()) onPlayback()" in mb)
-        val w = SourceRoots.body(mb, "fun watchPackages(")
-        assertTrue("onChange: () -> Unit): (() -> Unit)? {" in mb && !w.contains("return {}"), "không nghe được ⇒ null, không hàm gỡ rỗng")
+        val w = SourceRoots.body(mb, "private fun watchWhere(")
+        assertTrue("onChange: () -> Unit): (() -> Unit)? =" in mb && !w.contains("return {}"), "không nghe được ⇒ null, không hàm gỡ rỗng")
     }
 }

@@ -162,7 +162,7 @@
     <string name="kachi_row_boot_profile">Start up with</string>
     <string name="kachi_profile_boot_last">Last used</string>
     <string name="kachi_boot_profile_note">"Last used" starts with whichever profile was active when you switched the engine off. Pin a specific profile and every engine start returns to it, even if you switched profile on the previous trip.</string>
-    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start, Open apps at ignition and Play music when you get in do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Pull apps that leave a frame back in (experimental), Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
+    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start, Open apps at ignition and Play music when you get in do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Pull apps that leave a frame back in (experimental), Song title on the instrument cluster, Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
     <string name="kachi_delete">Delete</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -1054,4 +1054,19 @@
     <string name="kachi_cast_frame_step">Step</string>
     <string name="kachi_cast_geom_resize_failed">Couldn\'t apply the frame to the cluster — the numbers are back to the real frame.</string>
     <string name="kachi_cast_geom_overflow_note" formatted="false">The right/bottom edge may go past the cluster (up to +50 %) to hide an app\'s bottom bar; left/top can\'t go negative (Android blocks it).</string>
+    <!-- 3.1.11 · CLUSTER-NOW-PLAYING -->
+    <string name="kachi_np_title">Song title on the instrument cluster</string>
+    <string name="kachi_np_sub">Shows the song title from YouTube, YouTube Music and other music apps in the cluster music box. Experimental, off by default — turn it off and the cluster goes back to normal.</string>
+    <string name="kachi_np_st_off">Off — nothing is written to the cluster.</string>
+    <string name="kachi_np_st_unsupported">Not supported on this head unit yet (no cluster data for this model) — turning it on writes nothing.</string>
+    <string name="kachi_np_st_no_access">No notification access — the playing song cannot be read.</string>
+    <string name="kachi_np_st_no_media">Waiting: no app is playing music.</string>
+    <string name="kachi_np_st_system_app">Waiting: the playing app is a car app — the cluster shows it itself, Kachi writes nothing.</string>
+    <string name="kachi_np_st_no_title">Waiting: the playing track has no title.</string>
+    <string name="kachi_np_st_paused">Waiting: music is paused.</string>
+    <string name="kachi_np_st_power_off">Waiting: the car is not switched on.</string>
+    <string name="kachi_np_st_already_shown">The cluster already shows the music box for this source (%1$s) — Kachi writes nothing.</string>
+    <string name="kachi_np_st_marker_failed">Could not save the undo marker — Kachi writes nothing to the cluster.</string>
+    <string name="kachi_np_st_active">Last write %1$s: %2$s</string>
+    <string name="kachi_np_st_restored">Cluster restored at %1$s (%2$s).</string>
 </resources>
