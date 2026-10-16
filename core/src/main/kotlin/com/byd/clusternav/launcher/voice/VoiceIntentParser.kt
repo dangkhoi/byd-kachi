@@ -401,7 +401,7 @@ object VoiceIntentParser {
         // "phát <cái gì đó không biết>" — đúng hình dạng "mở nhạc", chỉ thiếu từ đánh dấu. Coi là từ vựng mở.
         verb == VoiceVerb.PLAY -> VoiceTailClause.withTarget(rest, VoiceAppKind.MUSIC, terms) { body, app ->
             if (body.isEmpty()) VoiceIntent.Media(VoiceMediaOp.PLAY, app = app)
-            else VoiceIntent.Media(VoiceMediaOp.QUERY, VoiceTailClause.text(body), app)
+            else VoiceIntent.Media(VoiceMediaOp.QUERY, VoiceTailClause.queryText(body), app)
         }
         else -> VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
     }

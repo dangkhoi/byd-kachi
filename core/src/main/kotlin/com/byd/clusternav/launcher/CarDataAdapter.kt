@@ -36,6 +36,11 @@ class CarDataAdapter(
     private val tripTime: TripTimeSmoother = TripTimeSmoother(clock),
     /** 3.1.6 HAL-EVENTS — datum đang được SỰ KIỆN phục vụ (`HalEventCache.covers`) ⇒ nhịp 3 s / 1 s nghỉ. Mặc định: poll như cũ. */
     private val covered: (String) -> Boolean = { false },
+    /** 3.1.9 HAL-POLL-COVERED — lượt đọc tốc độ THẬT của nhịp nhanh góp vào mẫu chung (nhịp tim dẫn đường dùng lại). `null` = không góp. */
+    private val speedShare: com.byd.clusternav.navigation.SpeedShare? = null,
+    /** 3.1.9 — chỗ đường sự kiện của một datum đứng (`HalEventCache.trust`) cho dòng [HalPollReport]; mặc định: không log. */
+    private val trust: ((String) -> HalEventCache.Trust)? = null,
+    private val log: (String) -> Unit = {},
 ) : CarDataPort, CarStatusReader {
 
     // Cổng đọc hai lớp (nhu cầu + cache vắng) — tách ra [CarReadGate] (3.1.6 soát Pass 6: tệp chạm trần 500 dòng).
@@ -76,8 +81,19 @@ class CarDataAdapter(
         val now = clock()
         // 3.1.6 HAL-EVENTS: nút mà datum của nó đang được sự kiện phục vụ ⇒ không cần nhịp 1 s (sự kiện tự làm mới — [readEvents]).
         // 3.1.6 · R32: nút đọc ở nhịp thân xe ([CarDataDemand.mirrorsBody] — cốp) không đánh thức nhịp 1 s.
-        return want.any { absent.shouldRead(it, now) && readPathOf(it)?.id?.let(covered) != true &&
+        return want.any { absent.shouldRead(it, now) && !controlCovered(it) &&
             ControlRegistry.byId(it)?.let(CarDataDemand::mirrorsBody) != true }
+    }
+
+    /**
+     * 3.1.9 HAL-POLL-COVERED — ô điều khiển [id] đang được sự kiện phục vụ: datum nó mượn `covered`, VÀ nút đọc đúng khoá của datum ấy
+     * (cùng tham số getter — [ControlDef.readArg] khác tham số của datum ⇒ khoá đọc khác khoá trong kế hoạch ⇒ không sự kiện nào làm mới
+     * nó ⇒ `false`, poll như cũ). MỘT luật cho [fastNeeded] và [readControls] — hai bên lệch nhau là nhịp 1 s chạy mà không đọc gì, hoặc
+     * nghỉ mà ô đóng băng.
+     */
+    private fun controlCovered(id: String): Boolean {
+        val p = readPathOf(id) ?: return false
+        return p.arg == HalBindingTable.readArg(p.id) && covered(p.id)
     }
 
     /**
@@ -148,9 +164,12 @@ class CarDataAdapter(
     override fun readFast(prev: CarStatus): CarStatus {
         val g = gate()
         val d = prev.drivetrain
+        val speed = g.int("speed", d.speedKmh)
+        // 3.1.9 — chỉ lượt ĐỌC THẬT (màn/ghim cần tốc độ) mới góp; `null` (đọc hỏng / đang nguội) không ghi đè. Nhịp này KHÔNG đọc từ mẫu chung.
+        if (g.wants("speed")) speedShare?.offer(speed?.toDouble())
         return prev.copy(
             drivetrain = CarStatus.Drivetrain(
-                speedKmh = g.int("speed", d.speedKmh),
+                speedKmh = speed,
                 gear = g.str("gear", d.gear),
             ),
             energy = prev.energy.copy(motorPowerKw = g.int("motor_power", prev.energy.motorPowerKw)),
@@ -209,6 +228,7 @@ class CarDataAdapter(
     // ── NHỊP CHẬM (~10s): pin/tầm/sạc · khí hậu · lốp · thân xe · đèn · danh tính ────────────────────────
     override fun readSlow(prev: CarStatus): CarStatus {
         val g = gate()
+        if (eventGate == null) reportPolls()
         val e = prev.energy; val c = prev.climate; val t = prev.tyres
         val b = prev.body; val l = prev.lights; val i = prev.identity
         return prev.copy(
@@ -379,7 +399,10 @@ class CarDataAdapter(
      */
     private fun readControls(prev: Map<String, Int>): Map<String, Int> {
         val ev = eventIds
-        val want = controlDemand().let { w -> if (ev == null) w else w.filterTo(HashSet()) { readPathOf(it)?.id in ev } }
+        // 3.1.9 HAL-POLL-COVERED — nhịp THƯỜNG cũng bỏ nút đang được sự kiện phục vụ ([controlCovered], cùng luật [fastNeeded]): số của nó
+        // tới bằng [readEvents]; hết hạn đối soát ⇒ `covered` tự `false` ⇒ nhịp kế đọc thật một lượt. [ĐO xe 15/10] trước bản này 4 getter AC
+        // ≈ 250 lượt/phút ở nhịp 1 s dù AC đã có sự kiện.
+        val want = controlDemand().let { w -> if (ev == null) w.filterNotTo(HashSet(), ::controlCovered) else w.filterTo(HashSet()) { readPathOf(it)?.id in ev } }
         if (want.isEmpty()) return prev
         val now = clock()
         val out = HashMap<String, Int>(prev)   // giữ nút cũ (ngoài nhu cầu lượt này) — tránh nháy "—" khi giao thời
@@ -392,6 +415,17 @@ class CarDataAdapter(
             if (v != null) out[id] = v   // đọc không ra ⇒ GIỮ giá trị cũ nếu có, không ghi đè bằng bịa
         }
         return out
+    }
+
+    /** 3.1.9 — dòng [HalPollReport] gần nhất đã log; chỉ log khi đổi. */
+    @Volatile private var lastPollLine: String? = null
+
+    private fun reportPolls() {
+        val t = trust ?: return
+        val line = runCatching { HalPollReport.line(demand(), controlDemand(), t) }.getOrNull() ?: return
+        if (line == lastPollLine) return
+        lastPollLine = line
+        log(line)
     }
 
     private companion object {

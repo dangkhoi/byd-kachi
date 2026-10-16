@@ -76,8 +76,8 @@ class VoiceLoadGuard(
          *
          * Vì sao nới (½ máy) chứ không siết: [ĐO xe 2026-09-19, F5] guard siết đã treo bộ nghe **vĩnh viễn** ở tải
          * xe thật ⇒ 0/20 âm tính giả. Một bộ nghe nền chiếm nửa máy là bệnh rõ ràng (sự cố 130 % ≈ 1,3 lõi là
-         * bệnh nhẹ hơn, đã chữa bằng RMS-gate); còn một lượt giải mã hợp lệ (≤ 4 luồng, ≤ 40 % thời gian theo tầng
-         * 4 của controller) thì không được làm bộ nghe điếc đúng lúc người lái đang gọi. [CHƯA BIẾT] số tối ưu —
+         * bệnh nhẹ hơn, đã chữa bằng RMS-gate); còn một lượt giải mã hợp lệ (≤ 4 luồng; tầng 4 của controller nay là
+         * [VoiceWakeCpuBudget] — ≤ 25 % một lõi dài hạn, có burst một câu gọi) thì không được làm bộ nghe điếc đúng lúc người lái đang gọi. [CHƯA BIẾT] số tối ưu —
          * chốt cùng OQ3; hai hằng này là toàn bộ chỗ phải đổi.
          */
         const val SELF_SUSPEND_FRACTION = 0.5

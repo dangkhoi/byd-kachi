@@ -55,7 +55,7 @@ class AdaptiveInkSourceContractTest {
         val ai = code("AdaptiveInk.kt")
         val refresh = SourceRoots.body(ai, "private fun refresh(")
         assertTrue(refresh.contains("val f = rs.family.coerceAtLeast(0)"), "một họ cho cả mặt gốc")
-        assertTrue(refresh.contains("paint(it.view, it.mark, resolve(it.mark.ground!!, it.mark.key, role(it.view, it.mark.key), f, fams[f]), fams[f])"), "mọi phần tử tô bằng CÙNG họ")
+        assertTrue(refresh.contains("paint(it.view, it.mark, resolve(it.mark.ground!!, it.mark.key, inkRole(it.view, it.mark.key), f, fams[f]), fams[f])"), "mọi phần tử tô bằng CÙNG họ")
         // Nền tệ nhất đo dưới CHÍNH vùng từng phần tử (không lấy cả vùng thẻ — [ĐO máy ảo 15/10] cả thanh trên kẹt điểm 0,22).
         assertTrue(refresh.contains("groundOf(v, if (v === rideNow) h else v, m, fb)"))
         assertTrue(SourceRoots.body(ai, "private fun decide(").contains("val g = it.mark.ground ?: continue"))
@@ -63,10 +63,25 @@ class AdaptiveInkSourceContractTest {
         val decide = SourceRoots.body(ai, "private fun decide(")
         assertTrue(decide.contains("ContrastInk.choose(scores, rs.family, pass)"), "trễ: họ đang hiện đi vào phép chọn")
         assertTrue(decide.contains("p.apply(fams[choice.family], alt[choice.family][i])"), "bộ vẽ tự tô nhận CÙNG họ")
-        assertTrue(decide.contains("if (!choice.ok)") && decide.contains("logW(\"dưới sàn: mặt"), "dưới sàn ⇒ log (fail-loud)")
+        assertTrue(decide.contains("if (!choice.ok && (prev == null || prev.family != choice.family || prev.ok))") && decide.contains("logW(\"dưới sàn: mặt"), "dưới sàn ⇒ log (fail-loud)")
         // Đường một phần tử (nhịp 1 Hz) tô theo họ của mặt gốc, phần tử mới ⇒ chọn lại họ cho cả mặt (không tự chọn riêng).
         val one = SourceRoots.body(ai, "private fun inkUnsafe(")
-        assertTrue(one.contains("val f = root.second.family") && one.contains("!in root.second.seen"))
+        assertTrue(one.contains("val f = root.second.family") && one.contains("inkSlot(v, key, role) in root.second.seen"))
+        // R29-RESOLVE-STORM: lời tô đi qua cổng THUẦN (khoá ở `InkSolveGateTest`); phần tử/mặt chưa đo được ⇒ không chọn họ;
+        // lượt chọn của lời tô đi qua bộ gộp theo mặt gốc; mọi lượt chọn đếm theo kẻ kích.
+        assertTrue(one.contains("InkSolveGate.onInk(g != null, inkMeasurable(v) && inkMeasurable(host.first) && inkMeasurable(root.first), stale, chosen,"))
+        assertTrue(one.contains("InkSolveGate.Ink.DEFER -> ContrastLedger.deferred.incrementAndGet()"))
+        assertTrue(one.contains("InkSolveGate.Ink.SOLVE -> if (coalesce.request(root.first))"))
+        assertTrue(one.contains("mark.solvedOn === g") && one.contains("inkShown(v, mark, last)"), "cùng nền + vai + họ ⇒ không giải/tô lại")
+        assertEquals(1, Regex("""refresh\(root\.first, root\.second, force = stale""").findAll(one).count(), "lời tô chỉ chọn họ qua bộ gộp")
+        assertTrue(SourceRoots.body(ai, "private fun decide(").contains("ContrastLedger.trigger(why)"))
+        // [ĐO máy ảo 15/10] lượt ÉP (`measure(v, s, true)` sau mỗi lần chọn — nút đĩa) bỏ qua `moved` ⇒ `loc` cũ của view KHÁC ⇒ 7 nút
+        // hàng chân 3D cùng nhận vùng [917,983] ⇒ lượt sự kiện kế thấy "dời" ⇒ chọn lại ~1/giây mãi. Vùng phải đọc lại chỗ thật.
+        for (fn in listOf("private fun measure(", "private fun groundOf(")) {
+            val b = SourceRoots.body(ai, fn)
+            val at = b.indexOf("getLocationInWindow(loc)")
+            assertTrue(at > 0 && at < b.indexOf("rect.set(loc[0]"), "$fn: đọc chỗ thật TRƯỚC khi ghi vùng")
+        }
         // Đoạn màu cùng họ với chữ chứa nó.
         assertTrue(SourceRoots.body(ai, "private fun paint(").contains("InkModel.ink(k, fam)"))
         // Họ: thứ tự + nâng chữ phụ cùng cực.
@@ -175,6 +190,22 @@ class AdaptiveInkSourceContractTest {
         assertTrue(SourceRoots.body(icons, "fun tint(img: ImageView").contains("AdaptiveInk.icon(img, inkHex)"))
         assertTrue(SourceRoots.body(icons, "fun fadeOff(img: ImageView").contains("AdaptiveInk.onInk(img)"))
         assertFalse(code("TopStripChipInk.kt").contains("ForegroundColorSpan") || type.contains("ForegroundColorSpan"))
+    }
+
+    /**
+     * Soát Pass 9 (3.1.9) [P2] — hai lỗ của R29-RESOLVE-STORM: (1) lời tô bị dồn/hoãn khi mặt gốc ĐÃ có họ phải tô tạm mực của họ ấy
+     * (không mã thô ⇒ không nháy sai họ một khung trước lượt gộp); (2) `inkShown` cho `ImageView` so ĐỐI TƯỢNG bộ lọc đã đặt — ai khác
+     * `setColorFilter`/`clearColorFilter` trên cùng view thì lời tô kế KHÔNG được coi là no-op (màu kẹt). ĐỎ khi hoàn một trong hai.
+     */
+    @Test
+    fun `soat Pass 9 - to tam theo ho da chon, inkShown ImageView so doi tuong bo loc`() {
+        val ink = SourceRoots.body(code("AdaptiveInk.kt"), "private fun inkUnsafe(")
+        assertTrue(ink.contains("(if (chosen) InkModel.ink(key, InkModel.families(KachiTheme.palette)[root.second.family]) else c(hex)).also { inkRaw(v, it, compound) }"),
+            "lời tô dồn/hoãn mà mặt đã có họ ⇒ tô tạm mực của họ, không phải mã thô")
+        assertTrue(SourceRoots.body(code("AdaptiveInk.kt"), "private fun paint(").contains("m.filter = (v as? ImageView)?.colorFilter"))
+        val parts = code("AdaptiveInkParts.kt")
+        assertTrue(SourceRoots.body(parts, "internal fun inkShown(").contains("is ImageView -> v.colorFilter != null && v.colorFilter === m.filter"),
+            "ImageView: no-op chỉ khi bộ lọc đang gắn đúng là cái AdaptiveInk đặt")
     }
 
     @Test

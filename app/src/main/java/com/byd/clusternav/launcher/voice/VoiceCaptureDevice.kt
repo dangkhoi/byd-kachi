@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.voice
 import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
+import android.media.MediaRecorder
 import android.util.Log
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.voiceEndpointFloorCap
@@ -84,6 +85,23 @@ internal object VoiceCaptureDevice {
         }
         Log.w(TAG, "không mở được micro bằng nguồn nào")
         return null
+    }
+
+    /**
+     * VOICE-WAKE-HANDOFF-GAP — nhận micro bộ nghe "Hey Kachi" vừa giao ([VoiceWakeHandoff]). Bộ nghe mở bằng nguồn `MIC`
+     * (`VoiceWakeListener.openRecord`), cùng 16 kHz mono PCM16 ⇒ chỉ nhận khi nguồn ĐẦU TIÊN của xe này cũng là `MIC`
+     * (mặc định, [ĐO xe 2026-09-16]); người dùng ép nguồn khác ⇒ đóng micro giao và mở như thường (đúng nguồn đã chọn).
+     */
+    fun adopt(ctx: Context, p: VoiceWakeHandoff.Parked?): Pair<Opened, VoiceWakeHandoff.Parked>? {
+        p ?: return null
+        val pref = runCatching { Prefs.voiceMicSource(ctx) }.getOrDefault(VoiceMicSource.PREF_AUTO)
+        if (VoiceMicSource.order(pref).firstOrNull() != MediaRecorder.AudioSource.MIC) {
+            Log.i(TAG, "nguồn ưu tiên không phải MIC (pref=$pref) — không nhận micro của bộ nghe, mở mới")
+            runCatching { p.record.stop() }; runCatching { p.record.release() }
+            return null
+        }
+        Log.i(TAG, "micro nhận từ bộ nghe Hey Kachi (đệm ${p.n * 1000L / VoiceCapture.SAMPLE_RATE} ms) — không mở lại")
+        return Opened(p.record, MediaRecorder.AudioSource.MIC) to p
     }
 
     /**

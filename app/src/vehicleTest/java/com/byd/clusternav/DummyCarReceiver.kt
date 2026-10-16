@@ -27,7 +27,7 @@ import com.byd.clusternav.launcher.LampLive
  * 3.1.6 · R32 — CỐP giả (`tailgate_status` + số nút `trunk`): `[--es trunk open|closed|unknown]` (mặc định đóng). Lệnh mở/đóng của
  * Kachi được nhại với ĐỘ TRỄ như [ĐO logcat xe 14/10]: mở ⇒ đọc 1 sau [TRUNK_OPEN_MS], đóng ⇒ đọc 0 sau [TRUNK_CLOSE_MS] (chốt khoá).
  * Thử ca "đóng bằng nút vật lý" (không qua Kachi): `--ez trunk_only true --es trunk closed` — CHỈ đổi cốp, giữ mọi số giả khác.
- *   `[--es doors lf,rr]` `[--ez sunshade true]` (có rèm che nắng — mặc định KHÔNG) (cửa MỞ; mặc định đóng hết) `[--es lights low,high,drl,ffog,rfog,side]` (đèn SÁNG; vắng ⇒ bộ mặc định).
+ *   `[--es tyre_t fl,rr|none]` (bánh có nhiệt lốp; vắng ⇒ cả bốn) `[--es doors lf,rr]` `[--ez sunshade true]` (có rèm che nắng — mặc định KHÔNG) (cửa MỞ; mặc định đóng hết) `[--es lights low,high,drl,ffog,rfog,side]` (đèn SÁNG; vắng ⇒ bộ mặc định).
  */
 class DummyCarReceiver : BroadcastReceiver() {
 
@@ -47,6 +47,9 @@ class DummyCarReceiver : BroadcastReceiver() {
         doors = intent.getStringExtra("doors")?.split(',')?.map { it.trim() }?.toSet() ?: emptySet()
         // Đồ tuỳ chọn (rèm che nắng): KHÔNG bịa mặc định — xe thật không có thì hàng/hình rèm không được hiện (owner 13/10).
         sunshade = intent.getBooleanExtra("sunshade", false)
+        // R29-RESOLVE-STORM ([ĐO xe 15/10] nhiệt lốp đến lẻ tẻ theo bánh): `--es tyre_t fl,rr` = chỉ các bánh này có nhiệt lốp
+        // (nhãn nhiệt bánh khác `GONE`); `--es tyre_t none` = không bánh nào. Vắng ⇒ cả bốn.
+        tyreT = intent.getStringExtra("tyre_t")?.split(',')?.map { it.trim() }?.toSet()
         lamps = intent.getStringExtra("lights")?.split(',')?.map { it.trim() }?.toSet()
         windows = DEFAULT_WINDOWS.toMutableMap()
         trunk = trunkOf(intent.getStringExtra("trunk") ?: "closed")
@@ -67,6 +70,8 @@ class DummyCarReceiver : BroadcastReceiver() {
         @Volatile private var doors: Set<String> = emptySet()
         @Volatile private var lamps: Set<String>? = null
         @Volatile private var sunshade = false
+        @Volatile private var tyreT: Set<String>? = null
+        private fun tyreT(k: String, c: Int) = c.takeIf { tyreT?.contains(k) ?: true }
         /** R32 — cốp giả: `true` mở · `false` đóng · `null` = đọc không ra (255 trên xe). */
         @Volatile private var trunk: Boolean? = false
         private fun trunkOf(s: String?): Boolean? = when (s) { "open" -> true; "unknown" -> null; else -> false }
@@ -133,7 +138,7 @@ class DummyCarReceiver : BroadcastReceiver() {
             ),
             controls = (s.controls + climate).let { c -> trunk?.let { c + ("trunk" to if (it) 1 else 0) } ?: (c - "trunk") },
             tyres = s.tyres.copy(
-                pFlKpa = 245.0, pFrKpa = 248.0, pRlKpa = 239.0, pRrKpa = 251.0, tFlC = 38, tFrC = 39, tRlC = 36, tRrC = 37,
+                pFlKpa = 245.0, pFrKpa = 248.0, pRlKpa = 239.0, pRrKpa = 251.0, tFlC = tyreT("fl", 38), tFrC = tyreT("fr", 39), tRlC = tyreT("rl", 36), tRrC = tyreT("rr", 37),
             ),
             body = s.body.copy(
                 windowLfPct = windows["lf"], windowRfPct = windows["rf"], windowLrPct = windows["lr"], windowRrPct = windows["rr"], doorLfOpen = "lf" in doors, doorRfOpen = "rf" in doors,

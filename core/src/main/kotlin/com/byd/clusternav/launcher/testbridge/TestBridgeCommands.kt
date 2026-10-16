@@ -324,7 +324,7 @@ object TestBridgeCommands {
     val SPECS: List<Spec> = listOf(
         Spec(SAY, listOf(EXTRA_TEXT), listOf(EXTRA_AUTO_CONFIRM)),
         Spec(WAV, emptyList(), listOf(EXTRA_PATH)),
-        Spec(KWS, emptyList(), listOf(EXTRA_PATH)),
+        Spec(KWS, emptyList(), listOf(EXTRA_PATH, EXTRA_ARG, EXTRA_V)),   // name=asr|asr-base · v=giá giải mã giả (ms) — VOICE-WAKE-CPU-BUDGET
         Spec(CAMERA, emptyList(), listOf(EXTRA_ARG)),
         // `name` tuỳ chọn: vắng ⇒ cỡ mặc định 5120×960. Cú pháp `<W>x<H>` phân tích ở [TestBridgeFrameSize] (thuần,
         // có bài canh) — KHÔNG ở tầng thi hành: một chuỗi lạ phải cho ra cỡ MẶC ĐỊNH, không cho ra 0×0.

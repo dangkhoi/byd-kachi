@@ -138,7 +138,14 @@ class AppContainer internal constructor(
     }
 
     /** Adapter đọc xe: [CarDataPort] (widget cũ) + `CarStatusReader` (build [com.byd.clusternav.launcher.CarStatus]). */
-    private val carDataAdapter: CarDataAdapter by lazy { CarDataAdapter(halBindingTable, carDemand::get, controlDemand = carDemand::controls, covered = halEvents::covers) }
+    private val carDataAdapter: CarDataAdapter by lazy {
+        CarDataAdapter(
+            halBindingTable, carDemand::get, controlDemand = carDemand::controls, covered = halEvents::covers,
+            // 3.1.9 HAL-POLL-COVERED: tốc độ thật của nhịp nhanh ⇒ mẫu chung cho nhịp tim dẫn đường (`SpeedProvider.mps`); dòng "còn poll gì".
+            speedShare = com.byd.clusternav.navigation.SpeedShare.PROCESS, trust = halEvents::trust,
+            log = { msg -> runCatching { android.util.Log.i("KachiHalEvent", msg) } },
+        )
+    }
 
     /** Cổng đọc xe LIVE cho widget/thanh trạng thái — off-car mọi field null ⇒ "—". */
     val carData: CarDataPort get() = carDataAdapter

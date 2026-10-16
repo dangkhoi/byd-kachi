@@ -17,6 +17,16 @@ internal fun commandRecognizer(
     places: List<String>,
 ): VoiceRecognizer? = VoiceRecognizer.open(ctx, profiles, labels.keys.toList(), labels.values.toSet(), places)
 
-/** Lượt nghe chính của [VoiceSession] — [commandRecognizer] với nguồn động của phiên. CHẶN ⇒ luồng nền. */
-internal fun VoiceSession.openCommandRecognizer(): VoiceRecognizer? =
-    commandRecognizer(ctx, profiles(), appsByLabel(), places())
+/**
+ * Lượt nghe chính của [VoiceSession] — [commandRecognizer] với nguồn động của phiên. CHẶN ⇒ luồng nền.
+ *
+ * VOICE-SESSION-READY-CACHE — in mốc giờ: [ĐO xe 15/10] *"sẵn sàng nghe sau 2204 ms"* mà không dòng nào nói
+ * phần nào ăn 2,2 s đó. Một dòng `KachiVoiceTiming` mỗi phiên, không đổi hành vi.
+ */
+internal fun VoiceSession.openCommandRecognizer(): VoiceRecognizer? {
+    val t0 = System.currentTimeMillis()
+    return commandRecognizer(ctx, profiles(), appsByLabel(), places()).also {
+        // Phần bảng app (hỏi PM · nhãn · dựng) có dòng riêng `bảng app:` của [VoiceWiring.appIndex].
+        android.util.Log.i(VoiceEngine.TIMING_TAG, "dựng nghe: ${System.currentTimeMillis() - t0} ms (hồ sơ + bảng app + nơi + recognizer)")
+    }
+}

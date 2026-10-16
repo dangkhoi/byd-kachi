@@ -230,9 +230,10 @@ object VoiceWavProbe {
      *
      * @return mảng mẫu + số mẫu thật sự đọc được.
      */
-    internal fun readPcmFile(file: File): Pair<ShortArray, Int> = readPcm(file)
-    private fun readPcm(file: File): Pair<ShortArray, Int> {
-        val out = ShortArray(VoiceCapture.MAX_KEPT_SAMPLES)
+    internal fun readPcmFile(file: File, maxSamples: Int = VoiceCapture.MAX_KEPT_SAMPLES): Pair<ShortArray, Int> =
+        readPcm(file, maxSamples)   // `maxSamples` lớn hơn: CHỈ lệnh đo `kws name=asr` (bộ nghe nền không có trần phiên)
+    private fun readPcm(file: File, maxSamples: Int = VoiceCapture.MAX_KEPT_SAMPLES): Pair<ShortArray, Int> {
+        val out = ShortArray(maxSamples)
         return file.inputStream().buffered().use { input -> out to readSamples(input, out, readHeader(input)) }
     }
 

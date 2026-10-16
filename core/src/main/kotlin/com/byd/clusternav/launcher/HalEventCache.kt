@@ -8,9 +8,14 @@ package com.byd.clusternav.launcher
  * này thay lượt gọi getter. Poll còn lại ba vai:
  *  1. **Đối soát chậm**: một giá trị chỉ dùng được [reconcileMs] (60 s) kể từ lần làm mới cuối (sự kiện HOẶC lượt đọc thật); quá
  *     hạn ⇒ lượt poll kế đi gateway thật rồi cất lại ([store]).
- *  2. **Datum không đẩy / chưa chứng minh**: id không ở [HalEventMap.PUSH_PROVEN] chỉ được dùng thay poll SAU sự kiện đầu tiên của
- *     chính nó trong lần nối này — id mà bus im lặng không bao giờ làm số cũ đi (fail-safe). Id ở [HalEventMap.PUSH_PROVEN] tin ngay
- *     khi DEVICE của nó đã đẩy ≥ 1 sự kiện (bất kỳ id) tới helper trong lần nối này (soát Pass 6: bằng chứng bus ≠ bằng chứng uid shell).
+ *  2. **Datum không đẩy / chưa chứng minh** (F6-TRUST): KHÔNG id nào được dùng thay poll khi DEVICE của nó chưa đẩy ≥ 1 sự kiện (bất
+ *     kỳ id) tới helper trong lần nối này (soát Pass 6: bằng chứng bus ≠ bằng chứng uid shell). Device đã chứng minh ⇒
+ *     • id đã có sự kiện của CHÍNH nó, hoặc id ở [HalEventMap.PUSH_PROVEN] ⇒ hạn [reconcileMs] (60 s);
+ *     • id còn lại của device ấy (3.1.9 HAL-POLL-COVERED) ⇒ hạn [inferredMs] (30 s) — id có thể im lặng trên bus (chưa đổi giá trị
+ *       lần nào ⇒ không có sự kiện để chứng minh riêng), nên số cũ bị chặn ở 30 s chứ không 60 s. Trước 3.1.9 id ấy phải chờ sự kiện
+ *       của chính nó ⇒ ô điều khiển AC chưa ai chỉnh vẫn bị đọc mỗi 1 s mãi ([ĐO xe 15/10 18:02–18:05] ≈ 250 lượt/phút).
+ *     Bằng chứng theo id/device sống theo LẦN NỐI, không theo kế hoạch: [setPlan] thu hẹp rồi nở lại không xoá nó (3.1.9 — [ĐO xe 15/10]
+ *     18:01:15 thu hẹp `4 id / 1 device` rồi 18:02:36 nở lại: bản cũ quên sự kiện AC 17:59:46 ⇒ AC quay về poll 1 s).
  *  3. **Helper vắng**: chưa `hal.hello` / đứt dây ([linkDown]) ⇒ [hit] luôn `null` ⇒ hành vi y hệt trước (poll).
  *
  * Luồng: mọi hàm `@Synchronized` (ghi từ luồng đọc socket, đọc từ luồng poll/IO).
@@ -18,6 +23,8 @@ package com.byd.clusternav.launcher
 class HalEventCache(
     private val clock: () -> Long = System::currentTimeMillis,
     val reconcileMs: Long = RECONCILE_MS,
+    /** Hạn của id chỉ được tin nhờ DEVICE đã chứng minh (chưa có sự kiện của chính nó) — vai 2 ở KDoc lớp. */
+    val inferredMs: Long = reconcileMs / 2,
 ) {
     /** khoá đọc → binding (một khoá có thể mang nhiều datum: lấy binding đầu, cùng getter ⇒ cùng id). */
     private var byKey: Map<String, HalEventMap.Binding> = emptyMap()
@@ -51,7 +58,9 @@ class HalEventCache(
         datumsByFid = bindings.flatMap { b -> b.ids.map { it to b.datumId } }.groupBy({ it.first }, { it.second }).mapValues { it.value.toSet() }
         signals = signalIds
         val keep = datumsByFid.keys + signalIds
-        values.keys.retainAll(keep); at.keys.retainAll(keep); seen.retainAll(keep); eventAt.keys.retainAll(keep)
+        // 3.1.9 — `seen` KHÔNG thu theo kế hoạch: nó là bằng chứng *"bus đã đẩy id này tới helper trong lần nối này"*, sự thật ấy không
+        // mất khi màn tạm rời (thu hẹp) rồi quay lại; chỉ [linkDown] xoá. Giá trị + mốc thì thu (id rời kế hoạch không còn được làm mới).
+        values.keys.retainAll(keep); at.keys.retainAll(keep); eventAt.keys.retainAll(keep)
     }
 
     /** Dòng `sub …` cho helper: `fqn=id,id;…`. Không có gì cần ⇒ `"sub"` (thôi xin hết). */
@@ -72,12 +81,13 @@ class HalEventCache(
         val now = clock()
         for (id in b.ids) {
             if (id !in registered) return null
-            // Soát Pass 6 [P2]: id "tin ngay" ([HalEventMap.PUSH_PROVEN]) là bằng chứng BUS đẩy (đo ở tiến trình BYD), chưa phải bằng
-            // chứng helper (uid shell) NHẬN được ⇒ chỉ tin khi device ấy đã đẩy ≥ 1 sự kiện tới helper trong lần nối này; trước đó
-            // poll như cũ (0 chi phí thêm khi sự kiện chạy; không bao giờ giữ số cũ 60 s cho một đường chưa chứng minh).
-            if (id !in seen && !(b.trusted && b.device in seenDevice)) return null
+            // Soát Pass 6 [P2]: bằng chứng BUS đẩy (đo ở tiến trình BYD) chưa phải bằng chứng helper (uid shell) NHẬN được ⇒ không id nào
+            // được tin khi device ấy chưa đẩy ≥ 1 sự kiện tới helper trong lần nối này; trước đó poll như cũ.
+            if (b.device !in seenDevice) return null
+            // 3.1.9 HAL-POLL-COVERED — device đã chứng minh: id có bằng chứng riêng (sự kiện của nó / PUSH_PROVEN) hạn 60 s, còn lại 30 s.
+            val ttl = if (id in seen || b.trusted) reconcileMs else inferredMs
             val t = at[id] ?: return null
-            if (now - t !in 0 until reconcileMs) return null
+            if (now - t !in 0 until ttl) return null
         }
         return compose(b)
     }
@@ -85,6 +95,21 @@ class HalEventCache(
     /** Datum [datumId] đang được phục vụ bằng sự kiện (poll của nó có thể nghỉ tới hạn đối soát). */
     @Synchronized
     fun covers(datumId: String): Boolean = keyByDatum[datumId]?.let { hit(it) != null } ?: false
+
+    /**
+     * 3.1.9 — đường sự kiện của [datumId] ĐỨNG ở đâu, KHÔNG xét hạn đối soát (để log *"còn poll gì, vì sao"* không nhảy mỗi phút):
+     * [Trust.OFF] helper vắng · [Trust.NONE] không có trong kế hoạch · [Trust.UNPROVEN] đăng ký chưa OK / device chưa đẩy sự kiện nào ·
+     * [Trust.PROVEN].
+     */
+    @Synchronized
+    fun trust(datumId: String): Trust {
+        if (!hello) return Trust.OFF
+        val b = byKey[keyByDatum[datumId] ?: return Trust.NONE] ?: return Trust.NONE
+        if (b.ids.any { it !in registered }) return Trust.UNPROVEN
+        return if (b.device in seenDevice) Trust.PROVEN else Trust.UNPROVEN
+    }
+
+    enum class Trust { OFF, NONE, UNPROVEN, PROVEN }
 
     /** Một lượt đọc THẬT của [key] (đối soát) — cất lại để các lượt kế dùng, chỉ khi khoá nằm trong kế hoạch và đang nối. */
     @Synchronized

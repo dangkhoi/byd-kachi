@@ -19,7 +19,8 @@ package com.byd.clusternav.launcher
  * ## Ngoài bảng getter
  * Datum khai thẳng feature-id ([BindingRoute.Feature]/[BindingRoute.FeatureName]) đọc qua `get(int[]{id})` — chính là giá trị thô
  * ⇒ tự map, không cần dòng nào ở đây. Datum NHANH ([CarDataDemand.FAST_IDS]: tốc độ/số/công suất) cố ý giữ poll 1 s: tín hiệu
- * đổi liên tục khi chạy, sự kiện có thể dày hơn 1 Hz ⇒ đắt hơn poll [CHƯA ĐO tần suất — doc §5].
+ * đổi liên tục khi chạy, sự kiện có thể dày hơn 1 Hz ⇒ đắt hơn poll [CHƯA ĐO tần suất — doc §5]; và tốc độ/số là đầu vào cổng an toàn
+ * cốp, phải đọc binder tươi (lý do đủ ở dòng `getCurrentSpeed` của [POLL_ONLY]).
  */
 object HalEventMap {
 
@@ -87,6 +88,12 @@ object HalEventMap {
         put("BYDAutoBodyworkDevice.getSunroofState#", Feat("BODYWORK_SUNROOF_STATE"))
         put("BYDAutoBodyworkDevice.getPowerLevel#", Feat("BODYWORK_POWER_LEVEL"))
         put("BYDAutoBodyworkDevice.getAlarmState#", Feat("BODYWORK_ALARM_STATE"))
+        // 3.1.9 HAL-POLL-COVERED · light/BYDAutoLightDevice.java:216-250 (LIGHT_GET_PERM) — getLightStatus(n) = get(hằng của n), không biến
+        // đổi. Đèn tĩnh (1 hông · 2 cốt · 3 pha · 6/7 sương mù) — đổi hiếm ⇒ sự kiện rẻ hơn 5 lượt / 10 s. Xi-nhan #4/#5 CỐ Ý không có ở đây
+        // (nháy ~2,5 Hz ⇒ mỗi nháy một lượt phát CarStatus; xe 3D đã nháy theo LampLive) — lý do ở [POLL_ONLY]. Device Light chưa có bằng chứng
+        // đẩy tới helper [CHƯA BIẾT, doc §C] ⇒ chưa đẩy thì vẫn poll (F6-TRUST, [HalEventCache.hit]).
+        listOf(1 to "LIGHT_SIDE_LIGHT", 2 to "LIGHT_LOW_BEAM_LIGHT", 3 to "LIGHT_HIGH_BEAM_LIGHT", 6 to "LIGHT_FRONT_FOG_LIGHT", 7 to "LIGHT_REAR_FOG_LIGHT")
+            .forEach { (n, c) -> put("BYDAutoLightDevice.getLightStatus#$n", Feat(c)) }
         // engine/BYDAutoEngineDevice.java:221 (ENGINE_GET_PERM) · ota/BYDAutoOtaDevice.java:106 (OTA_GET_PERM)
         put("BYDAutoEngineDevice.getOilLevel#", Feat("ENGINE_OIL_LEVEL"))
         put("BYDAutoOtaDevice.getBatteryVoltage#", Feat("OTA_BATTERY_VOLTAGE", Kind.DOUBLE))
@@ -96,8 +103,14 @@ object HalEventMap {
     val POLL_ONLY: Map<String, String> = mapOf(
         "BYDAutoStatisticDevice.getTotalMileageValue" to "nhân 0,1 trên CAN-FD (statistic:511-515) — giá trị sự kiện là số thô",
         "BYDAutoGearboxDevice.getCurrentGear" to "ghép hộp số + EPB + phanh tay (gearbox:126+) — không phải một tín hiệu",
-        "BYDAutoSpeedDevice.getCurrentSpeed" to "datum NHANH — giữ poll 1 s (sự kiện có thể dày hơn) [CHƯA ĐO tần suất]",
-        "BYDAutoLightDevice.getLightStatus" to "đèn đã có đường sự kiện riêng (LampLive, AbsBYDAutoLightListener)",
+        // 3.1.9 [ĐO nguồn fw 2606] speed/BYDAutoSpeedDevice.java:96-99 getCurrentSpeed = getDouble(SPEED_AUTO_SPEED) — MAP ĐƯỢC, và device CÓ
+        // phát sự kiện id ấy (postEvent :161-165) nhưng cố ý KHÔNG log riêng id ấy ⇒ [SUY mạnh] luồng dày. Vẫn giữ poll vì (1) cổng an toàn
+        // cốp (`CtlSafetyPolicy.readMotion`) phải đọc binder TƯƠI — `EventCachedGateway` phục vụ MỌI người đọc một khoá đã vào kế hoạch;
+        // (2) chưa đo tần suất trên xe (CLAUDE.md §14). Một nguồn cho người đọc không-an-toàn: `SpeedShare` (nhịp tim dẫn đường).
+        "BYDAutoSpeedDevice.getCurrentSpeed" to "datum NHANH + cổng an toàn đọc tươi — giữ poll; sự kiện có (speed:161) nhưng [CHƯA ĐO tần suất]",
+        // 3.1.9 — CHỈ còn xi-nhan (#4/#5): nháy ~2,5 Hz ⇒ mỗi nháy một lượt phát CarStatus, đắt hơn 2 lượt / 10 s; xe 3D nháy theo LampLive.
+        // Đèn tĩnh (#1/#2/#3/#6/#7) đã ở [GETTERS].
+        "BYDAutoLightDevice.getLightStatus" to "xi-nhan #4/#5: nháy ⇒ sự kiện đắt hơn poll 10 s (đường riêng LampLive); đèn tĩnh ở GETTERS",
         "BYDAutoBodyworkDevice.getType" to "hằng 1001, không đọc xe",
         "BYDAutoBodyworkDevice.getAutoVIN" to "đọc buffer, không đổi trong chuyến",
         "AudioManager.getStreamVolume" to "Android, không qua HAL BYD",

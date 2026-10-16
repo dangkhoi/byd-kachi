@@ -140,6 +140,26 @@ internal object VoiceTailClause {
     internal fun text(body: List<Token>): String = body.joinToString(" ") { it.raw }
 
     /**
+     * ═══ Chữ TÌM NHẠC — bỏ cụm chỉ-tác-giả ĐẦU câu (VOICE-MEDIA-QUERY-POSSESSIVE, 2026-10-15) ═══════════════════════
+     *
+     * [ĐO xe 15/10 18:38] *"mở nhạc của đen trên youtube"* ⇒ `Media(QUERY "của đen")`: YouTube tìm chữ "của đen" thay
+     * cho ca sĩ "Đen". *"nhạc/bài [hát] **của** X"*, *"nhạc **bởi** X"*, *"nhạc của **ca sĩ** X"* ⇒ chữ tìm là X. Luật
+     * chung cho MỌI chỗ dựng `Media(QUERY)` (một hàm, không vá từng chỗ):
+     *  • chỉ bỏ ở ĐẦU thân (giữa câu là một phần tên: *"Bông hoa của anh"* giữ nguyên);
+     *  • chỉ bỏ khi còn lại ≥ 1 từ (*"mở nhạc của"* không bị rút thành chuỗi rỗng — trả nguyên văn, tầng sau hỏi lại).
+     */
+    internal fun queryText(body: List<Token>): String {
+        var i = 0
+        while (i < body.size && body[i].norm in QUERY_ATTRIBUTION) i++
+        if (i > 0 && VoiceLexicon.phraseAt(body, i, QUERY_ROLE)) i += QUERY_ROLE.size
+        return if (i in 1 until body.size) text(body.subList(i, body.size)) else text(body)
+    }
+
+    /** Từ chỉ tác giả đứng đầu chữ tìm nhạc (đã bỏ dấu): "của" · "bởi". */
+    private val QUERY_ATTRIBUTION = setOf("cua", "boi")
+    private val QUERY_ROLE = listOf("ca", "si")
+
+    /**
      * Mã đích + vị trí bắt đầu của mệnh đề *"bằng &lt;app&gt;"*, hoặc `null` khi câu không nêu app.
      *
      * Xem KDoc [withTarget] về ba ràng buộc, và KDoc [VoiceSynonyms.APP_TARGETS] về vì sao tên app đích **không**

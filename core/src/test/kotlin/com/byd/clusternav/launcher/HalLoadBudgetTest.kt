@@ -15,10 +15,13 @@ class HalLoadBudgetTest {
 
     private class AnswerAll : HalGateway by FakeHalGateway() {
         var reads = 0
-        override fun getter(deviceFqn: String, method: String, arg: Int?): String? { reads++; return if (method == "getTyrePressureValue") "250" else "1" }
-        override fun featureGet(deviceFqn: String, id: Int): String? { reads++; return "int=1" }
-        override fun settingGet(key: String): String? { reads++; return "1" }
-        override fun localGet(target: String, method: String, arg: Int?): String? { reads++; return "1" }
+        /** 3.1.9 — lượt đọc theo device (tên ngắn) cho bảng phần còn lại của chế độ sự kiện. */
+        val byDevice = java.util.TreeMap<String, Int>()
+        private fun hit(dev: String) { reads++; byDevice.merge(dev.substringAfterLast('.'), 1, Int::plus) }
+        override fun getter(deviceFqn: String, method: String, arg: Int?): String? { hit(deviceFqn); return if (method == "getTyrePressureValue") "250" else "1" }
+        override fun featureGet(deviceFqn: String, id: Int): String? { hit(deviceFqn); return "int=1" }
+        override fun settingGet(key: String): String? { hit("Setting(car)"); return "1" }
+        override fun localGet(target: String, method: String, arg: Int?): String? { hit("Local"); return "1" }
         override fun featureIdByName(constName: String): Int? = 8000 + (constName.hashCode() and 0xFFFF)
     }
 
@@ -70,6 +73,58 @@ class HalLoadBudgetTest {
         assertTrue(d <= 600 + 56 + 20, "màn mặc định $d > 676 (600 trước 3.1.5 + 56 nhịp thân xe + 20 cốp 3.1.6 — không được phình thêm)")
         assertTrue(q <= 474 + 56 + 20, "QA2 $q > 550: ô ẩn / thanh nút ẩn lại bị đọc")
         assertTrue(qIdle <= 48, "QA2 xe 3D không vẽ $qIdle > 48 (= 8 datum chip thanh trên × 6 nhịp): vẫn đọc cho widget không bày gì")
+    }
+
+    /**
+     * ═══ 3.1.9 HAL-POLL-COVERED — CHẾ ĐỘ SỰ KIỆN, cùng vòng poll ═══
+     *
+     * Kế hoạch sự kiện dựng như `CarEventFeed.screen` (datum màn ∪ datum mà nút đang hiện mượn), helper chào + đăng ký OK cho mọi id. [proven]
+     * = mỗi device đẩy ĐÚNG MỘT sự kiện (một id) rồi im — ca xấu nhất của "đã chứng minh" (giá trị không đổi ⇒ không còn sự kiện nào; mọi
+     * datum sống bằng đối soát 60 s / 30 s). Gateway trả lời mọi getter (trần trên), đếm ở cửa gateway THẬT (sau `EventCachedGateway`) =
+     * `KachiPerf.Counter.HAL_READ`.
+     */
+    private fun eventMode(state: HomeUiState, proven: Boolean): Pair<Int, Map<String, Int>> {
+        val gw = AnswerAll()
+        var now = 0L
+        val holder = CarDataDemand.Holder()
+        holder.publish(state)
+        val cache = HalEventCache(clock = { now })
+        val ids = holder.get()!! + holder.controls().mapNotNull { readPathOf(it)?.id }
+        val plan = ids.mapNotNull { HalEventMap.bindingOf(it, gw) }.distinctBy { it.datumId }
+        cache.setPlan(plan); cache.onHello()
+        val byDev = plan.groupBy { it.device }
+        byDev.forEach { (d, bs) -> cache.onReg(bs.flatMap { it.ids }.toSet(), emptySet(), d) }
+        if (proven) byDev.values.forEach { bs -> cache.onEvent(bs.first().ids.first(), 1, 1.0) }
+        val adapter = CarDataAdapter(HalBindingTable(EventCachedGateway(gw, cache)), holder::get, clock = { now },
+            controlDemand = holder::controls, covered = cache::covers)
+        var s = CarStatus()
+        fun second(t: Int) {
+            if (t % 10 == 0) s = adapter.readSlow(s)
+            if (adapter.fastNeeded()) s = adapter.readFast(s)
+            if (t % 3 == 0 && adapter.bodyNeeded()) s = adapter.readBody(s)
+            now += 1_000
+        }
+        for (t in 0 until 60) second(t)
+        gw.reads = 0; gw.byDevice.clear()
+        for (t in 0 until 600) second(t)
+        val per = gw.byDevice.mapValues { it.value / 10 }
+        println("  sự kiện ${if (proven) "ĐÃ" else "CHƯA"} chứng minh · ${state.workspace.preset}: ${gw.reads / 10}/phút · theo device=$per · device có sự kiện=${byDev.keys.map { it.substringAfterLast('.') }}")
+        return gw.reads / 10 to per
+    }
+
+    @Test
+    fun `319 che do su kien - man 3D duoi 100 luot moi phut khi moi device da chung minh, chua chung minh thi y nhu poll`() {
+        for (st in listOf(qa2, defaultScreen)) {
+            val poll = perMinute(st)
+            val (unproven, _) = eventMode(st, proven = false)
+            val (ev, per) = eventMode(st, proven = true)
+            println("HAL/phút ${st.workspace.preset}: poll=$poll · sự kiện chưa chứng minh=$unproven · đã chứng minh=$ev")
+            // Fail-safe F6-TRUST: device chưa đẩy gì tới helper ⇒ KHÔNG id nào thay poll ⇒ đúng số của chế độ poll.
+            assertTrue(unproven == poll, "chưa chứng minh mà số đổi ($unproven ≠ $poll): bộ nhớ sự kiện phục vụ một đường chưa chứng minh")
+            // [ĐO xe 15/10, 3.1.8] 517–558/phút ở chế độ sự kiện. Ngân sách 3.1.9: < 100 trên màn 3D khi mọi device đã chứng minh.
+            assertTrue(ev < 100, "chế độ sự kiện $ev ≥ 100/phút — phần còn lại theo device: $per")
+            assertTrue((per["BYDAutoAcDevice"] ?: 0) <= 12, "ô AC còn bị đọc như nhịp 1 s: $per")
+        }
     }
 
     @Test

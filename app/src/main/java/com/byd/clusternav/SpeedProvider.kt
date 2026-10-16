@@ -1,6 +1,7 @@
 package com.byd.clusternav
 
 import com.byd.clusternav.navigation.SpeedReading
+import com.byd.clusternav.navigation.SpeedShare
 import com.byd.clusternav.navigation.TurnDistanceInterpolator
 import android.content.Context
 import android.content.ContextWrapper
@@ -41,12 +42,16 @@ object SpeedProvider {
         }.getOrNull()?.also { speedMethod = it } ?: return null
         val kmh = runCatching { (m.invoke(d) as? Number)?.toDouble() }.getOrNull()
         // Quyết định nằm ở [SpeedReading] trong :core nên kiểm được ngoài xe; ở đây chỉ còn việc đọc.
-        return reading.acceptKmh(kmh)
+        return reading.acceptKmh(kmh)?.also { SpeedShare.PROCESS.offer(it * 3.6) }
     }
 
     /** Tốc độ hiện tại (m/s), suy biến về giá trị đọc được gần nhất. CHỈ dùng cho hiển thị/nội suy —
-     *  cổng an toàn phải dùng [mpsOrNull]. */
-    fun mps(): Double = mpsOrNull() ?: reading.lastGoodMps
+     *  cổng an toàn phải dùng [mpsOrNull] (luôn gọi binder).
+     *
+     *  3.1.9 HAL-POLL-COVERED — dùng lại lượt đọc THẬT gần nhất của tiến trình (của chính hàm này hoặc nhịp nhanh `CarDataAdapter`) nếu
+     *  nó chưa già quá [SpeedShare.NAV_TTL_MS]: nhịp tim dẫn đường 400 ms trên luồng chính không còn gọi binder mỗi nhịp — lý do + giới
+     *  hạn ở KDoc [SpeedShare]. */
+    fun mps(): Double = SpeedShare.PROCESS.recent()?.let { reading.acceptKmh(it) } ?: mpsOrNull() ?: reading.lastGoodMps
 
     private fun device(): Any? {
         dev?.let { return it }

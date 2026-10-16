@@ -118,7 +118,7 @@ object AdaptiveInk {
             override fun score(f: InkFamily, alt: Int): Double {
                 val u = under(view) ?: return Double.MAX_VALUE
                 val key = InkKey.of(hex, KachiTheme.palette) ?: return Double.MAX_VALUE
-                val r = role(view, key)
+                val r = inkRole(view, key)
                 return u.with(Layer.Flat(fill(f.palette))).worst(InkModel.ink(key, f)) / r.floor
             }
             override fun apply(f: InkFamily, alt: Int) {
@@ -166,6 +166,7 @@ object AdaptiveInk {
     }
 
     private fun updateUnsafe(view: View, force: Boolean, cascade: Boolean, rescore: Boolean) {
+        why = if (force || cascade) ContrastLedger.Trigger.FORCE else if (rescore) ContrastLedger.Trigger.RESCORE else ContrastLedger.Trigger.EVENT
         val s = view.getTag(R.id.kachi_ink_surface) as? InkSurface ?: return
         val root = rootOf(view) ?: return
         if (root.first === view) { refresh(view, s, force, cascade, rescore); return }
@@ -209,26 +210,44 @@ object AdaptiveInk {
     /** Ranh giới fail-soft (P0 14/10) — mực thích ứng KHÔNG BAO GIỜ ném vào chỗ gọi. */
     private fun ink(v: View, hex: String, compound: Boolean): Int = try { inkUnsafe(v, hex, compound) } catch (e: RuntimeException) {
         logW("lỗi mực thích ứng ${v.javaClass.simpleName}/$hex: $e — tô mã thô")
-        c(hex).also { runCatching { paintRaw(v, it, compound) } }
+        c(hex).also { runCatching { inkRaw(v, it, compound) } }
     }
 
     private fun inkUnsafe(v: View, hex: String, compound: Boolean): Int {
         val key = InkKey.of(hex, KachiTheme.palette)
         val prev = v.getTag(R.id.kachi_ink_mark) as? InkMark
-        if (key == null) { v.setTag(R.id.kachi_ink_mark, null); return c(hex).also { paintRaw(v, it, compound) } }
+        if (key == null) { v.setTag(R.id.kachi_ink_mark, null); return c(hex).also { inkRaw(v, it, compound) } }
         val mark = prev?.takeIf { it.key == key && it.compound == compound } ?: InkMark(key, compound, prev?.after)
         v.setTag(R.id.kachi_ink_mark, mark)
-        val host = surfaceOf(v) ?: return c(hex).also { paintRaw(v, it, compound) }
-        val root = rootOf(host.first) ?: return c(hex).also { paintRaw(v, it, compound) }
-        // Bảng màu / ảnh / độ đục đổi mà mặt chưa tính lại, phần tử chưa đo, hoặc phần tử MỚI (chưa có trong lượt chọn họ) ⇒ một lượt.
+        val host = surfaceOf(v) ?: return c(hex).also { inkRaw(v, it, compound) }
+        val root = rootOf(host.first) ?: return c(hex).also { inkRaw(v, it, compound) }
+        // R29-RESOLVE-STORM ([InkSolveGate]): đủ ⇒ tra/tô · chưa đo được ⇒ chỉ giữ dấu (lượt giải đến từ layout) · thiếu ⇒ MỘT lượt gộp.
         val stale = host.second.backdrop != null && !fresh(host.second)
-        val g = mark.ground
-        if (stale || g == null || root.second.family < 0 || slot(v, key, role(v, key)) !in root.second.seen) {
-            refresh(root.first, root.second, force = stale, cascade = false, rescore = true)
-            return mark.last?.ink ?: c(hex).also { if (mark.last == null) paintRaw(v, it, compound) }
+        val g = mark.ground; val role = inkRole(v, key); val chosen = root.second.family >= 0
+        when (InkSolveGate.onInk(g != null, inkMeasurable(v) && inkMeasurable(host.first) && inkMeasurable(root.first), stale, chosen, inkSlot(v, key, role) in root.second.seen)) {
+            InkSolveGate.Ink.PAINT -> {
+                val f = root.second.family; val fam = InkModel.families(KachiTheme.palette)[f]; val last = mark.last
+                // Cùng nền + vai + họ ⇒ dùng lại kết quả; view đang hiện đúng mực ⇒ không tô lại (0 invalidate, 0 cấp phát).
+                if (last != null && mark.solvedOn === g && last.family == f && last.role == role && last.ink == InkModel.ink(key, fam)) {
+                    return if (inkShown(v, mark, last)) last.ink else paint(v, mark, last, fam)
+                }
+                return paint(v, mark, resolve(g!!, key, role, f, fam), fam)
+            }
+            InkSolveGate.Ink.DEFER -> ContrastLedger.deferred.incrementAndGet()
+            InkSolveGate.Ink.SOLVE -> if (coalesce.request(root.first)) {
+                why = InkSolveGate.why(stale, chosen)
+                refresh(root.first, root.second, force = stale, cascade = false, rescore = true)
+            }
         }
-        val f = root.second.family
-        return paint(v, mark, resolve(g, key, role(v, key), f, InkModel.families(KachiTheme.palette)[f]), InkModel.families(KachiTheme.palette)[f])
+        // Soát Pass 9 [P2]: lời tô bị DỒN/HOÃN mà mặt gốc ĐÃ có họ ⇒ tô tạm đúng MỰC CỦA HỌ ấy (= mực lượt giải sẽ tô) — không nháy mã thô một khung.
+        return mark.last?.ink ?: (if (chosen) InkModel.ink(key, InkModel.families(KachiTheme.palette)[root.second.family]) else c(hex)).also { inkRaw(v, it, compound) }
+    }
+
+    /** Lời tô thứ hai trở đi của cùng mặt gốc trong một lượt vòng lặp ⇒ MỘT lượt ở lượt kế (trước khung vẽ kế). */
+    private val coalesce = InkCoalescer<View>({ android.os.Handler(android.os.Looper.getMainLooper()).post(it) }) { root ->
+        val s = root.getTag(R.id.kachi_ink_surface) as? InkSurface ?: return@InkCoalescer
+        why = ContrastLedger.Trigger.INK_COALESCED
+        try { refresh(root, s, force = !fresh(s), cascade = false, rescore = true) } catch (e: RuntimeException) { logW("lỗi giải gộp: $e") }
     }
 
     /** Chữ [tv] vừa ĐỔI CHUỖI (chuỗi mới mang [InkSpan] màu thô) ⇒ tô lại đoạn màu theo họ đang hiện của mặt. */
@@ -236,13 +255,6 @@ object AdaptiveInk {
         val m = tv.getTag(R.id.kachi_ink_mark) as? InkMark ?: return
         val r = m.last ?: return
         try { paint(tv, m, r, InkModel.families(KachiTheme.palette)[r.family]) } catch (e: RuntimeException) { logW("lỗi đoạn màu: $e") }
-    }
-
-    private fun paintRaw(v: View, color: Int, compound: Boolean) {
-        when (v) {
-            is TextView -> { v.setTextColor(color); if (compound) v.compoundDrawablesRelative.forEach { it?.setTint(color) } }
-            is ImageView -> v.setColorFilter(color)
-        }
     }
 
     /** Mặt gần nhất bao [v] (kể cả chính nó; [ride] đứng trước) — đi ngược cây cha; `null` khi chưa gắn vào mặt nào. */
@@ -284,6 +296,7 @@ object AdaptiveInk {
         s.changed = false
         if (!view.isAttachedToWindow || view.width <= 0 || view.height <= 0) return false
         if (!force && !moved(view, s.rect) && fresh(s) && s.backdrop != null) return true
+        view.getLocationInWindow(loc)   // R29-RESOLVE-STORM: lượt ÉP bỏ qua [moved] ⇒ `loc` còn của view KHÁC (nút đĩa lệch chỗ ⇒ bão)
         s.rect.set(loc[0], loc[1], loc[0] + view.width, loc[1] + view.height)
         val stale = !fresh(s)
         if (s.wantsUnder) s.under = backdropOf(view, s.rect, self = false)
@@ -314,18 +327,6 @@ object AdaptiveInk {
         return ContrastStack.compose(base, groups)
     }
 
-    private fun role(v: View, key: InkKey) = InkModel.role(key, icon = v is ImageView, large = v is TextView && large(v))
-
-    private fun large(tv: TextView): Boolean {
-        val sp = tv.textSize / tv.resources.displayMetrics.density
-        val bold = tv.typeface?.isBold == true || tv.paint.isFakeBoldText
-        return sp >= InkModel.LARGE_SP || (bold && sp >= InkModel.LARGE_BOLD_SP)
-    }
-
-    /** Ô (phần tử, vai, loại) — một phần tử của phép chọn họ; view mới hoặc vai mới ⇒ phần tử mới ⇒ chọn lại họ. */
-    private fun slot(v: View, key: InkKey, role: InkRole): Long =
-        (System.identityHashCode(v).toLong() shl 16) or (key.ordinal * 8 + role.ordinal).toLong()
-
     /** Một phần tử thu được khi đi cây của mặt gốc: view + dấu + có thuộc bộ vẽ tự tô không. */
     private class Item(val view: View, val mark: InkMark, val probed: Boolean)
 
@@ -336,6 +337,7 @@ object AdaptiveInk {
     private fun groundOf(v: View, via: View, m: InkMark, force: Boolean): Boolean {
         if (!v.isAttachedToWindow || v.width <= 0 || v.height <= 0) return false
         if (!force && !moved(v, m.rect) && m.ground != null) return false
+        v.getLocationInWindow(loc)   // như [measure]: không tin `loc` của lần [moved] trước
         m.rect.set(loc[0], loc[1], loc[0] + v.width, loc[1] + v.height)
         val next = backdropOf(via, m.rect)
         val changed = !sameBackdrop(next, m.ground)
@@ -381,7 +383,7 @@ object AdaptiveInk {
         if (held) { hold(root, rs); return }   // [ĐO máy ảo 15/10] xoay 3D: ~53 lượt chọn/đợt → chỉ lượt dừng
         val fams = InkModel.families(KachiTheme.palette)
         val seen = HashSet<Long>(items.size * 2)
-        for (it in items) seen += slot(it.view, it.mark.key, role(it.view, it.mark.key))
+        for (it in items) seen += inkSlot(it.view, it.mark.key, inkRole(it.view, it.mark.key))
         if (seen != rs.seen) dirty = true
         if (dirty) {
             decide(root, rs, items, probes, fams, seen)
@@ -390,7 +392,7 @@ object AdaptiveInk {
             for (it in items) if (it.probed) groundOf(it.view, it.view, it.mark, true)
         }
         val f = rs.family.coerceAtLeast(0)
-        for (it in items) paint(it.view, it.mark, resolve(it.mark.ground!!, it.mark.key, role(it.view, it.mark.key), f, fams[f]), fams[f])
+        for (it in items) paint(it.view, it.mark, resolve(it.mark.ground!!, it.mark.key, inkRole(it.view, it.mark.key), f, fams[f]), fams[f])
         for (o in owns) (o.getTag(R.id.kachi_ink_surface) as? InkSurface)?.let { refresh(o, it, force || cascade || rs.changed, cascade, rescore) }
     }
 
@@ -414,6 +416,7 @@ object AdaptiveInk {
             settling = true; try { update(root) } finally { settling = false }
         }.also { rs.motion = it }).hold()
     private var settling = false
+    private var why = ContrastLedger.Trigger.EVENT
 
     /** Chọn MỘT họ cho mặt gốc [root] từ mọi phần tử (trừ phần tử của bộ vẽ tự tô — bộ vẽ tự chấm nét của nó) + bộ vẽ tự tô. */
     private fun decide(root: View, rs: InkSurface, items: List<Item>, probes: List<Probe>, fams: List<InkFamily>, seen: Set<Long>) {
@@ -421,7 +424,7 @@ object AdaptiveInk {
         for (it in items) {
             if (it.probed) continue
             val g = it.mark.ground ?: continue
-            needs += InkNeed(role(it.view, it.mark.key), g, IntArray(fams.size) { f -> InkModel.ink(it.mark.key, fams[f]) })
+            needs += InkNeed(inkRole(it.view, it.mark.key), g, IntArray(fams.size) { f -> InkModel.ink(it.mark.key, fams[f]) })
             owners += "${it.view.javaClass.simpleName}/${it.mark.key}"
             ((it.view as? TextView)?.text as? Spanned)?.let { sp -> sp.getSpans(0, sp.length, InkSpan::class.java) }?.forEach { sp ->
                 val k = InkKey.of(sp.hex, KachiTheme.palette) ?: return@forEach
@@ -429,6 +432,7 @@ object AdaptiveInk {
                 owners += "span/$k"
             }
         }
+        ContrastLedger.trigger(why)
         probes.forEach { it.prepare() }
         // Mỗi họ × mỗi nhóm bộ vẽ: MỘT kiểu mặt cho cả nhóm (điểm MIN của nhóm cao nhất), rồi điểm từng bộ vẽ theo kiểu đó.
         val groups = probes.indices.groupBy { probes[it].group ?: probes[it] }.values
@@ -452,7 +456,7 @@ object AdaptiveInk {
         if (prev == null || prev.family != choice.family || prev.ok != choice.ok) {   // perf §8.1: chỉ khi họ / đạt-sàn đổi
             Log.d(TAG, "R29 họ: $name ${choice.describe()} · ${needs.size} nét + ${probes.size} bộ vẽ · điểm ${scores.joinToString("/") { if (it > 1e6) "∞" else "%.2f".format(it) }} · đạt ${pass.joinToString("/")}/${needs.size + probes.size}")
         }
-        if (!choice.ok) {
+        if (!choice.ok && (prev == null || prev.family != choice.family || prev.ok)) {   // R29-RESOLVE-STORM: chỉ khi ĐỔI (mặt+họ)
             // Mỗi họ: phần tử tệ nhất + hộp nền của nó — đủ để chốt bằng log vì sao không họ nào đạt (không đoán).
             val why = fams.indices.joinToString(" | ") { f ->
                 val w = needs.indices.minByOrNull { ContrastInk.margin(needs[it], f) } ?: return@joinToString "f#$f -"
@@ -483,7 +487,7 @@ object AdaptiveInk {
             is ImageView -> v.setColorFilter(r.ink)
         }
         if (dirty) v.invalidate()
-        m.last = r
+        m.last = r; m.solvedOn = m.ground; m.shown = r.ink; m.filter = (v as? ImageView)?.colorFilter   // bộ lọc VỪA đặt — [inkShown] so đối tượng
         m.ground?.let { g -> m.after?.invoke(v, r, g) }
         return r.ink
     }

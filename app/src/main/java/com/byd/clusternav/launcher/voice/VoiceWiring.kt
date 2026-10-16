@@ -60,17 +60,23 @@ object VoiceWiring {
         val pm = ctx.packageManager
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         val infos = PackageQueries.queryActivities(pm, intent)
-        val entries = infos
-            .mapNotNull { ri ->
+        val tq = System.nanoTime()
+        // VOICE-SESSION-READY-CACHE — `loadLabel` ~40 app chỉ chạy lại khi CHỮ KÝ danh sách đổi (KDoc [VoiceLabelMemo]).
+        val (labelled, rebuilt) = labelMemo.of(signatureOf(ctx, infos)) {
+            val entries = infos.mapNotNull { ri ->
                 val info = ri.activityInfo ?: return@mapNotNull null
                 VoiceAppLabelPick.Entry(ri.loadLabel(pm).toString(), info.packageName, isSystem(info.applicationInfo))
             }
-        val picked = VoiceAppLabelPick.of(entries)
+            entries to VoiceAppLabelPick.of(entries)
+        }
+        val (entries, picked) = labelled
         // Log ở mức W chứ không I: đây là một phép đoán thay người dùng (xem luật (1) ở [VoiceAppLabelPick]), và
         // nó là dòng DUY NHẤT trả lời được câu *"vì sao nói tên này lại mở app kia"* khi nó xảy ra trên xe thật.
-        picked.ambiguous.forEach { (label, pkgs) ->
+        // Chỉ in khi DỰNG LẠI (bảng không đổi ⇒ câu trả lời không đổi — trước đây lặp lại mỗi phiên).
+        if (rebuilt) picked.ambiguous.forEach { (label, pkgs) ->
             Log.w(TAG, "nhãn \"$label\" trùng ở ${pkgs.size} gói (${pkgs.joinToString(" · ")}) → chọn ${pkgs.first()}")
         }
+        val tl = System.nanoTime()
         val installed = entries.mapTo(LinkedHashSet()) { it.pkg }
         AppAltLabels.warm(ctx, infos)
         val alt = AppAltLabels.cached(installed)
@@ -81,8 +87,27 @@ object VoiceWiring {
         lastIndexMicros = (t1 - t0) / NANOS_PER_MICRO
         // Chỉ ĐẾM — không in tên người dùng dạy (R-nf3).
         if (idx.shadowed.isNotEmpty()) Log.i(TAG, "tên đã dạy bị che: ${idx.shadowed.size} (nhãn app khác / trùng giữa hai app)")
+        Log.i(
+            VoiceEngine.TIMING_TAG,
+            "bảng app: hỏi PM ${(tq - t0) / NANOS_PER_MILLI} ms · nhãn ${(tl - tq) / NANOS_PER_MILLI} ms " +
+                "(${if (rebuilt) "dựng lại ${infos.size} app" else "dùng lại"}) · dựng ${(t1 - tb) / NANOS_PER_MILLI} ms",
+        )
         return idx
     }
+
+    private val labelMemo = VoiceLabelMemo<Pair<List<VoiceAppLabelPick.Entry>, VoiceAppLabelPick.Picked>>()
+
+    /** Chữ ký RẺ của danh sách app (không `loadLabel`): gói · activity · APK · mã nhãn · ngôn ngữ — xem [VoiceLabelMemo]. */
+    private fun signatureOf(ctx: Context, infos: List<android.content.pm.ResolveInfo>): List<String> {
+        val loc = runCatching { ctx.resources.configuration.locales.toLanguageTags() }.getOrDefault("")
+        return infos.mapNotNull { ri ->
+            val a = ri.activityInfo ?: return@mapNotNull null
+            val app = a.applicationInfo
+            "${a.packageName}|${a.name}|${app?.sourceDir}|${ri.labelRes}|${a.labelRes}|${app?.labelRes}|${ri.nonLocalizedLabel}|${app?.nonLocalizedLabel}"
+        }.sorted() + "locale=$loc"
+    }
+
+    private const val NANOS_PER_MILLI = 1_000_000L
 
     private const val NANOS_PER_MICRO = 1_000L
 

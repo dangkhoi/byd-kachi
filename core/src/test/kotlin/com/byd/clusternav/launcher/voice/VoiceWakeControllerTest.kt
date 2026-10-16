@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** Bộ não bộ nghe "Hey Kachi" — kiểm 3 tầng cắt CPU + cooldown + cầu chì false-accept (thuần, off-car). */
+/** Bộ não bộ nghe "Hey Kachi" — kiểm 4 tầng cắt CPU + cooldown + cầu chì false-accept (thuần, off-car). */
 class VoiceWakeControllerTest {
 
     private fun controller() = VoiceWakeController(
@@ -43,34 +43,89 @@ class VoiceWakeControllerTest {
     }
 
     /**
-     * ═══ TẦNG 4 — trần THỜI LƯỢNG suy diễn ═══════════════════════════════════════════════════════════════
-     * Ca hỏng mà ba tầng đầu KHÔNG bịt: **nhạc trong cabin** = RMS nằm trên ngưỡng cổng năng lượng **liên tục**,
-     * mà nền của cổng ấy cố ý chỉ học lúc im ⇒ `voiced()` trả `true` mọi khung ⇒ KWS chạy 100 % thời gian. Trần
-     * này cho một chặn trên chứng minh được, không phụ thuộc phổ âm của cabin.
+     * ═══ TẦNG 4 — ngân sách CPU suy diễn (VOICE-WAKE-CPU-BUDGET) ═══════════════════════════════════════════════
+     * Ca hỏng mà ba tầng đầu KHÔNG bịt: **nhạc trong cabin** = RMS nằm trên ngưỡng **liên tục** ⇒ `voiced()` đúng mọi
+     * khung. [ĐO xe 15/10] trần cũ đếm khung để `:wake` chạy 105 % TB / 263 % đỉnh. Nay trần đếm **ms CPU đo được**.
+     * Red-proof: trả `onFrame` về bản đếm khung (hoặc bỏ `budget.mayRun`) ⇒ bài này đỏ (không bao giờ ra OBSERVE).
      */
-    @Test fun `on lien tuc tren nguong van khong cho KWS chay qua tran thoi luong`() {
+    @Test fun `nhac lien tuc - luot giai ma dat bi gian ra theo gia CPU that`() {
         val c = VoiceWakeController(
             gate = VoiceWakeGate(),
             loadGuard = VoiceLoadGuard(suspendAbove = 6.0, resumeBelow = 4.0, resumeStableReads = 1),
-            maxKwsFramesPerWindow = 5, kwsWindowMs = 1_000L,
+            budget = VoiceWakeCpuBudget(duty = 0.25, burstMs = 4_000.0),
         )
-        // 5 khung đầu (trong cùng cửa sổ) được chạy KWS…
-        for (i in 0 until 5) {
-            assertEquals(VoiceWakeController.Frame.RUN_KWS, c.onFrame(800.0, 1.0, 100L + i * 10), "khung #${i + 1}")
+        // 60 s nhạc, khung 100 ms; mỗi khung thứ 5 được chạy là một lượt giải mã ~1 350 ms CPU (số xe 15/10).
+        var runs = 0; var observes = 0; var cpu = 0L
+        for (i in 0 until 600) {
+            val now = i * 100L
+            when (c.onFrame(800.0, 1.0, now)) {
+                VoiceWakeController.Frame.RUN_KWS -> { runs++; val cost = if (runs % 5 == 0) 1_350L else 1L; cpu += cost; c.onInferenceCost(cost, now) }
+                VoiceWakeController.Frame.OBSERVE -> { observes++; cpu += 1; c.onInferenceCost(1L, now) }
+                else -> Unit
+            }
         }
-        // …khung thứ 6 trong cùng cửa sổ bị hạ về IDLE dù tiếng vẫn to (đây là chỗ CPU được cắt).
-        assertEquals(VoiceWakeController.Frame.IDLE, c.onFrame(800.0, 1.0, 160L), "quá trần ⇒ IDLE, chỉ còn toán RMS")
-        assertEquals(VoiceWakeController.Frame.IDLE, c.onFrame(800.0, 1.0, 900L))
-        // Cửa sổ trượt qua ⇒ lại được chạy (không phải một lần cắt vĩnh viễn).
-        assertEquals(VoiceWakeController.Frame.RUN_KWS, c.onFrame(800.0, 1.0, 1_200L), "cửa sổ trượt ⇒ có suất mới")
+        assertTrue(observes > 0, "quá ngân sách ⇒ phải có khung OBSERVE (gom, không suy diễn)")
+        // Chặn trên: burst + duty × 60 s + một lượt = 4 000 + 15 000 + 1 350.
+        assertTrue(cpu <= 4_000 + 15_000 + 1_350, "CPU 60 s = $cpu ms vượt chặn trên")
+        // Trước (trần khung 40/10 s): mọi lượt giải mã có thể đều chạy ⇒ 120 lượt × 1 350 = 162 s CPU / 60 s.
+        assertTrue(cpu < 0.40 * 60_000, "CPU 60 s = $cpu ms — phải dưới 40 % một lõi")
+        assertEquals(cpu, c.chargedCpuMs(), "controller phải tính đúng tổng đã báo")
     }
 
-    @Test fun `tran thoi luong khong chan mot cau goi binh thuong`() {
-        val c = controller() // mặc định: 40 khung / 10 s
-        // Câu gọi "Hey Kachi" ≈ 1 s ≈ 10 khung 100 ms — phải qua hết, không khung nào bị bỏ.
-        for (i in 0 until 10) {
-            assertEquals(VoiceWakeController.Frame.RUN_KWS, c.onFrame(800.0, 1.0, i * 100L), "khung #${i + 1} của câu gọi")
+    @Test fun `ngan sach khong chan mot cau goi sau quang yen`() {
+        val c = controller() // mặc định: 25 % · burst 4 000 ms
+        // Câu gọi ≈ 1,5 s = 15 khung; 3 lượt giải mã đắt như xe (1 350 ms) — phải chạy hết, không khung nào bị OBSERVE.
+        for (i in 0 until 15) {
+            val now = i * 100L
+            assertEquals(VoiceWakeController.Frame.RUN_KWS, c.onFrame(800.0, 1.0, now), "khung #${i + 1} của câu gọi")
+            c.onInferenceCost(if (i % 5 == 4) 1_350L else 1L, now)
         }
+    }
+
+    @Test fun `reset tra lai tron ngan sach`() {
+        val c = controller()
+        c.onFrame(800.0, 1.0, 0L); c.onInferenceCost(50_000L, 0L)
+        assertEquals(VoiceWakeController.Frame.OBSERVE, c.onFrame(800.0, 1.0, 100L), "nợ ⇒ OBSERVE")
+        c.reset()
+        assertEquals(VoiceWakeController.Frame.RUN_KWS, c.onFrame(800.0, 1.0, 200L), "bật lại công tắc ⇒ ngân sách đầy")
+    }
+
+    /**
+     * ═══ ĐUÔI CÂU — VOICE-WAKE-TAIL-UNDECODED ═══════════════════════════════════════════════════════════════════
+     * [ĐO máy ảo 15/10] cabin yên 61,4 %: khung im bị cắt trước engine ⇒ âm cuối câu gọi không bao giờ được giải mã.
+     * Khoá: tiếng→im ⇒ [tailMs] khung OBSERVE rồi ĐÚNG MỘT FINISH; im tiếp ⇒ IDLE; đoạn tiếng mới ⇒ FINISH mới;
+     * nợ ngân sách ⇒ không FINISH. Red-proof: cho `tail()` trả IDLE ⇒ bài đỏ.
+     */
+    @Test fun `tieng roi im - gom duoi roi dung MOT luot giai ma cuoi`() {
+        val c = VoiceWakeController(
+            loadGuard = VoiceLoadGuard(suspendAbove = 6.0, resumeBelow = 4.0, resumeStableReads = 1), tailMs = 600L,
+        )
+        val got = ArrayList<VoiceWakeController.Frame>()
+        var t = 0L
+        repeat(8) { c.onFrame(10_000.0, 1.0, t); t += 100 }            // câu gọi 0,8 s
+        repeat(15) { got += c.onFrame(0.0, 1.0, t); t += 100 }          // 1,5 s im
+        val obs = got.takeWhile { it == VoiceWakeController.Frame.OBSERVE }.size
+        assertTrue(obs in 5..6, "≈ 600 ms đuôi gom vào engine (OBSERVE): $obs khung")
+        assertEquals(VoiceWakeController.Frame.FINISH, got[obs], "hết đuôi ⇒ FINISH")
+        assertEquals(1, got.count { it == VoiceWakeController.Frame.FINISH }, "đúng MỘT lượt cuối mỗi đoạn tiếng")
+        assertTrue(got.drop(obs + 1).all { it == VoiceWakeController.Frame.IDLE }, "im tiếp ⇒ chỉ toán RMS")
+        // đoạn tiếng thứ hai ⇒ một FINISH nữa
+        repeat(5) { c.onFrame(10_000.0, 1.0, t); t += 100 }
+        val second = (0 until 10).map { c.onFrame(0.0, 1.0, t).also { t += 100 } }
+        assertEquals(1, second.count { it == VoiceWakeController.Frame.FINISH })
+    }
+
+    @Test fun `khong co tieng truoc thi khong FINISH, no ngan sach thi khong FINISH`() {
+        val c = VoiceWakeController(loadGuard = VoiceLoadGuard(suspendAbove = 6.0, resumeBelow = 4.0, resumeStableReads = 1))
+        assertTrue((0 until 30).none { c.onFrame(0.0, 1.0, it * 100L) == VoiceWakeController.Frame.FINISH }, "im từ đầu ⇒ không lượt nào")
+        val d = VoiceWakeController(
+            loadGuard = VoiceLoadGuard(suspendAbove = 6.0, resumeBelow = 4.0, resumeStableReads = 1),
+            budget = VoiceWakeCpuBudget(duty = 0.25, burstMs = 1_000.0),
+        )
+        var t = 0L
+        repeat(5) { d.onFrame(10_000.0, 1.0, t); d.onInferenceCost(5_000L, t); t += 100 }   // tiêu quá ngân sách
+        assertTrue((0 until 15).none { d.onFrame(0.0, 1.0, t).also { t += 100 } == VoiceWakeController.Frame.FINISH },
+            "nợ ngân sách ⇒ lượt cuối cũng bị chặn (một trần cho mọi suy diễn)")
     }
 
     @Test fun `cau chi false-accept tu tat sau qua nhieu wake`() {

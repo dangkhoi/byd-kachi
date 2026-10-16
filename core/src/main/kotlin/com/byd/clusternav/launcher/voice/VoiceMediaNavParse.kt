@@ -23,7 +23,7 @@ internal object VoiceMediaNavParse {
                 VoiceVerb.PREV -> VoiceIntent.Media(VoiceMediaOp.PREV)
                 VoiceVerb.PLAY, VoiceVerb.OPEN, VoiceVerb.ON ->
                     if (body.isEmpty()) VoiceIntent.Media(VoiceMediaOp.PLAY, app = app)
-                    else VoiceIntent.Media(VoiceMediaOp.QUERY, VoiceTailClause.text(body), app)
+                    else VoiceIntent.Media(VoiceMediaOp.QUERY, VoiceTailClause.queryText(body), app)
                 else -> VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
             }
         }

@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicLongArray
 
 /**
  * ═══ 3.1.6 R29 (làm lại) — BỘ GIẢI HỌ MỰC theo MẶT: mỗi bề mặt một họ mực, đổi CÙNG NHAU (`:core`, thuần) ═══════════════════
@@ -138,6 +139,28 @@ object ContrastLedger {
     /** Số lần không họ nào đạt sàn trên một mặt (đã chọn họ tốt nhất, log ở `:app`). */
     val belowFloor = AtomicLong()
 
+    /**
+     * R29-RESOLVE-STORM ([ĐO xe 15/10] `mặt` ~700/phút mà `đổi-họ` 7–22) — vì sao một lượt chọn họ chạy: lời TÔ một phần tử
+     * ([INK_NEW] phần tử/vai mới · [INK_STALE] bảng/ảnh/độ đục đổi · [INK_FIRST] mặt chưa có họ · [INK_COALESCED] lời tô dồn
+     * sang lượt kế — [InkCoalescer]), hay lượt của MẶT ([EVENT] layout/gắn bộ vẽ/lặng sau dời · [RESCORE] bộ vẽ tự tô xin ·
+     * [FORCE] ép: ảnh/chủ đề/cỡ đổi). Lời tô phần tử CHƯA ĐO ĐƯỢC không chọn họ ([InkSolveGate.Ink.DEFER]) — đếm ở [deferred]
+     * (bản 3.1.8: mỗi lời đó là một lượt chọn, `tô-chưa-đo` [ĐO máy ảo] ~180/phút). Chuyến sau đọc thẳng kẻ kích trong `KachiPerf`.
+     */
+    enum class Trigger(val label: String) {
+        INK_NEW("tô-mới"), INK_STALE("tô-bảng-cũ"), INK_FIRST("tô-chưa-họ"), INK_COALESCED("tô-gộp"),
+        EVENT("sự-kiện"), RESCORE("chấm-lại"), FORCE("ép"),
+    }
+
+    private val byTrigger = AtomicLongArray(Trigger.values().size)
+
+    /** Một lượt chọn họ vì [t] (đếm cạnh [resolved] — chỗ gọi là `AdaptiveInk.decide`). */
+    fun trigger(t: Trigger) { byTrigger.incrementAndGet(t.ordinal) }
+
+    fun triggers(t: Trigger): Long = byTrigger.get(t.ordinal)
+
+    /** Lời tô phần tử chưa đo được ⇒ chỉ giữ dấu, KHÔNG chọn họ ([InkSolveGate.Ink.DEFER]). */
+    val deferred = AtomicLong()
+
     internal fun note(c: FamilyChoice): FamilyChoice {
         resolved.incrementAndGet()
         if (c.family != 0) swapped.incrementAndGet()
@@ -147,7 +170,8 @@ object ContrastLedger {
     }
 
     fun snapshot(): String =
-        "tương phản: mặt=${resolved.get()} khác-họ=${swapped.get()} đổi-họ=${switched.get()} dưới-sàn=${belowFloor.get()}"
+        "tương phản: mặt=${resolved.get()} khác-họ=${swapped.get()} đổi-họ=${switched.get()} dưới-sàn=${belowFloor.get()}" +
+            " · kích " + Trigger.values().joinToString(" ") { "${it.label}=${byTrigger.get(it.ordinal)}" } + " hoãn-chưa-đo=${deferred.get()}"
 
-    fun reset() { resolved.set(0); swapped.set(0); switched.set(0); belowFloor.set(0) }
+    fun reset() { resolved.set(0); swapped.set(0); switched.set(0); belowFloor.set(0); deferred.set(0); for (i in 0 until byTrigger.length()) byTrigger.set(i, 0) }
 }

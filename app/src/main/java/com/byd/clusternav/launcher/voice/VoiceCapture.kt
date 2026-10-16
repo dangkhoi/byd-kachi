@@ -203,8 +203,11 @@ internal class VoiceCapture(private val ctx: Context) {
     ): Heard {
         var keptN = 0
         val tOpen = System.currentTimeMillis()
-        if (beep) VoiceChime.start()   // #1 (owner 2026-09-24) — earcon READY TRƯỚC khi mở mic: kêu ngay + không nhiễm nền.
-        val opened = VoiceCaptureDevice.open(ctx) ?: return Heard("", kept, keptN)
+        // VOICE-WAKE-HANDOFF-GAP — ngay sau "Hey Kachi": micro của bộ nghe CÒN ĐANG GHI ⇒ nhận lại nó + tiếng đã đệm, không
+        // mở lại (hở 2,9 s [ĐO xe 15/10]). Không bíp: micro đã ghi từ lúc câu gọi dứt, tiếng bíp chỉ rơi vào giữa câu lệnh.
+        val handed = VoiceCaptureDevice.adopt(ctx, VoiceWakeHandoff.takeOver())
+        if (beep && handed == null) VoiceChime.start()   // #1 (owner 2026-09-24) — earcon READY TRƯỚC khi mở mic: kêu ngay + không nhiễm nền.
+        val opened = handed?.first ?: VoiceCaptureDevice.open(ctx) ?: return Heard("", kept, keptN)
         val record = opened.record
         // Bộ ngắt câu của lượt này: Silero VAD nếu dựng được, lùi về bộ RMS (xem [VoiceTurnEndpoint]). Dựng SAU
         // khi micro đã mở: nó tốn vài chục–vài trăm ms nạp ONNX, và trả cái giá ấy trước khi biết có mở được
@@ -212,7 +215,7 @@ internal class VoiceCapture(private val ctx: Context) {
         val ep = VoiceTurnEndpoint.open(ctx, endpointer)
         var ducked = false   // 3.0 R4 hạ nhạc khi nghe — chỉ trả ở `finally` nếu lượt này đã thuê (KDoc [VoiceMusicDuck])
         try {
-            runCatching { record.startRecording() }.onFailure {
+            if (handed == null) runCatching { record.startRecording() }.onFailure {
                 Log.w(TAG, "startRecording hỏng", it); return Heard("", kept, keptN)
             }
             if (record.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
@@ -238,8 +241,13 @@ internal class VoiceCapture(private val ctx: Context) {
             var ended = false
             // VOICE-OPEN-TURN: `null` ⇒ lượt này chạy y hệt 2.72 (xem KDoc tham số `openTurn` + [VoiceOpenTurnArm]).
             val arm = if (openTurn) VoiceOpenTurnArm(rec, ep, openVocab) { head -> onPartial(head) } else null
+            val pre = handed?.second   // tiếng đã đệm sau câu gọi — nạp TRƯỚC, đúng như vừa đọc từ micro
+            var preAt = 0
             while (!cancelled() && System.currentTimeMillis() < deadline) {
-                val n = record.read(buf, 0, buf.size)
+                val n = if (pre != null && preAt < pre.n) {
+                    val k = minOf(buf.size, pre.n - preAt)
+                    System.arraycopy(pre.pcm, preAt, buf, 0, k); preAt += k; k
+                } else record.read(buf, 0, buf.size)
                 if (n <= 0) {
                     // `ERROR_INVALID_OPERATION`/`ERROR_DEAD_OBJECT`: micro bị một app khác giành mất giữa chừng.
                     // Trả phần đã nghe thay vì quay vòng bận — một vòng lặp nóng trên đầu xe là quạt kêu và pin tụt.

@@ -173,7 +173,7 @@ class VoiceWakeListener(
                 }
                 if (!alive()) break
                 when (action) {
-                    Inner.WOKE -> { idleSteps = 0; safe(onWake); nap(REARM_MS) } // nhường mic cho phiên lệnh
+                    Inner.HANDED -> { idleSteps = 0; nap(REARM_MS) }             // `onWake` ĐÃ gọi trong `handOff` (VoiceWakeHandoff)
                     Inner.YIELD -> { idleSteps = 0; nap(YIELD_NAP_MS) }          // phiên lệnh xin mic
                     Inner.PAUSED -> idleSteps = 0                                // về chỗ đỗ
                     Inner.SUSPEND -> nap(backoffMs(++idleSteps))                 // hệ nóng
@@ -189,7 +189,7 @@ class VoiceWakeListener(
         }
     }
 
-    private enum class Inner { WOKE, YIELD, PAUSED, SUSPEND, ERROR, FUSED, STOP }
+    private enum class Inner { HANDED, YIELD, PAUSED, SUSPEND, ERROR, FUSED, STOP }
 
     /** Còn được chạy không (đã dừng / đã bị interrupt). */
     private fun alive(): Boolean = running && !Thread.currentThread().isInterrupted
@@ -230,6 +230,7 @@ class VoiceWakeListener(
         // bậc nghỉ ở vòng ngoài tăng dần, thay vì xin lại đều đặn 2 s suốt thời gian sự cố.
         val rec = openRecord() ?: run { lastSessionFrames = 0; return Inner.ERROR }
         var frames = 0
+        var handed = false   // micro đã GIAO cho phiên lệnh ⇒ `finally` KHÔNG được stop/release (phiên sở hữu nó)
         try {
             runCatching { rec.startRecording() }.onFailure {
                 Log.w(TAG, "startRecording hỏng — nhả mic, thử lại sau", it)
@@ -246,6 +247,7 @@ class VoiceWakeListener(
             var load = 0.0
             var lastLoadAt = 0L
             var zeros = 0
+            var lastStatAt = SystemClock.elapsedRealtime()
             while (alive() && listening) {
                 // Nhường mic cho phiên lệnh — hỏi TRƯỚC khi đọc để một cú bấm nút mic chỉ phải chờ ~một khung.
                 if (VoiceSingleFlight.yieldRequested()) return Inner.YIELD
@@ -272,6 +274,25 @@ class VoiceWakeListener(
                 when (controller.onFrame(rms, load, now)) {
                     VoiceWakeController.Frame.SUSPENDED -> return if (controller.isFused()) Inner.FUSED else Inner.SUSPEND
                     VoiceWakeController.Frame.IDLE -> Unit
+                    // VOICE-WAKE-CPU-BUDGET: có tiếng nhưng ngân sách CPU đang nợ ⇒ engine chỉ GOM khung (không suy diễn).
+                    VoiceWakeController.Frame.OBSERVE -> if (kws != null) {
+                        for (i in 0 until n) fbuf[i] = buf[i] / 32768f
+                        val c0 = Process.getElapsedCpuTime()
+                        kws.observe(fbuf, n)
+                        controller.onInferenceCost(Process.getElapsedCpuTime() - c0, now)
+                    }
+                    // VOICE-WAKE-TAIL-UNDECODED: sườn tiếng→im ⇒ MỘT lượt suy diễn cuối trên cửa sổ đã gom (đuôi câu gọi).
+                    VoiceWakeController.Frame.FINISH -> if (kws != null) {
+                        if (VoiceSingleFlight.yieldRequested()) return Inner.YIELD
+                        val c0 = Process.getElapsedCpuTime()
+                        val hit = kws.finish()
+                        controller.onInferenceCost(Process.getElapsedCpuTime() - c0, now)
+                        if (hit) when (controller.onKwsResult(true, now)) {
+                            VoiceWakeController.Wake.FIRE -> { handed = handOff(rec, buf); return Inner.HANDED }
+                            VoiceWakeController.Wake.FUSED -> return Inner.FUSED
+                            VoiceWakeController.Wake.NONE -> Unit
+                        }
+                    }
                     VoiceWakeController.Frame.RUN_KWS -> if (kws != null) {
                         // 3.1.6 — hỏi cờ nhường (và cổng nghe) LẦN NỮA ngay trước `feed`: với engine ASR một `feed` có thể là
                         // MỘT LƯỢT GIẢI MÃ 0,5–2,7 s [ĐO xe 15/10] không ngắt được; yêu cầu nhường tới trong lúc `read` chặn
@@ -279,22 +300,76 @@ class VoiceWakeListener(
                         if (VoiceSingleFlight.yieldRequested()) return Inner.YIELD
                         if (!listening) break
                         for (i in 0 until n) fbuf[i] = buf[i] / 32768f
-                        if (kws.feed(fbuf, n)) {
+                        // Giá THẬT của lượt gọi = CPU cả tiến trình (gồm các luồng onnxruntime), không phải số khung.
+                        val c0 = Process.getElapsedCpuTime()
+                        val hit = kws.feed(fbuf, n)
+                        controller.onInferenceCost(Process.getElapsedCpuTime() - c0, now)
+                        if (hit) {
                             when (controller.onKwsResult(true, now)) {
-                                VoiceWakeController.Wake.FIRE -> return Inner.WOKE
+                                VoiceWakeController.Wake.FIRE -> {
+                                    handed = handOff(rec, buf)   // gọi `onWake` bên trong ⇒ HANDED dù giao được hay không
+                                    return Inner.HANDED
+                                }
                                 VoiceWakeController.Wake.FUSED -> return Inner.FUSED
                                 VoiceWakeController.Wake.NONE -> Unit
                             }
                         }
                     }
                 }
+                if (now - lastStatAt >= STAT_EVERY_MS) { lastStatAt = now; logBudget(kws) }
             }
             return if (alive()) Inner.PAUSED else Inner.STOP
         } finally {
             lastSessionFrames = frames
-            runCatching { rec.stop() }
-            runCatching { rec.release() }
+            if (!handed) {
+                runCatching { rec.stop() }
+                runCatching { rec.release() }
+            }
         }
+    }
+
+    /**
+     * ═══ VOICE-WAKE-HANDOFF-GAP — khớp câu gọi xong thì GIỮ micro, ghi tiếp, rồi GIAO nguyên `AudioRecord` cho phiên ══
+     *
+     * [ĐO xe 15/10 18:37] bản cũ nhả micro ngay khi khớp, phiên mở micro mới sau **2,9 s** ⇒ mất đầu lệnh. Nay: báo
+     * [onWake] NGAY (phiên dựng song song), đọc tiếp vào đệm tới khi phiên xin nhường (nó tới chỗ mở micro) rồi
+     * [VoiceWakeHandoff.park] — phiên đọc tiếp đúng `AudioRecord` này, không hở mẫu nào. Cơ chế + vì sao không rò: KDoc
+     * [VoiceWakeHandoff].
+     *
+     * Bỏ qua [listening] ở đây có chủ ý: `fireWake` → `holdMicForSession` tắt nó ngay sau [onWake] — đó là lệnh "đừng
+     * xin mic lại", không phải "nhả mic đang giữ cho phiên". Vẫn thoát khi luồng phải chết ([alive]), khi đọc hỏng, hoặc
+     * hết [VoiceWakeHandoff.MAX_PREROLL_MS] mà không phiên nào xin (nền tảng chặn mở phiên) ⇒ trả `false`, nhả như cũ.
+     *
+     * @return `true` khi đã giao micro (chỗ gọi không được đóng nó).
+     */
+    private fun handOff(rec: AudioRecord, buf: ShortArray): Boolean {
+        safe(onWake)
+        val pcm = ShortArray(VoiceWakeHandoff.MAX_PREROLL_SAMPLES)
+        var n = 0
+        val t0 = SystemClock.elapsedRealtime()
+        while (alive()) {
+            if (VoiceSingleFlight.yieldRequested()) { VoiceWakeHandoff.park(rec, pcm, n); return true }
+            if (SystemClock.elapsedRealtime() - t0 > VoiceWakeHandoff.MAX_PREROLL_MS) break
+            val r = rec.read(buf, 0, FRAME)
+            if (r < 0) break
+            val k = minOf(r, pcm.size - n)
+            if (k > 0) { System.arraycopy(buf, 0, pcm, n, k); n += k }
+        }
+        Log.i(TAG, "không phiên nào xin micro sau câu gọi trong ${VoiceWakeHandoff.MAX_PREROLL_MS} ms — nhả như cũ")
+        return false
+    }
+
+    /**
+     * Một dòng mỗi [STAT_EVERY_MS] — số đo để chốt VOICE-WAKE-CPU-BUDGET trên xe bằng logcat/ClusterDiag (§11), không
+     * cần `top`: ms CPU suy diễn đã tính, số dư ngân sách, số lượt giải mã / bỏ vì không có tiếng người.
+     */
+    private fun logBudget(kws: WakeEngine?) {
+        val asr = kws as? VoiceWakeAsr
+        Log.i(
+            TAG,
+            "ngan_sach cpu_ms=${controller.chargedCpuMs()} du=${controller.budgetCreditMs().toLong()}" +
+                (if (asr != null) " giai_ma=${asr.decodes} bo_khong_tieng_nguoi=${asr.skippedNoSpeech}" else ""),
+        )
     }
 
     private fun openRecord(): AudioRecord? = runCatching {
@@ -376,6 +451,7 @@ class VoiceWakeListener(
         private const val ZERO_READ_NAP_MS = 20L
         private const val MAX_ZERO_READS = 50      // ~1 s toàn khung rỗng ⇒ coi như mic hỏng
         private const val HEALTHY_FRAMES = 50      // ≥ 5 s đọc được ⇒ xoá bậc nghỉ
+        private const val STAT_EVERY_MS = 60_000L  // dòng nhật ký ngân sách (xem [logBudget])
         private const val JOIN_MS = 700L           // trần chờ luồng kết (gọi từ main — xem KDoc `stop`)
 
         /** Đếm lượt chạy, chỉ để nhãn chốt micro của mỗi lượt là **duy nhất** (xem [label]). */
