@@ -139,7 +139,7 @@ class CastNowPlayingStripTest {
         assertTrue(lum(CastNowPlayingStyle.NIGHT.background) < lum(CastNowPlayingStyle.DAY.background), "đêm nền tối, ngày nền sáng")
     }
 
-    @Test fun `mac dinh BAT`() = assertTrue(CastNowPlayingDefaults.ENABLED)
+    @Test fun `mac dinh TAT - owner 17-10 truoc OTA`() = assertFalse(CastNowPlayingDefaults.ENABLED)
 
     private fun lum(argb: Int): Double {
         fun ch(v: Int): Double = (v / 255.0).let { if (it <= 0.03928) it / 12.92 else Math.pow((it + 0.055) / 1.055, 2.4) }

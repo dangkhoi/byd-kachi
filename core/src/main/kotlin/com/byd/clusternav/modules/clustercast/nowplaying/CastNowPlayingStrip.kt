@@ -17,12 +17,13 @@ import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
  */
 object CastNowPlayingDefaults {
     /**
-     * MẶC ĐỊNH BẬT. Chi phí khi bật: KHÔNG chiếu ⇒ 0 việc (chỉ hai bộ nghe đã đăng ký sẵn, không gọi gì); đang chiếu ⇒ MỘT bộ
+     * MẶC ĐỊNH TẮT (3.1.13, owner 17/10 trước OTA: "mặc định tắt là đc" — dải chưa từng chạy trên cụm thật; ai muốn thì bật
+     * trong Cài đặt). Chi phí khi bật: KHÔNG chiếu ⇒ 0 việc (chỉ hai bộ nghe đã đăng ký sẵn, không gọi gì); đang chiếu ⇒ MỘT bộ
      * nghe phiên nhạc (callback khi đổi bài/trạng thái, không nhịp) + MỘT cửa sổ nhỏ chỉ gắn khi có bài để hiện (gỡ khi dừng
      * quá [CastNowPlayingPlan.AUTO_HIDE_MS] / hết phiên / hết chiếu). Sự kiện trùng ⇒ 0 thao tác cửa sổ. Lợi ích đúng chỗ người
      * lái mất: tên bài mà cụm gốc vốn hiện, nay bị mặt chiếu che.
      */
-    const val ENABLED: Boolean = true
+    const val ENABLED: Boolean = false
 
     /** Góc mặc định: phải-trên — chỗ app dẫn đường (GMaps/CarPlay) ít đặt chỉ dẫn nhất (thẻ rẽ ở trái-trên, ETA ở dưới). */
     val CORNER: CastNowPlayingCorner = CastNowPlayingCorner.TOP_RIGHT
