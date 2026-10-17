@@ -25,6 +25,11 @@ Kotlin's standard runtime, bundled with every Kotlin module in the app. **Licens
 [Bouncy Castle](https://www.bouncycastle.org/) — thư viện mật mã mà `dadb` dùng để tạo/ký khoá RSA cho xác thực ADB (ADB key crypto).
 Cryptography library used by `dadb` to generate/sign the RSA key for ADB authentication. **License: Bouncy Castle License (MIT-style / adaptation of the MIT license).**
 
+## Filament — widget xe 3D · 3D car widget (3.1.x)
+[`google/filament`](https://github.com/google/filament) — `com.google.android.filament:filament-android` + `gltfio-android` 1.77.3,
+engine dựng hình PBR + nạp glTF cho widget xe 3D. Physically based rendering engine and glTF loader used by the 3D car widget.
+**License: Apache-2.0.**
+
 ## Giọng nói tại máy · On-device voice (V2, cập nhật 2026-10-09)
 
 Âm thanh KHÔNG rời khỏi đầu xe. Audio never leaves the head unit.
