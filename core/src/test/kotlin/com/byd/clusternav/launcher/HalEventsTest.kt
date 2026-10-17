@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test
  *  - bỏ `if (!b.trusted && id !in seen) return null` (HalEventCache.hit) ⇒ `id chua chung minh chi dung sau su kien dau` ĐỎ;
  *  - bỏ `if (!hello) return null` ⇒ `helper vang thi khong bao gio thay poll` ĐỎ;
  *  - bodyNeeded bỏ vế `covered` ⇒ `nhip than xe chi la duong lui` ĐỎ;
- *  - `signatureOf` trả NOT_SEEN khi chưa có sự kiện tắt ⇒ `dau van tay` ĐỎ.
+ *  - `signatureOf` bỏ cổng `live` ⇒ `dau van tay` ĐỎ (3.1.12: quyết theo lần tắt, xem `SeatAutoOffGuardTest`).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HalEventsTest {
@@ -282,12 +282,20 @@ class HalEventsTest {
         assertEquals(HalSignalDemand.Source.SEAT_WATCH to false, wants.last())
     }
 
+    @Test fun `helper chao (lan dau va noi lai) bao nguoi nghe de doc lai ghe`() {
+        var ups = 0
+        val feed = CarEventFeed(gw(), cache(), { _, _ -> }, {}, {}, {}, count = {}, onLinkUp = { ups++ })
+        feed.onMessage(HalEventWire.Msg.Hello(2))
+        feed.onLinkDown()
+        feed.onMessage(HalEventWire.Msg.Hello(2))
+        assertEquals(2, ups, "3.1.12 SEAT-AUTOOFF-ANY-ON: sự kiện lúc đứt dây đã mất ⇒ đọc lại ghế mỗi lần chào")
+    }
+
     @Test fun `dau van tay`() {
-        assertEquals(Signature.UNOBSERVABLE, SeatAutoOffGuard.signatureOf(false, 100_000, 99_000, 90_000))
-        assertEquals(Signature.SEEN, SeatAutoOffGuard.signatureOf(true, 100_000, 95_000, 92_000))
-        assertEquals(Signature.NOT_SEEN, SeatAutoOffGuard.signatureOf(true, 100_000, null, 90_000))
-        assertEquals(Signature.UNOBSERVABLE, SeatAutoOffGuard.signatureOf(true, 100_000, null, 98_000), "dấu chưa kịp tới")
-        assertEquals(Signature.UNOBSERVABLE, SeatAutoOffGuard.signatureOf(true, 100_000, null, null), "không thấy lần tắt qua sự kiện ⇒ không kết luận")
+        // 3.1.12 SEAT-AUTOOFF-ANY-ON: quyết theo LẦN TẮT (đã chờ đủ +8 s) — chi tiết ở `SeatAutoOffGuardTest`.
+        assertEquals(Signature.UNOBSERVABLE, SeatAutoOffGuard.signatureOf(false, 90_000, 93_000))
+        assertEquals(Signature.SEEN, SeatAutoOffGuard.signatureOf(true, 90_000, 93_000))
+        assertEquals(Signature.NOT_SEEN, SeatAutoOffGuard.signatureOf(true, 90_000, null))
     }
 
     @Test fun `nguon moi dem chung voi nguon cu`() {

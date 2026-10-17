@@ -27,6 +27,7 @@
 9. **Cập nhật 15/10 (§12)**: thêm 3 lần tụt mới (14/10 16:43 và 18:27, 15/10 07:42), cả ba ở +8,5…+10′. Mẫu 15/10 có logcat: **xe tự tắt lúc 07:51:19, không ai trên IVI ghi** [ĐO]. Ở cả hai mẫu có logcat, lần tắt luôn kèm khung `0x095` (`0x0950000F`/`0x09500022`), chỉ xuất hiện đúng một lần, +3 s sau ⇒ nghi một ECU khởi động lại hoặc vào lại mạng [ĐOÁN].
    HAL 2606 có bộ dịch ghế giống hệt 2602, chỉ thêm id ở bảng tín hiệu (ISA, sạc, thống kê, dây an toàn hàng 2). APK tài khoản BYD / SpeechHMI 2606 không ghi ghế [ĐO]. Gói log BYD bị mã hoá AES, chưa đọc được.
 10. **Bản sửa 3.1.6 (§13)**: owner chốt 15/10 *"thấy tắt thì mở lại OK"*. Kachi bật lại **một lần** ghế mà nó vừa áp lúc lên nguồn, nếu ghế về Tắt trong cửa sổ +6…+15′ mà Kachi không ghi gì. Dấu `0x095` chưa nghe được bằng đường có sẵn nên dùng cửa sổ thời gian. Gốc vẫn [CHƯA BIẾT] (`SEAT-AUTO-OFF-ROOTCAUSE` còn mở).
+11. **17/10 (§14)**: xe lại tự tắt cả hai ghế lúc 11:08:17, dấu `0x095` +3,0 s (mẫu thứ ba) [ĐO]; Kachi 3.1.11 không bật lại vì bộ canh 3.1.6 chỉ canh ghế nó vừa áp, giữ trong RAM, và tự thôi ngay sau lượt cài đè [ĐO mã + log]. Bản 3.1.12 (`SEAT-AUTOOFF-ANY-ON`) canh **mọi** ghế đang bật theo sự kiện xe, đọc lại xe mỗi lần tiến trình bật / helper nối lại, và chỉ bật lại khi **thấy** dấu `0x095` quanh lần tắt.
 
 ## 1. Câu hỏi 1: `setSeatVentilatingState` và `0x43100010` ghi vào đâu, khác nhau gì
 
@@ -775,3 +776,75 @@ SeatComfort: thôi canh ghế (hết hạn / hết ghế)
 - `core/src/test/kotlin/com/byd/clusternav/comfort/SeatAutoOffGuardTest.kt` (21 bài, dựng theo mẫu 15/10): có dấu ⇒ bật lại một lần · đường dấu có mà không thấy ⇒ không · cửa sổ (+9,2′ có, +4′ không, quá +15′ không) · lần tắt thứ hai không · chức năng kia bật / không đọc được ⇒ không · Kachi ghi sau lúc canh ⇒ thôi canh (ghi trước lúc canh, ghi ghế khác ⇒ không ảnh hưởng) · chống đọc rách · chưa xác nhận ⇒ không · màn tắt ⇒ không · đổi mức ⇒ thôi canh · nhịp đọc và trần +15′ · nút ghế suy từ registry. Gỡ từng nhánh luật (cửa sổ, một lần, chức năng kia, lời ghi Kachi, không thấy dấu, chống đọc rách, hết hạn) ⇒ đúng bài tương ứng đỏ [ĐO 15/10].
 - `app/src/test/java/com/byd/clusternav/comfort/SeatAutoOffWiringContractTest.kt` (5 bài): một lời ghi HAL ghế, bộ canh đi qua nó · lượt áp lúc lên nguồn có giao ghế · `applySeat`/`applyNow` ghi dấu · `AppContainer` tiêm móc vào `WakeOnWriteControl` · sáu cửa ghi của `carControl` thật đều báo móc.
 
+
+## 14. Chuyến 17/10: xe vẫn tự tắt, Kachi không bật lại — bản sửa 3.1.12 `SEAT-AUTOOFF-ANY-ON`
+
+> Owner 17/10: *"cái mát ghế nó cũng tự tắt sau 10p nha"*. Nguồn: logcat toàn hệ thống chuyến 17/10 (11:05:08 → 11:32:09 và 11:33:42 → 12:06, hở 11:32–11:33), Kachi 3.1.11 pid 4601 (cài đè `adb install -r` lúc 11:05), BYD Setting listener pid 1926, IntelligentEntry pid 3680, helper HAL của Kachi pid 4389 (`registerListener [4fa00008, 4fa0000b, 4fa00010, 4fa00013]` cùng lúc dòng `KachiHalEvent đăng ký` của 4601).
+
+### 14.1 Dòng thời gian [ĐO]
+
+| Giờ | Sự kiện | Ai |
+|---|---|---|
+| 11:05:14.8 | `SeatComfort: thôi canh ghế #0: màn/xe tắt hoặc lần lên nguồn mới` rồi `thôi canh ghế (hết hạn / hết ghế)` | luồng canh 3.1.6 của tiến trình vừa cài đè tự thôi ở nhịp đầu |
+| 11:05:14.8 | Kachi đọc: ghế lái mát = 3, ghế phụ mát = 1, sưởi = 1 cả hai | |
+| 11:06:09.7 / 11:06:10.9 | ghế phụ mát 2 → 3 | **Kachi** (`KachiCtl ctl #2/#3 id=seatc_r why=cmd`) |
+| 11:08:17.199 / .232 | `postEvent 1023 0x4fa00008 = 1` (lái) rồi `onSeatVentilatingStateChanged seatID:2 state:1` (phụ) | xe — không có lời ghi nào trên IVI trước đó |
+| 11:08:20.230 → .440 | `0x0950000F` + `0x09500022` = 0, ba lượt (pid 3680, `BYDAutoSettingDevice postEvent device_type 1023`) | **+3,03 s** sau lần tắt — mẫu thứ ba khớp §12.3 |
+| 11:08:17 → 11:12:53 | không có dòng `SeatComfort` nào | Kachi **không** bật lại |
+| 11:12:53.7 → 11:12:58.4 | lái mát 2 → 3, phụ mát 2 → 3 | **Kachi** (`ctl #9–#12 id=seatc/seatc_r why=cmd`) — không phải "bằng tay trên UI BYD" như ghi chú ban đầu |
+| 11:35:39.067 | ghế phụ mát → 1 (`0x4fa00010 = 1`) | **[CHƯA BIẾT]** — không `KachiCtl`, không dấu `0x095` (dấu duy nhất của cả hai tệp log là 11:08:20), ghế lái giữ 3 tới 12:02 |
+
+Dấu `0x095` nay **3/3** chuyến có logcat (14/10, 15/10, 17/10), luôn +3,0 s sau lần tắt của xe và chỉ đúng một lần mỗi chuyến [ĐO]. Lần tắt 11:35:39 khác hẳn khuôn ấy: một ghế, không dấu, ghế kia giữ nguyên ⇒ không phải mẫu "ECU vào lại mạng" [SUY]. Người tắt [CHƯA BIẾT]: lệnh từ UI BYD / nút cứng không để lại dòng nào trên IVI (11:12:53 cũng chỉ thấy được nhờ `KachiCtl`).
+
+### 14.2 Gốc phía Kachi [ĐO mã 3.1.11]
+
+1. Bộ canh 3.1.6 chỉ canh ghế mà `SeatComfortApplier.applyOnStart` **vừa áp**, danh sách nằm trong RAM của tiến trình.
+2. Cổng `newWake()` so `KachiReadyLog.lastScreenOnAt()` với lúc bắt đầu canh: sau cài đè, `screen_on` của tiến trình mới ghi sau lúc canh ⇒ "lần lên nguồn mới" ⇒ thôi canh ngay nhịp đầu (11:05:14.8).
+3. Ghế bật bằng ô/giọng/phím/UI BYD (11:06 ghế phụ) chưa bao giờ được canh; mọi lời ghi của Kachi còn tắt bộ canh.
+4. Hệ quả: dấu `0x095` cũng không được xin (chỉ xin khi đang canh) — dòng `đăng ký BYDAutoSettingDevice` cả chuyến chỉ có 4 id ghế.
+
+Đó là đúng lỗi CLAUDE.md §5 cấm: quyết bằng cờ RAM thay vì sự thật của xe.
+
+### 14.3 Thiết kế 3.1.12 (owner 15/10 *"thấy tắt thì mở lại OK"*)
+
+Luật thuần ở `core/…/comfort/SeatAutoOffGuard.kt`, phần Android ở `app/…/comfort/SeatAutoOffWatch.kt`. Không đường ghi HAL mới, không poll mới.
+
+| Bước | Luật | Chỗ trong mã |
+|---|---|---|
+| Biết ghế đang bật | Từ **xe**: đọc 4 datum ghế lúc tiến trình bật và mỗi lần helper chào lại (`hal.hello`, sự kiện lúc đứt dây đã mất); sau đó theo sự kiện `0x4fa000xx`. Ai bật cũng vậy. Đọc thấy Tắt ⇒ quên mức cũ | `SeatAutoOffWatch.install` (từ `AppContainer.get`, chỉ tiến trình chính) → `seed` · `CarEventFeed(onLinkUp)` · `guard.seed/onEvent` |
+| Xin sự kiện | 4 datum ghế + 2 id dấu `0x095`, liên tục khi công tắc ghế BẬT (nguồn helper `SEAT_WATCH`) | `carEvents.seatWatch(SeatControls.DATUMS)` |
+| Bị tắt | Sự kiện về Tắt của đúng chức năng đang bật ⇒ hẹn **một** lượt quyết +8 s. Bật lại trước hạn ⇒ huỷ. Tắt một chức năng vốn không bật ⇒ bỏ | `guard.onEvent` → `DecideAt` |
+| Quyết | Bật lại chỉ khi đủ: không có dấu ghi ghế của Kachi từ 5 s trước lần tắt (người dùng tắt qua Kachi) · chức năng kia không bật, ghế chưa bật lại · đường dấu sống (helper nối + hai id đăng ký OK) **và** thấy dấu trong [−2 s, +8 s] quanh lần tắt · ≤ 2 lần mỗi ghế mỗi 60′ (sổ bền `filesDir/seat-reapply-<ghế>`) | `guard.decide` / `signatureOf` |
+| Bật lại | Cùng chức năng + mức thấy bật cuối; cổng `power_level` ∈ {2, 3} + màn sáng fail-closed (`ScreenLit.readStrict`) + công tắc ghế | `SeatAutoOffWatch.reapply` → `SeatComfortApplier.reapplySeat` → `writeSeat` |
+
+**Autonomous Decisions (17/10)**:
+- Không quan sát được dấu (helper vắng / id bị từ chối) ⇒ **không** bật lại. Canh MỌI ghế mà đoán theo thời gian thì "người tắt" sẽ bị bật lại; cửa sổ +6…+15′ của §13.2 đã bỏ.
+- Ngân sách 2 lần / 60′ thay cho "một lần mỗi lần lên nguồn": mốc lên nguồn trong RAM chính là thứ hỏng ở 14.2; sổ bền sống qua cài đè.
+- Giữ cổng công tắc ghế (`seat_comfort_enabled`): đó là chỗ owner cho Kachi quản ghế. Công tắc TẮT ⇒ không xin sự kiện, không ghi.
+
+Chi phí [ĐO mã]: 0 poll mới · 6 id sự kiện trong dòng `sub` chung · 4 lượt đọc mỗi lần tiến trình bật/helper chào lại · mỗi lần ghế bị tắt +2 lượt đọc ghế (cache sự kiện trước) + 1 `power_level` (+1 ghi, +1 đọc kiểm khi bật lại) · một luồng hẹn giờ daemon, rỗi khi không có lần tắt chờ quyết. Khác 3.1.6: helper được giữ cả khi màn chính không bày datum nào (trước đây chỉ ≤ 15′ sau lên nguồn); tiến trình bị BYD giết mỗi lần tắt máy nên không giữ qua đêm.
+
+### 14.4 Áp vào chuyến 17/10 (test `SeatAutoOffGuardTest`, mốc thật)
+
+| Lần tắt | Bản 3.1.12 làm gì | Vì sao |
+|---|---|---|
+| 11:08:17 ghế lái | **bật lại mát 3** lúc ≈ 11:08:25 | đọc 3 từ xe lúc tiến trình bật · dấu +3,0 s · không lời ghi Kachi |
+| 11:08:17 ghế phụ | **bật lại mát 3** | bật bằng ô Kachi 2 phút trước (lời ghi BẬT không phải lời tắt) · cùng dấu |
+| 11:35:39 ghế phụ | **không** bật lại | không có dấu trong [−2 s, +8 s] (dấu gần nhất cách 27′) ⇒ coi là người/đường khác tắt |
+
+Nếu 11:35:39 thật ra là một kiểu tự tắt thứ hai không kèm dấu, bản này sẽ bỏ sót nó — đó là hướng an toàn; cần một mẫu nữa có logcat để biết [CHƯA BIẾT].
+
+### 14.5 Kiểm trên xe
+
+```
+adb logcat -v threadtime | grep -E "SeatComfort|KachiHalEvent.*(1023|dấu vân tay)|4fa000|0950000f|09500022"
+```
+
+Mong đợi: `canh MỌI ghế đang bật theo sự kiện xe …` · `ghế theo xe (tiến trình bật): driver mát=3 …` · `đăng ký BYDAutoSettingDevice (type 1023): ok=950000f,9500022,4fa00008,…` · khi xe tắt: `ghế driver mát 3 → Tắt — chờ 8 s xem dấu 0x095` · `sự kiện ĐẦU BYDAutoSettingDevice 0x950000f … → dấu vân tay` (lần đầu helper của Kachi nhận dấu — §E6 của `hal-events-body-seat-2026-10-15.md` chưa từng đo) · `xe tự tắt ghế (firmware) → bật lại: … dấu 0x095 THẤY +3.0 s sau lần tắt · rc=0` · `sau bật lại: … =3`. Thấy `KHÔNG bật lại: không quan sát được dấu 0x095` ⇒ helper không nhận được dấu: ghi lại dòng `đăng ký … 1023` của chuyến đó.
+
+### 14.6 Test
+
+- `core/src/test/kotlin/com/byd/clusternav/comfort/SeatAutoOffGuardTest.kt` (14 bài, dựng từ chuỗi 17/10): ghế bật bằng ô + ghế đọc từ xe sau cài đè, xe tắt kèm dấu ⇒ bật lại cả hai · 11:35 không dấu ⇒ không · người dùng tắt qua Kachi ⇒ không · tiến trình mới đọc xe lúc ghế đang bật ⇒ vẫn canh · đọc lại thấy Tắt ⇒ quên · không quan sát được dấu ⇒ không · chức năng kia bật / ghế đã bật lại ⇒ không · bật lại trước hạn ⇒ huỷ · đổi mát→sưởi ⇒ không · quyết sớm hẹn lại, sự kiện lặp không hẹn thêm · ngân sách 2/60′ · cửa sổ dấu −2…+8 s.
+- Thử ĐỎ [ĐO 17/10, sửa rồi hoàn tác, `:core:test --tests SeatAutoOffGuardTest`]: bỏ nhánh "không thấy dấu" ⇒ `17-10 11h35 …` ĐỎ · bỏ nhánh lời ghi Kachi ⇒ `nguoi dung tat qua Kachi …` ĐỎ · `seed` thành no-op ⇒ 9 bài ĐỎ gồm `khoi dong lai tien trinh …` và `17-10 - …` · sự kiện bật không ghi nhận ⇒ 4 bài ĐỎ gồm `17-10 - ghe nguoi dung bat …`.
+- `core/…/launcher/HalEventsTest.kt`: `helper chao … bao nguoi nghe de doc lai ghe` (mỗi `hal.hello` gọi `onLinkUp`), `dau van tay` theo hàm mới.
+- `app/…/comfort/SeatAutoOffWiringContractTest.kt` + `app/…/launcher/HalEventsContractTest.kt`: `AppContainer.get` gọi `install`, sự kiện datum tới bộ canh, helper chào ⇒ đọc lại, chỉ tiến trình chính, ba lối `SeatComfortApplier` nhắc `ensure`, không còn `start(`, một lời ghi HAL ghế, bật lại qua `ScreenLit.readStrict`.

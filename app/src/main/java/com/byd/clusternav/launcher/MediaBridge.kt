@@ -165,18 +165,19 @@ class MediaBridge(context: Context) : MediaTransport {
         watchWhere({ it in pkgs }, handler, onPlayback, onChange)
 
     /**
-     * 3.1.11 · CLUSTER-NOW-PLAYING — như [watchPackages] nhưng cho MỌI phiên (tên bài lên cụm là generic, không theo gói):
-     * [onEvent] khi bất kỳ phiên nào đổi bài / đổi trạng thái phát, và khi danh sách phiên đổi (phiên mất cũng phải báo — trả
-     * nguồn cụm). Cùng MỘT cơ chế bám/gỡ ([watchWhere]); chỉ đăng ký khi công tắc bật. `null` = chưa có quyền đọc thông báo.
+     * 3.1.11 · 3.1.12 CAST-NOW-PLAYING — như [watchPackages] nhưng cho MỌI phiên (dải tên bài trên mặt chiếu là generic, không
+     * theo gói): [onEvent] khi bất kỳ phiên nào đổi bài / đổi trạng thái phát, và khi danh sách phiên đổi (phiên mất cũng phải
+     * báo — gỡ dải). Cùng MỘT cơ chế bám/gỡ ([watchWhere]); chỉ đăng ký khi đang chiếu + công tắc bật. `null` = chưa có quyền
+     * đọc thông báo.
      * Một lượt bám lại = MỘT lời báo (phiên mới ⇒ qua `onPlayback`; không phiên mới ⇒ qua `onListChanged`).
      */
     fun watchAll(handler: Handler, onEvent: () -> Unit): (() -> Unit)? =
         watchWhere({ true }, handler, onEvent, onEvent, onListChanged = onEvent)
 
-    /** Phiên đang chọn ([pick]: đang phát trước) → gói · tên · đang phát. `null` = không có phiên / không đọc được. */
-    fun nowPlaying(): Triple<String, String?, Boolean>? = runCatching {
-        val c = activeControllers()?.map { Real(it) }?.let { pick(it) } as? Real ?: return null
-        Triple(c.c.packageName, c.title(), c.playing())
+    /** Phiên đang chọn ([pick]: đang phát trước) → tên · nghệ sĩ · đang phát. `null` = không có phiên / không đọc được. */
+    fun nowPlaying(): com.byd.clusternav.modules.clustercast.nowplaying.CastNowPlayingMedia? = runCatching {
+        val c = activeControllers()?.map { Real(it) }?.let { pick(it) } ?: return null
+        com.byd.clusternav.modules.clustercast.nowplaying.CastNowPlayingMedia(c.title(), c.artist(), c.playing())
     }.getOrNull()
 
     private fun watchWhere(

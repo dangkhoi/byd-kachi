@@ -1,31 +1,21 @@
 package com.byd.clusternav.launcher
 
-import com.byd.clusternav.modules.clustercast.ClusterNowPlaying
-import com.byd.clusternav.modules.clustercast.nowplaying.NowPlayingStatus
+import com.byd.clusternav.Prefs
+import com.byd.clusternav.castNowPlayingCorner
+import com.byd.clusternav.castNowPlayingEnabled
+import com.byd.clusternav.modules.clustercast.nowplaying.CastNowPlayingCorner
+import com.byd.clusternav.setCastNowPlayingCorner
+import com.byd.clusternav.setCastNowPlayingEnabled
 
 /**
- * 3.1.11 · CLUSTER-NOW-PLAYING — công tắc *"Tên bài hát lên cụm đồng hồ"* (`cluster_now_playing`, theo XE, mặc định TẮT).
- * Cầu trả dữ liệu, không trả câu (hợp đồng [ClusterNavBridge]); câu ghép ở `SettingsNowPlayingRows`.
+ * 3.1.12 · CAST-NOW-PLAYING — công tắc *"Tên bài trên cụm khi đang chiếu"* (`cast_now_playing`, theo HỒ SƠ, mặc định BẬT) + góc
+ * (`cast_now_playing_corner`). Cầu trả dữ liệu, không trả câu (hợp đồng [ClusterNavBridge]); câu ghép ở `SettingsNowPlayingRows`.
+ * Chỉ ghi prefs: `CastNowPlayingOverlay` nghe đổi khoá (cùng một đường với đổi hồ sơ) ⇒ có hiệu lực ngay.
  */
-fun ClusterNavBridge.nowPlayingEnabled(): Boolean = ClusterNowPlaying.enabled(app)
+fun ClusterNavBridge.castNowPlayingEnabled(): Boolean = Prefs.castNowPlayingEnabled(app)
 
-/** Bật/tắt có hiệu lực ngay: bật ⇒ gắn bộ nghe phiên; tắt ⇒ trả nguồn cụm + gỡ bộ nghe. */
-fun ClusterNavBridge.setNowPlayingEnabled(on: Boolean) = ClusterNowPlaying.setEnabled(app, on)
+fun ClusterNavBridge.setCastNowPlayingEnabled(on: Boolean) = Prefs.setCastNowPlayingEnabled(app, on)
 
-fun ClusterNavBridge.nowPlayingStatus(): NowPlayingStatus = ClusterNowPlaying.status(app)
+fun ClusterNavBridge.castNowPlayingCorner(): CastNowPlayingCorner = Prefs.castNowPlayingCorner(app)
 
-/**
- * Mặt tiền cho bên KHÔNG cầm [ClusterNavBridge] (cầu kiểm thử `np` — chạy cả khi màn chính chưa lên). Cùng một đường
- * ([ClusterNowPlaying]) với công tắc ở Cài đặt; trả dữ liệu thô ASCII cho lời đáp JSON.
- */
-object NowPlayingControl {
-    fun enabled(ctx: android.content.Context): Boolean = ClusterNowPlaying.enabled(ctx)
-
-    fun setEnabled(ctx: android.content.Context, on: Boolean) = ClusterNowPlaying.setEnabled(ctx, on)
-
-    /** `kind` · `detail` (rc, không tên bài) · `at_ms` (elapsedRealtime). */
-    fun statusFields(ctx: android.content.Context): List<Pair<String, Any?>> {
-        val s: NowPlayingStatus = ClusterNowPlaying.status(ctx)
-        return listOf("kind" to s.kind.name, "detail" to s.detail, "at_ms" to s.atMs)
-    }
-}
+fun ClusterNavBridge.setCastNowPlayingCorner(c: CastNowPlayingCorner) = Prefs.setCastNowPlayingCorner(app, c)

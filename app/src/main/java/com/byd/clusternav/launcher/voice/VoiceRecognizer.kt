@@ -434,7 +434,7 @@ object VoiceEngine {
             // nhỏ (big.LITTLE) không cho thêm gì. Sàn 2 giữ nguyên hành vi cũ trên máy 2-4 lõi.
             numThreads = threadsForDecode()
             debug = false
-            provider = "cpu"
+            provider = VoiceOrtConfig.provider(ctx)   // WAKE-DECODE-COST: thôi quay chờ sau Run() — KDoc SherpaModelCatalog.ORT_SESSION_CONFIG
             if (biasing) { modelingUnit = SherpaModelCatalog.MODELING_UNIT; bpeVocab = bpeVocabPath }
         }
         val config = OfflineRecognizerConfig().apply {
@@ -464,7 +464,7 @@ object VoiceEngine {
                     TIMING_TAG,
                     "nạp sherpa ${model.id} trong ${System.currentTimeMillis() - t0} ms " +
                         "(biasing=$biasing · luồng=${mc.numThreads} · lõi=${Runtime.getRuntime().availableProcessors()}" +
-                        " · beam=${config.maxActivePaths} · diem_hotword=${config.hotwordsScore})",
+                        " · beam=${config.maxActivePaths} · diem_hotword=${config.hotwordsScore} · ort_cfg=${mc.provider.contains(':')})",
                 )
             }
             .onFailure { Log.e(TAG, "không nạp được sherpa ${model.id}", it) }

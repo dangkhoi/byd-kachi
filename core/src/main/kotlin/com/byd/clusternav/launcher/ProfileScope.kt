@@ -337,6 +337,7 @@ object ProfileScope {
         // V-CLUSTER — khoá cụm/chiếu/camera theo XE (23 khoá hiệu chỉnh camera, dấu mốc, đời cũ): bảng + lý do ở
         // [ProfileScopeCluster.DEVICE_KEYS] (tách vì trần 500 dòng), không chép lại ở đây.
         putAll(ProfileScopeCluster.DEVICE_KEYS)
+        putAll(com.byd.clusternav.navigation.HudRoadNameKeys.DEVICE_KEYS)   // 3.1.12 HUD-ROADNAME-ALT-PATH — lý do ở chỗ chủ
         putAll(com.byd.clusternav.modules.clustercast.nowplaying.ClusterNowPlayingKeys.DEVICE_KEYS)   // 3.1.11 — lý do ở chỗ chủ
         putAll(TripGate.DEVICE_KEYS)   // F2/F3 — sổ chuyến lên xe + mốc khởi động (theo XE); lý do ở chỗ chủ
     }

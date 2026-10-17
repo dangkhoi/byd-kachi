@@ -177,40 +177,4 @@ class Car3dPickTest {
         val small = Car3dPick.Target("door", V3(-0.1, -0.1, 1.0), V3(0.1, 0.1, 1.0), V3(0.0, 0.0, 1.0))
         assertEquals("win", Car3dPick.pick(cam, listOf(big, small), b, 800, 800, 400f, 400f, 1f) { it == "win" })
     }
-
-    @Test
-    fun `cham ne nut khac (icon ghe) trong chu nhat dich cua chinh no, het cho thi an`() {
-        // [ĐO máy ảo 14/10] chấm kính trước-trái trùng đĩa "mát ghế" ⇒ chạm chấm lại bật mát ghế.
-        val rect = Car3dPick.Rect(0f, 0f, 100f, 100f)
-        val seat = { x: Float, y: Float -> x in 30f..70f && y in 40f..70f }
-        assertEquals(10f, Car3dPick.freeY(50f, 10f, 5f, rect, seat))                 // không đè ⇒ giữ
-        val up = Car3dPick.freeY(50f, 55f, 5f, rect, seat)!!
-        assertTrue(up < 40f - 5f + 1e-3f && up - 5f >= 0f, "dời LÊN ra khỏi đĩa, vẫn trong đích: $up")
-        assertNull(Car3dPick.freeY(50f, 50f, 5f, rect) { _, _ -> true }, "kín chỗ ⇒ ẩn")
-    }
-
-    @Test
-    fun `cham ne icon ghe chi doi trong HINH kinh, khong xuong da cua - 3_1_5`() {
-        // Owner 14/10 ảnh: chấm kính nằm trên da cửa dưới mép kính. [ĐO máy ảo] chấm né icon ghế dời XUỐNG trong chữ nhật đích nới
-        // tới cỡ ngón tay (minPx) ⇒ ra ngoài kính. Chữ nhật dời chấm = hình chiếu kính, chỉ nới tới cỡ chấm.
-        val c = cam(40.0)
-        val glassRect = Car3dPick.rect(c, winLf, w, h, 0f)!!
-        val dotR = 8f
-        val dr = Car3dPick.dotRect(c, winLf, w, h, dotR)!!
-        assertEquals(glassRect, dr, "kính to hơn chấm ⇒ đúng hình chiếu kính, không nới")
-        val touch = Car3dPick.rect(c, winLf, w, h, 400f)!!
-        assertTrue(touch.b > glassRect.b + 100f, "khung thử: vùng nhấn nới xa dưới mép kính")
-        // Icon ghế (đĩa to) kín cả hình kính ⇒ trong hình kính hết chỗ ⇒ ẩn chấm — KHÔNG được dời xuống da cửa.
-        val seat = { _: Float, y: Float -> y <= glassRect.b + dotR }
-        assertNull(Car3dPick.freeY(glassRect.cx, glassRect.cy, dotR, dr, seat), "hết chỗ trên kính ⇒ ẩn")
-        // Một chỗ trống ở phần dưới kính ⇒ chấm dời tới đó, vẫn trên kính.
-        val gap = { _: Float, y: Float -> y < glassRect.b - 3 * dotR }
-        val y = Car3dPick.freeY(glassRect.cx, glassRect.cy, dotR, dr, gap)!!
-        assertTrue(y + dotR <= glassRect.b + 1e-3f, "chấm không xuống dưới mép kính: $y vs ${glassRect.b}")
-        val bad = Car3dPick.freeY(glassRect.cx, glassRect.cy, dotR, touch, seat)!!
-        assertTrue(bad - dotR > glassRect.b, "khoá bằng chứng: chữ nhật vùng nhấn đẩy chấm xuống dưới kính ($bad)")
-        // Đích mảnh hơn chấm (đèn) ⇒ nới tới cỡ chấm, không suy biến.
-        val lamp = Car3dPick.dotRect(c, headl, w, h, 30f)!!
-        assertTrue(lamp.r - lamp.l >= 60f - 1e-3f && lamp.b - lamp.t >= 60f - 1e-3f)
-    }
 }

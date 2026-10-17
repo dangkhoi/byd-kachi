@@ -8,6 +8,8 @@ Nhạc là TỔNG HỢP (hợp âm sin + bass + kick/hi-hat nhiễu) — không 
 của TTS lặp vòng. Mức: giọng RMS 0,12 (≈ +3,5 dB trên nhạc 0,08), lời ≈ −4 dB dưới nhạc. Hạt giống cố định ⇒ chạy lại ra đúng bộ.
 
 Dùng: mix.py <thư-mục-tts> <thư-mục-ra>   (cần numpy)
+Mức (WAKE-INTERMITTENT-1017, tuỳ chọn): SPEECH_RMS (mặc định 0,12) · MUSIC_RMS (mặc định 0,08; lời hát giữ tỉ lệ 0,05/0,08) — để
+dựng bộ ở mức micro xe [ĐO 17/10 `KachiVoiceMic: mức micro` rms 423–956/32767 trên 4,8–7,2 s] và SNR thấp hơn. Mặc định = bộ cũ.
 Ra:  clean_<pos|neg>_<i>_<rate>.wav · instr_pos_… · vocal_pos_… · long_silence.wav · long_instr.wav · long_vocal.wav
 Đọc kết quả: `run.sh` rồi `score.py`. Bộ số 3.1.9: `docs/diagnostics/oncar-perf-2026-10-15-evening.md` §G2/§G6.
 """
@@ -21,6 +23,8 @@ import numpy as np
 src, out = sys.argv[1], sys.argv[2]
 SR = 16000
 rng = np.random.default_rng(20261015)
+SPEECH = float(os.environ.get("SPEECH_RMS", "0.12"))
+MUSIC = float(os.environ.get("MUSIC_RMS", "0.08"))
 
 
 def rd(p):
@@ -74,17 +78,17 @@ lyr = rd(os.path.join(src, "lyrics.wav"))
 def vocal_music(sec):
     m = music(sec); n = len(m)
     v = np.tile(lyr, n // len(lyr) + 1)[:n]
-    return m / rms(m) * 0.08 + v / rms(v) * 0.05                                   # lời ≈ −4 dB dưới nhạc
+    return m / rms(m) * MUSIC + v / rms(v) * MUSIC * 0.625                                  # lời ≈ −4 dB dưới nhạc
 
 
 def instr(sec):
     m = music(sec)
-    return m / rms(m) * 0.08
+    return m / rms(m) * MUSIC
 
 
 os.makedirs(out, exist_ok=True)
 for p in sorted(glob.glob(os.path.join(src, "pos_*.wav")) + glob.glob(os.path.join(src, "neg_*.wav"))):
-    s = rd(p); s = s / rms(s) * 0.12                                               # giọng RMS 0,12
+    s = rd(p); s = s / rms(s) * SPEECH                                             # giọng RMS (mặc định 0,12)
     name = os.path.basename(p)[:-4]
     clean = np.concatenate([np.zeros(int(1.0 * SR)), s, np.zeros(int(1.5 * SR))]).astype(np.float32)
     n = len(clean)

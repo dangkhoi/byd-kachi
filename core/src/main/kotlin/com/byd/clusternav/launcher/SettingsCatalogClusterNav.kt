@@ -63,6 +63,8 @@ internal object SettingsCatalogClusterNav {
             "vm_bubble_enabled", "vm_bubble_x", "vm_bubble_y",
             // 2.90 · R8 — cờ "người lái CHỦ ĐỘNG ẩn bóng"; 2.91 · F1: chủ là công tắc hiện bóng (mục `vm_bubble_enabled`).
             "vm_bubble_hidden",
+            // 3.1.12 · CAST-NOW-PLAYING — dải tên bài trên mặt chiếu cụm + góc của nó (khai ở `PrefsBadge.kt`, cùng họ lớp phủ cụm).
+            "cast_now_playing", "cast_now_playing_corner",
             "voicekey_enabled", "voicekey_bindings", "voicekey_custom_buttons", "voicekey_learn",
             "seat_comfort_enabled", "seat_comfort_mode", "seat_level_0",
             // S4-SEAT (owner 2026-09-23): 3 ghế còn lại cùng tệp với ghế lái → vào ảnh chụp theo hồ sơ. Không có
@@ -123,6 +125,8 @@ internal object SettingsCatalogClusterNav {
     val COMPANION_KEYS: Map<String, String> = mapOf(
         "badge_center_y" to "badge_center",
         "vm_bubble_y" to "vm_bubble_pos",
+        // 3.1.12 · CAST-NOW-PLAYING — góc của dải là một phần của CÙNG lựa chọn (hàng công tắc + dãy chip góc ngay dưới).
+        "cast_now_playing_corner" to "nav_cast_now_playing",
         // 2.91 · F1 — `vm_bubble_hidden` KHÔNG còn đi kèm: nó có mục riêng (công tắc hiện bóng), `vm_bubble_enabled` có mục
         // "Tự mở VietMap cho bong bóng" (SettingsCatalogEntries). Hai khái niệm, hai hàng — không còn một công tắc ghi cặp.
         // S4-SEAT (owner 2026-09-23): 3 ghế còn lại đi kèm ghế lái. `Prefs.setSeatComfortLevel` ghi

@@ -219,6 +219,9 @@ object ProfileScopeCluster {
             .forEach { put(it, PrefType.BOOLEAN) }
         listOf("nav_cluster_screen_mode", "badge_size_dp", "badge_center_x", "badge_center_y", "vm_bubble_x", "vm_bubble_y")
             .forEach { put(it, PrefType.INT) }
+        // 3.1.12 · CAST-NOW-PLAYING — `PrefsBadge` getBoolean `cast_now_playing` · getString `cast_now_playing_corner` (mã góc ASCII).
+        put("cast_now_playing", PrefType.BOOLEAN)
+        put("cast_now_playing_corner", PrefType.STRING)
         // Khoá theo hồ sơ NGOÀI nhóm cụm (S4) — senior review V-CLUSTER Pass 2: spec §11.8 [P1] nói "MỘT khoá ClusterNav"
         // bất kỳ, không riêng nhóm cụm. [ĐO code] ca đắt nhất: `voicekey_bindings` đọc bằng `getString` trong
         // NavAccessibilityService mỗi lần bấm phím vô-lăng — tệp nhập đặt nó thành Boolean trên xe chưa từng gán phím (tệp

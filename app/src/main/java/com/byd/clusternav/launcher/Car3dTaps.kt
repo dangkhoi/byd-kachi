@@ -111,9 +111,18 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
         dots.spots = spots.values.toList()
     }
 
-    /** Toạ độ khung (px) đang bị nút khác chiếm (icon ghế — [Car3dHeroLayer.owns]); chủ gán. Bán kính chấm để dời. */
-    var blocked: (Float, Float) -> Boolean = { _, _ -> false }
-    private val dotR = StateDotPainter.diameterPx(Float.MAX_VALUE, ctx.resources.displayMetrics.density) / 2f
+    /**
+     * 3.1.12 CAR3D-SEAT-ICON-OVERLAP — vùng của khung vừa chiếu: CỨNG = ô chạm [touch] quanh mỗi chấm có việc đang hiện, MỀM = vùng
+     * nhấn của bộ phận có việc. Icon ghế ([Car3dHeroLayer.zones]) nhường vùng này; cú chạm trong vùng cứng thuộc chấm ([claims]).
+     * Thay luật cũ "chấm dời dọc né icon" — [ĐO log xe 17/10] chấm kính trước bị đẩy lên 36 px, hai đĩa ghế ăn vùng nhấn kính.
+     */
+    val zones = Car3dDeconflict.Zones()
+
+    /** Cú chạm ([x], [y]) thuộc một chấm có việc ⇒ khung giành cú chạm khỏi icon ghế chồng lên (chủ hỏi lúc ACTION_DOWN). */
+    fun claims(x: Float, y: Float): Boolean = Car3dDeconflict.claimed(x, y, zones)
+
+    /** Chủ gán: vị trí icon ghế cho dòng log chấm ([Car3dHeroLayer.where]). */
+    var seatsLog: () -> String = { "" }
 
     /** Hộp NGHỈ (thế giới) của bộ phận mỗi điểm · chỗ đặt chấm theo tư thế đang vẽ ([Car3dPick.dotPoint]; vắng ⇒ điểm neo). */
     private val restBox = HashMap<String, Pair<V3, V3>>()
@@ -269,18 +278,17 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
      */
     fun project(cam: Car3dCamera, anchors: Map<String, V3>, bounds: Car3dBounds, w: Int, h: Int) {
         this.cam = cam; camBounds = bounds; camW = w; camH = h
+        zones.clear()
+        val half = touch / 2f
         for ((id, a0) in anchors) {
             val s = spots[id] ?: continue
             val a = dotAt[id] ?: a0
-            val p = cam.project(a, w, h)?.let { p0 ->
-                // Không để chấm nằm dưới icon ghế ([blocked]) — dời trong chữ nhật đích của chính nó, hết chỗ ⇒ ẩn.
-                val rect = targets[id]?.let { Car3dPick.dotRect(cam, it, w, h, dotR) } ?: return@let p0
-                Car3dPick.freeY(p0.x, p0.y, dotR, rect, blocked)?.let { p0.copy(y = it) }
-            }
+            val p = cam.project(a, w, h)   // 3.1.12: chấm ĐỨNG YÊN ở hình chiếu bộ phận — icon ghế nhường nó, không ngược lại
             // Chấm CHỈ ở điểm có việc ([Car3dHotspots.shows] = cờ nhường chạm của [Car3dPick]) — owner 14/10: cửa không chấm.
             s.shown = p != null && cam.facing(a, Car3dMath.outward(a, bounds)) && p.x in 0f..w.toFloat() &&
                 p.y in 0f..h.toFloat() && resolved[id]?.let(Car3dHotspots::shows) != false
             if (p != null) { s.x = p.x; s.y = p.y }
+            if (s.shown && s.tappable) zones.addHard(s.x - half, s.y - half, s.x + half, s.y + half)
         }
         for (id in order) {
             val v = nodes[id] ?: continue
@@ -290,12 +298,15 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
             val l = r.l.coerceAtLeast(0f).toInt(); val tp = r.t.coerceAtLeast(0f).toInt()
             val rw = (r.r.coerceAtMost(w.toFloat()) - l).toInt().coerceAtLeast(1); val rh = (r.b.coerceAtMost(h.toFloat()) - tp).toInt().coerceAtLeast(1)
             v.visibility = View.VISIBLE
+            if (resolved[id]?.let(Car3dHotspots::actionable) == true) zones.addSoft(r.l, r.t, r.r, r.b)
             v.translationX = l.toFloat(); v.translationY = tp.toFloat()
             (v.layoutParams as FrameLayout.LayoutParams).let { lp -> if (lp.width != rw || lp.height != rh) { lp.width = rw; lp.height = rh; v.layoutParams = lp } }
         }
         dots.invalidate()
-        if (!logged) { logged = true; dump("dots (frame px ${w}x$h)", full = true) }
     }
+
+    /** Ghi log chấm đầy đủ MỘT lần sau khung đầu — chủ gọi SAU khi icon ghế đã đặt theo [zones] (dòng log có cả vị trí ghế). */
+    fun logOnce() { if (!logged && cam != null) { logged = true; dump("dots (frame px ${camW}x$camH)", full = true) } }
 
     /** Ghi vị trí chấm MỘT lần sau khi nạp (đo trên máy ảo/xe bằng logcat), không ghi mỗi khung. */
     private var logged = false
@@ -317,7 +328,7 @@ internal class Car3dTaps(private val host: FrameLayout, private val kit: MatrixK
         val kinds = items.joinToString { (id, s) -> id + ":" + s.substringAfterLast(':') }
         if (!full && kinds == lastKinds) { Log.i(TAG, "$head (chấm không đổi loại)"); return }
         lastKinds = kinds
-        Log.i(TAG, "$head: " + items.joinToString { it.second })
+        Log.i(TAG, "$head: " + items.joinToString { it.second } + seatsLog().let { if (it.isEmpty()) "" else " · ghế $it" })
     }
 
     private fun describe() {

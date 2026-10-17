@@ -118,6 +118,8 @@ class SettingsCatalogControlContractTest {
             "nav_default_app" to ("SettingsSectionsNav" to "bridge.setNavDefaultApp("),
             // ⚠ Bốn dòng dưới KHÔNG có "(" ở cuối: chúng là lời gọi dạng **trailing lambda** (`bridge.reconnect { … }`).
             "nav_reconnect" to ("SettingsSectionsNav" to "bridge.reconnect"),
+            // 3.1.12 · HUD-ROADNAME-ALT-PATH — hàng ở tệp riêng (`SettingsSectionsNav` sát trần 500 dòng).
+            "nav_hud_road_name_path" to ("SettingsHudRoadNameRows" to "bridge().setHudRoadNameMode("),
             "badge_enabled" to ("SettingsSectionsNav" to "bridge.setBadgeEnabled("),
             "badge_upcoming" to ("SettingsSectionsNav" to "bridge.setUpcomingBadge("),
             "badge_alert_chip" to ("SettingsSectionsNav" to "bridge.setAlertChip("),
@@ -127,8 +129,8 @@ class SettingsCatalogControlContractTest {
             "vm_bubble_enabled" to ("SettingsSectionsNav" to "bridge.setVmBubbleShown("),
             "vm_bubble_autostart" to ("SettingsSectionsNav" to "bridge.setVmBubbleAutostart("),
             "vm_bubble_pos" to ("SettingsSectionsNav" to "bridge.setVmBubblePos("),
-            // 3.1.11 · CLUSTER-NOW-PLAYING — công tắc ở tệp riêng (`SettingsSectionsNav` sát trần 500 dòng).
-            "nav_now_playing" to ("SettingsNowPlayingRows" to "bridge().setNowPlayingEnabled("),
+            // 3.1.12 · CAST-NOW-PLAYING — công tắc ở tệp riêng (`SettingsSectionsNav` sát trần 500 dòng).
+            "nav_cast_now_playing" to ("SettingsNowPlayingRows" to "bridge().setCastNowPlayingEnabled("),
             // Sổ địa chỉ (docs/specs/kachi-voice-addresses.html) — cùng nhóm NAV nhưng ở **tệp section riêng**:
             // `SettingsSectionsNav` đã 409 dòng, và hai khối không liên quan nhau (một bên là cấu hình cụm đọc
             // `bridge`, một bên là dữ liệu của hồ sơ đi qua `deps`).
@@ -225,6 +227,7 @@ class SettingsCatalogControlContractTest {
             "SettingsSectionsHome" to home,
             "SettingsSectionsBars" to bars,
             "SettingsSectionsNav" to nav,
+            "SettingsHudRoadNameRows" to code("src/main/java/com/byd/clusternav/launcher/SettingsHudRoadNameRows.kt"),
             "SettingsNowPlayingRows" to code("src/main/java/com/byd/clusternav/launcher/SettingsNowPlayingRows.kt"),
             "SettingsSectionsCast" to cast,
             "SettingsSectionsCastStyle" to code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCastStyle.kt"),

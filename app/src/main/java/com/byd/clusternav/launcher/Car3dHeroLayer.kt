@@ -158,6 +158,15 @@ internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(
         v.visibility == VISIBLE && x >= v.translationX && x < v.translationX + v.width && y >= v.translationY && y < v.translationY + v.height
     }
 
+    /** 3.1.12 — vùng chấm có việc của khung đang vẽ ([Car3dTaps.zones]; chủ gán) · tâm cụm đặt được (x, y mỗi ghế; NaN = ẩn). */
+    var zones = Car3dDeconflict.Zones()
+    private val placed = FloatArray(2)
+    private val centers = FloatArray(Car3dHero.Seat.values().size * 2)
+
+    /** Một dòng vị trí icon ghế đang hiện (`mã@x,y`) cho log chấm — gọi lúc ghi log, không mỗi khung. */
+    fun where(): String = seatViews.entries.filter { it.value.visibility == VISIBLE }
+        .joinToString { (id, v) -> "$id@${(v.translationX + v.width / 2f).toInt()},${(v.translationY + v.height / 2f).toInt()}" }
+
     /** Đặt icon ghế + nhãn lốp theo camera VỪA vẽ (khung [w]×[h] px của TextureView, trùng gốc toạ độ lớp này). */
     fun project(cam: Car3dCamera, w: Int, h: Int) {
         this.cam = cam; pw = w; ph = h
@@ -173,13 +182,26 @@ internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(
         if (d != null && q != null && kotlin.math.abs(d.y - q.y) < disc) Car3dHero.spread(d.x, q.x, 2f * disc + 3f * gap).let { (a, b) ->
             at[Car3dHero.Seat.DRIVER] = d.copy(x = a); at[Car3dHero.Seat.PASSENGER] = q.copy(x = b)
         }
+        // 3.1.12 CAR3D-SEAT-ICON-OVERLAP (owner 17/10: hai icon ghế đè kính trước): cụm NHƯỜNG ô chạm của chấm có việc + bớt đè vùng
+        // nhấn bộ phận có việc ([Car3dDeconflict.place], vùng do [Car3dTaps.project] ghi CÙNG khung); cụm đặt trước thành vùng cứng
+        // tạm cho cụm sau. Không cấp phát thêm: [placed]/[centers] tái dùng.
+        val z = zones; val base = z.nHard; val cw = 2f * disc + gap
+        for (s in Car3dHero.Seat.values()) {
+            val p = at[s]; val o = s.ordinal * 2
+            if (p == null) { centers[o] = Float.NaN; continue }
+            Car3dDeconflict.place(p.x, p.y, cw, disc.toFloat(), w.toFloat(), h.toFloat(), z, disc / STEP_DIV, disc * REACH_DISCS, placed)
+            centers[o] = placed[0]; centers[o + 1] = placed[1]
+            z.addHard(placed[0] - cw / 2f, placed[1] - disc / 2f, placed[0] + cw / 2f, placed[1] + disc / 2f)
+        }
+        z.truncateHard(base)
         for ((id, v) in seatViews) {
             val s = seatOf[id] ?: continue
-            val p = at[s] ?: run { v.visibility = INVISIBLE; null } ?: continue
-            // Cặp sưởi | mát canh giữa điểm ghế, mỗi đĩa = một đích chạm 48 dp, cách nhau một khe nhỏ.
+            val o = s.ordinal * 2
+            if (centers[o].isNaN()) { v.visibility = INVISIBLE; continue }
+            // Cặp sưởi | mát canh giữa tâm cụm, mỗi đĩa = một đích chạm, cách nhau một khe nhỏ.
             val dx = if (id == s.heat) -(disc + gap) / 2f else (disc + gap) / 2f
-            v.translationX = (p.x + dx - disc / 2f).coerceIn(0f, (w - disc).toFloat())
-            v.translationY = (p.y - disc / 2f).coerceIn(0f, (h - disc).toFloat())
+            v.translationX = (centers[o] + dx - disc / 2f).coerceIn(0f, (w - disc).toFloat().coerceAtLeast(0f))
+            v.translationY = (centers[o + 1] - disc / 2f).coerceIn(0f, (h - disc).toFloat().coerceAtLeast(0f))
             v.visibility = VISIBLE
         }
         val show = Car3dPaintChoice.tyres
@@ -205,6 +227,9 @@ internal class Car3dHeroLayer(context: Context, data: WidgetData) : FrameLayout(
         const val TAG = "Car3d"
         /** Khe giữa hai đĩa ghế = 1/8 đĩa. */
         const val GAP_DIV = 8
+        /** 3.1.12 — lưới dời cụm icon ghế: bước = 1/4 đĩa, tầm tối đa 3 đĩa quanh điểm ghế (xa hơn thì icon không còn "ở ghế"). */
+        const val STEP_DIV = 4f
+        const val REACH_DISCS = 3f
         const val ON_DISC_ALPHA = 0x66
         /** Icon chiếm ~1/2 đĩa (lề = 1/4 đĩa mỗi bên) — [ĐO máy ảo] icon 24 dp cố định trong đĩa phóng 104 px trông lọt thỏm. */
         const val ICON_PAD_DIV = 5

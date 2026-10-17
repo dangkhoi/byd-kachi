@@ -69,6 +69,9 @@ class AppContainer internal constructor(
     private val ctlJournalInit: () -> CtlJournal = { CtlJournal.NONE },
     // 3.1.6 · SEAT-AUTO-OFF-REAPPLY — mỗi lệnh ghi nút xe báo `SeatAutoOffWatch` (nút ghế ⇒ thôi canh). Rỗng ở container test.
     private val onControlWrite: (String) -> Unit = {},
+    // 3.1.12 · SEAT-AUTOOFF-ANY-ON — datum đổi theo sự kiện ⇒ bộ canh ghế (mọi ghế đang bật); helper chào lại ⇒ đọc lại ghế. Rỗng ở test.
+    private val onSeatEvents: (Set<String>) -> Unit = {},
+    private val onHalLinkUp: () -> Unit = {},
     // 2.98 · R6-C — màn xe có đang SÁNG không (cổng đọc HAL của [carStatusRepository]). Mặc định `true` cho container test thuần.
     private val screenAwake: () -> Boolean = { true },
     // 3.01 LAMPLIVE — chủ DUY NHẤT helper HAL + socket 19322. Mặc định `null` ⇒ container test thuần không dựng luồng/socket nào.
@@ -109,9 +112,10 @@ class AppContainer internal constructor(
             cache = halEvents,
             want = { src, on -> halSignal?.want(src, on) },
             subscribe = { line -> halSignal?.subscribe(line) },
-            onDatums = { ids -> carStatusRepository.onEvents(ids) },
+            onDatums = { ids -> carStatusRepository.onEvents(ids); onSeatEvents(ids) },
             log = { msg -> runCatching { android.util.Log.i("KachiHalEvent", msg) } },
             schedule = { ms, task -> halSignal?.after(ms, task) },   // 3.1.8 HAL-EVENTS-SUB-NARROW: hoãn thu hẹp trên luồng hub
+            onLinkUp = onHalLinkUp,
         )
     }
 
@@ -259,7 +263,8 @@ class AppContainer internal constructor(
         fun get(context: Context): AppContainer {
             val app = context.applicationContext
             return instance ?: synchronized(this) {
-                instance ?: build(app).also { instance = it }
+                // 3.1.12 · SEAT-AUTOOFF-ANY-ON: bộ canh ghế bật cùng container (chỉ tiến trình chính — `install` tự kiểm; chỉ hẹn một luồng).
+                instance ?: build(app).also { instance = it; com.byd.clusternav.comfort.SeatAutoOffWatch.install(app) }
             }
         }
 
@@ -277,6 +282,8 @@ class AppContainer internal constructor(
             // FIX286 · SR6 — nhật ký bền mỗi lệnh ghi xe (`ctl-writes.log` + logcat ⇒ `usage-*.log`).
             ctlJournalInit = { CtlJournalStore.journal(app) },
             onControlWrite = { id -> com.byd.clusternav.comfort.SeatAutoOffWatch.onControlWrite(app, id) },
+            onSeatEvents = { ids -> com.byd.clusternav.comfort.SeatAutoOffWatch.onDatums(app, ids) },
+            onHalLinkUp = { com.byd.clusternav.comfort.SeatAutoOffWatch.onLinkUp(app) },
             screenAwake = { com.byd.clusternav.system.ScreenLit.read(app) },
             halSignalInit = { HalSignalHub(ensure = { HalHelperLauncher.ensure(app) }) },
         )

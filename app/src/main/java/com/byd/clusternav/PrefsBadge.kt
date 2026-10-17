@@ -59,6 +59,20 @@ private const val K_VM_BUBBLE_HIDDEN = "vm_bubble_hidden"
 fun Prefs.vmBubbleHidden(ctx: Context): Boolean = sp(ctx).getBoolean(K_VM_BUBBLE_HIDDEN, false)
 fun Prefs.setVmBubbleHidden(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VM_BUBBLE_HIDDEN, v).apply()
 
+// ─── 3.1.12 · CAST-NOW-PLAYING — dải tên bài trên mặt chiếu cụm (`CastNowPlayingOverlay`) ─────────────────────────────────
+// Cùng họ lớp phủ cụm với badge ngay trên, THEO HỒ SƠ (khai ở `SettingsCatalogClusterNav.KEYS`). Mặc định + luật góc ở `:core`
+// [CastNowPlayingDefaults] / [CastNowPlayingCorner]. Lớp phủ nghe đổi khoá qua `OnSharedPreferenceChangeListener` (Cài đặt,
+// đổi hồ sơ, cầu `prefs_set` — một đường), nên hai hàm ghi dưới đây không cần gọi gì thêm.
+internal const val K_CAST_NOW_PLAYING = "cast_now_playing"
+internal const val K_CAST_NOW_PLAYING_CORNER = "cast_now_playing_corner"
+fun Prefs.castNowPlayingEnabled(ctx: Context): Boolean =
+    sp(ctx).getBoolean(K_CAST_NOW_PLAYING, com.byd.clusternav.modules.clustercast.nowplaying.CastNowPlayingDefaults.ENABLED)
+fun Prefs.setCastNowPlayingEnabled(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_CAST_NOW_PLAYING, v).apply()
+fun Prefs.castNowPlayingCorner(ctx: Context): com.byd.clusternav.modules.clustercast.nowplaying.CastNowPlayingCorner =
+    com.byd.clusternav.modules.clustercast.nowplaying.CastNowPlayingCorner.parse(sp(ctx).getString(K_CAST_NOW_PLAYING_CORNER, null))
+fun Prefs.setCastNowPlayingCorner(ctx: Context, v: com.byd.clusternav.modules.clustercast.nowplaying.CastNowPlayingCorner) =
+    sp(ctx).edit().putString(K_CAST_NOW_PLAYING_CORNER, v.key).apply()
+
 // 2.89 · B2 VM-PREREQ-TRUTH: cờ một-lần `vm_float_whitelist_applied` đã BỎ (không còn đọc/ghi). Nó chặn lại công thức
 // "byd_float_app_list + appops SYSTEM_ALERT_WINDOW" sau lần đầu, kể cả khi VietMap đã gỡ-cài-lại (ROM xoá appop theo gói) —
 // owner phải cấp tay lại. Nay quyền vẽ nổi đọc sự thật mỗi lượt (`AppPrereqs` · `OverlayOpRead`); `byd_float_app_list` chỉ

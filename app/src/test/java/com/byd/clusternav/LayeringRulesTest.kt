@@ -253,6 +253,9 @@ class LayeringRulesTest {
         // `app` Context: đọc/ghi prefs, `displayMetrics`, controller camera của tiến trình). "Thuần" theo phép đo chỉ vì tệp
         // không nhắc chữ Context/View; cùng khuôn mọi tệp `ClusterNavBridge*.kt`. Phép tính đặt chỗ đã ở :core (CameraPlacement).
         "ClusterNavBridgeCameraPerCam.kt" to "hàm mở rộng ClusterNavBridge (Context-bound: prefs + displayMetrics + controller camera)",
+        // 3.1.12 · CAST-NOW-PLAYING: cầu Cài đặt ↔ dải tên bài trên cụm — hàm mở rộng `ClusterNavBridge` (đọc/ghi `clusternav_prefs`
+        // qua `app` Context). Bản 3.1.11 nhắc `android.content.Context` (mặt tiền cầu `np`, đã gỡ) nên không bị đếm; luật đã ở :core.
+        "ClusterNavBridgeNowPlaying.kt" to "hàm mở rộng ClusterNavBridge (Context-bound: prefs) — luật dải tên bài đã ở :core",
     )
 
     @Test

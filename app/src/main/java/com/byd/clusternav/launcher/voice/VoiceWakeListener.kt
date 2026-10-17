@@ -362,14 +362,16 @@ class VoiceWakeListener(
 
     /**
      * Một dòng mỗi [STAT_EVERY_MS] — số đo để chốt VOICE-WAKE-CPU-BUDGET trên xe bằng logcat/ClusterDiag (§11), không
-     * cần `top`: ms CPU suy diễn đã tính, số dư ngân sách, số lượt giải mã / bỏ vì không có tiếng người.
+     * cần `top`: ms CPU suy diễn đã tính, số dư ngân sách, số lượt giải mã / bỏ vì không có tiếng người / bỏ vì tiếng người
+     * quá nhỏ (`bo_nho`, WAKE-INTERMITTENT-1017 — [VoiceWakeAsr.skippedQuiet]). Chữ của từng cửa sổ đã có sẵn ở dòng
+     * `KachiVoiceRec: sherpa ra:` (luồng `kachi-wake`) — không thêm dòng thứ hai.
      */
     private fun logBudget(kws: WakeEngine?) {
         val asr = kws as? VoiceWakeAsr
         Log.i(
             TAG,
             "ngan_sach cpu_ms=${controller.chargedCpuMs()} du=${controller.budgetCreditMs().toLong()}" +
-                (if (asr != null) " giai_ma=${asr.decodes} bo_khong_tieng_nguoi=${asr.skippedNoSpeech}" else ""),
+                (if (asr != null) " giai_ma=${asr.decodes} bo_khong_tieng_nguoi=${asr.skippedNoSpeech} bo_nho=${asr.skippedQuiet}" else ""),
         )
     }
 

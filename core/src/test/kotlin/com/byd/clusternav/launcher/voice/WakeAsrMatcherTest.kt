@@ -29,6 +29,26 @@ class WakeAsrMatcherTest {
         ).forEach { assertFalse(WakeAsrMatcher.isWake(it), "KHÔNG được nổ: \"$it\"") }
     }
 
+    /**
+     * WAKE-INTERMITTENT-1017 [ĐO xe 17/10, log `:wake`]: ba cửa sổ câu gọi ra "hay ca trên" / "hai ca trên" (đuôi "chi" → âm `tr`)
+     * và KHÔNG nổ ⇒ người lái bấm phím. Nhận đúng dáng câu gọi ba từ; "trên" trong câu lệnh / câu thường không được nổ.
+     */
+    @Test fun `duoi tr cua cau goi ba tu no, tren trong cau thuong khong`() {
+        listOf("hay ca trên", "hai ca trên", "hey ka trên").forEach { assertTrue(WakeAsrMatcher.isWake(it), "phải nổ: \"$it\"") }
+        listOf(
+            "ca trên", "trên", "nghe ca trên youtube", "ca trên youtube", "hai ca trên đường", "mở bài ca trên youtube",
+            "hai cái trên", "hay có trên", "phía trên", "ở trên kia", "nhạc đen trên youtube", "xin trân",
+        ).forEach { assertFalse(WakeAsrMatcher.isWake(it), "KHÔNG được nổ: \"$it\"") }
+    }
+
+    /** WAKE-INTERMITTENT-1017 [ĐO xe 17/10 12:11]: chuyện trong xe có chữ "khách" ⇒ nổ nhầm qua luật (a). `kh` ≠ k-start. */
+    @Test fun `chu kh cua cau thuong khong no`() {
+        // Câu đầu là câu DỰNG (cùng dáng câu xe: ≤ 6 từ, chữ "khách" + đệm) — không chép lời nói trong xe vào fixture.
+        listOf("còn khách nào nữa không", "à cái khách là", "khách sạn", "mời khách", "khách hàng đến rồi").forEach {
+            assertFalse(WakeAsrMatcher.isWake(it), "KHÔNG được nổ: \"$it\"")
+        }
+    }
+
     /** Câu dài (>4 từ) chứa "kachi" giữa cũng KHÔNG nổ — người đang nói chuyện khác, không phải gọi. */
     @Test fun `kachi giua cau dai khong no`() {
         assertFalse(WakeAsrMatcher.isWake("tôi vừa mua con kachi màu đỏ hôm qua"))

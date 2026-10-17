@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test
  * Khoá ba điều CLAUDE.md §8 đòi (compile xanh ≠ code chạy):
  *  1. MỘT đường ghi HAL cho ghế: `BydHal.callNamedInt` chỉ xuất hiện một lần trong `SeatComfortApplier` (`writeSeat`), và bộ canh
  *     bật lại qua đúng đường đó — không tự gọi HAL;
- *  2. lượt áp lúc lên nguồn THẬT SỰ giao ghế cho bộ canh (`SeatAutoOffWatch.start` có call site);
- *  3. MỌI lời ghi ghế của Kachi tắt bộ canh: chạm ghế (`applySeat`), áp lại hàng loạt (`applyNow`), và sáu cửa ghi của
+ *  2. (3.1.12) bộ canh bật cùng tiến trình + nhận sự kiện ghế + đọc lại xe khi helper chào (call site thật trong `AppContainer`);
+ *  3. MỌI lời ghi ghế của Kachi để lại dấu (lần tắt cùng lúc = người dùng tắt): chạm ghế (`applySeat`), áp lại hàng loạt (`applyNow`), và sáu cửa ghi của
  *     `WakeOnWriteControl` (ô nút · giọng nói · phím) — cửa sau đo bằng đồ thị DI thật (`AppContainer.carControl`).
  */
 class SeatAutoOffWiringContractTest {
@@ -34,11 +34,25 @@ class SeatAutoOffWiringContractTest {
         assertTrue(SourceRoots.body(watch, "private fun reapply(").contains("ScreenLit.readStrict(app)"), "bật lại ghế phải qua ScreenLit.readStrict")
     }
 
+    /**
+     * 3.1.12 · SEAT-AUTOOFF-ANY-ON — bộ canh bật cùng container của tiến trình (mọi lần tiến trình bật, kể cả cài đè giữa chuyến),
+     * nhận sự kiện ghế từ `carEvents` và đọc lại xe khi helper chào; không còn "giao danh sách ghế vừa áp" (RAM, mất khi khởi động lại).
+     */
     @Test
-    fun `luot ap luc len nguon giao ghe cho bo canh, luot khac thi khong`() {
-        assertTrue(SourceRoots.body(applier, "private fun launch(").contains("SeatAutoOffWatch.start("))
-        assertTrue(SourceRoots.body(applier, "fun applyOnStart(").contains("poweredAt = powered"))
-        assertTrue(SourceRoots.body(applier, "fun applyNow(").contains("poweredAt = null"), "đổi chế độ/hồ sơ không phải lần lên nguồn")
+    fun `bo canh bat cung tien trinh, nhan su kien ghe, doc lai xe khi helper chao`() {
+        val container = SourceRoots.codeOf("src/main/java/com/byd/clusternav/AppContainer.kt")
+        assertTrue(SourceRoots.body(container, "fun get(").contains("SeatAutoOffWatch.install(app)"), "tiến trình bật ⇒ canh (đọc xe)")
+        assertTrue(container.contains("onSeatEvents = { ids -> com.byd.clusternav.comfort.SeatAutoOffWatch.onDatums(app, ids) }"))
+        assertTrue(container.contains("onDatums = { ids -> carStatusRepository.onEvents(ids); onSeatEvents(ids) }"), "sự kiện datum tới bộ canh")
+        assertTrue(container.contains("onHalLinkUp = { com.byd.clusternav.comfort.SeatAutoOffWatch.onLinkUp(app) }"))
+        assertTrue(container.contains("onLinkUp = onHalLinkUp,"))
+        assertTrue(SourceRoots.body(watch, "fun install(").contains("isMainProcess(app)"), "chỉ tiến trình chính canh (`:wake` không)")
+        assertTrue(SourceRoots.body(watch, "private fun ensureNow(").contains("seed(app,"), "bắt đầu canh = đọc sự thật của xe")
+        assertTrue(SourceRoots.body(watch, "fun onDatums(").contains("guard.onEvent("))
+        assertFalse(watch.contains("fun start(") || applier.contains("SeatAutoOffWatch.start("), "không còn đường giao ghế bằng RAM")
+        for (f in listOf("fun applyOnStart(", "fun applyNow(", "fun applySeat(")) {
+            assertTrue(SourceRoots.body(applier, f).contains("SeatAutoOffWatch.ensure(ctx)"), "$f phải nhắc bộ canh khớp công tắc")
+        }
     }
 
     @Test

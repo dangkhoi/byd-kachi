@@ -1,9 +1,7 @@
 package com.byd.clusternav.comfort
 
 import android.content.Context
-import android.os.SystemClock
 import android.util.Log
-import com.byd.clusternav.KachiReadyLog
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.modules.hal.BydHal
 import com.byd.clusternav.SysProps
@@ -41,23 +39,24 @@ object SeatComfortApplier {
     const val START_DELAY_MS = 5_000L
 
     /**
-     * Gọi lúc mở app / boot nền. Công tắc TẮT ⇒ no-op. BẬT ⇒ ghi ghế sau ~5 s trên thread nền, rồi giao các ghế vừa áp cho
-     * [SeatAutoOffWatch] (3.1.6 · SEAT-AUTO-OFF-REAPPLY: xe 2606 tự tắt ghế ở +8,5…+10′ ⇒ bật lại MỘT lần).
+     * Gọi lúc mở app / boot nền. Công tắc TẮT ⇒ no-op. BẬT ⇒ ghi ghế sau ~5 s trên thread nền. Bộ canh xe-tự-tắt
+     * ([SeatAutoOffWatch], 3.1.12 · SEAT-AUTOOFF-ANY-ON) không cần danh sách ghế từ đây: nó canh MỌI ghế đang bật theo sự kiện xe
+     * (lượt ghi này cũng sinh sự kiện bật); chỉ nhắc nó khớp công tắc.
      */
     fun applyOnStart(ctx: Context) {
-        // Mốc lên nguồn chụp NGAY (trước 5 s chờ) — lần màn bật gần nhất, không có thì lúc này.
-        val powered = SeatAutoOffGuard.poweredAt(KachiReadyLog.lastScreenOnAt(), SystemClock.elapsedRealtime())
-        launch(ctx, START_DELAY_MS, "seat-comfort-start", poweredAt = powered)
+        SeatAutoOffWatch.ensure(ctx)
+        launch(ctx, START_DELAY_MS, "seat-comfort-start")
     }
 
     /**
      * Áp lại TẤT CẢ ghế có mức ≠ Tắt cho mode hiện tại (dùng khi ĐỔI CHẾ ĐỘ mát↔sưởi / đổi hồ sơ). Công tắc TẮT ⇒ no-op.
-     * Là một lệnh GHI của Kachi ⇒ [SeatAutoOffWatch] thôi canh mọi ghế (ý người dùng thắng).
+     * Là một lệnh GHI của Kachi ⇒ để dấu ghi mọi ghế: lần tắt cùng lúc (đổi mát → sưởi tắt mát ở MCU) là ý người dùng, không bật lại.
      */
     fun applyNow(ctx: Context) {
+        SeatAutoOffWatch.ensure(ctx)
         if (!Prefs.seatComfortEnabled(ctx)) return
         SeatAutoOffWatch.noteKachiWrite(ctx, seatIndex = null)
-        launch(ctx, 0L, "seat-comfort-now", poweredAt = null)
+        launch(ctx, 0L, "seat-comfort-now")
     }
 
     /**
@@ -70,8 +69,9 @@ object SeatComfortApplier {
      * ghi ĐÚNG 1 ghế với `state = stateForLevel(level)` (0→1 Tắt · 1→2 · 2→3), KHÔNG bỏ qua Tắt.
      */
     fun applySeat(ctx: Context, seatIndex: Int, level: Int) {
+        SeatAutoOffWatch.ensure(ctx)
         if (!Prefs.seatComfortEnabled(ctx)) return
-        SeatAutoOffWatch.noteKachiWrite(ctx, seatIndex)          // người dùng chạm ⇒ thôi canh ghế này
+        SeatAutoOffWatch.noteKachiWrite(ctx, seatIndex)          // người dùng chạm ⇒ lần tắt cùng lúc là ý người dùng
         val app = ctx.applicationContext
         Thread({
             runCatching {
@@ -91,19 +91,17 @@ object SeatComfortApplier {
         }, "seat-comfort-one").start()
     }
 
-    /** [poweredAt] ≠ null ⇒ lượt áp lúc lên nguồn: các ghế vừa ghi được giao cho [SeatAutoOffWatch]. */
-    private fun launch(ctx: Context, delayMs: Long, threadName: String, poweredAt: Long?) {
+    private fun launch(ctx: Context, delayMs: Long, threadName: String) {
         if (!Prefs.seatComfortEnabled(ctx)) return
         val app = ctx.applicationContext
         Thread({
             if (delayMs > 0) runCatching { Thread.sleep(delayMs) }
-            val applied = apply(app)
-            if (poweredAt != null && applied.isNotEmpty()) SeatAutoOffWatch.start(app, applied, poweredAt)
+            apply(app)
         }, threadName).start()
     }
 
     /**
-     * 3.1.6 — [SeatAutoOffWatch] bật lại MỘT ghế mà xe vừa tự tắt: cùng method + mức như lúc áp, qua CHÍNH [writeSeat]. Chặn
+     * 3.1.6/3.1.12 — [SeatAutoOffWatch] bật lại MỘT ghế mà xe vừa tự tắt: cùng method + mức như lúc áp, qua CHÍNH [writeSeat]. Chặn
      * (gọi từ luồng canh). Công tắc đã TẮT / không có HAL ⇒ không ghi, trả lý do.
      */
     internal fun reapplySeat(app: Context, seatIndex: Int, mode: SeatComfort.SeatMode, state: Int): String = runCatching {
@@ -127,10 +125,9 @@ object SeatComfortApplier {
      * degrade-safe. **CỐ Ý bỏ qua ghế mức Tắt** (không cưỡng bức tắt mọi ghế lúc khởi động / đổi mode); việc ghi
      * mức Tắt cho MỘT ghế do người dùng chạm là của [applySeat].
      */
-    private fun apply(app: Context): List<SeatAutoOffWatch.Applied> {
-        val out = ArrayList<SeatAutoOffWatch.Applied>()
+    private fun apply(app: Context) {
         runCatching {
-            if (!Prefs.seatComfortEnabled(app)) return out   // owner tắt trong lúc chờ delay
+            if (!Prefs.seatComfortEnabled(app)) return       // owner tắt trong lúc chờ delay
             val mode = currentMode(app)
             val method = SeatComfort.methodFor(mode)
             val seats = SeatComfort.seatsForModel(isHanModel(app))
@@ -147,12 +144,10 @@ object SeatComfortApplier {
                 val state = SeatComfort.stateForLevel(level)          // 0/1/2 → 1/2/3
                 val rc = writeSeat(dev, method, seatId, state)
                 Log.i(TAG, "ghi ghế: $method(seatId=$seatId, state=$state) [seatIndex=$seat mode=$mode] $rc")
-                out += SeatAutoOffWatch.Applied(seat, mode, state)
                 applied++
             }
             Log.i(TAG, "áp xong: $applied ghế, mode=$mode, seats=$seats")
         }.onFailure { Log.w(TAG, "áp ghế thất bại (degrade-safe, bỏ qua)", it) }
-        return out
     }
 
     /** Số ghế theo mẫu xe (2 = Seal / 4 = Han). Off-car / không rõ → 2. Cho UI hiện đúng 2 hay 4 ghế. */

@@ -164,3 +164,71 @@ scripts/oncar/hud-clusterdebug-nav.sh [127.0.0.1:15555] [docs/diagnostics/oncar-
   `receive normal:` và `set featureID is aa00020f`, hỏi c/k HUD rồi cụm, hỏi bất thường. Kết quả gộp ở `summary.tsv`; mọi broadcast ở `broadcast.log`.
 - Đã kiểm off-car: `bash -n` + `shellcheck` sạch; chạy hết luồng bằng adb giả (16 broadcast đúng thứ tự, xoá 1 lần); luồng bất thường (pid
   SurfaceFlinger đổi sau start) ⇒ dừng ở H1, gửi `…01,01` + `…01,04`, thoát mã 3. Chưa chạy trên xe.
+
+## 9. Kết quả xe 17/10 (Seal) và đường gửi tên đường thứ hai cho SL6 (3.1.12)
+
+> **Cập nhật**: 2026-10-17 · **Backlog**: `HUD-CLUSTERDEBUG-PATH` (Seal: đóng nhánh HUD) · `HUD-ROADNAME-ALT-PATH` (mới, 🚗 SL6)
+
+### 9.1 Seal, fw 2606 — kết quả
+
+| Đo | Kết quả | Mức |
+|---|---|---|
+| Gói qua `com.byd.clusterdebug/.BroadcastReceiverCAN --es normal <hex>` có tới TestDevice không | **Có** — `BYDAutoTestDevice.set(0xAA00020F)` nhận, cả gói gộp lẫn từng bản ghi, liên tục > 1 phút | [ĐO xe] |
+| HUD Seal hiện gì mới | **Không** | [ĐO owner] |
+| Đường HAL của Kachi trên HUD Seal | Không hiện gì (như trước) | [ĐO] |
+| Kết luận | HUD Seal khoá bởi coding (ADR 0002 giữ); đường TestDevice không mở được HUD Seal. Theo bảng §6: dòng "HUD không" ⇒ nhánh HUD của Seal đóng | [ĐO] cho Seal · **chưa biết** cho SL6 |
+
+SL6 cùng firmware thì khác: HUD zin SL6 **có** hiện mũi tên + cự ly từ đường HAL của Kachi nhưng **không bao giờ** hiện tên đường [ĐO anh em
+SL6]. Tức HUD SL6 không bị khoá coding như Seal, chỉ ô tên đường là không lên. Đó là chỗ đường thứ hai có thể giúp — và chỉ xe SL6 thật mới
+trả lời được [CHƯA BIẾT].
+
+### 9.2 Kachi 3.1.12 — bốn chế độ "Đường gửi tên đường lên HUD"
+
+*Cài đặt › Dẫn đường + HUD › Đường gửi tên đường lên HUD*, lưu **theo xe** (`hud_road_name_mode`, `clusternav_prefs`). Mũi tên, cự ly và
+trạng thái dẫn **luôn** đi đường HAL như cũ, ở mọi chế độ; chỉ tên đường đổi đường.
+
+| Chế độ | Tên đường đi đâu | Trần | Ghi chú |
+|---|---|---|---|
+| **A** (mặc định) | HAL `0x43FA1008` + oversea `0x1F7A1008` + SDK `sendNextPathName` | 127 đơn vị UTF-16 | y hệt 3.1.11 |
+| **A48** | như A | 48 đơn vị, cắt ở ranh giới code point | trần thử |
+| **B** | **chỉ** ClusterDebug: khúc 7 byte + tổng kiểm (khuôn §3, `0x43FA1008 + (i<<12)`) | 48 đơn vị (≤ 14 khúc) | cách DiAuto |
+| **C** | A + B | A: 127 · B: 48 | |
+
+Vì sao trần 48 là chế độ riêng (A48), không phải mặc định mới: [ĐO nguồn] OEM AmapService gửi tên **nguyên văn** (`getCodeUnicode` =
+`getBytes("UnicodeLittleUnmarked")`, không cắt; `jadx-amap2 … AmapService.java:459-470, 589-598`) và SDK `sendNextPathName` nhận tới 255 byte
+(§2.2). Trần 96 byte chỉ có trong chú thích DiAuto [ĐOÁN về HAL]. Đổi mặc định khi chưa có bằng chứng là đổi một đường đang chạy (CLAUDE.md §6).
+
+Khuôn khúc của B đối chiếu thêm với DiAuto 0.3.11 đã decompile (lớp gói tên đường): làm sạch (ký tự điều khiển / khoảng trắng lạ ⇒ cách,
+surrogate mồ côi bỏ, cặp surrogate chỉ vào khi còn đủ 2 chỗ), cắt ≤ 48, `trim`, rỗng ⇒ một dấu cách; nội dung `((n + 8) / 7) * 7` byte; số thứ
+tự = `(id >>> 12)` [ĐO bytecode]. Bộ mã của Kachi ra **đúng từng byte** hai gói H2a/H2b của script (test `ClusterDebugRoadNameTest`).
+
+### 9.3 An toàn và hiệu năng
+
+- **Phạm vi lệnh (CLAUDE.md §4)**: display — không chạm; app — chỉ `com.byd.clusterdebug/.BroadcastReceiverCAN`, broadcast tường minh;
+  loại lệnh — chỉ 14 id khúc tên đường `0x43FA1008..0x43FAE008` (allow-list ở `:core`, kiểm lại **ngay trước** `sendBroadcast`; khúc 15
+  `0x43FAF008` và họ kề `0x43FB0008` bị chặn), chỉ extra `normal`, không `wholeFrame`, không trạng thái dẫn, không mũi tên/cự ly qua đường
+  này; hoàn tác — hết dẫn (`clearNavFrame`) mà kênh B đã có tên ⇒ gửi tên xoá (một dấu cách, đúng thứ DiAuto gửi cho tên rỗng). Script xe
+  dừng ở `0x43FA4008` vì hai chuỗi thử chỉ cần 4 khúc; trần 48 đơn vị cần 14.
+- **Khả dụng**: B/C chỉ mở khi PackageManager báo: có gói, app **hệ thống**, đang bật, receiver có + exported + bật + **không** permission, và
+  `versionCode` = 10601004 (bản đã đọc source). Đọc mới mỗi lần trang Cài đặt hiện và mỗi lần gửi; kế hoạch của một khung dùng bản ≤ 60 s.
+  Thiếu ⇒ chip B/C mờ + dòng lý do; nếu đã chọn B/C rồi mà mất khả dụng ⇒ tự lùi về A, dòng tình trạng màu hổ phách nói rõ.
+- **Nhịp**: cùng cổng R9 (2.98) của tên đường: chỉ real push, chỉ khi tên **đổi** (kênh `CLUSTER_DEBUG` riêng trong `HudPathNameGate`);
+  keep-alive không đọc prefs, không gửi gì. Không luồng, không nhịp mới. Chế độ A/A48: thêm đúng một lượt đọc prefs mỗi real push.
+- **Nhật ký**: một dòng `hudroad sent mode=<m> units=<n> rc=<…>` mỗi lần tên thật sự được gửi (nhật ký lệnh ghi xe, đọc bằng cầu `ctllog`),
+  `hudroad mode a->b src=…` khi đổi chế độ. Không bao giờ ghi chữ của tên đường.
+- **Chưa biết**: broadcast từ uid của Kachi (không phải uid shell như buổi 17/10) có tới receiver không — [SUY] có (exported, không permission,
+  §2.1), chốt bằng dòng `receive normal:` trong logcat trên xe đầu tiên chạy B. Tiến trình Kachi chết giữa chuyến ⇒ tên B có thể còn tới lượt
+  dẫn sau / tắt máy — cùng mức với tên của đường HAL.
+
+### 9.4 Đo trên SL6 (người thử)
+
+Hướng dẫn gửi anh em: `docs/_handoff/sl6-hud-roadname-tester-2026-10-17.md`. Cầu kiểm thử (khi có adb):
+`am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd hudroad --es op b --ez auto_confirm true`
+(`op` = `status|a|a48|b|c`; `b`/`c` cần `auto_confirm`; xe không có ClusterDebug ⇒ `unavailable` + lý do).
+
+| SL6 | Kết luận | Kachi làm |
+|---|---|---|
+| B hiện tên, A không | Ô tên của HUD SL6 chỉ ăn đường TestDevice; HAL tên đường bị chặn phía IVI/HAL | Đề xuất owner: mặc định B cho xe có ClusterDebug **và** đã đo HUD hiện tên — chọn bằng đo, không theo tên đời xe |
+| A48 hiện, A không | Trần thật 48 đơn vị ⇒ tên dài bị bỏ | Đổi trần A về 48 (một hằng) |
+| Không chế độ nào hiện | Cổng nằm ở HUD SL6 (`0x420A1010` check-state = 0, `factory-hud-nav-RE-avenues` §0.1) | Giữ A, đóng `HUD-ROADNAME-ALT-PATH` |
+| B làm mất mũi tên / HUD lạ | Ghi lỗi | Quay A ngay; ghi bằng chứng |

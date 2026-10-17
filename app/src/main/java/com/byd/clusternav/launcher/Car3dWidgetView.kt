@@ -216,7 +216,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData) : FrameLayout
         r.place(pl.matrix())
         placement = pl
         orbit = Car3dOrbit(m.yawDeg, 0.0, pitch = m.pitchDeg)
-        taps.bind(m, anchors.keys, boxes) { h -> r.worldBox(pl, h.anchor) }; taps.blocked = hero::owns   // chấm né icon ghế
+        taps.bind(m, anchors.keys, boxes) { h -> r.worldBox(pl, h.anchor) }; hero.zones = taps.zones; taps.seatsLog = hero::where   // 3.1.12: icon ghế nhường chấm
         // R28 — điểm ghế (từ neo cửa + kính trước SẴN CÓ) + điểm chạm đất 4 bánh (hộp hợp bộ phận `wheel*`, đo hình học).
         val seats = Car3dHero.Seat.values().mapNotNull { s -> val k = if (s.side == Car3dHero.LEFT) "lf" else "rf"
             anchors["door-$k"]?.let { d -> anchors["win-$k"]?.let { g -> s to Car3dHero.seatPoint(d, g) } } }.toMap()
@@ -384,7 +384,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData) : FrameLayout
         if (placement == null) return false
         // [ĐO máy ảo 13/10] bản đầu chỉ nhả cú NHẤN cho thanh nút rồi chặn cú THẢ ⇒ nút nhận CANCEL, không bao giờ bấm được.
         // Cả cử chỉ bắt đầu trên thanh nút thuộc về thanh nút.
-        if (ev.actionMasked == MotionEvent.ACTION_DOWN) { barGesture = inBar(ev) || (doneAlign.visibility == VISIBLE && inView(doneAlign, ev)); heroGesture = hero.owns(ev.x, ev.y); downX = ev.x; downY = ev.y }
+        if (ev.actionMasked == MotionEvent.ACTION_DOWN) { barGesture = inBar(ev) || (doneAlign.visibility == VISIBLE && inView(doneAlign, ev)); heroGesture = hero.owns(ev.x, ev.y) && !taps.claims(ev.x, ev.y); downX = ev.x; downY = ev.y }
         // R28: chạm icon ghế = nút; kéo quá ngưỡng từ trên icon ⇒ cử chỉ thành XOAY (giành lại, icon nhận CANCEL) — không có vùng chết.
         if (heroGesture && ev.actionMasked == MotionEvent.ACTION_MOVE && kotlin.math.hypot(ev.x - downX, ev.y - downY) > slop) { heroGesture = false; dragging = true; lastX = ev.x; lastY = ev.y; parent?.requestDisallowInterceptTouchEvent(true); return true }
         return !barGesture && !heroGesture   // mọi cú chạm khác trên khung xe do view này quyết (vuốt hay chạm điểm)
@@ -465,7 +465,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData) : FrameLayout
         if (r.render(t)) {
             lastNs = t; framesTotal++; burst++; misses = 0; burstNs += System.nanoTime() - w0
             if (pending > 0) pending--
-            cam?.let { c -> placement?.let { hero.project(c, texture.width, texture.height); taps.project(c, anchors, it.bounds, texture.width, texture.height); groundShadow(c, it.bounds) } }
+            cam?.let { c -> placement?.let { taps.project(c, anchors, it.bounds, texture.width, texture.height); hero.project(c, texture.width, texture.height); taps.logOnce(); groundShadow(c, it.bounds) } }
         } else if (++misses > MAX_MISSES) { pending = 0; misses = 0 }
         if (orbit.moving || pending > 0 || dragging || sliding) post()
         else {

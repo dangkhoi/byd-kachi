@@ -49,6 +49,12 @@ class VoiceWakeAsr private constructor(
         private set
     @Volatile var finishes: Long = 0L
         private set
+    /**
+     * WAKE-INTERMITTENT-1017 — lượt bị CỔNG RMS bỏ trong lúc cổng tiếng người đang MỞ (VAD vừa nghe tiếng người): tức tiếng
+     * người NHỎ hơn [RMS_GATE]. Trước bản này lượt ấy không để lại dấu gì ⇒ "gọi mà không lên" không truy được trên xe.
+     */
+    @Volatile var skippedQuiet: Long = 0L
+        private set
 
     /** Nạp PCM float; `true` nếu cửa sổ vừa khớp "kachi". Gọi trên luồng nghe. */
     override fun feed(pcm: FloatArray, n: Int): Boolean = synchronized(lock) {
@@ -74,7 +80,7 @@ class VoiceWakeAsr private constructor(
         // #1 RMS-GATE (owner 2026-09-23, gốc :wake ~130% CPU): bản cũ giải mã mô hình 74MB MỖI 500ms VÔ ĐIỀU
         // KIỆN — kể cả cabin IM (log "sherpa ra: ''"). Đó là nguồn CPU nền cao. Chỉ giải mã khi cửa sổ có tiếng đủ
         // to. Im lặng → bỏ decode (giữ cửa sổ để khi có tiếng vẫn đủ ngữ cảnh). Ngưỡng RMS_GATE đo trên short PCM.
-        if (windowRms() < RMS_GATE) return false
+        if (windowRms() < RMS_GATE) { if (vad != null && speech.open()) skippedQuiet++; return false }
         if (!speech.open()) { skippedNoSpeech++; return false }   // có tiếng to nhưng không phải tiếng người (nhạc không lời)
         decodes++
         val text = runCatching { rec.decodeAll(window, filled) }.getOrDefault("")
@@ -131,8 +137,13 @@ class VoiceWakeAsr private constructor(
         const val FINISH_MIN_MS = 200
         const val FINISH_MIN_SAMPLES = SAMPLE_RATE * FINISH_MIN_MS / 1000
         // #1 RMS-GATE: cửa sổ RMS < ngưỡng ⇒ coi là im lặng ⇒ KHÔNG giải mã (bỏ decode 74MB vô ích khi im).
-        // 0.010 ≈ nền cabin im; tiếng nói thật RMS cao hơn nhiều. Nới lỏng để không bỏ sót "Hey Kachi" nói nhỏ.
-        const val RMS_GATE = 0.010
+        // WAKE-INTERMITTENT-1017: 0,010 → 0,005. [ĐO xe 17/10] micro phiên lệnh rms 423–956/32767 (0,013–0,029) trên cả khúc
+        // 4,8–7,2 s ⇒ cửa sổ 1,6 s của một câu gọi nói nhẹ nằm ngay quanh 0,010. [ĐO host `wake-harness/gate-sweep.py`, Silero
+        // asset thật, 60 câu gọi TTS] giọng RMS 0,010 ⇒ chỉ 25/60 cửa sổ tới ASR; 0,007 ⇒ 0/60 — và bị bỏ IM LẶNG (không bộ đếm
+        // nào). Ở 0,005: 60/60 cả hai mức; 0,0037 (sàn cổng khung) ra đúng bằng 0,005 nên giữ 0,005 (lề trên sàn). Từ 3.1.9 cổng
+        // tiếng người ([VoiceWakeSpeechGate]) mới là chỗ chặn chính; cổng này chỉ còn bỏ cửa sổ gần-im. Giá: 45 s nhạc có lời
+        // nhỏ (0,008) 0 → 2 lượt; câu thường nói nhỏ 1,51 → 2,51 lượt/tệp (= mức câu thường nói to 2,63) — vẫn qua ngân sách.
+        const val RMS_GATE = 0.005
         const val WINDOW_SAMPLES = SAMPLE_RATE * WINDOW_MS / 1000
         const val DECODE_EVERY_SAMPLES = SAMPLE_RATE * DECODE_EVERY_MS / 1000
         const val MIN_SAMPLES = SAMPLE_RATE * MIN_MS / 1000

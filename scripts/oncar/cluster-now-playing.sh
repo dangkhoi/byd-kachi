@@ -2,6 +2,10 @@
 # ═════════════════════════════════════════════════════════════════════════════════════════════════
 # cluster-now-playing.sh — KỊCH BẢN XE cho CLUSTER-NOW-PLAYING (tên bài YouTube / YT Music lên cụm)
 #
+# ⚠ 3.1.12: ĐÃ VƯỢT QUA. [ĐO xe 17/10] `com.byd.mediacontroller` tự ghi tên bài vào 0x43FB1008 (MEDIA_SOURCE=999);
+#   ô nhạc gốc chỉ bị mặt chiếu Kachi che ⇒ Kachi vẽ dải tên bài trên mặt chiếu (doc §9). W1 (ghi nguồn 11) KHÔNG cần
+#   nữa; giữ kịch bản để tra cứu phép đo M0–M6 (chỉ đọc). W2 mặc định bỏ qua.
+#
 # Cơ chế + id + M0–M6/W1: docs/diagnostics/cluster-now-playing-2026-10-16.md (§5 lệnh, §7 kịch bản này).
 # Chạy với Kachi 3.1.10 (215) ĐÃ PHÁT HÀNH — KHÔNG cần APK mới cho M0–M6 + W1 + W1b.
 #   • Đọc: adb shell (getprop/dumpsys/logcat) + cầu kiểm thử `hal getid` (chỉ đọc).
@@ -57,8 +61,10 @@ W2_MIN_CODE="${W2_MIN_CODE:-216}"   # 3.1.11
 #   Rỗng ⇒ W2 tự bỏ qua.
 #   3.1.11 (216): ĐÃ ĐIỀN — lệnh cầu `np` (doc §8): `on` gắn bộ nghe phiên NGAY (không chờ khởi động lại), cần auto_confirm;
 #   `off` trả nguồn cụm + gỡ bộ nghe. Đọc tình trạng: `--es cmd np` (op vắng = status); dòng ghi HAL: `--es cmd ctllog`.
-KACHI_NP_CMD="${KACHI_NP_CMD:---es cmd np --es op on --ez auto_confirm true}"
-KACHI_NP_OFF_CMD="${KACHI_NP_OFF_CMD:---es cmd np --es op off}"
+#   3.1.12 (217): bộ ghi nguồn 11 + cầu `np` ĐÃ GỠ (doc §9 — [ĐO 17/10] MediaController tự gửi tên bài, ô nhạc chỉ bị mặt chiếu
+#   che) ⇒ W2 mặc định RỖNG (tự bỏ qua). Chỉ đặt biến khi đo lại một bản ≤ 3.1.11.
+KACHI_NP_CMD="${KACHI_NP_CMD:-}"
+KACHI_NP_OFF_CMD="${KACHI_NP_OFF_CMD:-}"
 
 mkdir -p "$OUT" || { echo "ERROR: không tạo được $OUT" >&2; exit 2; }
 LOG="$OUT/session.log"

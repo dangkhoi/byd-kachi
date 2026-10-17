@@ -79,6 +79,8 @@
         <package android:name="com.byd.carsettings.plugins" />
         <!-- 3.01 R25 — app AVM (AutoVideo.apk): mô hình 3D của xe đọc lúc chạy qua createPackageContext (không phân phối lại). -->
         <package android:name="com.byd.avc" />
+        <!-- 3.1.12 HUD-ROADNAME-ALT-PATH — đọc sự thật receiver ClusterDebug (hệ thống? exported? bản nào?) trước khi mở đường B. -->
+        <package android:name="com.byd.clusterdebug" />
     </queries>
 
     <!-- allowBackup=false: app lưu ADB private key (adb.key/adb.pub) trong filesDir — key này grant shell

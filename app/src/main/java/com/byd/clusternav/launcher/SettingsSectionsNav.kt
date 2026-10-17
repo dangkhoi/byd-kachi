@@ -53,6 +53,9 @@ class SettingsNavSection(
     /** FIX286 R-HUD (S4) — ba dòng tình trạng HUD (tệp riêng: trần 500 dòng). */
     private val hud = SettingsNavHudRows(context, rows) { bridge }
 
+    /** 3.1.12 · HUD-ROADNAME-ALT-PATH — chọn đường gửi tên đường lên HUD (A/A48/B/C) + tình trạng (tệp riêng: trần 500 dòng). */
+    private val hudRoad = SettingsHudRoadNameRows(context, rows) { bridge }
+
     /** 3.1.11 · CLUSTER-NOW-PLAYING — công tắc tên bài lên cụm + dòng tình trạng (tệp riêng: trần 500 dòng). */
     private val nowPlaying = SettingsNowPlayingRows(context, rows) { bridge }
 
@@ -68,6 +71,7 @@ class SettingsNavSection(
 
     fun build(body: LinearLayout) {
         nav(body)
+        hudRoad.build(body)
         nowPlaying.build(body)
         badge(body)
         bubble(body)

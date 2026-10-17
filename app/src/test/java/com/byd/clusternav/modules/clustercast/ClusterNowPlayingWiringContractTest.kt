@@ -1,69 +1,81 @@
 package com.byd.clusternav.modules.clustercast
 
-import com.byd.clusternav.modules.clustercast.nowplaying.ClusterNowPlayingKeys
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * 3.1.11 · CLUSTER-NOW-PLAYING — dây nối mà JVM không dựng được (MediaSession, HAL, Application). Khoá CLAUDE.md §8: hàm mới
- * phải CÓ chỗ gọi — `MediaBridge.watchAll` → `evaluate` → `ClusterNowPlayingPlan.onMedia` → ghi qua đường HAL chuẩn; công tắc
- * mặc định TẮT; TẮT thì `install` không dựng luồng; cầu `np` đi đúng đường của công tắc Cài đặt.
+ * 3.1.12 — dây nối JVM không dựng được (MediaSession, WindowManager, Application). Khoá ba điều:
+ *  1. Bộ ghi nguồn 11 của 3.1.11 ĐÃ GỠ (không còn ghi tên bài/trạng thái/nguồn lên HAL, không cầu `np`) — chỉ còn đường trả lại
+ *     lúc khởi động, và đường đó 0 việc khi không có dấu bền.
+ *  2. Dải tên bài trên mặt chiếu đi ĐÚNG đường lớp phủ cụm chuẩn (`ClusterOverlayDisplays`), chỉ bám phiên nhạc khi đang chiếu.
+ *  3. CLAUDE.md §8: hàm mới có chỗ gọi (Application → install; Cài đặt → cầu → prefs → bộ nghe prefs của lớp phủ).
  */
 class ClusterNowPlayingWiringContractTest {
 
     private fun code(rel: String) = SourceRoots.codeOf("src/main/java/com/byd/clusternav/$rel")
-    private val rt by lazy { code("modules/clustercast/ClusterNowPlaying.kt") }
+    private val strip by lazy { code("modules/clustercast/CastNowPlayingOverlay.kt") }
+    private val legacy by lazy { code("modules/clustercast/ClusterNowPlayingLegacyRestore.kt") }
 
-    @Test fun `ngu - mac dinh TAT, TAT va khong dau thi install khong dung luong`() {
-        assertFalse(ClusterNowPlayingKeys.DEFAULT_ON)
-        val install = SourceRoots.body(rt, "fun install(ctx: Context)")
-        val early = install.indexOf("if (marker == null && !on) return")
-        assertTrue(early > 0, install)
-        assertTrue(early < install.indexOf("post(a)"), "cổng TẮT phải đứng trước lượt dựng luồng")
-        assertTrue("ClusterNowPlayingPlan.restoreAtStartup(marker, sink(a))" in install, "dấu bền trả lúc khởi động")
+    @Test fun `bo ghi nguon 11 da go - khong con tep, khong cau np, khong ghi bytes ten bai`() {
+        listOf("modules/clustercast/ClusterNowPlaying.kt", "launcher/testbridge/TestBridgeNowPlaying.kt").forEach {
+            assertFalse(SourceRoots.exists("src/main/java/com/byd/clusternav/$it"), "còn tệp đời cũ: $it")
+        }
+        assertFalse("TestBridgeNowPlaying" in code("launcher/testbridge/TestBridgeNoHome.kt"))
+        assertFalse("pushMusicBytes" in code("modules/hal/BydHalContentPush.kt"))
+        assertFalse("nowPlaying" in code("modules/clustercast/ClusterProfile.kt"), "hồ sơ không còn số liệu ghi đè nguồn")
+        assertFalse("BydHal" in strip || "pushMusic" in strip, "dải tên bài không chạm HAL")
     }
 
-    @Test fun `Application goi install truoc dong chot cuoi`() {
+    @Test fun `duong tra lai luc khoi dong - khong dau thi khong luong, con dau thi tra roi don`() {
+        val install = SourceRoots.body(legacy, "fun install(ctx: Context)")
+        val early = install.indexOf("?: return")
+        assertTrue(early > 0 && early < install.indexOf("Thread("), "không dấu ⇒ trả về trước khi dựng luồng: $install")
+        assertTrue("ClusterNowPlayingLegacy.restoreAtStartup(marker, sink(a))" in install)
+        assertTrue("BydHalContentPush.pushMusicInt(it, id, value)" in legacy, "ghi qua nguyên thuỷ có cache từ chối")
+        assertTrue("commit()" in code("PrefsNowPlaying.kt"), "xoá dấu đồng bộ")
+    }
+
+    @Test fun `Application goi ca hai install truoc dong chot cuoi`() {
         val app = code("KachiApplication.kt")
-        val at = app.indexOf("ClusterNowPlaying.install(this)")
-        assertTrue(at > 0)
-        assertTrue(at < app.indexOf("EarlyShellChannel.start(this)"))
+        val end = app.indexOf("EarlyShellChannel.start(this)")
+        listOf("ClusterNowPlayingLegacyRestore.install(this)", "CastNowPlayingOverlay.install(this)").forEach {
+            val at = app.indexOf(it)
+            assertTrue(at in 1 until end, "$it phải có và đứng trước dòng chốt cuối")
+        }
     }
 
-    @Test fun `phien nhac di qua MediaBridge toi plan`() {
-        val start = SourceRoots.body(rt, "private fun start(a: Context)")
-        assertTrue("MediaBridge(a).watchAll(h) { evaluate(a) }" in start, start)
-        assertTrue("registerShutdown(a)" in start)
-        val ev = SourceRoots.body(rt, "private fun evaluate(a: Context)")
-        assertTrue("MediaBridge(a).nowPlaying()" in ev && "p.onMedia(media, { powerLevel(a) }" in ev, ev)
-        assertTrue("h.postDelayed(pauseCheck" in ev, "một lượt hẹn khi tạm dừng")
-        assertFalse("scheduleWithFixedDelay" in rt || "sleep(" in rt, "không nhịp định kỳ")
+    @Test fun `lop phu di duong chuan cua cum, chi bam phien khi dang chieu`() {
+        val rec = SourceRoots.body(strip, "private fun reconcile()")
+        assertTrue("Prefs.castNowPlayingEnabled(a) && ClusterOverlayDisplays.castLiveId != null && !ClusterOverlayDisplays.paused" in rec, rec)
+        assertTrue("if (want) watch(a) else { unwatchAll(); apply(plan.onMedia(null," in rec)
+        assertTrue("MediaBridge(a).watchAll(main) { evaluate(a) }" in SourceRoots.body(strip, "private fun watch(a: Context)"))
+        assertTrue("ClusterOverlayDisplays.resolve(dm)" in strip, "display = cụm sống, không hằng 1")
+        assertTrue("TYPE_APPLICATION_OVERLAY" in strip && "FLAG_NOT_TOUCHABLE" in strip)
+        assertTrue("ClusterOverlayDisplays.addListener(clusterListener)" in strip)
+        assertTrue("registerOnSharedPreferenceChangeListener(prefsListener)" in strip, "Cài đặt / đổi hồ sơ có hiệu lực ngay")
+        listOf("scheduleAtFixedRate", "scheduleWithFixedDelay", "sleep(", "\"am ", "\"wm ", "--display").forEach {
+            assertFalse(it in strip, "không nhịp / không lệnh shell: $it")
+        }
+        val apply = SourceRoots.body(strip, "private fun apply(step: CastNowPlayingPlan.Step)")
+        assertTrue("if (!step.changed) return" in apply, "sự kiện trùng ⇒ 0 thao tác cửa sổ")
+        // Owner 17/10 "đừng cắt, cho chạy marquee all": chữ đầy đủ tới view, marquee chuẩn của TextView, chỉ chạy khi đang phát.
+        assertTrue("v.text = CastNowPlayingText.display(c)" in strip)
+        assertTrue("TextUtils.TruncateAt.MARQUEE" in strip && "marqueeRepeatLimit = -1" in strip && "setSingleLine(true)" in strip)
+        assertFalse("TruncateAt.END" in strip, "không cắt đuôi")
+        assertTrue("v.marqueeWanted = c.playing" in strip, "dừng nhạc ⇒ chữ đứng yên")
         val mb = code("launcher/MediaBridge.kt")
         assertTrue("fun watchAll(handler: Handler, onEvent: () -> Unit): (() -> Unit)? =" in mb)
-        assertTrue("watchWhere({ true }, handler, onEvent, onEvent, onListChanged = onEvent)" in mb)
+        assertTrue("CastNowPlayingMedia(c.title(), c.artist(), c.playing())" in mb)
     }
 
-    @Test fun `ghi qua duong HAL chuan va de dong nhat ky`() {
-        val sink = rt.substring(rt.indexOf("private fun sink(a: Context): NowPlayingSink"))
-        assertTrue("BydHalContentPush.pushMusicInt(it, id, value)" in sink && "BydHalContentPush.pushMusicBytes(it, id, bytes)" in sink, sink)
-        val push = code("modules/hal/BydHalContentPush.kt")
-        assertTrue("fun pushMusicInt(instr: Any, id: Int, value: Int): String = cachedSetInt(instr, id, value)" in push)
-        assertTrue("BydHal.device(BydHal.INSTRUMENT" in sink)
-        assertTrue("CtlJournalStore.journal(a).write(line)" in sink)
-        assertTrue("Prefs.saveNowPlayingMarker(a, marker)" in sink)
-        listOf("\"am ", "\"wm ", "service call", "--display").forEach { assertFalse(it in rt, "không lệnh shell/display: $it") }
-        assertTrue("commit()" in code("PrefsNowPlaying.kt"), "dấu bền ghi đồng bộ")
-    }
-
-    @Test fun `cong tac va cau np di cung mot duong`() {
-        val set = SourceRoots.body(rt, "fun setEnabled(ctx: Context, on: Boolean)")
-        assertTrue("post(a) { if (on) start(a) else stopWatching() }" in set, "bật có hiệu lực ngay, không chờ khởi động lại")
-        val np = code("launcher/testbridge/TestBridgeNowPlaying.kt")
-        assertTrue("NowPlayingControl.setEnabled(app, true)" in np && "cmd.autoConfirm" in np && "AUTO-CONFIRM" in np)
-        assertTrue("TestBridgeNowPlayingCommands.NP -> TestBridgeNowPlaying.run(app, cmd, reply)" in code("launcher/testbridge/TestBridgeNoHome.kt"))
-        assertTrue("bridge().setNowPlayingEnabled(on)" in code("launcher/SettingsNowPlayingRows.kt"))
+    @Test fun `cai dat - cau - prefs, cung khoa voi lop phu`() {
+        val rows = code("launcher/SettingsNowPlayingRows.kt")
+        assertTrue("bridge().setCastNowPlayingEnabled(on)" in rows && "bridge().setCastNowPlayingCorner(" in rows)
         assertTrue("nowPlaying.build(body)" in code("launcher/SettingsSectionsNav.kt"))
+        val prefs = code("PrefsBadge.kt")
+        assertTrue("K_CAST_NOW_PLAYING = \"cast_now_playing\"" in prefs && "K_CAST_NOW_PLAYING_CORNER = \"cast_now_playing_corner\"" in prefs)
+        assertTrue("key == K_CAST_NOW_PLAYING || key == K_CAST_NOW_PLAYING_CORNER" in strip)
     }
 }

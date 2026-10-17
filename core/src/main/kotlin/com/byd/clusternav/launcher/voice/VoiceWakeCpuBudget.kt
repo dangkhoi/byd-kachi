@@ -84,7 +84,14 @@ class VoiceWakeCpuBudget(
          */
         const val DUTY = 0.25
 
-        /** Cửa sổ trung bình: xô đầy = [DUTY] × 16 s = 4 000 ms CPU ≈ 3 lượt giải mã xe — trọn một câu gọi. */
+        /**
+         * Cửa sổ trung bình: xô đầy = [DUTY] × 16 s = 4 000 ms CPU ≈ 3 lượt giải mã xe — trọn một câu gọi.
+         *
+         * WAKE-DECODE-COST (3.1.12): [ĐO xe 17/10] giá thật 2,2–4,4 s/lượt (xô chỉ ~1 lượt) — gốc là worker onnxruntime quay
+         * chờ sau `Run()`, đã bỏ bằng [SherpaModelCatalog.ORT_SESSION_CONFIG] ([ĐO host] CPU/lượt × 0,37). [SUY] giá xe còn
+         * ≈ 0,8–1,6 s ⇒ xô 4 000 ms lại phủ 2,5–5 lượt ⇒ GIỮ [DUTY]/cửa sổ, không nới xô. 🚗 chốt bằng dòng `ngan_sach` chuyến sau;
+         * nếu giá xe vẫn > 2 s/lượt thì cỡ xô theo giá đo (giữ DUTY 0,25 dài hạn).
+         */
         const val BURST_WINDOW_MS = 16_000L
     }
 }

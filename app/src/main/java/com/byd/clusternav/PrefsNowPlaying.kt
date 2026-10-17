@@ -5,22 +5,18 @@ import android.content.Context
 import com.byd.clusternav.modules.clustercast.nowplaying.ClusterNowPlayingKeys
 
 /**
- * 3.1.11 · CLUSTER-NOW-PLAYING — công tắc + dấu bền, hàm mở rộng của [Prefs] trên CÙNG tệp `clusternav_prefs` ([Prefs.sp]),
- * cùng khuôn `PrefsBadge.kt`. Khoá + phạm vi (THEO XE) ở [ClusterNowPlayingKeys].
+ * 3.1.12 — khoá ĐỜI CŨ của bộ ghi nguồn 11 (3.1.11, đã gỡ): chỉ còn đọc dấu bền + xoá, cho lượt dọn lúc khởi động
+ * (`ClusterNowPlayingLegacyRestore`). Cùng tệp `clusternav_prefs` ([Prefs.sp]). Gỡ cùng `ClusterNowPlayingLegacy` ở 3.1.13.
  */
-fun Prefs.nowPlayingEnabled(ctx: Context): Boolean =
-    sp(ctx).getBoolean(ClusterNowPlayingKeys.SWITCH_KEY, ClusterNowPlayingKeys.DEFAULT_ON)
+fun Prefs.legacyNowPlayingMarker(ctx: Context): String? = sp(ctx).getString(ClusterNowPlayingKeys.MARKER_KEY, null)
 
-fun Prefs.setNowPlayingEnabled(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(ClusterNowPlayingKeys.SWITCH_KEY, v).apply()
+/** Có còn công tắc 3.1.11 trong prefs không (để không ghi đĩa khi không có gì để xoá). */
+fun Prefs.hasLegacyNowPlayingSwitch(ctx: Context): Boolean = sp(ctx).contains(ClusterNowPlayingKeys.SWITCH_KEY)
 
-fun Prefs.nowPlayingMarker(ctx: Context): String? = sp(ctx).getString(ClusterNowPlayingKeys.MARKER_KEY, null)
+fun Prefs.removeLegacyNowPlayingSwitch(ctx: Context) = sp(ctx).edit().remove(ClusterNowPlayingKeys.SWITCH_KEY).apply()
 
-/** `commit()` ĐỒNG BỘ có chủ ý: dấu phải nằm trên đĩa TRƯỚC lần ghi đè đầu (CLAUDE.md §5) — BYD giết Kachi lúc tắt máy. */
+/** `commit()` ĐỒNG BỘ: dấu chỉ được xoá SAU lượt trả nguồn, và phải chắc đã xoá trước khi tiến trình có thể bị giết. */
 @SuppressLint("ApplySharedPref")
-fun Prefs.saveNowPlayingMarker(ctx: Context, v: String): Boolean =
-    sp(ctx).edit().putString(ClusterNowPlayingKeys.MARKER_KEY, v).commit()
-
-@SuppressLint("ApplySharedPref")
-fun Prefs.clearNowPlayingMarker(ctx: Context) {
+fun Prefs.clearLegacyNowPlayingMarker(ctx: Context) {
     sp(ctx).edit().remove(ClusterNowPlayingKeys.MARKER_KEY).commit()
 }

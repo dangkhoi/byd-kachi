@@ -39,6 +39,12 @@ class CarEventFeed(
     /** Hẹn [task] sau `ms` (luồng nền), trả hàm huỷ; `null` = không hẹn được ⇒ thu hẹp ngay. Prod: luồng hub (`HalSignalHub.after`). */
     private val schedule: (ms: Long, task: () -> Unit) -> (() -> Unit)? = { _, _ -> null },
     private val narrowHoldMs: Long = NARROW_HOLD_MS,
+    /**
+     * 3.1.12 · SEAT-AUTOOFF-ANY-ON — helper vừa chào (`hal.hello`, lần nối đầu HOẶC nối lại sau đứt dây): bộ nhớ sự kiện vừa trắng,
+     * sự kiện lúc đứt dây đã mất ⇒ người nghe theo sự kiện (canh ghế) đọc lại sự thật của xe một lượt. Gọi trên luồng đọc socket —
+     * bên nhận PHẢI không chặn.
+     */
+    private val onLinkUp: () -> Unit = {},
 ) {
     private var screenIds: Set<String> = emptySet()
     private var lit = true
@@ -89,6 +95,7 @@ class CarEventFeed(
         when (msg) {
             is HalEventWire.Msg.Hello -> {
                 cache.onHello()
+                runCatching { onLinkUp() }
                 setMode("SỰ KIỆN", "helper giao thức v${msg.protocol}; datum có sự kiện ⇒ poll lùi về đối soát ${cache.reconcileMs / 1000} s")
                 synchronized(this) { lastLine?.let(subscribe) }   // gửi lại cho chắc (client cũng gửi khi nối)
             }

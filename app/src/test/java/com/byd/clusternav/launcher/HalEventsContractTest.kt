@@ -48,7 +48,7 @@ class HalEventsContractTest {
         assertTrue(app.contains("EventCachedGateway(halGateway, halEvents)"), "đọc đi qua bộ nhớ sự kiện")
         assertTrue(app.contains("covered = halEvents::covers"))
         assertTrue(app.contains("h.onHalEvents({ carEvents.onMessage(it) }, { carEvents.onLinkDown() })"))
-        assertTrue(app.contains("onDatums = { ids -> carStatusRepository.onEvents(ids) }"))
+        assertTrue(app.contains("onDatums = { ids -> carStatusRepository.onEvents(ids); onSeatEvents(ids) }"), "3.1.12: sự kiện tới repo + bộ canh ghế")
         assertTrue(app.contains("subscribe = { line -> halSignal?.subscribe(line) }"))
         val adapter = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/CarDataAdapter.kt")
         val body = SourceRoots.body(adapter, "override fun bodyNeeded()")
@@ -77,9 +77,10 @@ class HalEventsContractTest {
     @Test
     fun `canh ghe xin su kien va hoi dau van tay theo luong su kien`() {
         val w = SourceRoots.codeOf("src/main/java/com/byd/clusternav/comfort/SeatAutoOffWatch.kt")
-        assertTrue(w.contains("carEvents.seatWatch(datums)") && w.contains("carEvents.seatWatch(null)"))
-        assertTrue(w.contains("signature(container, seat)"))
-        assertTrue(w.contains("SeatAutoOffGuard.signatureOf("))
-        assertFalse(w.contains("SIGNATURE = SeatAutoOffGuard.Signature.UNOBSERVABLE"))
+        // 3.1.12 SEAT-AUTOOFF-ANY-ON: xin MỌI datum ghế (suy từ registry) + dấu; thôi khi công tắc tắt; dấu hỏi từ luồng sự kiện.
+        assertTrue(w.contains("feed.seatWatch(SeatControls.DATUMS)") && w.contains("feed.seatWatch(null)"))
+        val ev = SourceRoots.body(w, "private fun evidence(")
+        assertTrue(ev.contains("ev::signalRegistered") && ev.contains("ev::signalSeenAt") && ev.contains("ev.live"))
+        assertFalse(w.contains("Signature.UNOBSERVABLE"), "app không tự kết luận dấu — luật ở :core")
     }
 }

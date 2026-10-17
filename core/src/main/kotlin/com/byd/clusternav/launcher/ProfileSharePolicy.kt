@@ -69,6 +69,8 @@ object ProfileSharePolicy {
             "enabled", "nav_cluster_screen_mode", "marquee", "badge_enabled", "show_upcoming_badge", "show_alert_chip",
             "badge_size_dp", "badge_center_x", "badge_center_y", "vm_bubble_enabled", "vm_bubble_hidden", "vm_bubble_x", "vm_bubble_y",
             "bubbleX", "bubbleY",
+            // 3.1.12 · CAST-NOW-PLAYING — bật/tắt dải tên bài + góc của khung chiếu (mã tl/tr/bl/br): lựa chọn hiển thị, không vị trí.
+            "cast_now_playing", "cast_now_playing_corner",
         ).forEach { put(it, R_CLUSTER) }
         listOf("voicekey_enabled", "voicekey_bindings", "voicekey_custom_buttons").forEach { put(it, R_KEYS) }
         listOf(

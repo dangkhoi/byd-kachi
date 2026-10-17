@@ -288,6 +288,39 @@ object SherpaModelCatalog {
     const val MODELING_UNIT = "bpe"
 
     /**
+     * ═══ WAKE-DECODE-COST (3.1.12) — tuỳ chọn phiên onnxruntime của recognizer ASR: **thôi quay chờ sau mỗi `Run()`** ═══
+     *
+     * [ĐO xe 17/10, `/proc/<pid>/task` của `:wake`] một lượt giải mã wake tốn 2,2–4,4 s CPU; 9 luồng onnxruntime (3 session
+     * encoder/decoder/joiner × 3 worker, `numThreads` = 4) ăn 201 s, riêng 6 luồng decoder/joiner 78 s. Gốc [ĐO host]: worker
+     * intra-op **quay chờ** (spin) sau khi `Run()` đã trả — giá CPU ≈ 8 lần thời gian tường của lượt giải mã.
+     *
+     * `session.force_spinning_stop=1` (khoá có trong `libonnxruntime.so` arm64 của AAR v1.13.8): worker vẫn quay TRONG lúc chạy
+     * (không mất tốc độ) nhưng dừng ngay khi `Run()` kết thúc. [ĐO host `scripts/voice/wake-harness/decode-cost.py`, sherpa-onnx
+     * 1.13.8 + `zipformer-vi-int8`, 837 cửa sổ wake 1,6 s của 60 câu gọi + 63 câu thường; 184 câu kiểu phiên lệnh 3,3–7 s]:
+     *  • cửa sổ wake: CPU/lượt 124–132 → 47–48 ms (**−62 %**), tường 15,4–17,8 → 14,8–15,1 ms (không chậm hơn);
+     *  • câu lệnh 3,5 s / 7 s: tường 35,5 → 34,0 / 66,9 → 64,0 ms (không chậm hơn), CPU −53 % / −48 %;
+     *  • chữ ra **trùng từng byte** mọi cửa sổ và mọi câu (cùng số luồng ⇒ cùng phép tính) ⇒ tỉ lệ nổ không đổi.
+     * Đã đo và KHÔNG chọn: `allow_spinning=0` (CPU −80 % nhưng câu lệnh chậm +10 % tường) · `numThreads` 1/2 (đổi chữ ra:
+     * 1 cửa sổ/837 khác ở 1–2 luồng, và chậm câu lệnh dài +40 % ở 1 luồng) — cả hai trái luật "không làm chậm phiên lệnh".
+     *
+     * ⚠ Áp cho recognizer DUY NHẤT của tiến trình ([VoiceEngine] ở app): wake và phiên lệnh dùng CHUNG một bản (`:wake` giữ mô
+     * hình cho cả máy); tách bản wake riêng = +~74 MB RAM. Số tuyệt đối là của host (M5 Pro), không phải xe — chỉ dùng tỉ lệ.
+     * Dòng `SessionConfig.<khoá>` được sherpa-onnx chuyển nguyên sang `Ort::SessionOptions::AddConfigEntry`
+     * (`sherpa-onnx/csrc/session.cc` v1.13.8, `GetSessionOptionsImpl`), đọc từ tệp nêu sau dấu `:` của chuỗi provider.
+     */
+    const val ORT_SESSION_CONFIG = "SessionConfig.session.force_spinning_stop=1\n"
+
+    /** Tên tệp chứa [ORT_SESSION_CONFIG] (trong `filesDir` của app). */
+    const val ORT_SESSION_CONFIG_FILE = "ort_session.cfg"
+
+    /**
+     * Chuỗi `provider` cho sherpa-onnx: `cpu:<tệp cấu hình>` khi tệp [ORT_SESSION_CONFIG] đã ghi và đọc lại được, `cpu` khi
+     * không (`configPath` null/rỗng). ⚠ sherpa-onnx **thoát tiến trình** (`SHERPA_ONNX_EXIT`) khi không mở được tệp nêu trong
+     * provider ⇒ chỗ gọi chỉ đưa đường dẫn đã kiểm đọc được; lỗi ⇒ `cpu` (chạy như cũ, có log), không bao giờ là tệp hỏng.
+     */
+    fun provider(configPath: String?): String = if (configPath.isNullOrEmpty()) "cpu" else "cpu:$configPath"
+
+    /**
      * Bản **nhẹ hơn** gói đang cài, hoặc `null` khi không có bản nào nhẹ hơn.
      *
      * ⚠ Từ bản release production (owner 2026-09-21) hàm này **luôn trả `null`**: danh mục chỉ còn một gói, và

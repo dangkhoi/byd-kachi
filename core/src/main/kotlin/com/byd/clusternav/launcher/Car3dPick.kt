@@ -7,7 +7,7 @@ import kotlin.math.min
  * ═══ 3.01 R25 — CHẠM THẲNG VÀO BỘ PHẬN trên xe 3D (thuần `:core`) ═══════════════════════════════════════════════════
  *
  * Owner 13/10: *"cái nào chuyển động được trên 3D thì không cần làm chấm trạng thái"* ⇒ chạm vào chính bộ phận. Owner 14/10 đặt
- * lại CHẤM trên mọi điểm CÓ VIỆC ([Car3dHotspots.shows]) — chỉ là dấu nhìn ([dotPoint]/[freeY]), vùng nhấn dưới đây không đổi. Mỗi đích = hộp THẾ GIỚI của bộ phận (hợp hộp `extras.bbox` của các nút
+ * lại CHẤM trên mọi điểm CÓ VIỆC ([Car3dHotspots.shows]) — chỉ là dấu nhìn ([dotPoint]; 3.1.12 chấm không dời — icon ghế nhường nó, [Car3dDeconflict]), vùng nhấn dưới đây không đổi. Mỗi đích = hộp THẾ GIỚI của bộ phận (hợp hộp `extras.bbox` của các nút
  * khớp neo, sau phép đặt [Car3dOrient.Placement]); đích còn chấm (đèn đọc sách…) = hộp suy biến tại điểm neo.
  *  • Hộp chiếu lên màn bằng CÙNG camera với Filament ([Car3dCamera.project] 8 góc ⇒ chữ nhật bao), nới tối thiểu [minPx]
  *    mỗi chiều quanh tâm (≥ 48 dp hiệu dụng — đèn mảnh, kính chiếu xiên vẫn chạm được).
@@ -85,29 +85,6 @@ object Car3dPick {
             axis(anchor.z, r0.z, r1.z, n0.z, n1.z, hit.min.z, hit.max.z),
         )
     }
-
-    /**
-     * Chấm (tâm [x],[y] px, bán kính [r]) không được nằm DƯỚI một nút khác ([blocked] — icon ghế nằm trên kính cửa trước, [ĐO máy ảo
-     * 14/10]: chấm kính trước-trái ở góc mặc định trùng đĩa "mát ghế", chạm vào chấm lại bật mát ghế). Dời theo chiều dọc trong
-     * chữ nhật đích [rect] (lên trước, rồi xuống) từng bước [r]; không còn chỗ trống ⇒ `null` (ẩn chấm — dấu nhìn sai còn tệ hơn).
-     */
-    fun freeY(x: Float, y: Float, r: Float, rect: Rect, blocked: (Float, Float) -> Boolean): Float? {
-        fun free(cy: Float) = !blocked(x, cy) && !blocked(x - r, cy) && !blocked(x + r, cy) && !blocked(x, cy - r) && !blocked(x, cy + r)
-        if (free(y)) return y
-        val step = maxOf(r, 1f)
-        var cy = y - step
-        while (cy - r >= rect.t) { if (free(cy)) return cy; cy -= step }
-        cy = y + step
-        while (cy + r <= rect.b) { if (free(cy)) return cy; cy += step }
-        return null
-    }
-
-    /**
-     * Chữ nhật được phép DỜI chấm ([freeY]): hình chiếu của chính hộp bộ phận, chỉ nới tới cỡ chấm (2 × [dotR]) — KHÔNG nới tới
-     * cỡ ngón tay như vùng nhấn ([rect] với `minPx`). 3.1.5 (owner 14/10 ảnh: chấm kính nằm trên DA CỬA dưới mép kính) — [ĐO máy
-     * ảo] chấm kính trước né icon ghế dời XUỐNG trong chữ nhật nới 48 dp ⇒ ra khỏi kính ~90 px, xuống da cửa (vốn không chấm).
-     */
-    fun dotRect(cam: Car3dCamera, t: Target, w: Int, h: Int, dotR: Float): Rect? = rect(cam, t, w, h, 2 * dotR)
 
     private const val CORNERS = 8
     private const val EPS = 1e-9

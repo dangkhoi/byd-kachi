@@ -130,6 +130,9 @@ object SimpleCastRuntime {
     /** 2.94 · CLUSTER-BACKDROP-DAY — kiểu khung của phiên chiếu đang mở (`null` = chưa có coordinator/phiên); không dựng gì. */
     fun castFrame(): CastStyle? = runCatching { instance?.castSession?.frame }.getOrNull()
 
+    /** 3.1.12 · CAST-NOW-PLAYING — coordinator đã dựng (`null` = chưa có); KHÔNG dựng gì (cùng lẽ [themeVerdict]). */
+    fun existing(): SimpleCastCoordinator? = instance
+
     /**
      * 2.93 · READY-RESTART-MID-CAST — mối nguy chiếu cụm nếu tiến trình bị khởi động lại NGAY BÂY GIỜ ([restartHazard] — KDoc
      * `CastRestartHazard`), cho lượt chữa phím (`HealCastWait`). KHÔNG dựng coordinator nếu chưa có (cùng lẽ [themeVerdict]):

@@ -174,6 +174,12 @@ internal object SettingsCatalogEntries {
             "nav_reconnect", SettingsGroup.NAV, "Kết nối lại nguồn dẫn đường",
             labelEn = "Reconnect the navigation source",
         ),
+        // 3.1.12 · HUD-ROADNAME-ALT-PATH — chọn đường gửi tên đường lên HUD (A/A48/B/C). Khoá `hud_road_name_mode` ở
+        // `clusternav_prefs`, THEO XE (`HudRoadNameKeys.DEVICE_KEYS`), qua `bridge().setHudRoadNameMode` (`SettingsHudRoadNameRows`).
+        SettingsEntry(
+            "nav_hud_road_name_path", SettingsGroup.NAV, "Đường gửi tên đường lên HUD",
+            "hud_road_name_mode", "Road-name path to the HUD",
+        ),
         // switch_badge_enabled · Prefs.setBadgeEnabled (BadgePlacementController.kt:44–112)
         SettingsEntry("badge_enabled", SettingsGroup.NAV, "Biển báo tốc độ", "badge_enabled", "Speed limit badge"),
         // switch_upcoming_badge · Prefs.setShowUpcomingBadge
@@ -192,11 +198,12 @@ internal object SettingsCatalogEntries {
         SettingsEntry("vm_bubble_autostart", SettingsGroup.NAV, "Tự mở VietMap cho bong bóng", "vm_bubble_enabled", "Auto-open VietMap for the bubble"),
         // vm_bubble_placement_container · VmOverlayPosition.set ghi CẶP x/y rồi broadcast sang bản mod
         SettingsEntry("vm_bubble_pos", SettingsGroup.NAV, "Vị trí bong bóng", "vm_bubble_x", "Bubble position"),
-        // 3.1.11 · CLUSTER-NOW-PLAYING — công tắc NGỦ (mặc định TẮT, chờ đo xe W1/W2). Khoá `cluster_now_playing` ở `clusternav_prefs`,
-        // THEO XE (`ClusterNowPlayingKeys.DEVICE_KEYS`), đi qua `bridge.setNowPlayingEnabled` (`SettingsNowPlayingRows`).
+        // 3.1.12 · CAST-NOW-PLAYING — dải tên bài Kachi vẽ trên mặt chiếu cụm (thay bộ ghi nguồn 11 của 3.1.11). Khoá `cast_now_playing`
+        // + `cast_now_playing_corner` (đi kèm) ở `clusternav_prefs` (`PrefsBadge.kt`), THEO HỒ SƠ như badge; qua
+        // `bridge().setCastNowPlayingEnabled` / `setCastNowPlayingCorner` (`SettingsNowPlayingRows`).
         SettingsEntry(
-            "nav_now_playing", SettingsGroup.NAV, "Tên bài hát lên cụm đồng hồ",
-            "cluster_now_playing", "Song title on the instrument cluster",
+            "nav_cast_now_playing", SettingsGroup.NAV, "Tên bài trên cụm khi đang chiếu",
+            "cast_now_playing", "Song title on the cluster while casting",
         ),
 
         // ── Chiếu màn lên cụm ──

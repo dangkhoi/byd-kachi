@@ -162,7 +162,7 @@
     <string name="kachi_row_boot_profile">Start up with</string>
     <string name="kachi_profile_boot_last">Last used</string>
     <string name="kachi_boot_profile_note">"Last used" starts with whichever profile was active when you switched the engine off. Pin a specific profile and every engine start returns to it, even if you switched profile on the previous trip.</string>
-    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start, Open apps at ignition and Play music when you get in do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Pull apps that leave a frame back in (experimental), Song title on the instrument cluster, Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
+    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start, Open apps at ignition and Play music when you get in do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Pull apps that leave a frame back in (experimental), Auto-defrost when it rains, Road-name path to the HUD, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
     <string name="kachi_delete">Delete</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -452,6 +452,26 @@
     <string name="kachi_nav_cluster_on">On (centre + ETA)</string>
     <string name="kachi_nav_marquee_title">Scroll long street names</string>
     <string name="kachi_nav_marquee_sub">Names wider than the cluster scroll across instead of being cut off.</string>
+    <!-- 3.1.12 · HUD-ROADNAME-ALT-PATH — Đường gửi tên đường lên HUD (SettingsHudRoadNameRows) -->
+    <string name="kachi_hudroad_title">Road-name path to the HUD</string>
+    <string name="kachi_hudroad_a">A · HAL</string>
+    <string name="kachi_hudroad_a48">A48 · HAL ≤48</string>
+    <string name="kachi_hudroad_b">B · ClusterDebug</string>
+    <string name="kachi_hudroad_c">C · A+B</string>
+    <string name="kachi_hudroad_modes">A: as before (HAL, ≤127 chars) · A48: HAL, cut to ≤48 chars · B: via the car\'s ClusterDebug (DiAuto\'s way) · C: both A and B. Arrow + distance always use HAL.</string>
+    <string name="kachi_hudroad_help_sl6">SL6: try B if the HUD never shows the road name. Afterwards, send a screenshot of this screen.</string>
+    <string name="kachi_hudroad_cd_ok">ClusterDebug: present (system app) — B/C available</string>
+    <string name="kachi_hudroad_cd_off">B/C off: %1$s</string>
+    <string name="kachi_hudroad_why_missing">this car has no ClusterDebug</string>
+    <string name="kachi_hudroad_why_not_system">ClusterDebug is not a system app</string>
+    <string name="kachi_hudroad_why_disabled">ClusterDebug is disabled</string>
+    <string name="kachi_hudroad_why_no_receiver">ClusterDebug has no receiver</string>
+    <string name="kachi_hudroad_why_protected">the ClusterDebug receiver is permission-locked</string>
+    <string name="kachi_hudroad_why_version">ClusterDebug version differs from the one checked</string>
+    <string name="kachi_hudroad_refused">Not changed: %1$s</string>
+    <string name="kachi_hudroad_st_idle">Using %1$s · no road name sent in this run yet</string>
+    <string name="kachi_hudroad_st_sent">Sent at %2$s via %1$s · %3$d chars · %4$s</string>
+    <string name="kachi_hudroad_st_degraded">%1$s chosen but ClusterDebug is unavailable on this car ⇒ sending via A</string>
     <string name="kachi_nav_default_app">Default navigation app</string>
     <string name="kachi_nav_app_gmaps">Google Maps</string>
     <string name="kachi_nav_app_vietmap">VietMap</string>
@@ -1054,19 +1074,12 @@
     <string name="kachi_cast_frame_step">Step</string>
     <string name="kachi_cast_geom_resize_failed">Couldn\'t apply the frame to the cluster — the numbers are back to the real frame.</string>
     <string name="kachi_cast_geom_overflow_note" formatted="false">The right/bottom edge may go past the cluster (up to +50 %) to hide an app\'s bottom bar; left/top can\'t go negative (Android blocks it).</string>
-    <!-- 3.1.11 · CLUSTER-NOW-PLAYING -->
-    <string name="kachi_np_title">Song title on the instrument cluster</string>
-    <string name="kachi_np_sub">Shows the song title from YouTube, YouTube Music and other music apps in the cluster music box. Experimental, off by default — turn it off and the cluster goes back to normal.</string>
-    <string name="kachi_np_st_off">Off — nothing is written to the cluster.</string>
-    <string name="kachi_np_st_unsupported">Not supported on this head unit yet (no cluster data for this model) — turning it on writes nothing.</string>
-    <string name="kachi_np_st_no_access">No notification access — the playing song cannot be read.</string>
-    <string name="kachi_np_st_no_media">Waiting: no app is playing music.</string>
-    <string name="kachi_np_st_system_app">Waiting: the playing app is a car app — the cluster shows it itself, Kachi writes nothing.</string>
-    <string name="kachi_np_st_no_title">Waiting: the playing track has no title.</string>
-    <string name="kachi_np_st_paused">Waiting: music is paused.</string>
-    <string name="kachi_np_st_power_off">Waiting: the car is not switched on.</string>
-    <string name="kachi_np_st_already_shown">The cluster already shows the music box for this source (%1$s) — Kachi writes nothing.</string>
-    <string name="kachi_np_st_marker_failed">Could not save the undo marker — Kachi writes nothing to the cluster.</string>
-    <string name="kachi_np_st_active">Last write %1$s: %2$s</string>
-    <string name="kachi_np_st_restored">Cluster restored at %1$s (%2$s).</string>
+    <!-- 3.1.12 · CAST-NOW-PLAYING (thay bộ ghi nguồn 11 của 3.1.11) -->
+    <string name="kachi_np_title">Song title on the cluster while casting</string>
+    <string name="kachi_np_sub">While casting to the cluster, shows «♪ title — artist» of the playing music app in a corner of the cast frame (the cast covers the cluster\'s music box). Hides after 10 seconds of pause; does nothing when not casting.</string>
+    <string name="kachi_np_corner">Corner</string>
+    <string name="kachi_np_corner_tl">Top left</string>
+    <string name="kachi_np_corner_tr">Top right</string>
+    <string name="kachi_np_corner_bl">Bottom left</string>
+    <string name="kachi_np_corner_br">Bottom right</string>
 </resources>

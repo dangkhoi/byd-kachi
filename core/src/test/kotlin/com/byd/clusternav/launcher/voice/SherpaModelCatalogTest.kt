@@ -328,4 +328,19 @@ class SherpaModelCatalogTest {
         )
         assertFalse(unpinned.downloadable, "gói chưa ghim phải là `downloadable = false`")
     }
+
+    /**
+     * WAKE-DECODE-COST (3.1.12) — khoá đúng tuỳ chọn đã đo ([SherpaModelCatalog.ORT_SESSION_CONFIG] KDoc): CHỈ thôi quay chờ
+     * sau `Run()`. Đỏ khi ai đó đổi sang `allow_spinning=0` (đo được: phiên lệnh chậm +10 % tường) hay bỏ trống tệp (quay chờ
+     * trở lại: CPU/lượt wake × 2,7) — cả hai đều biên dịch sạch và không ai thấy trên xe.
+     */
+    @Test
+    fun `tuy chon onnxruntime chi thoi quay cho sau Run, provider roi ve cpu khi khong co tep`() {
+        val lines = SherpaModelCatalog.ORT_SESSION_CONFIG.lines().filter { it.isNotBlank() }
+        assertEquals(listOf("SessionConfig.session.force_spinning_stop=1"), lines)
+        assertFalse(SherpaModelCatalog.ORT_SESSION_CONFIG.contains("allow_spinning"), "allow_spinning=0 làm chậm phiên lệnh")
+        assertEquals("cpu", SherpaModelCatalog.provider(null))
+        assertEquals("cpu", SherpaModelCatalog.provider(""))
+        assertEquals("cpu:/data/x/ort_session.cfg", SherpaModelCatalog.provider("/data/x/ort_session.cfg"))
+    }
 }

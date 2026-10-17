@@ -442,3 +442,67 @@ Không cần màn chính; sau công tắc *Chế độ kiểm thử qua adb*.
 - Còn 🚗: W1 (nguồn 11 làm hiện ô nhạc), W2 (tính năng bật bằng `np on` ⇒ tên YouTube/YT Music lên cụm, `np off` trả về),
   đọc ngược `0x33F00030` có dùng được không (ảnh hưởng cổng "đã hiện" + trả lại).
 
+
+---
+
+## 9. Đo xe 17/10 → 3.1.12: GỠ bộ ghi nguồn 11, Kachi tự vẽ tên bài trên mặt chiếu
+
+> **Nguồn:** logcat Seal 17/10 trong lúc YT Music rồi YouTube phát (pid `com.byd.mediacontroller` cố định suốt phiên), cùng
+> lời owner. Không ghi tên bài nào vào doc này.
+
+### 9.1 Sự thật mới
+
+| # | Sự thật | Mức |
+|---|---|---|
+| F1 | `MediaInfoSenderC: sendMusicName result: 0` xuất hiện mỗi lần đổi bài (18 dòng trong 3 tệp log), tức MediaController **tự ghi** tên bài của YT Music / YouTube vào `0x43FB1008`; ảnh bìa, trạng thái, thời gian cũng được gửi | [ĐO] |
+| F2 | Bundle `WidgetDataDispatcher: sendMediaSourceInfo` mang `PACKAGENAME=com.google.android.youtube…` và `MEDIA_SOURCE=999` (50 dòng; 2 dòng `=2` của nguồn khác). Đây là trường của **widget**; nó có trùng giá trị ghi vào `0x33F00030` hay không thì log không nói | [ĐO] trường widget · [CHƯA BIẾT] giá trị bus |
+| F3 | Phiên `com.google.android.youtube` có đủ metadata (tên video + kênh) — điều phối viên xác nhận 11:46 | [ĐO] |
+| F4 | Owner: giữa cụm bị **mặt chiếu cụm của Kachi che** ⇒ ô nhạc gốc nằm dưới mặt chiếu | [ĐO] lời owner |
+
+⇒ Chuỗi tên bài của hãng **chạy**; điều §2 coi là nguyên nhân (nguồn 26 bị lọc) không phải thứ người lái thấy lúc đang
+chiếu. Việc thiếu là hiển thị **trên** mặt chiếu. Phương án A (§4.A, ghi đè nguồn 11) thừa ⇒ gỡ. Phương án B (§4.B) nay
+đúng: Kachi tự vẽ.
+
+### 9.2 Gỡ (3.1.12)
+
+- Gỡ `ClusterNowPlayingPlan` / `ClusterNowPlayingIds` (`:core`), `ClusterNowPlaying` (`:app`), `ClusterProfile.nowPlaying`,
+  `BydHalContentPush.pushMusicBytes`, cầu kiểm thử `np` (`TestBridgeNowPlaying*`), hàng Cài đặt 3.1.11 và 12 chuỗi tình trạng
+  (×5 ngôn ngữ). Gỡ luôn các test của chúng.
+- **Giữ một bản (gỡ ở 3.1.13):** lượt dọn lúc khởi động `ClusterNowPlayingLegacyRestore` → `:core`
+  `ClusterNowPlayingLegacy.restoreAtStartup` (luật 3.1.11 giữ nguyên: chỉ ghi khi đọc lại thấy đúng nguồn ghi đè, không ghi mù),
+  cộng `pushMusicInt`. Không dấu bền ⇒ 0 luồng, 0 HAL; khoá công tắc cũ `cluster_now_playing` bị xoá nếu còn. Công tắc này
+  mặc định TẮT và chưa từng bật trên xe nào, nên đây chỉ là lưới an toàn.
+- `scripts/oncar/cluster-now-playing.sh`: W2 mặc định bỏ qua; ghi chú "đã vượt qua" ở đầu tệp.
+
+### 9.3 Dải tên bài trên mặt chiếu — `CastNowPlayingOverlay`
+
+| Phần | Ở đâu | Luật |
+|---|---|---|
+| Hiện/ẩn | `:core` `CastNowPlayingPlan` | Hiện khi **công tắc BẬT + đang chiếu** (`ClusterOverlayDisplays.castLiveId ≠ null`) **+ cụm không bị "dọn"** (`paused`) **+ có phiên có tên**. Dừng nhạc ⇒ đổi dấu `‖`, hẹn MỘT lượt; quá `AUTO_HIDE_MS` = 10 s ⇒ gỡ. Sự kiện trùng ⇒ `changed=false` ⇒ 0 thao tác cửa sổ |
+| Chữ | `CastNowPlayingText` | `♪ tên — nghệ sĩ` ĐẦY ĐỦ, **không cắt** (owner 17/10: *"đừng cắt, cho chạy marquee all"*). Nghệ sĩ trống hoặc trùng tên ⇒ bỏ |
+| Chạy chữ | `StripView` (`:app`) | Marquee chuẩn `TextView`: singleLine, `MARQUEE`, lặp vô hạn, chạy theo `setSelected(playing)`. [ĐO source A10 r47 `TextView.java`] `canMarquee` :10367 chỉ chạy khi chữ dài hơn view (vừa khung thì không có khung hình nào) · `startMarquee` :10383 đòi `isFocused() \|\| isSelected()` (cửa sổ không tiêu điểm ⇒ dùng chọn) · `onWindowFocusChanged` :10793-10798 dừng marquee ⇒ view chọn lại · nhịp chạy là `Choreographer` (lớp `Marquee` :13214) |
+| Chỗ | `CastNowPlayingPlace` | Khung = khung chiếu của phiên (FULL: bản ghim/đang áp · chia đôi: hợp hai ô · CarPlay/AA không khung ⇒ trọn display) **giao** dải nhìn thấy `ClusterProfile.band` (kéo theo tỉ lệ display logic). Neo gravity RIGHT/BOTTOM theo góc. Chữ = 4,2 % chiều cao display (720 ⇒ 30 px), không theo DPI chiếu |
+| Màu | `CastNowPlayingStyle` | Theo `uiMode` HỆ THỐNG (cùng nguồn `ClusterBlackActivity`): đêm nền tối chữ sáng, ngày nền sáng chữ tối; tương phản ≥ 7:1 (test); đổi giữa lúc hiện ⇒ `onConfigurationChanged` tô lại |
+| Cài đặt | `SettingsNowPlayingRows` | *Dẫn đường & cụm đồng hồ › Tên bài trên cụm khi đang chiếu* + chip góc. Khoá `cast_now_playing` · `cast_now_playing_corner` (`clusternav_prefs`, **theo HỒ SƠ** như badge). Lớp phủ nghe đổi khoá (Cài đặt / đổi hồ sơ / `prefs_set` — một đường) |
+
+**Đường vẽ:** đường lớp phủ cụm CHUẨN của badge tốc độ (`ClusterOverlayDisplays.resolve` → `createDisplayContext` →
+`TYPE_APPLICATION_OVERLAY`, không chạm, không tiêu điểm). Không cửa sổ kiểu mới, không HAL, không opcode, không `am`/`wm`.
+
+**Mặc định BẬT, góc phải-trên.** Lý do:
+- Không chiếu ⇒ 0 việc: chỉ hai bộ nghe đã đăng ký, không nhịp, không cửa sổ.
+- Đang chiếu ⇒ một bộ nghe phiên nhạc (gọi lại khi đổi bài/trạng thái) + một cửa sổ chỉ gắn khi có bài. Marquee chỉ chạy khi chữ tràn **và** đang phát.
+- Góc phải-trên vì GMaps/CarPlay đặt thẻ rẽ ở trái-trên và ETA ở dưới.
+
+**CLAUDE.md §4:**
+1. Display: cụm sống (không hằng 1, không VD riêng tư).
+2. App: không đụng app nào, chỉ ĐỌC phiên.
+3. Stack: không có.
+4. Hoàn tác: `removeView` của chính tiến trình (cửa sổ chết theo tiến trình, không có state nào sống dai hơn tiến trình — §5).
+
+### 9.4 Còn 🚗 (không chặn bản, chỉ đọc + nhìn)
+
+- **[CHƯA BIẾT]** Dải có hiện đúng góc dưới `wm size`/`overscan` của CarPlay (`1422x800`, overscan âm) không. Toạ độ tính trên display
+  logic. Badge tốc độ đi cùng đường đã hiện được trên cụm, nhưng chưa ai đo nó dưới cấu hình CarPlay.
+- **[CHƯA BIẾT]** Marquee có chạy trên cửa sổ cụm không tiêu điểm của ROM BYD không. Nếu không chạy, chữ đứng yên và bị khung xén, không lỗi.
+- Đo: chiếu GMaps rồi chiếu CarPlay, phát một bài tên dài, chụp cụm. `logcat -s KachiNpStrip` phải thấy `gan len display <id>`
+  rồi `go khoi display` sau khi dừng 10 s.

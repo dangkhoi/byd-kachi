@@ -498,6 +498,7 @@ Chạy chữ tên đường	Scroll long street names	Tatal nama jalan yang panja
 App dẫn đường mặc định	Default navigation app	Apl navigasi lalai
 Tự dẫn đường theo lịch	Scheduled navigation	Navigasi berjadual
 Kết nối lại nguồn dẫn đường	Reconnect the navigation source	Sambung semula sumber navigasi
+Đường gửi tên đường lên HUD	Road-name path to the HUD	Laluan nama jalan ke HUD
 Biển báo tốc độ	Speed limit badge	Tanda had laju
 Giới hạn sắp tới	Upcoming limit	Had seterusnya
 Chip cảnh báo camera	Camera alert chip	Cip amaran kamera
@@ -855,4 +856,4 @@ chưa liên lạc được màn hình chính	couldn't reach the home screen	tida
 Mở hẳn	Full	Penuh
 Hé	Vent	Renggang
 Xe 3D	3D car	Kereta 3D
-Tên bài hát lên cụm đồng hồ	Song title on the instrument cluster	Tajuk lagu pada kluster instrumen
+Tên bài trên cụm khi đang chiếu	Song title on the cluster while casting	Tajuk lagu pada kluster semasa memancar

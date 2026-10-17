@@ -55,7 +55,10 @@ object WakeAsrMatcher {
         // (kach/kat) không lẫn tiếng thường ⇒ nổ luôn.
         if (words.size <= WAKE_MAX_WORDS) {
             val kw = words.filter { oneWordKachi(it) }
-            if (kw.any { it.startsWith("k") }) return true
+            // ⚠ `kh` KHÔNG thuộc nhóm k-start: [ĐO xe 17/10 12:11] cửa sổ nghe chuyện trong xe (câu ngắn có chữ "khách") ⇒
+            // "khach" (`kh`+`ch`) ⇒ NỔ NHẦM, mở phiên lệnh. `kh` là phụ âm đầu riêng của tiếng thường (khách, khách sạn) — cùng lý do
+            // luật (g) loại "kha". Từ `kh` vẫn nổ khi cụm thống trị bởi âm-wake (nhánh dưới), như từ c-start.
+            if (kw.any { it.startsWith("k") && !it.startsWith("kh") }) return true
             if (kw.isNotEmpty()) {
                 val core0 = words.filterNot { it in FILLER }
                 if (core0.all { wakeToken(it) }) return true
@@ -101,8 +104,20 @@ object WakeAsrMatcher {
         // (g) Cụm RẤT ngắn (lõi ≤2) mà MỌI lõi là HEAD k-start ("ka"/"kar"…, KHÔNG "kha"=«khá»). Model rụng "chi"
         // của "ka chi" → "ka". NEG "kê khai"/"kỳ nghỉ"/"khá hay" ⇒ có từ non-wake / "kha" bị loại ⇒ không nổ.
         if (core.size in 1..2 && core.all { it in HEAD && it.startsWith("k") && it != "kha" }) return true
+        // (h) WAKE-INTERMITTENT-1017 — đuôi "chi" nghe thành âm `tr` ([ĐO xe 17/10, log `:wake`] 3 cửa sổ câu gọi ra "hay/hai
+        // ca trên", không nổ ⇒ người lái phải bấm phím; cửa sổ trúng cùng chuyến ra "hay ca chê"). `tr`↔`ch` là cặp phụ âm đầu đã
+        // khai ở [VoicePhoneticConfusions] (`chain("tr", "ch")`), nhưng "trên" là chữ thường gặp nhất của câu lệnh ("… trên
+        // youtube") ⇒ KHÔNG đưa vào [TAIL]. Chỉ nhận đúng dáng câu gọi ba từ: LỜI GỌI ĐẦU + head + đuôi-tr, không từ nào khác —
+        // "nghe ca trên youtube", "ca trên đường", "hai ca trên" + chữ nữa đều không nổ.
+        if (words.size == 3 && words[0] in CALL_OPENER && words[1] in HEAD && words[2] in TAIL_TR) return true
         return false
     }
+
+    /** Lời gọi đứng đầu cho luật (h) — [CALL_LEAD] + "hai" (cùng âm "hây" ASR hay ra, [ĐO xe 17/10] 2/3 cửa sổ). */
+    private val CALL_OPENER = CALL_LEAD + "hai"
+
+    /** Đuôi "chi" trượt sang phụ âm `tr` ([ĐO xe 17/10]) — chỉ dùng ở luật (h), không phải [TAIL]. */
+    private val TAIL_TR = setOf("tren")
 
     /** Từ "âm-wake" (chấp nhận trong cụm dominated): head/tail/oneWordKachi + biến thể rụng-âm kat/katy/cay/ky. */
     private fun wakeToken(w: String): Boolean =

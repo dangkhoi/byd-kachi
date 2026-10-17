@@ -106,6 +106,7 @@ internal object TestBridgeKws {
                 "fired_at_audio_ms" to firstFire,
                 "decodes" to asr.decodes,
                 "skipped_no_speech" to asr.skippedNoSpeech,
+                "skipped_quiet" to asr.skippedQuiet,
                 "frames_run" to run, "frames_observe" to obs, "frames_idle" to idle, "frames_finish" to fin,
                 "finish_decodes" to asr.finishes,
                 "cpu_ms" to cpu,                       // CPU đo thật trên máy này (cả tiến trình)
