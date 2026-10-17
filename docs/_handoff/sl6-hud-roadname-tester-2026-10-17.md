@@ -1,6 +1,6 @@
 # Tin nhắn cho anh em SL6 — thử đường gửi tên đường lên HUD (Kachi 3.1.12)
 
-> **Trạng thái**: Bản nháp tin nhắn · **Cập nhật**: 2026-10-17 · **Chủ**: dangkhoi · **Backlog**: `HUD-ROADNAME-ALT-PATH`
+> **Trạng thái**: ⛔ SUPERSEDED (17/10 — testers SL6 báo không tác dụng; owner gỡ hết ở 3.1.14, xem backlog `HUD-ROADNAME-ALT-PATH`). Chỉ còn làm lịch sử, KHÔNG gửi · (trước đó: Bản nháp tin nhắn) · **Cập nhật**: 2026-10-17 · **Chủ**: dangkhoi · **Backlog**: `HUD-ROADNAME-ALT-PATH`
 > **Kỹ thuật**: `docs/diagnostics/hud-clusterdebug-path-2026-10-16.md` §9 · Bản cần cài: **Kachi 3.1.12 (217)** (bản thử, chưa OTA)
 
 ---

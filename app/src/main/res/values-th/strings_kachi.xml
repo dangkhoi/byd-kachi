@@ -122,7 +122,7 @@
     <string name="kachi_row_boot_profile">เริ่มด้วย</string>
     <string name="kachi_profile_boot_last">ใช้ล่าสุด</string>
     <string name="kachi_boot_profile_note">“ใช้ล่าสุด” จะเริ่มด้วยโปรไฟล์ที่ใช้งานอยู่ตอนดับรถ หากเลือกโปรไฟล์เฉพาะ ทุกครั้งที่สตาร์ทรถจะกลับไปใช้โปรไฟล์นั้น แม้ในเที่ยวก่อนคุณจะสลับไปใช้โปรไฟล์อื่นก็ตาม</string>
-    <string name="kachi_home_profile_note">ทุกรายการใน “การตั้งค่า” — ยกเว้น “ระบบและสิทธิ์” (แต่ “เปิด Kachi อัตโนมัติเมื่อสตาร์ทรถ” “เรียกใช้บริการเบื้องหลังเมื่อสตาร์ทรถ” “เปิดแอปเมื่อสตาร์ทรถ” และ “เล่นเพลงเมื่อขึ้นรถ” ยังเป็นไปตามโปรไฟล์) ส่วนใหญ่ของ “สั่งงานด้วยเสียง” “แอปนำทางเริ่มต้น” “กระจกจริง (เบลอพื้นหลัง)” “ดึงแอปที่หลุดออกจากกรอบกลับเข้ากรอบ (ทดลอง)” “ไล่ฝ้าอัตโนมัติเมื่อฝนตก” “ช่องทางส่งชื่อถนนไปยัง HUD” การปรับกล้องตามรถ (การหมุน การกลับด้าน มุมมอง) และ “เกี่ยวกับ” — จะบันทึกไว้สำหรับโปรไฟล์ «%1$s» รวมถึงการฉายภาพขึ้นหน้าปัด กรอบและ DPI ของแต่ละแอป ปุ่มลอย และกล้อง เมื่อสลับไปใช้โปรไฟล์อื่นใน “โปรไฟล์ผู้ขับขี่” เลย์เอาต์ เนื้อหาในช่อง ชิป แถบปุ่ม ธีม และหน่วยจะเปลี่ยนทันที ส่วนกรอบและ DPI ของการฉายจะเปลี่ยนตั้งแต่การฉายครั้งถัดไป และการเปิด/ปิดการฉายจะเปลี่ยนตั้งแต่การสตาร์ทรถครั้งถัดไป</string>
+    <string name="kachi_home_profile_note">ทุกรายการใน “การตั้งค่า” — ยกเว้น “ระบบและสิทธิ์” (แต่ “เปิด Kachi อัตโนมัติเมื่อสตาร์ทรถ” “เรียกใช้บริการเบื้องหลังเมื่อสตาร์ทรถ” “เปิดแอปเมื่อสตาร์ทรถ” และ “เล่นเพลงเมื่อขึ้นรถ” ยังเป็นไปตามโปรไฟล์) ส่วนใหญ่ของ “สั่งงานด้วยเสียง” “แอปนำทางเริ่มต้น” “กระจกจริง (เบลอพื้นหลัง)” “ดึงแอปที่หลุดออกจากกรอบกลับเข้ากรอบ (ทดลอง)” “ไล่ฝ้าอัตโนมัติเมื่อฝนตก” การปรับกล้องตามรถ (การหมุน การกลับด้าน มุมมอง) และ “เกี่ยวกับ” — จะบันทึกไว้สำหรับโปรไฟล์ «%1$s» รวมถึงการฉายภาพขึ้นหน้าปัด กรอบและ DPI ของแต่ละแอป ปุ่มลอย และกล้อง เมื่อสลับไปใช้โปรไฟล์อื่นใน “โปรไฟล์ผู้ขับขี่” เลย์เอาต์ เนื้อหาในช่อง ชิป แถบปุ่ม ธีม และหน่วยจะเปลี่ยนทันที ส่วนกรอบและ DPI ของการฉายจะเปลี่ยนตั้งแต่การฉายครั้งถัดไป และการเปิด/ปิดการฉายจะเปลี่ยนตั้งแต่การสตาร์ทรถครั้งถัดไป</string>
     <string name="kachi_delete">ลบ</string>
     <string name="kachi_sec_recirc">หมุนเวียนอากาศภายใน</string>
     <string name="kachi_recirc_title">หมุนเวียนอากาศภายในเมื่อสตาร์ทรถ</string>
@@ -368,26 +368,6 @@
     <string name="kachi_nav_cluster_on">เปิด (กลาง + ETA)</string>
     <string name="kachi_nav_marquee_title">เลื่อนชื่อถนนที่ยาว</string>
     <string name="kachi_nav_marquee_sub">ชื่อที่ยาวกว่าความกว้างหน้าปัดจะเลื่อนผ่านแทนการถูกตัด</string>
-    <!-- 3.1.12 · HUD-ROADNAME-ALT-PATH — Đường gửi tên đường lên HUD (SettingsHudRoadNameRows) -->
-    <string name="kachi_hudroad_title">ช่องทางส่งชื่อถนนไปยัง HUD</string>
-    <string name="kachi_hudroad_a">A · HAL</string>
-    <string name="kachi_hudroad_a48">A48 · HAL ≤48</string>
-    <string name="kachi_hudroad_b">B · ClusterDebug</string>
-    <string name="kachi_hudroad_c">C · A+B</string>
-    <string name="kachi_hudroad_modes">A: แบบเดิม (HAL, ≤127 ตัวอักษร) · A48: HAL ตัดเหลือ ≤48 ตัวอักษร · B: ผ่าน ClusterDebug ของรถ (แบบ DiAuto) · C: ทั้ง A และ B ลูกศร + ระยะทางใช้ HAL เสมอ</string>
-    <string name="kachi_hudroad_help_sl6">SL6: ลอง B หาก HUD ไม่แสดงชื่อถนน เสร็จแล้วส่งภาพหน้าจอนี้กลับมา</string>
-    <string name="kachi_hudroad_cd_ok">ClusterDebug: มี (แอประบบ) — ใช้ B/C ได้</string>
-    <string name="kachi_hudroad_cd_off">ปิด B/C: %1$s</string>
-    <string name="kachi_hudroad_why_missing">รถคันนี้ไม่มี ClusterDebug</string>
-    <string name="kachi_hudroad_why_not_system">ClusterDebug ไม่ใช่แอประบบ</string>
-    <string name="kachi_hudroad_why_disabled">ClusterDebug ถูกปิดอยู่</string>
-    <string name="kachi_hudroad_why_no_receiver">ClusterDebug ไม่มีตัวรับ</string>
-    <string name="kachi_hudroad_why_protected">ตัวรับของ ClusterDebug ถูกล็อกสิทธิ์</string>
-    <string name="kachi_hudroad_why_version">เวอร์ชัน ClusterDebug ต่างจากที่ตรวจไว้</string>
-    <string name="kachi_hudroad_refused">เปลี่ยนไม่ได้: %1$s</string>
-    <string name="kachi_hudroad_st_idle">กำลังใช้ %1$s · ยังไม่ได้ส่งชื่อถนนในรอบนี้</string>
-    <string name="kachi_hudroad_st_sent">ส่งเมื่อ %2$s ผ่าน %1$s · %3$d ตัวอักษร · %4$s</string>
-    <string name="kachi_hudroad_st_degraded">เลือก %1$s แต่รถคันนี้ใช้ ClusterDebug ไม่ได้ ⇒ กำลังส่งผ่าน A</string>
     <string name="kachi_nav_default_app">แอปนำทางเริ่มต้น</string>
     <string name="kachi_nav_app_gmaps">Google Maps</string>
     <string name="kachi_nav_app_vietmap">VietMap</string>

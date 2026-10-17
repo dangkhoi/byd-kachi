@@ -110,6 +110,18 @@ class VoiceWakeController(
     fun chargedCpuMs(): Long = budget.chargedMs
     fun budgetCreditMs(): Double = budget.creditMs()
 
+    /**
+     * WAKE-WEAK-UNIT (3.1.14) — áp trần ngân sách theo máy (yếu/thường) và trạng thái bận/rảnh của máy, tính bởi
+     * [VoiceWakeDuty.limits] từ [VoiceWakeBackoff]. Tầng 4 vẫn là chỗ quyết duy nhất; lớp này chỉ đổi hai tham số của nó.
+     */
+    fun pace(deviceDuty: Double, busy: Boolean, nowMs: Long) {
+        val (d, cap) = VoiceWakeDuty.limits(deviceDuty, busy, budget.burstMs)
+        if (d != budget.duty || cap != budget.capMs) budget.retune(d, cap, nowMs)
+    }
+
+    /** Trần dài hạn đang áp (nhật ký `ngan_sach`). */
+    fun budgetDuty(): Double = budget.duty
+
     /** KWS báo có/không khớp câu gọi trên khung vừa RUN_KWS. Trả việc cần làm ở cấp phiên. */
     fun onKwsResult(matched: Boolean, nowMs: Long): Wake {
         if (nowMs < fusedUntil || !matched) return Wake.NONE

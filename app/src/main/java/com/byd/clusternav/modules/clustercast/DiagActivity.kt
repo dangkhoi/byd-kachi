@@ -242,6 +242,10 @@ class DiagActivity : Activity() {
             appendLine(com.byd.clusternav.launcher.trip.TripStart.describe(applicationContext))   // F2/F3 — chuyến lên xe gần nhất
 
             appendLine()
+            appendLine("── hiệu năng (PERF-SL6-3113) ──")
+            append(com.byd.clusternav.launcher.perf.PerfDiag.describe(applicationContext))
+
+            appendLine()
             appendLine("── phím vô-lăng · nhật ký gắn dịch vụ Hỗ trợ ──")
             val escalatedAt = Prefs.a11yEscalatedAt(applicationContext)
             appendLine("đã tự khởi động lại để chữa (mốc elapsed): ${if (escalatedAt < 0) "chưa lần nào" else "${escalatedAt / 1000}s"}")

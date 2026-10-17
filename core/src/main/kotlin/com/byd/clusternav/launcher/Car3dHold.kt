@@ -14,11 +14,22 @@ package com.byd.clusternav.launcher
  *    trung tính, log MỘT lần, không thử lại;
  *  • ô nhỏ / thua chỗ Engine ⇒ chờ điều kiện hết (đổi cỡ · [Car3dSeat] đánh thức · hiện lại) — không hẹn giờ;
  *  • lỗi ([Why.FAULT]: ngoại lệ khi đổ số/chạm/vẽ/dựng cảnh, nạp mô hình ném, gltfio từ chối tệp đệm dở) ⇒ thử lại sau
- *    [backoffMs] (lùi dần), tối đa [maxFaults] lỗi cho đời view; quá ⇒ thôi (log), view mới (dựng lại ô) thử lại từ đầu.
+ *    [backoffMs] (lùi dần), tối đa [maxFaults] lỗi cho cả TIẾN TRÌNH ([Faults], 3.1.14); quá ⇒ thôi (log).
+ *
+ * 3.1.14 `PERF-SL6-3113` R4: trước đây đếm lỗi theo ĐỜI VIEW ⇒ dựng lại ô (đổi hồ sơ, đổi bố cục) đếm về 0 ⇒ một đời xe làm gltfio
+ * từ chối đốt thêm tới 4 lượt dựng GLB nguội (~33 s CPU mỗi lượt [ĐO 3.1.5 Seal]) MỖI lần dựng lại ô. Nay widget dùng chung
+ * [Faults.PROCESS]: trần 2 · 8 · 32 s là của tiến trình, view mới nối tiếp đếm cũ.
  *
  * Thuần — `Car3dHoldTest`. Chỉ luồng chính gọi.
  */
-class Car3dHold(private val maxFaults: Int = MAX_FAULTS, private val baseMs: Long = BASE_MS) {
+class Car3dHold(private val maxFaults: Int = MAX_FAULTS, private val baseMs: Long = BASE_MS, private val budget: Faults = Faults()) {
+
+    /** Sổ đếm lỗi — widget dùng [PROCESS] (một sổ cho cả tiến trình); mặc định một sổ riêng (test). */
+    class Faults {
+        var count = 0; internal set
+
+        companion object { val PROCESS = Faults() }
+    }
 
     enum class Why(val permanent: Boolean) {
         SLOT(false), SEAT(false), FAULT(false),
@@ -30,7 +41,7 @@ class Car3dHold(private val maxFaults: Int = MAX_FAULTS, private val baseMs: Lon
 
     /** Lý do đang dừng; `null` = đang vẽ / đang nạp. */
     var why: Why? = null; private set
-    var faults = 0; private set
+    val faults: Int get() = budget.count
 
     /** Còn được thử dựng không: không vĩnh viễn, chưa quá trần lỗi. */
     fun canStart(): Boolean = why?.permanent != true && faults <= maxFaults
@@ -43,7 +54,7 @@ class Car3dHold(private val maxFaults: Int = MAX_FAULTS, private val baseMs: Lon
         val changed = w != why
         why = w
         if (w != Why.FAULT) return Next(log = changed, retryMs = null)
-        faults++
+        budget.count++
         return if (faults > maxFaults) Next(log = true, retryMs = null, gaveUp = true) else Next(log = true, retryMs = backoffMs(faults))
     }
 
@@ -53,5 +64,16 @@ class Car3dHold(private val maxFaults: Int = MAX_FAULTS, private val baseMs: Lon
     companion object {
         const val MAX_FAULTS = 3
         const val BASE_MS = 2_000L
+
+        /**
+         * 3.1.14 `PERF-SL6-3113` — widget KHUẤT bao lâu thì mới nhả Engine/GLB. Khuất ⇒ NGỪNG VẼ + nhu cầu HAL về 0 NGAY (không chạy
+         * nền); chỉ việc trả bộ nhớ được hoãn. [ĐO log Seal 17/10, 3.1.11] mỗi lượt dựng lại = `Engine.create` + gltfio 788–1509 ms
+         * TRÊN LUỒNG CHÍNH ⇒ bỏ 62–139 khung (1–2,3 s đơ); 7 lượt/80 phút, 3 lượt khuất chỉ 0,12–0,15 s (về HOME/đổi màn), 2 lượt
+         * 10–22 s ⇒ 5/7 lượt đơ là dựng lại vô ích. Màn TẮT vẫn nhả ngay (owner 14/10: không giữ RAM khi không ai nhìn).
+         */
+        const val RELEASE_GRACE_MS = 30_000L
+
+        /** Khuất ⇒ nhả sau bao lâu: màn tắt = 0 (nhả ngay), khuất khác = [RELEASE_GRACE_MS]. */
+        fun releaseAfterMs(screenOff: Boolean): Long = if (screenOff) 0L else RELEASE_GRACE_MS
     }
 }

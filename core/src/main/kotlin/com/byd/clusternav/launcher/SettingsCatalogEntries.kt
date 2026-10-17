@@ -174,12 +174,6 @@ internal object SettingsCatalogEntries {
             "nav_reconnect", SettingsGroup.NAV, "Kết nối lại nguồn dẫn đường",
             labelEn = "Reconnect the navigation source",
         ),
-        // 3.1.12 · HUD-ROADNAME-ALT-PATH — chọn đường gửi tên đường lên HUD (A/A48/B/C). Khoá `hud_road_name_mode` ở
-        // `clusternav_prefs`, THEO XE (`HudRoadNameKeys.DEVICE_KEYS`), qua `bridge().setHudRoadNameMode` (`SettingsHudRoadNameRows`).
-        SettingsEntry(
-            "nav_hud_road_name_path", SettingsGroup.NAV, "Đường gửi tên đường lên HUD",
-            "hud_road_name_mode", "Road-name path to the HUD",
-        ),
         // switch_badge_enabled · Prefs.setBadgeEnabled (BadgePlacementController.kt:44–112)
         SettingsEntry("badge_enabled", SettingsGroup.NAV, "Biển báo tốc độ", "badge_enabled", "Speed limit badge"),
         // switch_upcoming_badge · Prefs.setShowUpcomingBadge

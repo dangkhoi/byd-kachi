@@ -57,4 +57,17 @@ class KachiPerfTest {
         assertNotNull(line)
         assertTrue(line!!.contains("shell=0.0/phút"), "bộ đếm không được cộng dồn qua hai cửa sổ: $line")
     }
+
+    /** 3.1.14 PERF-SL6-3113 — lượt dựng xe 3D + ms luồng chính phải nằm NGAY trong dòng đo (SL6 chỉ gửi được tệp usage). */
+    @Test
+    fun `dong do co luot dung xe 3D va ms luong chinh - man Chan doan doc lai duoc`() {
+        KachiPerf.reset()
+        KachiPerf.dueLine(0)
+        KachiPerf.add(KachiPerf.Counter.CAR3D_BUILD, 2)
+        KachiPerf.add(KachiPerf.Counter.CAR3D_MAIN_MS, 3_100)
+        val line = KachiPerf.dueLine(60_000)
+        assertTrue(line!!.contains("3D-dựng=2 (luồng-chính 3100 ms)"), "thiếu chi phí xe 3D: $line")
+        assertTrue(KachiPerf.lastLine == line, "màn Chẩn đoán đọc dòng gần nhất")
+        assertTrue(KachiPerf.dueLine(120_000)!!.contains("3D-dựng=0 (luồng-chính 0 ms)"), "xả sau mỗi cửa sổ")
+    }
 }

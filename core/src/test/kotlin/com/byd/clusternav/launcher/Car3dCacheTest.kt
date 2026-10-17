@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -45,5 +46,25 @@ class Car3dCacheTest {
         assertFalse(Car3dCache.roomFor(glb, glb + Car3dCache.MARGIN_BYTES - 1))
         assertTrue(Car3dCache.roomFor(glb, glb + Car3dCache.MARGIN_BYTES))
         assertFalse(Car3dCache.roomFor(0, 2L shl 30))
+    }
+
+    /**
+     * 3.1.14 PERF-SL6-3113 R5 — SL6 17/10: đơ lúc nổ máy VÀ sau đó, qua nhiều lần reset. Lượt dựng nguội (~33 s CPU Seal) không được
+     * lặp mỗi lần nổ máy cho một khoá hỏng, không quá một lượt/lần khởi động, không trong 30 s đầu. ĐỎ khi gỡ một trong ba cổng.
+     */
+    @Test
+    fun `dung nguoi - mot luot moi lan khoi dong, tran qua cac lan no may, cho qua luc khoi dong`() {
+        assertTrue(Car3dCache.mayColdBuild(failed = 0, triedThisProcess = false))
+        assertFalse(Car3dCache.mayColdBuild(failed = 0, triedThisProcess = true), "một lượt/lần khởi động (FAULT 2·8·32 s không dựng lại)")
+        assertTrue(Car3dCache.mayColdBuild(failed = Car3dCache.MAX_COLD_FAILS - 1, triedThisProcess = false))
+        assertFalse(Car3dCache.mayColdBuild(failed = Car3dCache.MAX_COLD_FAILS, triedThisProcess = false), "hỏng ${Car3dCache.MAX_COLD_FAILS} lần nổ máy ⇒ thôi")
+        assertEquals(Car3dCache.COLD_AFTER_MS, Car3dCache.coldDelayMs(0))
+        assertEquals(10_000L, Car3dCache.coldDelayMs(Car3dCache.COLD_AFTER_MS - 10_000L))
+        assertEquals(0L, Car3dCache.coldDelayMs(120_000L), "qua lúc khởi động ⇒ dựng ngay")
+        assertTrue(Car3dCache.COLD_AFTER_MS in 20_000L..60_000L)
+        assertEquals(0, Car3dCache.parseFails(null)); assertEquals(0, Car3dCache.parseFails("rác")); assertEquals(2, Car3dCache.parseFails("2\n"))
+        val mark = Car3dCache.failMark("car3d-123.glb")
+        assertEquals("car3d-fail-car3d-123.txt", mark)
+        assertFalse(Car3dCache.stale(mark), "dấu hỏng không bị dọn cùng đệm (nó phải sống qua lượt dọn trước khi dựng)")
     }
 }

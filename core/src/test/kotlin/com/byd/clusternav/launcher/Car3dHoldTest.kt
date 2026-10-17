@@ -63,4 +63,34 @@ class Car3dHoldTest {
             h.started(); assertEquals(w, h.why, "$w: started() không xoá lý do vĩnh viễn")
         }
     }
+
+    /**
+     * 3.1.14 PERF-SL6-3113 — [ĐO log Seal 17/10, 3.1.11] 3/7 lượt dựng lại 3D đến sau lượt khuất 0,12–0,15 s, 2/7 sau 10–22 s; mỗi
+     * lượt đơ luồng chính 1–2,3 s. Hạn nhả phải phủ cả hai nhóm; màn tắt nhả ngay (owner 14/10: không giữ RAM khi không ai nhìn).
+     */
+    @Test
+    fun `khuat thoang qua khong nha Engine - man tat nha ngay`() {
+        assertEquals(0L, Car3dHold.releaseAfterMs(screenOff = true), "màn tắt ⇒ nhả ngay")
+        val grace = Car3dHold.releaseAfterMs(screenOff = false)
+        assertTrue(grace >= 22_000L, "hạn $grace ms phải phủ lượt khuất 22 s đo trên xe (về HOME / đổi màn)")
+        assertTrue(grace <= 60_000L, "hạn $grace ms quá dài — giữ RAM khi rời HOME lâu (owner 14/10)")
+    }
+
+    /**
+     * 3.1.14 PERF-SL6-3113 R4 — trần lỗi là của TIẾN TRÌNH: view mới (dựng lại ô · đổi hồ sơ) dùng chung sổ ⇒ không nhân số lượt dựng
+     * GLB nguội (~33 s CPU/lượt trên Seal). ĐỎ khi sổ đếm quay về đời view.
+     */
+    @Test
+    fun `tran loi theo tien trinh - view moi noi tiep so cu`() {
+        val shared = Car3dHold.Faults()
+        val first = Car3dHold(budget = shared)
+        repeat(Car3dHold.MAX_FAULTS - 1) { first.park(Why.FAULT) }
+        val rebuilt = Car3dHold(budget = shared)   // ô dựng lại ⇒ view mới
+        assertTrue(rebuilt.canStart(), "còn trong trần")
+        rebuilt.park(Why.FAULT)
+        assertEquals(Car3dHold.MAX_FAULTS, rebuilt.faults, "view mới nối tiếp đếm cũ")
+        assertTrue(rebuilt.park(Why.FAULT).gaveUp, "quá trần chung ⇒ thôi")
+        assertFalse(Car3dHold(budget = shared).canStart(), "view thứ ba cũng không dựng nữa")
+        assertEquals(0, Car3dHold().faults, "sổ riêng (mặc định) không dính sổ chung")
+    }
 }

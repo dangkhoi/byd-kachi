@@ -400,7 +400,7 @@ object VoiceEngine {
                     Log.i(TAG, "nạp sẵn: BỎ QUA — ${why.text(Lang.VI)}; lần bấm mic đầu sẽ nạp như cũ")
                     return@runCatching
                 }
-                lastPreloadSkip = null
+                lastPreloadSkip = null; if (!loaded()) VoiceLoadPacing.awaitCalm(if (inWake) "wake-hold" else "main")   // WAKE-WEAK-UNIT: chờ máy rảnh
                 val t0 = System.currentTimeMillis()
                 val ok = recognizer(app) != null
                 Log.i(TIMING_TAG, "nạp sẵn mô hình ${System.currentTimeMillis() - t0} ms (ok=$ok${if (inWake) " · :wake HOLD" else ""})")
@@ -454,7 +454,7 @@ object VoiceEngine {
             maxActivePaths = runCatching { Prefs.voiceBeam(ctx) }
                 .getOrDefault(SherpaModelCatalog.MAX_ACTIVE_PATHS)
         }
-        return runCatching { OfflineRecognizer(assetManager = null, config = config) }
+        return runCatching { VoiceLoadPacing.atLowest { OfflineRecognizer(assetManager = null, config = config) } }   // WAKE-WEAK-UNIT: luồng ORT thừa kế nice 19
             .onSuccess {
                 // CLOSE-4 — mốc pha "nạp xong mô hình": onnxruntime vừa giải phóng ModelProto (~71 MB cho encoder
                 // int8) sau khi dựng phiên, và phần đó nằm lại dirty trong arena vì decay chạy theo tick malloc.

@@ -15,10 +15,10 @@
 
 | | |
 |---|---|
-| Phiên bản · Version | **3.1.13** (versionCode **218**) |
-| Tệp · File | [`apk/Kachi-3.1.13-release.apk`](apk/Kachi-3.1.13-release.apk) |
-| Kích thước · Size | 56 252 105 B |
-| SHA-256 | `a89ab3c094a2ea2a1a71fe5067d0456285178b72fb0c29cdf49df006887986f3` |
+| Phiên bản · Version | **3.1.14** (versionCode **219**) |
+| Tệp · File | [`apk/Kachi-3.1.14-release.apk`](apk/Kachi-3.1.14-release.apk) |
+| Kích thước · Size | 56 270 685 B |
+| SHA-256 | `bfa8ceadad5c3d20eb74582d79f7341330f677dd67dccaf9f21419a596d3de31` |
 | Gói · Package | `com.byd.launcher` |
 | Trang giới thiệu · Intro page | [`docs/index.html`](docs/index.html) (GitHub Pages) |
 
@@ -26,21 +26,21 @@
 
 **(VI)**
 
-1. **Tải** `apk/Kachi-3.1.13-release.apk` trên nhánh `main` (nút **Raw** / Download trên GitHub). Kiểm SHA-256 ở bảng trên nếu muốn.
-2. **Cài bằng adb**: `adb install -r Kachi-3.1.13-release.apk`. Chép vào xe rồi chạm để cài có thể bị ROM DiLink chặn (Kachi là launcher) — cài bằng adb thì qua.
+1. **Tải** `apk/Kachi-3.1.14-release.apk` trên nhánh `main` (nút **Raw** / Download trên GitHub). Kiểm SHA-256 ở bảng trên nếu muốn.
+2. **Cài bằng adb**: `adb install -r Kachi-3.1.14-release.apk`. Chép vào xe rồi chạm để cài có thể bị ROM DiLink chặn (Kachi là launcher) — cài bằng adb thì qua.
 3. Mở Kachi, bấm **Cho phép gỡ lỗi USB** khi được hỏi (một lần). Kachi dùng kênh này để tự cấp quyền, đưa app vào ô, chiếu cụm và cài cập nhật — không cần root, không sửa firmware.
 4. *Cài đặt › Hệ thống & quyền › Màn hình chính › **Đặt Kachi làm màn hình chính***.
-5. Xem *Cài đặt › Giới thiệu*: phải ra **Phiên bản 3.1.13 (mã 218)**.
+5. Xem *Cài đặt › Giới thiệu*: phải ra **Phiên bản 3.1.14 (mã 219)**.
 
 **Cập nhật về sau (OTA)**: *Cài đặt › Hệ thống & quyền › **Kiểm tra cập nhật*** — Kachi tìm tệp `apk/Kachi-<phiên bản>-release.apk` mới hơn trên `main`, hỏi trước rồi cài đè. Hồ sơ và cấu hình giữ nguyên, không cần máy tính. Bật *Tự động cập nhật* thì mỗi lần mở Kachi sẽ tự dò; có bản mới thì nút ⚙ có **chấm đỏ nhỏ**. Cập nhật không lùi bản được. Bản cài trước 1.41 (khoá ký cũ) phải gỡ rồi cài tay một lần. Chi tiết kênh: [`apk/README.md`](apk/README.md).
 
 **(EN)**
 
-1. **Download** `apk/Kachi-3.1.13-release.apk` from the `main` branch (GitHub **Raw** / Download). Check the SHA-256 above if you like.
-2. **Install with adb**: `adb install -r Kachi-3.1.13-release.apk`. Copying it to the car and tapping it may be blocked by the DiLink ROM (Kachi is a launcher); adb works.
+1. **Download** `apk/Kachi-3.1.14-release.apk` from the `main` branch (GitHub **Raw** / Download). Check the SHA-256 above if you like.
+2. **Install with adb**: `adb install -r Kachi-3.1.14-release.apk`. Copying it to the car and tapping it may be blocked by the DiLink ROM (Kachi is a launcher); adb works.
 3. Open Kachi and tap **Allow USB debugging** when asked (once). Kachi uses that channel to grant its own permissions, put apps into slots, cast to the cluster and install updates — no root, no modified firmware.
 4. *Settings › System & permissions › Home screen › **Set Kachi as the home screen***.
-5. Check *Settings › About*: it should read **Version 3.1.13 (build 218)**.
+5. Check *Settings › About*: it should read **Version 3.1.14 (build 219)**.
 
 **Later updates (OTA)**: *Settings › System & permissions › **Check for updates*** — Kachi looks for a newer `apk/Kachi-<version>-release.apk` on `main`, asks first, then installs it over the top. Profiles and settings are kept; no computer needed. With *Auto update* on, Kachi checks each time it opens, and a **small red dot** on the ⚙ button means an update is waiting. Updates cannot be rolled back. Builds installed before 1.41 (old signing key) must be uninstalled and installed by hand once. Channel details: [`apk/README.md`](apk/README.md).
 
@@ -84,7 +84,7 @@
 - **Tên bài trên cụm khi đang chiếu** *(tuỳ chọn, mặc định tắt)* 🚗.
 - **HUD kính lái**:
   - **Seal: không hỗ trợ dẫn đường trên HUD.** Đã đo trên xe: gói dữ liệu tới xe nhưng HUD zin không hiện, bằng cả hai cách; việc này ngoài tầm app.
-  - **Sealion 6**: đang thử nhiều cách gửi tên đường lên HUD (*Cài đặt › Dẫn đường & cụm đồng hồ*) 🚗.
+  - **Sealion 6**: HUD hiện mũi tên và khoảng cách; tên đường chưa hiện (đã thử thêm các cách gửi khác, không có tác dụng nên đã gỡ) 🚗.
 
 ### Giọng nói và Hey Kachi
 

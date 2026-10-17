@@ -1,72 +1,77 @@
 package com.byd.clusternav.launcher
 
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.view.Surface
 import android.view.TextureView
-import com.google.android.filament.Box
-import com.google.android.filament.Camera
-import com.google.android.filament.ColorGrading
-import com.google.android.filament.Engine
-import com.google.android.filament.EntityManager
 import com.google.android.filament.Filament
-import com.google.android.filament.IndirectLight
-import com.google.android.filament.LightManager
-import com.google.android.filament.Renderer
-import com.google.android.filament.SwapChain
-import com.google.android.filament.ToneMapper
-import com.google.android.filament.View
-import com.google.android.filament.Viewport
 import com.google.android.filament.android.UiHelper
-import com.google.android.filament.gltfio.AssetLoader
-import com.google.android.filament.gltfio.FilamentAsset
 import com.google.android.filament.gltfio.Gltfio
-import com.google.android.filament.gltfio.ResourceLoader
-import com.google.android.filament.gltfio.UbershaderProvider
 import java.nio.ByteBuffer
 
 /**
- * ═══ 3.01 R25 — lớp Filament của widget xe 3D (chỉ vẽ; quyết định ở `:core` Car3d*) ═════════════════════════════
+ * ═══ 3.1.14 `PERF-SL6-3113` R3 — TAY CẦM luồng chính của bộ vẽ xe 3D; Filament sống trên luồng riêng [GL] ([Car3dScene]) ══════
  *
- * Cách làm (học CÁCH từ bộ vẽ xe của Kim/Kinex — Filament vào bề mặt, trần khung, ánh sáng hướng, tắt bóng — không
- * chép mã/tài sản): `TextureView` (widget nằm trong vùng làm việc có cuộn/chồng lớp ⇒ không SurfaceView) qua `UiHelper`;
- * nền TRONG SUỐT (thẻ kính của Kachi lộ ra sau xe); không bóng đổ, không SSAO, không bloom; ánh sáng = nền SH 1 dải dựng
- * bằng số (không cần `filament-utils`/KTX) + 2 đèn hướng. Mức LOW = không khử răng cưa · MEDIUM = FXAA.
+ * [ĐO log Seal 17/10, 3.1.11] trước bản này `Engine.create` + gltfio `createAsset`/`loadResources` (GLB 29,5 MB) chạy TRÊN LUỒNG
+ * CHÍNH: 788–1509 ms mỗi lượt dựng ⇒ `Choreographer: Skipped 62–139 frames`. Nay luồng chính KHÔNG BAO GIỜ chờ car3d-gl làm việc nặng:
+ *  • [create] chỉ tạo tay cầm (µs) và XẾP việc dựng Engine + cảnh vào [GL]; [load] xếp `createAsset` + `loadResources` + đọc bảng tra
+ *    [Car3dIndex] vào [GL] rồi báo về luồng chính bằng `post`.
+ *  • Câu HỎI (neo · hộp · đích chạm · bản lề · tên) trả lời trên luồng chính từ [Car3dIndex] — không JNI, không nhảy luồng. [ĐO máy ảo
+ *    2 lõi 17/10] bản nhảy-đồng-bộ-mỗi-câu: 201 bước · 234 ms chờ khi dựng neo; 102 bước · 136 ms chờ cho 2 khung.
+ *  • LỆNH đổi cảnh (ẩn/hiện · biến đổi nút · sơn · phát sáng · camera) và VẼ: tính ở [Car3dIndex], xếp vào [GL] theo đúng thứ tự,
+ *    không chờ. Lệnh vẽ gộp ([drawQueued]/[drawAgain]): không bao giờ quá một khung xếp hàng; đổi cảnh sau khung đang chờ ⇒ vẽ thêm
+ *    một khung cuối. Filament bỏ khung / chưa có bề mặt ⇒ xin khung lại qua `onSize` (tối đa [MAX_MISSES] lần liền).
+ *  • Chưa nạp xong ⇒ mọi câu hỏi/lệnh trả rỗng NGAY. Widget giữ khung trống (ảnh nền — không bao giờ bảng 2D, 3.1.8) tới khi có xe.
+ *  • Nạp xong ⇒ mới gắn `UiHelper` vào TextureView. Callback bề mặt là chỗ DUY NHẤT luồng chính chờ [GL] (đổi/huỷ swap chain —
+ *    bề mặt chỉ được trả sau khi Filament thả nó) — lúc đó [GL] chỉ còn khung vẽ nhỏ trong hàng.
+ *  • [destroy]: gỡ `UiHelper`, phần còn lại (tài sản · Engine) xếp vào [GL], xong mới gọi `onFreed` (trả trang cho hệ). Huỷ giữa
+ *    lúc đang dựng ⇒ việc dựng còn xếp hàng tự bỏ ([dead]).
  *
- * KHÔNG tự vẽ theo nhịp: chủ (widget) gọi [render] khi có thay đổi/hoạt cảnh, trần ~24 khung/giây ở chủ. Mọi lời gọi
- * trên luồng chính (Filament Java API không đa luồng). [destroy] trả hết tài nguyên GPU — gọi khi view rời cửa sổ.
+ * Một [GL] cho cả tiến trình: Engine cũ huỷ và Engine mới dựng nối tiếp trên cùng hàng đợi (không bao giờ hai lượt dựng song song,
+ * cùng luật một Engine của [Car3dSeat]).
  */
 internal class Car3dRenderer private constructor(
-    private val engine: Engine, tv: TextureView, medium: Boolean, night: Boolean, private val onSize: (Int, Int) -> Unit,
+    private val tv: TextureView, private var night: Boolean, private val onSize: (Int, Int) -> Unit,
 ) : UiHelper.RendererCallback {
-    private val renderer: Renderer = engine.createRenderer()
-    private val scene = engine.createScene()
-    private val view: View = engine.createView()
-    private val camEntity = EntityManager.get().create()
-    private val camera: Camera = engine.createCamera(camEntity)
     private val ui = UiHelper(UiHelper.ContextErrorPolicy.DONT_CHECK)
-    private var swap: SwapChain? = null
-    private val materials = UbershaderProvider(engine)
-    private val loader = AssetLoader(engine, materials, EntityManager.get())
-    private val resources = ResourceLoader(engine)
-    private var asset: FilamentAsset? = null
-    private val lights = IntArray(3) { EntityManager.get().create() }
-    private var ibl: IndirectLight? = null
-    private var grading: ColorGrading? = null
-    private val hidden = HashSet<Int>()
+    /** CHỈ luồng [GL] đọc/ghi. */
+    private var s: Car3dScene? = null
+    private var initError: Throwable? = null
+    /** Đã [destroy] — việc [GL] còn xếp hàng bỏ qua, kết quả nạp không báo về. */
+    @Volatile private var dead = false
+    /** Luồng chính: bảng tra của tài sản đã nạp; `null` = chưa sẵn (đang dựng / đã huỷ). */
+    private var idx: Car3dIndex? = null
+    /** Luồng chính: đã có một khung xếp hàng trên [GL] / có đổi cảnh sau khung đó. */
+    private var drawQueued = false
+    private var drawAgain = false
+    private var misses = 0
     var width = 0; private set
     var height = 0; private set
 
-    init {
-        renderer.clearOptions = Renderer.ClearOptions().apply { clear = true; setClearColor(0.0, 0.0, 0.0, 0.0) }
-        view.scene = scene
-        view.camera = camera
-        view.blendMode = View.BlendMode.TRANSLUCENT
-        view.setShadowingEnabled(false)
-        aa(medium)
-        camera.setExposure(16f, 1f / 125f, 100f)
-        // Ánh xạ tông GIỮ MÀU (Khronos PBR Neutral): mặc định của Filament làm đèn đỏ/hổ phách sáng ngả trắng khi gần bão hoà
-        // (owner 13/10: đèn đuôi "trắng cháy"). Màu nền ≤ ~0,8 đi qua gần như nguyên vẹn ⇒ sơn đúng màu tệp AVM.
-        grading = ColorGrading.Builder().toneMapper(ToneMapper.PBRNeutral()).build(engine).also { view.colorGrading = it }
-        lighting(night)
+    /** Xếp một lệnh đổi cảnh vào [GL] (không chờ); khung đang chờ sẽ không thấy lệnh này ⇒ đánh dấu vẽ thêm. */
+    private fun cmd(f: (Car3dScene) -> Unit) { if (drawQueued) drawAgain = true; GL.post { if (!dead) s?.let(f) } }
+
+    /**
+     * Nạp `.glb` trên [GL]; [done] chạy trên luồng chính với số ms từng bước (`null` = gltfio từ chối tệp — chủ `FAULT` + bỏ đệm;
+     * lỗi = Engine/cảnh không dựng được hoặc nạp ném). Không gọi [done] nếu tay cầm đã [destroy].
+     */
+    fun load(glb: ByteBuffer, variants: List<Car3dVariant>, done: (Result<Car3dScene.Timing?>) -> Unit) {
+        GL.post {
+            if (dead) return@post
+            val res = runCatching {
+                val sc = s ?: throw IllegalStateException("Filament init failed: $initError", initError)
+                KachiPerf.add(KachiPerf.Counter.CAR3D_BUILD)   // PERF-SL6-3113 R2: một lượt dựng
+                sc.load(glb)?.also { it.index.prepare(variants) }   // bảng nút ↔ biến thể dựng ở đây, không trên luồng chính
+            }
+            MAIN.post { if (dead) return@post; res.getOrNull()?.let { attach(it.index) }; done(res.map { it?.timing }) }
+        }
+    }
+
+    /** Luồng chính, sau khi nạp xong: nhận bảng tra rồi mới gắn bề mặt. */
+    private fun attach(index: Car3dIndex) {
+        idx = index
+        val n = night; cmd { it.night(n) }   // đổi ngày/đêm trong lúc dựng ⇒ áp lại
         ui.renderCallback = this
         ui.isOpaque = false
         ui.attachTo(tv)
@@ -76,403 +81,117 @@ internal class Car3dRenderer private constructor(
         if (tv.isAvailable && width == 0 && tv.width > 0 && tv.height > 0) onResized(tv.width, tv.height)
     }
 
-    /**
-     * Khử răng cưa. Owner 13/10 *"viền trên kính nhoè"* · *"đèn sau sáng nhoè cạnh"*: bản đầu = KHÔNG khử ở mức LOW (mọi đầu
-     * xe) ⇒ cạnh mảnh tương phản cao (gờ kính đen trên thân trắng, dải đèn đuôi sáng) bậc thang + lấp lánh khi xoay; FXAA ở
-     * MEDIUM thì làm MỜ cạnh (lọc ảnh sau). Nay MSAA 4× (mẫu hình học, không làm mờ kết cấu) ở mọi mức; chi phí đo
-     * [ĐO máy ảo — xem diagnostics §5]. Chỉ tốn khi VẼ (rảnh = 0 khung).
-     */
-    private fun aa(@Suppress("UNUSED_PARAMETER") medium: Boolean) {
-        view.antiAliasing = View.AntiAliasing.NONE
-        view.multiSampleAntiAliasingOptions = View.MultiSampleAntiAliasingOptions().apply { enabled = true; sampleCount = MSAA_SAMPLES }
-    }
+    // ── Câu hỏi: bảng tra trên luồng chính ─────────────────────────────────────────────────────────────────────────────────────
+    fun visibleBounds(): Car3dBounds? = idx?.visibleBounds()
+    fun partNames(): List<String> = idx?.partNames().orEmpty()
+    fun anchor(a: Car3dAnchor?): V3? = idx?.anchor(a)
+    fun worldBox(pl: Car3dOrient.Placement, a: Car3dAnchor, posed: Boolean = false): Pair<V3, V3>? = idx?.worldBox(pl, a, posed)
+    fun target(pl: Car3dOrient.Placement, h: Car3dHotspot, a: V3, posed: Boolean): Car3dPick.Target? = idx?.target(pl, h, a, posed)
+    fun hasPart(pattern: String): Boolean = idx?.hasPart(pattern) == true
+    fun hasHinge(pattern: String): Boolean = idx?.hasHinge(pattern) == true
 
-    /**
-     * Màu sơn (tuyến tính 0..1) cho mọi vật liệu thân xe ([PAINT_MATERIALS] — tên vật liệu glTF do [Car3dGlb] đặt theo bộ đỉnh AVM).
-     * Đổi tại chỗ một tham số — không dựng lại GLB. Trả `true` nếu có vật liệu nhận (chủ xin vẽ lại).
-     */
+    // ── Lệnh: tính trên luồng chính, áp trên [GL]. `true` = có đổi (chủ xin vẽ lại) ─────────────────────────────────────────────
     fun paint(rgb: List<Double>): Boolean {
-        val a = asset ?: return false
-        val rm = engine.renderableManager
-        var hit = false
-        for (e in renderables()) {
-            // Theo NÚT (`extras.mat`, do Car3dGlb ghi): mọi bộ phận sơn — thân, cửa đóng, CÁNH CỬA MỞ — cùng nhận màu. Bản trước
-            // lọc theo tên vật liệu của gltfio ⇒ cửa (thực thể vật liệu riêng mỗi primitive) giữ màu cũ [ĐO máy ảo 13/10].
-            if (Car3dBox.material(a.getExtras(e)) !in PAINT_MATERIALS) continue
-            val inst = rm.getInstance(e)
-            for (p in 0 until rm.getPrimitiveCount(inst)) {
-                rm.getMaterialInstanceAt(inst, p).setParameter("baseColorFactor", rgb[0].toFloat(), rgb[1].toFloat(), rgb[2].toFloat(), 1f)
-                hit = true
-            }
-        }
-        return hit
+        val ids = idx?.paintTargets()?.takeIf { it.isNotEmpty() } ?: return false
+        cmd { it.paint(ids, rgb) }; return true
     }
-
-    /** Nền SH 1 dải (một màu trời đều) + nắng chéo trước-trái-trên + đèn phụ sau-phải. Đêm: dịu + lạnh hơn. */
-    private fun lighting(night: Boolean) {
-        val k = if (night) NIGHT_K else 1f
-        ibl = IndirectLight.Builder().irradiance(1, if (night) floatArrayOf(0.85f, 0.9f, 1f) else floatArrayOf(1f, 1f, 1f))
-            .intensity(IBL_LUX * k).build(engine)
-        scene.indirectLight = ibl
-        LightManager.Builder(LightManager.Type.DIRECTIONAL).color(1f, 0.98f, 0.95f).intensity(SUN_LUX * k)
-            .direction(-0.5f, -0.8f, -0.4f).castShadows(false).build(engine, lights[0])
-        LightManager.Builder(LightManager.Type.DIRECTIONAL).color(0.85f, 0.9f, 1f).intensity(FILL_LUX * k)
-            .direction(0.6f, -0.3f, 0.6f).castShadows(false).build(engine, lights[1])
-        // POLISH2 (owner 13/10 "mâm phía dưới mất màu"): ánh dội mặt đất — đèn yếu chiếu LÊN, mặt chúi xuống (nửa dưới mâm, mặt dưới
-        // nắp cốp mở) không còn đen kịt dưới nắng + SH đều.
-        LightManager.Builder(LightManager.Type.DIRECTIONAL).color(0.95f, 0.95f, 1f).intensity(BOUNCE_LUX * k)
-            .direction(0.1f, 1f, 0.05f).castShadows(false).build(engine, lights[2])
-        lights.forEach { scene.addEntity(it) }
+    fun night(n: Boolean) { night = n; if (idx != null) cmd { it.night(n) } }
+    fun glow(on: Boolean): Boolean { val v = idx?.glow(on) ?: return false; cmd { it.glow(v) }; return true }
+    fun slide(pattern: String, fraction: Float): Boolean = transforms(idx?.slide(pattern, fraction))
+    fun swing(pattern: String, s: Float): Boolean = transforms(idx?.swing(pattern, s))
+    private fun transforms(m: Map<Int, FloatArray>?): Boolean { if (m.isNullOrEmpty()) return false; cmd { it.transforms(m) }; return true }
+    fun place(matrix: FloatArray) { if (idx != null) cmd { it.place(matrix) } }
+    /** Hiện/ẩn theo biến thể cửa/đèn ([Car3dIndex.showVariants] — bảng dựng sẵn lúc nạp). */
+    fun showVariants(variants: List<Car3dVariant>, open: List<Boolean>): Boolean {
+        val c = idx?.showVariants(variants, open)?.takeIf { it.isNotEmpty() } ?: return false
+        cmd { it.show(c) }; return true
     }
-
-    /** Nạp `.glb` (ByteBuffer trực tiếp). `false` ⇒ tệp hỏng (chủ lùi 2D). Ảnh nhúng giải mã trong `loadResources`. */
-    fun load(glb: ByteBuffer): Boolean {
-        val a = loader.createAsset(glb) ?: return false
-        resources.loadResources(a)
-        a.releaseSourceData()
-        scene.addEntities(a.entities)
-        names.clear(); groups.clear(); ownBox.clear(); hinges.clear(); hits.clear()   // PERF 3.1.5: nhớ theo tài sản — tài sản mới thì quên
-        asset = a
-        return true
-    }
-
-    /** Đổi ánh sáng ngày/đêm tại chỗ (không dựng lại engine). */
-    fun night(night: Boolean) {
-        val k = if (night) NIGHT_K else 1f
-        ibl?.setIntensity(IBL_LUX * k)
-        val lm = engine.lightManager
-        lm.setIntensity(lm.getInstance(lights[0]), SUN_LUX * k)
-        lm.setIntensity(lm.getInstance(lights[1]), FILL_LUX * k)
-        lm.setIntensity(lm.getInstance(lights[2]), BOUNCE_LUX * k)
-    }
-
-    /** Hộp bao mô hình (khung mô hình): tâm + nửa cạnh. */
-    fun bounds(): Car3dBounds? = asset?.boundingBox?.let { b ->
-        Car3dBounds(V3(b.centerX.toDouble(), b.centerY.toDouble(), b.centerZ.toDouble()),
-            V3(b.halfExtentX.toDouble(), b.halfExtentY.toDouble(), b.halfExtentZ.toDouble()))
-    }
+    fun setCamera(c: Car3dCamera) { if (idx != null) cmd { it.setCamera(c) } }
 
     /**
-     * Hộp bao của các bộ phận ĐANG HIỆN (khung mô hình), hợp từ hộp riêng trong `extras`. Hộp của cả tài sản tính cả bản
-     * cửa-MỞ đang ẩn ⇒ rộng 3,7 m thay vì 1,86 m [ĐO máy ảo 13/10] — xe nhỏ trong ô và chấm sườn tính sai mặt. Không có
-     * `extras` ⇒ hộp của tài sản.
+     * Xếp một khung (không chờ). `false` = chưa vẽ được (chưa nạp / bề mặt chưa sẵn) ⇒ chủ thử lại khung sau. Đã có khung trong hàng
+     * ⇒ không xếp thêm (gộp); lệnh đổi cảnh đến sau khung đó ⇒ khung đó vẽ xong tự xếp thêm một khung ([drawAgain]).
      */
-    fun visibleBounds(): Car3dBounds? {
-        val mn = FloatArray(3) { Float.MAX_VALUE }; val mx = FloatArray(3) { -Float.MAX_VALUE }; var hit = false
-        for (e in renderables()) {
-            if (e in hidden) continue
-            val b = Car3dBox.parse(asset?.getExtras(e)) ?: return bounds()
-            for (k in AXES) { if (b[k] < mn[k]) mn[k] = b[k]; if (b[k + 3] > mx[k]) mx[k] = b[k + 3] }
-            hit = true
-        }
-        if (!hit) return bounds()
-        return Car3dBounds(V3(((mn[0] + mx[0]) / 2).toDouble(), ((mn[1] + mx[1]) / 2).toDouble(), ((mn[2] + mx[2]) / 2).toDouble()),
-            V3(((mx[0] - mn[0]) / 2).toDouble(), ((mx[1] - mn[1]) / 2).toDouble(), ((mx[2] - mn[2]) / 2).toDouble()))
-    }
-
-    /** Tên mọi bộ phận vẽ được (tên nút, hoặc tên nút cha khi nút mang lưới không tên). */
-    fun partNames(): List<String> = renderables().toList().mapNotNull { nameOf(it) }.distinct()
-
-    /**
-     * Neo [Car3dAnchor] → điểm khung MÔ HÌNH (gọi TRƯỚC [place], khi gốc còn đơn vị). Nút: hộp bao hợp của mọi bộ phận
-     * khớp mẫu, độ cao theo `ty`. Không khớp ⇒ `null` (chủ ẩn chấm + log).
-     */
-    fun anchor(a: Car3dAnchor?): V3? = when (a) {
-        null -> null
-        is Car3dAnchor.Point -> V3(a.x, a.y, a.z)
-        is Car3dAnchor.FirstOf -> a.options.firstNotNullOfOrNull { anchor(it) }
-        is Car3dAnchor.Node -> nodeBox(a.pattern)?.let { (mn, mx) -> V3((mn.x + mx.x) / 2, mn.y + (mx.y - mn.y) * a.ty, (mn.z + mx.z) / 2) }
-    }
-
-    /** Hộp (khung MÔ HÌNH) của neo [a]: hợp hộp các bộ phận khớp (neo điểm ⇒ hộp suy biến). Cho [Car3dPick]. */
-    fun box(a: Car3dAnchor?, posed: Boolean = false): Pair<V3, V3>? = when (a) {
-        null -> null
-        is Car3dAnchor.Point -> V3(a.x, a.y, a.z).let { it to it }
-        is Car3dAnchor.FirstOf -> a.options.firstNotNullOfOrNull { box(it, posed) }
-        is Car3dAnchor.Node -> nodeBox(a.pattern, posed)
-    }
-
-    /** Hộp THẾ GIỚI (min, max) của neo [a]: 8 góc hộp mô hình qua phép đặt [pl]. [posed] = cửa/nắp quay theo bản lề đang vẽ (kính TRƯỢT không dời hộp — xem [nodeBox]). */
-    fun worldBox(pl: Car3dOrient.Placement, a: Car3dAnchor, posed: Boolean = false): Pair<V3, V3>? {
-        val (bmn, bmx) = box(a, posed) ?: return null
-        val wc = (0 until CORNERS).map { i -> pl.apply(V3(if (i and 1 == 0) bmn.x else bmx.x, if (i and 2 == 0) bmn.y else bmx.y, if (i and 4 == 0) bmn.z else bmx.z)) }
-        return V3(wc.minOf { it.x }, wc.minOf { it.y }, wc.minOf { it.z }) to V3(wc.maxOf { it.x }, wc.maxOf { it.y }, wc.maxOf { it.z })
-    }
-
-    /** Hộp thế giới của bộ phận neo [h] → đích chạm ([Car3dPick]). */
-    fun target(pl: Car3dOrient.Placement, h: Car3dHotspot, a: V3, posed: Boolean): Car3dPick.Target? =
-        worldBox(pl, h.anchor, posed)?.let { (lo, hi) -> Car3dPick.Target(h.id, lo, hi, a) }
-
-    /**
-     * POLISH2 — đèn khoang (đèn đọc): nội thất hắt sáng ấm khi [on] — đổi `emissiveFactor` của nút mang `extras.glow` tại chỗ.
-     * 3.1.7 (diagnostics §15): giá trị KHI BẬT là dữ liệu của `:core` ghi theo đúng bản đã dựng ([Car3dMaterialStyle.glowOn] — bản có
-     * ảnh ×5,2 nhân ảnh, bản trơn nhỏ hơn + kẹp); trước đó một hằng ×5,2 đặt lên MỌI nội thất ⇒ nội thất trơn (SL6) cháy kem.
-     * Nút không có `extras.glow` ⇒ không đụng. `true` = có đổi (chủ xin vẽ lại).
-     */
-    fun glow(on: Boolean): Boolean {
-        if (glowing == on) return false
-        val a = asset ?: return false
-        glowing = on
-        val rm = engine.renderableManager
-        for (e in renderables()) {
-            val g = Car3dBox.glow(a.getExtras(e)) ?: continue
-            val k = if (on) g else OFF_GLOW
-            val inst = rm.getInstance(e)
-            for (p in 0 until rm.getPrimitiveCount(inst)) {
-                // [ĐO máy ảo 13/10] `MaterialInstance.material` của thực thể gltfio là null (vỏ Java không giữ Material) ⇒ không hỏi
-                // hasParameter được. Nút có `extras.glow` thì vật liệu KHAI `emissiveFactor` trong GLB ([Car3dGlb]) ⇒ có tham số.
-                rm.getMaterialInstanceAt(inst, p).setParameter(EMISSIVE, k[0], k[1], k[2])
-            }
-        }
-        return true
-    }
-    private var glowing: Boolean? = null
-
-    /** Có bộ phận nào tên khớp [pattern] (kể cả đang ẩn). */
-    fun hasPart(pattern: String): Boolean = renderables().any { hit(pattern, it) }
-
-    /**
-     * Nút khớp [pattern] theo TÊN hoặc theo NHÓM diễn hoạt (`extras.grp`): nắp cốp cắt từ thân ([Car3dLid]) giữ tên gốc
-     * (`body_paint`…) để biến thể sơn/đèn theo tên vẫn đúng, còn neo/diễn hoạt cốp tìm nó qua nhóm `trunk`.
-     */
-    private fun hit(pattern: String, e: Int): Boolean = e in hitsOf(pattern)
-
-    /** PERF 3.1.5 — tập thực thể khớp [pattern] (tên/nhóm bất biến theo tài sản) tính MỘT lần mỗi mẫu; [ĐO] `Car3dNames.matches` 56 % sau lượt nhớ đầu. */
-    private fun hitsOf(pattern: String): Set<Int> = hits.getOrPut(pattern) {
-        renderables().filterTo(HashSet()) { e ->
-            Car3dNames.matches(pattern, nameOf(e)) || Car3dNames.matches(pattern, groups.memo(e) { Car3dBox.group(asset?.getExtras(e)) })
-        }
-    }
-    private val hits = HashMap<String, Set<Int>>()
-
-    private val groups = HashMap<Int, String?>()
-    private val ownBox = HashMap<Int, FloatArray?>()
-
-    /** [posed] = hộp theo tư thế HIỆN TẠI (nắp cốp đang mở: góc hộp quay theo bản lề) — đích chạm đi theo bộ phận. */
-    private fun nodeBox(pattern: String, posed: Boolean = false): Pair<V3, V3>? {
-        val rm = engine.renderableManager
-        val mn = DoubleArray(3) { Double.MAX_VALUE }; val mx = DoubleArray(3) { -Double.MAX_VALUE }
-        val box = Box(); var hit = false
-        val cBuf = FloatArray(3); val hBuf = FloatArray(3)
-        for (e in renderables()) {
-            if (!hit(pattern, e)) continue
-            // Hộp RIÊNG của bộ phận (extras do Car3dGlb ghi); hộp của Filament = min/max của accessor CHUNG ⇒ mọi bộ phận
-            // cùng bộ đỉnh trùng hộp [ĐO máy ảo 13/10]. Không có extras (tệp glTF khác) ⇒ hộp của Filament.
-            // ⚠ KHÔNG gọi `Box.set(...)`: [ĐO máy ảo 13/10 19:43] `Box.set` → native `nSet` abort cả tiến trình HOME
-            // ("JNI DETECTED ERROR … invalid jobject") — lỗi CheckJNI không bắt được bằng try/catch. Tính tâm/nửa cạnh bằng tay.
-            val own = ownBox.memo(e) { Car3dBox.parse(asset?.getExtras(e)) }   // POLISH2: một lần/thực thể (đích cốp đi theo nắp mỗi khung)
-            val c: FloatArray; val h: FloatArray
-            if (own != null) {
-                c = cBuf; h = hBuf
-                for (k in AXES) { c[k] = (own[k] + own[k + 3]) / 2f; h[k] = (own[k + 3] - own[k]) / 2f }
-            } else {
-                rm.getAxisAlignedBoundingBox(rm.getInstance(e), box)
-                c = box.getCenter(cBuf); h = box.getHalfExtent(hBuf)
-            }
-            // Hộp NGHỈ trong khung mô hình: không cộng biến đổi cục bộ của nút (kính đang trượt) — nút GLB không có biến đổi riêng.
-            // 3.1.5 (owner 14/10 *"cửa không có chấm"* — [ĐO máy ảo] chấm kính tụt theo kính lên DA CỬA: `win-lr` 100 % ⇒ y 412 px,
-            // cửa 466): tư thế chỉ gồm BẢN LỀ (cửa/nắp quay — bộ phận rời chỗ cũ). Kính TRƯỢT vào trong cửa thì phần đã tụt bị da cửa
-            // che ⇒ đích chạm + chấm của kính ở lại Ô KÍNH (chấm nói mức bằng hình chấm), không theo phần kính đã khuất.
-            val pose = if (posed) swingOf[e] else null
-            repeat(CORNERS) { i ->
-                var p = floatArrayOf(c[0] + h[0] * (if (i and 1 == 0) -1 else 1), c[1] + h[1] * (if (i and 2 == 0) -1 else 1), c[2] + h[2] * (if (i and 4 == 0) -1 else 1))
-                if (pose != null) pose.first.apply(V3(p[0].toDouble(), p[1].toDouble(), p[2].toDouble()), pose.second).let { q -> p = floatArrayOf(q.x.toFloat(), q.y.toFloat(), q.z.toFloat()) }
-                for (k in AXES) {
-                    val w = p[k].toDouble()
-                    if (w < mn[k]) mn[k] = w; if (w > mx[k]) mx[k] = w
-                }
-            }
-            hit = true
-        }
-        return if (!hit) null else V3(mn[0], mn[1], mn[2]) to V3(mx[0], mx[1], mx[2])
-    }
-
-    /**
-     * Kính TỤT theo % mở (owner 13/10 *"kính cửa sổ có chuyển động mở không?"*): mọi bộ phận khớp [pattern] (bản đóng + bản cửa
-     * mở) dịch xuống [fraction] × chiều cao kính (trục đứng mô hình, biến đổi cục bộ của nút — gốc vẫn mang phép đặt). Kính
-     * nằm TRONG tấm cửa ⇒ phần tụt xuống bị tấm cửa che như xe thật. Trả `true` nếu có bộ phận nhận.
-     */
-    fun slide(pattern: String, fraction: Float): Boolean {
-        var hit = false
-        for (e in renderables()) {
-            if (!Car3dNames.matches(pattern, nameOf(e))) continue
-            val b = Car3dBox.parse(asset?.getExtras(e)) ?: continue
-            slideOf[e] = -fraction.coerceIn(0f, 1f) * (b[4] - b[1]) * GLASS_TRAVEL
-            compose(e); hit = true
-        }
-        return hit
-    }
-
-    /**
-     * Cánh cửa/nắp cốp đang mở dở: mọi bộ phận khớp [pattern] CÓ bản lề (`extras.hinge` — [Car3dHinge], suy từ cặp đóng/mở)
-     * quay tỉ lệ [s] góc mở. Trả `true` nếu có bộ phận nhận (không có bản lề ⇒ chủ đổi bản ngay, không diễn hoạt).
-     */
-    fun swing(pattern: String, s: Float): Boolean {
-        var hit = false
-        for (e in renderables()) {
-            if (!hit(pattern, e)) continue
-            val h = hingeOf(e) ?: continue
-            swingOf[e] = h to s
-            compose(e); hit = true
-        }
-        return hit
-    }
-
-    fun hasHinge(pattern: String): Boolean = renderables().any { hit(pattern, it) && hingeOf(it) != null }
-
-    private fun hingeOf(e: Int): Car3dHinge.Hinge? = hinges.memo(e) { Car3dHinge.parse(asset?.getExtras(e)) }
-
-    /** Biến đổi cục bộ = bản lề(s) · dịch kính(dy) — kính trên cánh cửa vừa tụt vừa quay theo cửa. */
-    private fun compose(e: Int) {
-        val dy = slideOf[e] ?: 0f
-        val m = swingOf[e]?.let { (h, s) -> h.matrix(s) } ?: floatArrayOf(1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f)
-        // M · T(0,dy,0): cột 4 += dy · cột 2.
-        m[12] += dy * m[4]; m[13] += dy * m[5]; m[14] += dy * m[6]
-        val tm = engine.transformManager
-        tm.setTransform(tm.getInstance(e), m)
-    }
-
-    private val slideOf = HashMap<Int, Float>()
-    private val swingOf = HashMap<Int, Pair<Car3dHinge.Hinge, Float>>()
-    private val hinges = HashMap<Int, Car3dHinge.Hinge?>()
-
-    /** Đặt gốc mô hình (ma trận cột-chính từ [Car3dOrient.Placement.matrix]). */
-    fun place(matrix: FloatArray) {
-        val a = asset ?: return
-        val tm = engine.transformManager
-        tm.setTransform(tm.getInstance(a.root), matrix)
-    }
-
-    /** Hiện/ẩn bộ phận theo [match] (tên → hiện?; `null` = không đụng). Trả `true` nếu có đổi (chủ xin vẽ lại). */
-    fun showByName(match: (String?) -> Boolean?): Boolean {
-        var changed = false
-        for (e in renderables()) {
-            val want = match(nameOf(e)) ?: continue
-            val isHidden = e in hidden
-            if (want && isHidden) { scene.addEntity(e); hidden -= e; changed = true }
-            if (!want && !isHidden) { scene.remove(e); hidden += e; changed = true }
-        }
-        return changed
-    }
-
-    fun setCamera(c: Car3dCamera) {
-        if (width <= 0 || height <= 0) return
-        camera.setProjection(c.fovDeg, width.toDouble() / height, c.near, c.far, Camera.Fov.VERTICAL)
-        val e = c.eye; val t = c.target
-        camera.lookAt(e.x, e.y, e.z, t.x, t.y, t.z, 0.0, 1.0, 0.0)
-    }
-
-    /** Một khung. `false` = chưa vẽ được (bề mặt chưa sẵn / Filament bỏ khung) ⇒ chủ thử lại khung sau. */
     fun render(frameTimeNanos: Long): Boolean {
-        val s = swap ?: return false
-        if (!ui.isReadyToRender) return false
-        if (!renderer.beginFrame(s, frameTimeNanos)) return false
-        renderer.render(view)
-        renderer.endFrame()
+        if (idx == null || !ui.isReadyToRender) return false
+        if (drawQueued) return true
+        drawQueued = true; drawAgain = false
+        GL.post {
+            // Soát Pass 15 (P1): khung ném (Filament/JNI) mà không về MAIN ⇒ [drawQueued] kẹt `true` mãi ⇒ xe đứng hình IM LẶNG (mọi
+            // lệnh vẽ sau đều "gộp" vào khung không bao giờ xong). Lỗi ⇒ coi là một khung hụt (xin lại ≤ [MAX_MISSES]), log E.
+            val ok = try { !dead && s?.render(frameTimeNanos) == true } catch (t: Throwable) { Log.e(TAG, "khung trên ${Car3dOwnerThread.NAME} hỏng", t); false }
+            MAIN.post {
+                drawQueued = false
+                if (dead) return@post
+                if (ok) misses = 0 else if (++misses <= MAX_MISSES) { onSize(width, height); return@post }   // Filament bỏ khung ⇒ xin lại
+                if (drawAgain) render(System.nanoTime())
+            }
+        }
         return true
     }
 
     override fun onNativeWindowChanged(surface: Surface) {
-        swap?.let { engine.destroySwapChain(it) }
-        swap = engine.createSwapChain(surface, ui.swapChainFlags)
+        val flags = ui.swapChainFlags
+        GL.call { s?.createSwapChain(surface, flags) }
         // 3.1.5 [ĐO máy ảo 14/10, 2/2]: tắt/bật màn ⇒ bề mặt dựng lại CÙNG cỡ ⇒ không có onResized ⇒ không ai xin khung ⇒ xe
         // không vẽ (lớp phủ vẫn hiện) tới khi vuốt. Bề mặt mới ⇒ xin khung như lúc đổi cỡ.
         if (width > 0 && height > 0) onSize(width, height)
     }
 
-    override fun onDetachedFromSurface() {
-        swap?.let { engine.destroySwapChain(it); engine.flushAndWait() }
-        swap = null
-    }
+    override fun onDetachedFromSurface() { GL.call { s?.dropSwapChain() } }
 
     override fun onResized(w: Int, h: Int) {
         width = w; height = h
-        view.viewport = Viewport(0, 0, w, h)
-        android.util.Log.i("Car3d", "surface ${w}x$h px")
+        cmd { it.viewport(w, h) }
+        Log.i(TAG, "surface ${w}x$h px")
         onSize(w, h)
     }
 
     /**
-     * Trả hết GPU, MỘT lần (chủ bỏ tham chiếu ngay sau). Thứ tự: bề mặt → tài sản (thực thể + vật liệu con) → bộ cấp vật liệu
-     * gltfio → đèn/nền → renderer/view/scene/camera → Engine. `Engine.destroy` nằm trong `finally`: một bước giữa chừng ném lỗi
-     * Java thì Engine VẪN được huỷ — Engine tự giải phóng mọi tài nguyên người dùng còn sót (tài liệu `Engine.destroy` 1.77:
-     * *"frees any user-allocated resources not already destroyed (logs a warning)"*), không giữ ngữ cảnh GL + luồng driver mồ côi.
+     * Trả hết GPU, MỘT lần (chủ bỏ tham chiếu ngay sau). Luồng chính chỉ gỡ `UiHelper` (bề mặt); tài sản → vật liệu → Engine huỷ trên
+     * [GL] ([Car3dScene.destroy], `Engine.destroy` trong `finally`), xong thì [onFreed] trên luồng chính.
      */
-    fun destroy() {
-        try {
-            ui.detach()
-            swap?.let { engine.destroySwapChain(it) }; swap = null
-            asset?.let { loader.destroyAsset(it) }; asset = null
-            materials.destroyMaterials(); materials.destroy()
-            resources.destroy(); loader.destroy()
-            lights.forEach { engine.destroyEntity(it); EntityManager.get().destroy(it) }
-            ibl?.let { engine.destroyIndirectLight(it) }
-            grading?.let { engine.destroyColorGrading(it) }
-            engine.destroyRenderer(renderer); engine.destroyView(view); engine.destroyScene(scene)
-            engine.destroyCameraComponent(camEntity); EntityManager.get().destroy(camEntity)
-        } finally {
-            engine.destroy()
-        }
-    }
-
-    /**
-     * PERF 3.1.5 [ĐO simpleperf máy ảo 14/10: 10 lượt mở/đóng cửa = 2,36 s CPU luồng chính, 72 % trong `hit`] — dữ liệu BẤT BIẾN của
-     * tài sản (danh sách thực thể · tên · extras) đọc qua JNI MỖI LẦN hỏi, mà [hit]/[nodeBox] hỏi cho mọi thực thể ở mọi khung diễn hoạt.
-     * Một tài sản cho cả đời renderer ([load] một lần) ⇒ nhớ theo tài sản/thực thể. [memo] nhớ cả kết quả `null` (`getOrPut` coi `null`
-     * là "chưa có" ⇒ thực thể không nhóm/không bản lề bị phân tích lại extras JSON mỗi lần — gốc của 33 % trong `Car3dBox.group`).
-     */
-    private fun renderables(): IntArray {
-        val a = asset ?: return IntArray(0)
-        if (renderableOf !== a) { renderableIds = a.renderableEntities; renderableOf = a }
-        return renderableIds
-    }
-    private var renderableOf: FilamentAsset? = null
-    private var renderableIds = IntArray(0)
-    private val names = HashMap<Int, String?>()
-    private inline fun <T> HashMap<Int, T?>.memo(e: Int, f: () -> T?): T? = if (containsKey(e)) get(e) else f().also { put(e, it) }
-
-    private fun nameOf(e: Int): String? = names.memo(e) {
-        val a = asset ?: return null
-        a.getName(e)?.takeIf { it.isNotEmpty() } ?: run {
-            val tm = engine.transformManager
-            val parent = tm.getParent(tm.getInstance(e))
-            if (parent != 0) a.getName(parent) else null
-        }
+    fun destroy(onFreed: () -> Unit) {
+        if (dead) return
+        dead = true
+        if (idx != null) { idx = null; ui.detach() }
+        GL.post { try { s?.destroy() } finally { s = null; MAIN.post(onFreed) } }
     }
 
     companion object {
+        private const val TAG = "Car3d"
+        /** Filament bỏ khung liền chừng này lần ⇒ thôi xin lại (bề mặt chết — chủ xin khi có sự kiện mới). */
+        private const val MAX_MISSES = 48
+        private val MAIN = Handler(Looper.getMainLooper())
+
+        /** Luồng sở hữu Filament của cả tiến trình ([Car3dOwnerThread]). */
+        val GL = Car3dOwnerThread(Car3dOwnerThread.NAME) { Log.e(TAG, "việc trên ${Car3dOwnerThread.NAME} hỏng", it) }
+
         /**
-         * Dựng bộ vẽ. Soát Pass 2: hàm dựng ném lỗi giữa chừng (vật liệu/IBL/`attachTo`) ⇒ trước đây Engine (ngữ cảnh GL + luồng
-         * driver) mồ côi — mỗi lần widget được dựng lại (đổi hồ sơ…) lại rò một Engine. Nay huỷ Engine rồi ném tiếp (chủ lùi 2D).
-         * An toàn: `ui.attachTo` là bước CUỐI của hàm dựng ⇒ hỏng trước đó thì chưa có callback bề mặt nào trỏ vào Engine.
+         * Dựng tay cầm NGAY (luồng chính, không Engine) và xếp việc dựng Engine + cảnh vào [GL]. Dựng hỏng ⇒ [load] báo lỗi (chủ
+         * `FAULT` + thử lại có lùi dần). Soát Pass 2: Engine không bao giờ mồ côi — [Car3dScene.create] huỷ Engine khi hàm dựng ném.
          */
         fun create(tv: TextureView, medium: Boolean, night: Boolean, onSize: (Int, Int) -> Unit): Car3dRenderer {
-            val e = Engine.create()
-            return try { Car3dRenderer(e, tv, medium, night, onSize) } catch (t: Throwable) { runCatching { e.destroy() }; throw t }
+            val t0 = System.nanoTime()
+            val r = Car3dRenderer(tv, night, onSize)
+            GL.post {
+                if (r.dead) return@post
+                val g0 = System.nanoTime()
+                runCatching { Car3dScene.create(medium, night) }
+                    .onSuccess { r.s = it; Log.i(TAG, "Engine + cảnh ${(System.nanoTime() - g0) / 1_000_000} ms (luồng ${Car3dOwnerThread.NAME})") }
+                    .onFailure { r.initError = it; Log.w(TAG, "Filament init hỏng", it) }
+            }
+            mainMs(t0)
+            return r
         }
 
-        /** Nạp thư viện native một lần/tiến trình; hỏng ⇒ `false` (widget lùi 2D). */
-        @Volatile private var ready: Boolean? = null
-        fun init(): Boolean = ready ?: synchronized(this) {
-            ready ?: runCatching { Filament.init(); Gltfio.init(); true }.getOrElse { false }.also { ready = it }
-        }
+        /** Cộng ms luồng chính từ [t0] vào [KachiPerf] (`3D-dựng … (luồng-chính M ms)`). */
+        fun mainMs(t0: Long) = KachiPerf.add(KachiPerf.Counter.CAR3D_MAIN_MS, (System.nanoTime() - t0) / 1_000_000)
 
-        /** [ĐO máy ảo 13/10] 30k/90k/30k ⇒ thân xe trắng "cháy", mất nếp gấp ⇒ hạ còn ~60 %. */
-        const val IBL_LUX = 20_000f
-        const val SUN_LUX = 55_000f
-        const val FILL_LUX = 15_000f
-        const val BOUNCE_LUX = 25_000f
-        const val NIGHT_K = 0.7f
-        const val MSAA_SAMPLES = 4
-        /** Kính mở hẳn tụt chừng này × chiều cao kính (chừa mép trên trong gioăng như kính thật hạ hết). */
-        const val GLASS_TRAVEL = 0.92f
-        /** Vật liệu sơn của lưới AVM (bộ đỉnh `paint` + `open` — cánh cửa mở). */
-        private val PAINT_MATERIALS = setOf("paint", "open")
-        private const val EMISSIVE = "emissiveFactor"
-        /** Đèn khoang tắt. Giá trị BẬT nằm ở `extras.glow` của nút (`:core` [Car3dMaterials.READ_GLOW] / [Car3dMaterials.READ_GLOW_PLAIN]). */
-        private val OFF_GLOW = floatArrayOf(0f, 0f, 0f)
-        /** Ba trục x/y/z · 8 đỉnh hộp bao (không viết khoảng số cứng — bài `GridSeamGuardTest`). */
-        private val AXES = IntRange(0, 2)
-        private const val CORNERS = 8
+        /** Nạp thư viện native một lần/tiến trình; hỏng ⇒ `false` (widget: không khả thi). */
+        @Volatile private var libs: Boolean? = null
+        fun init(): Boolean = libs ?: synchronized(this) {
+            libs ?: runCatching { Filament.init(); Gltfio.init(); true }.getOrElse { false }.also { libs = it }
+        }
     }
 }

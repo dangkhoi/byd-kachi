@@ -16,7 +16,6 @@ import com.byd.clusternav.modules.hal.BydHal.cachedSetInt
 import com.byd.clusternav.modules.hal.BydHal.featureId
 import com.byd.clusternav.navigation.HudPathName
 import com.byd.clusternav.navigation.HudPathNameGate
-import com.byd.clusternav.navigation.HudRoadNameRoute
 import com.byd.clusternav.navigation.LaneInfo
 import com.byd.clusternav.navigation.NavOutputDecision
 
@@ -64,12 +63,9 @@ object BydHalContentPush {
      * [ĐO nguồn fw 2606 AmapService.java:120-145]: KHÔNG ghi ở keep-alive; real push chỉ ghi khi tên khác tên đã
      * nhận (rc=0) lần trước trên CHÍNH kênh đó; payload = [HudPathName.encode] (≤255 byte UTF-16LE, nguyên văn).
      * Bỏ qua vì trùng ⇒ KHÔNG thêm token vào [rc] (HudWriteSummary sẽ đếm token lạ là "từ chối").
-     * 3.1.12 · HUD-ROADNAME-ALT-PATH: [plan] chọn đường — `plan.hal` false (chế độ B) ⇒ không ghi tên qua HAL; A48 ⇒ cắt
-     * ≤ 96 byte. Mặc định = [HudRoadNameRoute.Plan.DEFAULT] = đúng đường 3.1.11 (chế độ A).
      */
-    fun pushPathName(instr: Any, road: String, keepAlive: Boolean, rc: StringBuilder, plan: HudRoadNameRoute.Plan = HudRoadNameRoute.Plan.DEFAULT) {
-        if (!plan.hal) return
-        val bytes by lazy(LazyThreadSafetyMode.NONE) { HudPathName.encode(road, plan.halMaxBytes) }
+    fun pushPathName(instr: Any, road: String, keepAlive: Boolean, rc: StringBuilder) {
+        val bytes by lazy(LazyThreadSafetyMode.NONE) { HudPathName.encode(road) }
         fun send(ch: HudPathNameGate.Channel, id: Int, tag: String) {
             if (!pathNameGate.shouldSend(ch, road, keepAlive)) return
             val r = cachedSetBytes(instr, id, bytes)

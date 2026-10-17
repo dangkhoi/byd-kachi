@@ -2,6 +2,7 @@
 
 > **Trạng thái**: Evidence (RE + chuẩn bị) · **Cập nhật**: 2026-10-16 · **Chủ**: dangkhoi · **Xe**: Seal, DiLink3, fw 2606
 > **Backlog**: `HUD-CLUSTERDEBUG-PATH` · **Script**: `scripts/oncar/hud-clusterdebug-nav.sh`
+> **⛔ ĐÓNG 2026-10-17**: mã đường thứ hai (§9, 3.1.12) **removed 3.1.14, testers report no effect** — doc + script giữ làm lịch sử; tên đường về đúng đường 3.1.11 (HAL, chế độ A).
 > **Liên quan**: ADR `docs/decisions/0002-hud-nav-coding-locked.md` · `docs/diagnostics/factory-hud-nav-RE-avenues-2026-08-19.md` §0.1 ·
 > `docs/diagnostics/oncar-seal-2026-10-10-r18-sla-can.md` §2 (bơm TestDevice 0x237) · `docs/diagnostics/oncar-seal-2026-10-09-hud-isa-power.md` §2 ·
 > `docs/_handoff/hud-cluster-injection-findings-2026-08-10.md` §13.2/§25 Q5 · `docs/_handoff/re-showroom-ref.md` · backlog `HUD-ROADNAME-OEM-CADENCE`

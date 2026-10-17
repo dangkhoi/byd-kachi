@@ -14,6 +14,8 @@ class Car3dLifecycleContractTest {
 
     private fun src(n: String) = Files.readString(SourceRoots.path("src/main/java/com/byd/clusternav/launcher/$n"))
     private val renderer = src("Car3dRenderer.kt")
+    /** 3.1.14 R3: phần Filament (Engine · cảnh · gltfio) tách sang `Car3dScene.kt`, sống trên luồng car3d-gl. */
+    private val scene = src("Car3dScene.kt")
     private val widget = src("Car3dWidgetView.kt")
     private val source = src("Car3dModelSource.kt")
 
@@ -37,7 +39,7 @@ class Car3dLifecycleContractTest {
     fun `hop tu the cua kinh khong theo phan kinh da tut - cham va dich o lai o kinh`() {
         // 3.1.5 [ĐO máy ảo 14/10] `win-lr` 100 % ⇒ chấm y 412 px trên da cửa (cửa 466): hộp tư thế cộng độ trượt kính ⇒ đích chạm
         // + chấm đi xuống theo phần kính đã khuất trong cửa. Hộp tư thế chỉ gồm bản lề.
-        val body = renderer.substringAfter("private fun nodeBox(").substringBefore("\n    }\n")
+        val body = src("Car3dIndex.kt").substringAfter("private fun nodeBox(").substringBefore("\n    }\n")
         assertFalse(body.contains("slideOf"), "nodeBox không được cộng độ trượt kính")
         assertTrue(body.contains("swingOf"), "vẫn theo bản lề (cửa/nắp mở)")
     }
@@ -46,30 +48,40 @@ class Car3dLifecycleContractTest {
     fun `khong goi Box set - native nSet abort ca HOME`() {
         // [ĐO máy ảo 13/10 19:43] Box.set → static native nSet ⇒ "JNI DETECTED ERROR … invalid jobject" ⇒ tiến trình chết.
         // nUnionSelf / nTranslateTo cùng dạng static-native-trả-jobject ⇒ cấm luôn. Đọc hộp bằng getter/getAxisAlignedBoundingBox.
-        val code = (renderer + widget).lines().filterNot { it.trim().startsWith("//") || it.trim().startsWith("*") }.joinToString("\n")
+        val code = (renderer + scene + widget).lines().filterNot { it.trim().startsWith("//") || it.trim().startsWith("*") }.joinToString("\n")
         assertFalse(Regex("""\bbox\.set\(|Box\([^)]*\)\.set\(|\.unionSelf\(|\.translateTo\(""").containsMatchIn(code))
     }
 
     @Test
     fun `engine huy ca khi dung hong giua chung va khi huy hong giua chung`() {
-        assertTrue(renderer.contains("private constructor("), "chỉ dựng qua create() — không Engine mồ côi khi hàm dựng ném")
-        val create = renderer.substringAfter("fun create(").substringBefore("\n        }")
+        assertTrue(renderer.contains("private constructor(") && scene.contains("private constructor("), "chỉ dựng qua create() — không Engine mồ côi khi hàm dựng ném")
+        val create = scene.substringAfter("fun create(").substringBefore("\n        }")
         assertTrue(create.contains("catch (t: Throwable)") && create.contains("e.destroy()"), "dựng hỏng ⇒ huỷ Engine")
-        val destroy = renderer.substringAfter("    fun destroy() {").substringBefore("\n    }\n")
+        val destroy = scene.substringAfter("    fun destroy() {").substringBefore("\n    }\n")
         assertTrue(Regex("""finally \{\s*engine\.destroy\(\)""").containsMatchIn(destroy), "Engine.destroy trong finally")
         assertTrue(widget.contains("Car3dRenderer.create("), "widget dựng qua create()")
     }
 
     @Test
     fun `nap dung mot luong mot luc va don rac va kiem cho trong`() {
-        assertTrue(source.contains("fun load(ctx: Context): Loaded? = synchronized(lock)"), "single-flight: hai luồng cùng ghi car3d-src.tmp ⇒ SIGBUS")
+        assertTrue(source.substringAfter("fun load(ctx: Context): Loaded? {").substringBefore("\n    }\n").contains("synchronized(lock) { loadLocked(ctx) }"), "single-flight: hai luồng cùng ghi car3d-src.tmp ⇒ SIGBUS")
         // 3.1.10: dọn qua `Car3dCache.stale` = mọi tệp của widget (`owned`: .glb.part / .tmp của lần dựng bị giết) TRỪ bản nhớ khoang.
         assertTrue(source.contains("Car3dCache.stale("), "dọn cả .glb.part / .tmp của lần dựng bị giết")
         assertTrue(source.contains("Car3dCabin.apply(mesh, lid, cabinMemo(ctx))"), "lượt khoang đi qua bản nhớ theo khoá đầu vào")
         val alloc = source.substringAfter("Car3dGlb.write(").substringBefore("force()")
         assertTrue(alloc.indexOf("Car3dCache.roomFor(") in 0 until alloc.indexOf("FileChannel.MapMode.READ_WRITE"),
             "kiểm chỗ trống TRƯỚC khi ánh xạ ghi tệp thưa (đĩa đầy = SIGBUS)")
-        assertTrue(widget.contains("Car3dModelSource.invalidate("), "tệp đệm gltfio từ chối ⇒ bỏ, lượt thử lại dựng từ lưới")
+        assertTrue(widget.contains("Car3dModelSource.verdict(context.applicationContext, l, ok = timing != null)"), "kết quả gltfio ⇒ dấu hỏng theo khoá + bỏ đệm khi từ chối")
+        // 3.1.14 R5 (SL6 17/10 "đơ qua nhiều lần reset"): dựng nguội tối đa MỘT lượt/lần khởi động, trần qua các lần nổ máy, chờ qua lúc khởi động.
+        val v = source.substringAfter("fun verdict(").substringBefore("\n    }\n")
+        assertTrue(v.contains("purge(ctx)") && v.contains("bump(mark, 1)") && v.contains("mark.delete()"), "từ chối ⇒ +1 + bỏ đệm; nhận ⇒ xoá dấu")
+        // Soát Pass 15: gltfio NHẬN (đệm còn hay không) ⇒ không cộng dấu — dấu trước lượt dựng đã đếm lượt ấy; cộng nữa là đếm một thành hai.
+        assertFalse(v.substringAfter("!ok ->").substringAfter("\n").contains("bump("), "nhánh gltfio nhận không được cộng dấu hỏng")
+        val cold = source.substringAfter("if (cache.isFile && cache.length() > 0) return Loaded(").substringBefore("purge(ctx)")
+        assertTrue(cold.contains("Car3dCache.mayColdBuild(failed, coldTried)") && cold.contains("coldTried = true") && cold.contains("Car3dCache.coldDelayMs(")
+            && cold.indexOf("bump(mark, 1)") > cold.indexOf("Thread.sleep(wait)"), "cổng dựng nguội: trần + một lượt/tiến trình + chờ 30 s + ghi dấu TRƯỚC khi dựng")
+        assertTrue(source.contains("if (!verdict.ok) { bump(mark, Car3dCache.MAX_COLD_FAILS)"), "kiểm hợp lý trượt (tất định) ⇒ không phân tích lại mỗi lần nổ máy")
+        assertTrue(source.substringAfter("    fun load(ctx: Context): Loaded? {").substringBefore("\n    }\n").contains("getMainLooper().thread !== Thread.currentThread()"), "không bao giờ dựng trên luồng chính")
     }
 
     @Test

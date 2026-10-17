@@ -58,8 +58,7 @@ class NavHalContentKeepAliveTest {
     @Test
     fun `R9 pathname is written after STATUS=2 and before icon and distance`() {
         val status = hal.indexOf("if (!keepAlive) w(\"INSTRUMENT_SEND_NAVI_STATUS_SET\", 2)")
-        // 3.1.12: thêm `roadPlan` (đường gửi tên A/A48/B/C) — thứ tự không đổi.
-        val raw = hal.indexOf("BydHalContentPush.pushPathName(instr, road, keepAlive, rc, roadPlan)")
+        val raw = hal.indexOf("BydHalContentPush.pushPathName(instr, road, keepAlive, rc)")
         val sdk = hal.indexOf("\"sendNextPathName\", String::class.java")
         val icon = hal.indexOf("w(\"INSTRUMENT_GUIDE_INFO_SIMPLE_SET\", icon)")
         val dist = hal.indexOf("w(\"INSTRUMENT_FRONT_CROSSING_DISTANCE_SET\", segMeters)")
@@ -75,7 +74,7 @@ class NavHalContentKeepAliveTest {
         val clear = hal.substring(hal.indexOf("fun clearNavFrame("))
         assertTrue(clear.substring(0, clear.indexOf("INSTRUMENT_SEND_NAVI_STATUS_SET")).contains("pathNameGate.reset()"))
         val push = SourceRoots.text("src/main/java/com/byd/clusternav/modules/hal/BydHalContentPush.kt")
-        assertTrue(push.contains("HudPathName.encode(road, plan.halMaxBytes)"), "payload must be the ≤255-byte UTF-16LE encoding (A48: ≤96)")
+        assertTrue(push.contains("HudPathName.encode(road)"), "payload must be the ≤255-byte UTF-16LE encoding")
     }
 
     @Test

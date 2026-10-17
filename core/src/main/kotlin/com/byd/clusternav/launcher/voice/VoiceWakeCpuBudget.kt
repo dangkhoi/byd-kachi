@@ -26,12 +26,33 @@ package com.byd.clusternav.launcher.voice
  * Thuần (cấm `android.*`): đồng hồ do chỗ gọi đưa vào ⇒ bơm số giả để chứng minh off-car.
  */
 class VoiceWakeCpuBudget(
-    private val duty: Double = DUTY,
-    private val burstMs: Double = DUTY * BURST_WINDOW_MS,
+    duty: Double = DUTY,
+    val burstMs: Double = DUTY * BURST_WINDOW_MS,
 ) {
+    /** Trần dài hạn đang áp (ms CPU nạp mỗi ms tường) — đổi bằng [retune]. */
+    var duty: Double = duty
+        private set
+
+    /** Trần xô đang áp (≤ [burstMs]) — đổi bằng [retune]. */
+    var capMs: Double = burstMs
+        private set
+
     init {
         require(duty > 0.0 && duty.isFinite()) { "duty phải > 0" }
         require(burstMs > 0.0 && burstMs.isFinite()) { "burstMs phải > 0" }
+    }
+
+    /**
+     * WAKE-WEAK-UNIT (3.1.14) — đổi trần dài hạn + trần xô lúc chạy ([VoiceWakeDuty.limits]: máy yếu / máy bận). Số dư bị kẹp
+     * xuống [newCapMs] ngay (máy vừa bận thì không được tiêu nốt một xô đầy); nới lại thì số dư KHÔNG nhảy lên, chỉ nạp dần.
+     * Phần đã nạp tới [nowMs] tính theo trần cũ.
+     */
+    fun retune(newDuty: Double, newCapMs: Double, nowMs: Long) {
+        require(newDuty > 0.0 && newDuty.isFinite()) { "duty phải > 0" }
+        refill(nowMs)
+        duty = newDuty
+        capMs = newCapMs.coerceIn(1.0, burstMs)
+        credit = minOf(credit, capMs)
     }
 
     private var credit = burstMs
@@ -59,6 +80,7 @@ class VoiceWakeCpuBudget(
     fun creditMs(): Double = credit
 
     fun reset() {
+        capMs = burstMs
         credit = burstMs
         lastMs = UNSET
         chargedMs = 0L
@@ -68,7 +90,7 @@ class VoiceWakeCpuBudget(
         if (lastMs == UNSET) { lastMs = nowMs; return }
         val dt = nowMs - lastMs
         if (dt <= 0L) return            // đồng hồ đứng/lùi ⇒ không nạp (không bao giờ nạp nhờ đồng hồ lạ)
-        credit = minOf(burstMs, credit + dt * duty)
+        credit = minOf(capMs, credit + dt * duty)
         lastMs = nowMs
     }
 

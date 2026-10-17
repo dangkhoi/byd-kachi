@@ -156,7 +156,12 @@ class VoiceWakeStandDownWiringContractTest {
         val inner = SourceRoots.body(listener, "private fun inner(kws: WakeEngine?): Inner")
         assertTrue(inner.contains("loadSource.read(now)"), "vòng trong đọc tải qua LoadSource")
         assertFalse(inner.contains("/proc/loadavg"), "vòng trong không được đọc thẳng /proc/loadavg")
-        val src = SourceRoots.body(listener, "private class LoadSource {")
+        // 3.1.14 WAKE-WEAK-UNIT: lớp dời sang `VoiceWakePacing.kt` (trần 500 dòng của listener), nội dung y nguyên.
+        assertTrue(listener.contains("private val loadSource = VoiceLoadSource()"))
+        val src = SourceRoots.body(
+            SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakePacing.kt"),
+            "internal class VoiceLoadSource {",
+        )
         assertTrue(src.contains("Process.getElapsedCpuTime()"), "nguồn thay thế = CPU của chính tiến trình (syscall)")
         assertTrue(src.contains("VoiceLoadGuard.forSelfCpu(nproc)"), "guard phải đổi thang theo nguồn")
         assertTrue(src.contains("VoiceSelfCpuMeter"), "đổi ms→lõi bằng lớp thuần đã test")

@@ -162,7 +162,7 @@
     <string name="kachi_row_boot_profile">Start up with</string>
     <string name="kachi_profile_boot_last">Last used</string>
     <string name="kachi_boot_profile_note">"Last used" starts with whichever profile was active when you switched the engine off. Pin a specific profile and every engine start returns to it, even if you switched profile on the previous trip.</string>
-    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start, Open apps at ignition and Play music when you get in do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Pull apps that leave a frame back in (experimental), Auto-defrost when it rains, Road-name path to the HUD, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
+    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start, Open apps at ignition and Play music when you get in do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Pull apps that leave a frame back in (experimental), Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
     <string name="kachi_delete">Delete</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -452,26 +452,6 @@
     <string name="kachi_nav_cluster_on">On (centre + ETA)</string>
     <string name="kachi_nav_marquee_title">Scroll long street names</string>
     <string name="kachi_nav_marquee_sub">Names wider than the cluster scroll across instead of being cut off.</string>
-    <!-- 3.1.12 · HUD-ROADNAME-ALT-PATH — Đường gửi tên đường lên HUD (SettingsHudRoadNameRows) -->
-    <string name="kachi_hudroad_title">Road-name path to the HUD</string>
-    <string name="kachi_hudroad_a">A · HAL</string>
-    <string name="kachi_hudroad_a48">A48 · HAL ≤48</string>
-    <string name="kachi_hudroad_b">B · ClusterDebug</string>
-    <string name="kachi_hudroad_c">C · A+B</string>
-    <string name="kachi_hudroad_modes">A: as before (HAL, ≤127 chars) · A48: HAL, cut to ≤48 chars · B: via the car\'s ClusterDebug (DiAuto\'s way) · C: both A and B. Arrow + distance always use HAL.</string>
-    <string name="kachi_hudroad_help_sl6">SL6: try B if the HUD never shows the road name. Afterwards, send a screenshot of this screen.</string>
-    <string name="kachi_hudroad_cd_ok">ClusterDebug: present (system app) — B/C available</string>
-    <string name="kachi_hudroad_cd_off">B/C off: %1$s</string>
-    <string name="kachi_hudroad_why_missing">this car has no ClusterDebug</string>
-    <string name="kachi_hudroad_why_not_system">ClusterDebug is not a system app</string>
-    <string name="kachi_hudroad_why_disabled">ClusterDebug is disabled</string>
-    <string name="kachi_hudroad_why_no_receiver">ClusterDebug has no receiver</string>
-    <string name="kachi_hudroad_why_protected">the ClusterDebug receiver is permission-locked</string>
-    <string name="kachi_hudroad_why_version">ClusterDebug version differs from the one checked</string>
-    <string name="kachi_hudroad_refused">Not changed: %1$s</string>
-    <string name="kachi_hudroad_st_idle">Using %1$s · no road name sent in this run yet</string>
-    <string name="kachi_hudroad_st_sent">Sent at %2$s via %1$s · %3$d chars · %4$s</string>
-    <string name="kachi_hudroad_st_degraded">%1$s chosen but ClusterDebug is unavailable on this car ⇒ sending via A</string>
     <string name="kachi_nav_default_app">Default navigation app</string>
     <string name="kachi_nav_app_gmaps">Google Maps</string>
     <string name="kachi_nav_app_vietmap">VietMap</string>

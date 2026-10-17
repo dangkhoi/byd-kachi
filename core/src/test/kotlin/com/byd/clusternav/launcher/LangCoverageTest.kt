@@ -154,8 +154,8 @@ class LangCoverageTest {
         // 2.98 · R18 (owner 10/10: OTA với R18 tắt mặc định): **84 → 85 (+1)** = `home_escape_return` *"Kéo app thoát ô về lại ô (thử
         // nghiệm)"* / *"Pull apps that leave a frame back in (experimental)"* (khoá `escape_return_enabled` theo XE).
         // 3.1.11 · CLUSTER-NOW-PLAYING: **85 → 86 (+1)** = `nav_now_playing` *"Tên bài hát lên cụm đồng hồ"* (khoá `cluster_now_playing` theo XE).
-        // 3.1.12 · HUD-ROADNAME-ALT-PATH: **86 → 87 (+1)** = `nav_hud_road_name_path` *"Đường gửi tên đường lên HUD"* (khoá `hud_road_name_mode` theo XE).
-        assertEquals(87, SettingsCatalog.ENTRIES.size)
+        // 3.1.12 · HUD-ROADNAME-ALT-PATH: **86 → 87 (+1)** = `nav_hud_road_name_path`; 3.1.14 gỡ (tester SL6 báo không tác dụng): **87 → 86 (−1)**.
+        assertEquals(86, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -268,8 +268,8 @@ class LangCoverageTest {
         // 3.01 R25 (2026-10-13): **270 → 271 (+1)** = widget `w_car3d` ("Xe 3D" / "3D car"), EN tại chỗ khai + dòng zh/th/ms.
         // 3.1.6 · R32: **271 → 272 (+1)** = datum `tailgate_status` ("Cốp sau" / "Tailgate"), EN tại chỗ khai + dòng zh/th/ms có sẵn.
         // 3.1.11 · CLUSTER-NOW-PLAYING: **272 → 273 (+1)** = mục Cài đặt `nav_now_playing`, EN tại chỗ khai + dòng zh/th/ms.
-        // 3.1.12 · HUD-ROADNAME-ALT-PATH: **273 → 274 (+1)** = mục Cài đặt `nav_hud_road_name_path`, EN tại chỗ khai + dòng zh/th/ms.
-        assertEquals(274, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 3.1.12 · HUD-ROADNAME-ALT-PATH: **273 → 274 (+1)** = mục Cài đặt `nav_hud_road_name_path`; 3.1.14 gỡ: **274 → 273 (−1)**.
+        assertEquals(273, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

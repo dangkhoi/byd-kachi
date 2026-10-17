@@ -29,7 +29,7 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * ## Chi phí (memory perf-every-fix)
  *  • Chỉ vẽ khi CÓ THAY ĐỔI (nạp xong, đổi cỡ, đang vuốt/quán tính, biến thể cửa/đèn đổi, đổi ngày/đêm) — rảnh = 0 khung;
  *    trần [FRAME_NS] (~24 khung/giây) khi xoay. Số xe đổi chỉ vẽ lại LỚP CHẤM (View thường), không vẽ lại Filament.
- *  • Chỉ sống khi gắn cửa sổ; rời cửa sổ ⇒ trả hết GPU ([Car3dRenderer.destroy]). Nạp/đổi định dạng mô hình trên luồng nền.
+ *  • Chỉ sống khi gắn cửa sổ; rời cửa sổ ⇒ trả hết GPU ([Car3dRenderer.destroy]). Nạp mô hình trên luồng nền; Engine + gltfio trên luồng car3d-gl (3.1.14).
  *  • KHÔNG BAO GIỜ lùi bảng 2D (3.1.8, owner 15/10): không vẽ được ⇒ khung trống, vĩnh viễn ⇒ dòng "không khả dụng", thoáng qua ⇒ chờ/thử lại ([Car3dHold]).
  *
  * ## Ghi — không đường thứ hai
@@ -55,13 +55,14 @@ internal class Car3dWidgetView(context: Context, data: WidgetData) : FrameLayout
     private val anchors = HashMap<String, V3>()          // id điểm chạm → điểm THẾ GIỚI
     private var orbit = Car3dOrbit(0.0, 0.0)
     /** Vì sao đang không vẽ + có thử lại không (3.1.8 `CAR3D-FALLBACK-STICKY`); [note] = dòng "không khả dụng" khi vĩnh viễn. */
-    private val hold = Car3dHold(); private val note = android.widget.TextView(context)
+    private val hold = Car3dHold(budget = Car3dHold.Faults.PROCESS); private val note = android.widget.TextView(context)
     private var shown = false
     private var night = KachiTheme.night
     private var gen = 0
     private val main = Handler(Looper.getMainLooper())
     /** Thử dựng lại (hẹn sau lỗi · [Car3dSeat] đánh thức — có thể giữa lời gọi của view khác ⇒ [wake] sang lượt sau). */
     private val retry = Runnable { if (isAttachedToWindow && liveNow() && width > 0) start() }; private val wake: () -> Unit = { main.post(retry) }
+    private val release = Runnable { if (!liveNow() && renderer != null) stop() }   // hạn nhả Engine khi khuất ([syncLive])
     private var paints: List<Car3dPaint.Preset> = emptyList()
     private var paintApplied: String? = null
     /** Xi-nhan đang nháy: mã ô đọc → mốc thấy BẬT (`uptimeMillis`). Rỗng = không hẹn nhịp nào. */
@@ -136,11 +137,11 @@ internal class Car3dWidgetView(context: Context, data: WidgetData) : FrameLayout
     private fun liveNow() = !windowHidden && !viewHidden && !screenOff
     /** PERF 3.1.5 · owner 14/10 *"car 3D không bao giờ chạy nền"* — MỘT cổng: khuất (ô khác bung R30 · màn chính rời · màn tắt) ⇒ [stop] nhả
      *  Engine/GPU/GLB + nhu cầu HAL về 0 ([WidgetFallbacks.shown]); hiện lại ⇒ [start] nạp lại từ tệp đệm (trước: khuất chỉ huỷ khung).
-     *  Màn tắt: [ĐO máy ảo 14/10] `SLEEP` không đổi độ hiện của cửa sổ ⇒ nghe thêm [com.byd.clusternav.system.ScreenLit] (cùng nguồn vòng HAL). */
+     *  Màn tắt: [ĐO máy ảo 14/10] `SLEEP` không đổi độ hiện của cửa sổ ⇒ nghe thêm [com.byd.clusternav.system.ScreenLit] (cùng nguồn vòng HAL). 3.1.14: nhả sau [Car3dHold.releaseAfterMs]. */
     private fun syncLive() {
         val live = liveNow()
-        shown = live; WidgetFallbacks.shared.shown(this, live)
-        if (!live) { if (renderer != null) stop() else { cancelFrames(); main.removeCallbacks(blinkTick); endGesture() }; return }
+        shown = live; WidgetFallbacks.shared.shown(this, live); main.removeCallbacks(release)
+        if (!live) { cancelFrames(); main.removeCallbacks(blinkTick); endGesture(); if (renderer != null) Car3dHold.releaseAfterMs(screenOff).let { if (it <= 0) stop() else main.postDelayed(release, it) }; return }
         if (renderer == null) { if (isAttachedToWindow && width > 0) start() } else { applyPaint(); applyVariants(); requestFrames(FRAMES_AFTER_WAKE) }
     }
 
@@ -172,25 +173,27 @@ internal class Car3dWidgetView(context: Context, data: WidgetData) : FrameLayout
 
     private fun stop() {
         gen++
-        cancelFrames()
+        cancelFrames(); main.removeCallbacks(release)
         main.removeCallbacks(blinkTick); blinkSince.clear(); paintApplied = null
         endGesture()
-        renderer?.let { runCatching { it.destroy() }.onFailure { e -> Log.w(TAG, "destroy", e) } }
+        renderer?.let { runCatching { it.destroy { com.byd.clusternav.launcher.perf.KachiMem.trim("car3d dừng") } }.onFailure { e -> Log.w(TAG, "destroy", e) } }
         renderer = null; model = null; placement = null; anchors.clear(); glassOf.clear(); glassAt.clear(); glassAnim.clear(); swingAt.clear(); swingAnim.clear()
         posed.clear(); Car3dSeat.shared.release(this)
-        Log.i(TAG, "dừng — tổng $framesTotal khung đã vẽ"); com.byd.clusternav.launcher.perf.KachiMem.trim("car3d dừng")   // PERF 3.1.5: trả trang Engine vừa nhả cho hệ
+        Log.i(TAG, "dừng — tổng $framesTotal khung đã vẽ")   // PERF 3.1.5: trả trang cho hệ SAU khi car3d-gl huỷ xong Engine (onFreed ở trên)
     }
 
     private fun onLoaded(r: Car3dRenderer, res: Result<Car3dModelSource.Loaded?>, t0: Long) {
         // Nạp NÉM = lỗi lúc chạy (đĩa đầy, đọc hỏng) ⇒ thử lại; `null` = đời xe không có mô hình ⇒ không khả thi ([Car3dModelSource.load]).
         val l = res.getOrElse { return park(Car3dHold.Why.FAULT, "model load failed: $it") } ?: return park(Car3dHold.Why.NO_MODEL, "no 3D model for this car")
-        val t1 = System.nanoTime()
-        if (!r.load(l.glb)) {
-            // [ĐO máy ảo 15/10, 3.1.6] tệp đệm dở (4 MB / 29 MB) ⇒ gltfio từ chối ⇒ trước: 2D tới khi dựng lại ô. Bỏ đệm ⇒ lượt thử lại dựng từ lưới.
-            if (l.origin.startsWith(CACHE_ORIGIN)) Thread({ Car3dModelSource.invalidate(context.applicationContext) }, "car3d-purge").start()
-            return park(Car3dHold.Why.FAULT, "gltfio could not load the model (${l.origin})")
-        }
-        val m = l.model; model = m
+        val t1 = System.nanoTime()   // 3.1.14 R3: gltfio trên car3d-gl ([Car3dRenderer.load]); luồng chính chỉ nhận kết quả, khung trống tới khi có xe
+        r.load(l.glb, l.model.variants) { g -> if (renderer === r) runCatching { onAsset(r, l, g, t0, t1) }.onFailure { Log.e(TAG, "dựng cảnh 3D hỏng", it); park(Car3dHold.Why.FAULT, "3D scene setup failed: $it") } }
+    }
+    private fun onAsset(r: Car3dRenderer, l: Car3dModelSource.Loaded, g: Result<Car3dScene.Timing?>, t0: Long, t1: Long) {
+        val timing = g.getOrElse { return park(Car3dHold.Why.FAULT, "Filament/gltfio failed: $it") }
+        // [ĐO máy ảo 15/10] tệp đệm dở ⇒ gltfio từ chối ⇒ bỏ đệm, lượt sau dựng từ lưới; 3.1.14 R5: cộng dấu hỏng theo khoá (không dựng lại mãi qua các lần nổ máy).
+        Thread({ Car3dModelSource.verdict(context.applicationContext, l, ok = timing != null) }, "car3d-verdict").start()
+        timing ?: return park(Car3dHold.Why.FAULT, "gltfio could not load the model (${l.origin})")
+        val tm = System.nanoTime(); val m = l.model; model = m
         paints = l.paints
         applyPaint()
         applyVariants()   // ẩn bản cửa-mở / đèn-sáng TRƯỚC khi đo hộp bao (hộp chỉ tính bộ phận đang hiện)
@@ -207,7 +210,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData) : FrameLayout
         for (h in m.hotspots) {
             val a = anchors[h.id] ?: continue
             val shown = h.shownBy?.let(r::hasPart) == true
-            boxes[h.id] = (if (shown) target(r, pl, h, a, posed = false) else null) ?: Car3dPick.Target(h.id, a, a, a)
+            boxes[h.id] = (if (shown) r.target(pl, h, a, posed = false) else null) ?: Car3dPick.Target(h.id, a, a, a)
             if (shown && r.hasHinge(h.shownBy!!)) posed[h.id] = h to a
         }
         glassOf.clear()
@@ -220,23 +223,20 @@ internal class Car3dWidgetView(context: Context, data: WidgetData) : FrameLayout
         // R28 — điểm ghế (từ neo cửa + kính trước SẴN CÓ) + điểm chạm đất 4 bánh (hộp hợp bộ phận `wheel*`, đo hình học).
         val seats = Car3dHero.Seat.values().mapNotNull { s -> val k = if (s.side == Car3dHero.LEFT) "lf" else "rf"
             anchors["door-$k"]?.let { d -> anchors["win-$k"]?.let { g -> s to Car3dHero.seatPoint(d, g) } } }.toMap()
-        hero.bind(seats, worldBox(r, pl, Car3dAnchor.Node(WHEELS))?.let { (lo, hi) -> Car3dHero.wheels(lo, hi) } ?: emptyMap())
+        hero.bind(seats, r.worldBox(pl, Car3dAnchor.Node(WHEELS))?.let { (lo, hi) -> Car3dHero.wheels(lo, hi) } ?: emptyMap())
         hero.bringToFront(); bar.bringToFront(); doneAlign.bringToFront()   // nút ghế/chân TRÊN các nút trợ năng bộ phận ([Car3dTaps] gắn sau)
         Log.i(TAG, "pick targets ${boxes.size} · sliding glass ${glassOf.keys}")
-        Log.i(TAG, "nạp ${m.id} (${l.origin}) · nguồn ${(t1 - t0) / 1_000_000} ms · gltfio ${(System.nanoTime() - t1) / 1_000_000} ms · " +
-            "${r.partNames().size} bộ phận · chấm có: $found · chấm thiếu: $missing · hộp ${pl.half} · neo " +
+        main.post { if (renderer === r) { applyVariants(); fill(latest); requestFrames(FRAMES_AFTER_LOAD) } }   // 3.1.14: lượt đổ số đầu (dựng ô nút ẩn) sang lượt looper sau — không dồn một khối
+        Log.i(TAG, "nạp ${m.id} (${l.origin}) · nguồn ${(t1 - t0) / 1_000_000} ms · gltfio ${(tm - t1) / 1_000_000} ms ($timing · luồng car3d-gl) · luồng chính " +
+            "${(System.nanoTime() - tm) / 1_000_000} ms · ${r.partNames().size} bộ phận · chấm có: $found · chấm thiếu: $missing · hộp ${pl.half} · neo " +
             anchors.entries.joinToString { (k, v) -> "$k(%.2f,%.2f,%.2f)".format(v.x, v.y, v.z) })
-        applyVariants()
-        fill(latest)
-        requestFrames(FRAMES_AFTER_LOAD)
+        Car3dRenderer.mainMs(tm)   // PERF-SL6-3113 R2: phần luồng chính của lượt dựng (dựng neo/chấm — gltfio đã ở car3d-gl)
     }
-    private fun target(r: Car3dRenderer, pl: Car3dOrient.Placement, h: Car3dHotspot, a: V3, posed: Boolean) = r.target(pl, h, a, posed)
-    private fun worldBox(r: Car3dRenderer, pl: Car3dOrient.Placement, a: Car3dAnchor) = r.worldBox(pl, a)
     /** Điểm có bộ phận quay bản lề (nắp cốp): đích chạm đi theo tư thế hiện tại — chạm nắp ĐANG giơ lên thì đóng (owner 13/10). */
     private val posed = HashMap<String, Pair<Car3dHotspot, V3>>()
     private fun repose(r: Car3dRenderer) {
         val pl = placement ?: return
-        posed.values.forEach { (h, a) -> target(r, pl, h, a, posed = true)?.let(taps::retarget) }
+        posed.values.forEach { (h, a) -> r.target(pl, h, a, posed = true)?.let(taps::retarget) }
         taps.redot { h -> r.worldBox(pl, h.anchor, posed = true) }   // chấm đi theo cửa/nắp/kính ĐANG vẽ
     }
     /** Không vẽ vì [w] ([Car3dHold]): nhả Engine, khung trống (nền), nhu cầu HAL về 0; thôi hẳn (vĩnh viễn / quá trần lỗi) ⇒ dòng [note]; lỗi ⇒ hẹn [retry]. */
@@ -307,7 +307,7 @@ internal class Car3dWidgetView(context: Context, data: WidgetData) : FrameLayout
             // Không có bản MỞ trong tệp (nắp cốp cắt từ thân — [Car3dLid]) ⇒ giữ bản đóng ĐÃ QUAY hết góc.
             swingAnim[i] == null && (swingAt[i] ?: 0f) >= 1f && r.hasPart(m.variants[i].open)
         }
-        val changed = runCatching { r.showByName { name -> Car3dNames.visibleAll(m.variants, shownOpen, name) } }
+        val changed = runCatching { r.showVariants(m.variants, shownOpen) }
             .getOrElse { Log.e(TAG, "biến thể 3D hỏng", it); false }
         return changed || started
     }
@@ -334,15 +334,16 @@ internal class Car3dWidgetView(context: Context, data: WidgetData) : FrameLayout
 
     /** Mức đích của từng kính khác mức đang vẽ ⇒ bắt đầu hoạt cảnh ≤ [GLASS_MS] (dừng hẳn khi tới — rảnh 0 khung). */
     private fun retargetGlass(): Boolean {
-        var started = false
+        var started = false; var fresh = false
         val now = System.nanoTime()
         for (id in glassOf.keys) {
             val to = (taps.level(id) ?: 0) / WindowCycle.FULL.toFloat()
             val cur = glassAt[id]
-            if (cur == null) { glassAt[id] = to; renderer?.let { it.slide(glassOf.getValue(id), to); repose(it) }; started = true; continue }
+            if (cur == null) { glassAt[id] = to; renderer?.slide(glassOf.getValue(id), to); fresh = true; started = true; continue }
             val goal = glassAnim[id]?.second ?: cur
             if (goal != to) { glassAnim[id] = Triple(cur, to, now); started = true }
         }
+        if (fresh) renderer?.let(::repose)   // 3.1.14: một lượt dời chấm cho mọi kính mới (trước: một lượt MỖI kính)
         return started
     }
 
@@ -491,8 +492,6 @@ internal class Car3dWidgetView(context: Context, data: WidgetData) : FrameLayout
         /** Cửa/cốp mở/đóng trong 900 ms (owner: 800–1000 ms), êm hai đầu. */
         const val SWING_MS = 900L
         const val OPEN_TAG = "open"
-        /** Tiền tố [Car3dModelSource.Loaded.origin] khi nạp từ tệp đệm. */
-        const val CACHE_ORIGIN = "cache:"
         val DOOR_KEYS = setOf("lf", "rf", "lr", "rr")
         const val WHEELS = "wheel*"
     }

@@ -122,7 +122,7 @@
     <string name="kachi_row_boot_profile">上电时使用</string>
     <string name="kachi_profile_boot_last">上次使用</string>
     <string name="kachi_boot_profile_note">“上次使用”会以下电时正在使用的档案启动。固定某个档案后，每次上电都会回到该档案，即使上一趟行程中切换过档案。</string>
-    <string name="kachi_home_profile_note">设置中的所有项目——除了“系统与权限”（但“上电自动打开Kachi”“上电运行后台服务”“上电时打开应用”和“上车自动播放音乐”仍跟随档案）、“语音”的大部分、“默认导航应用”、“真实玻璃效果（背景模糊）”、“将跳出框的应用拉回框内（实验性）”、“雨天自动除霜”、“路名发送到 HUD 的通道”、按车辆调校的摄像头（旋转、镜像、视角）以及“关于”——都保存到档案“%1$s”，包括仪表投屏、每个应用的框和DPI、悬浮按钮和摄像头。在“驾驶员档案”中切换到其他档案后，布局、格位内容、顶栏标签、车控栏、主题和单位会立即改变；投屏框和DPI从下次投屏起改变，投屏开启/关闭从下次上电起改变。</string>
+    <string name="kachi_home_profile_note">设置中的所有项目——除了“系统与权限”（但“上电自动打开Kachi”“上电运行后台服务”“上电时打开应用”和“上车自动播放音乐”仍跟随档案）、“语音”的大部分、“默认导航应用”、“真实玻璃效果（背景模糊）”、“将跳出框的应用拉回框内（实验性）”、“雨天自动除霜”、按车辆调校的摄像头（旋转、镜像、视角）以及“关于”——都保存到档案“%1$s”，包括仪表投屏、每个应用的框和DPI、悬浮按钮和摄像头。在“驾驶员档案”中切换到其他档案后，布局、格位内容、顶栏标签、车控栏、主题和单位会立即改变；投屏框和DPI从下次投屏起改变，投屏开启/关闭从下次上电起改变。</string>
     <string name="kachi_delete">删除</string>
     <string name="kachi_sec_recirc">内循环</string>
     <string name="kachi_recirc_title">上电时自动开启内循环</string>
@@ -368,26 +368,6 @@
     <string name="kachi_nav_cluster_on">开启（居中 + ETA）</string>
     <string name="kachi_nav_marquee_title">滚动显示长路名</string>
     <string name="kachi_nav_marquee_sub">超出仪表宽度的路名会横向滚动，而不是被截断。</string>
-    <!-- 3.1.12 · HUD-ROADNAME-ALT-PATH — Đường gửi tên đường lên HUD (SettingsHudRoadNameRows) -->
-    <string name="kachi_hudroad_title">路名发送到 HUD 的通道</string>
-    <string name="kachi_hudroad_a">A · HAL</string>
-    <string name="kachi_hudroad_a48">A48 · HAL ≤48</string>
-    <string name="kachi_hudroad_b">B · ClusterDebug</string>
-    <string name="kachi_hudroad_c">C · A+B</string>
-    <string name="kachi_hudroad_modes">A：照旧（HAL，≤127 字）· A48：HAL，截断至 ≤48 字 · B：经车机 ClusterDebug（DiAuto 的方式）· C：A 和 B 同时。箭头和距离始终走 HAL。</string>
-    <string name="kachi_hudroad_help_sl6">SL6：若 HUD 从不显示路名，请试 B。试完截图本页发回。</string>
-    <string name="kachi_hudroad_cd_ok">ClusterDebug：存在（系统应用）— 可用 B/C</string>
-    <string name="kachi_hudroad_cd_off">B/C 不可用：%1$s</string>
-    <string name="kachi_hudroad_why_missing">本车没有 ClusterDebug</string>
-    <string name="kachi_hudroad_why_not_system">ClusterDebug 不是系统应用</string>
-    <string name="kachi_hudroad_why_disabled">ClusterDebug 已被停用</string>
-    <string name="kachi_hudroad_why_no_receiver">ClusterDebug 缺少接收器</string>
-    <string name="kachi_hudroad_why_protected">ClusterDebug 接收器受权限保护</string>
-    <string name="kachi_hudroad_why_version">ClusterDebug 版本与已核对的不同</string>
-    <string name="kachi_hudroad_refused">未更改：%1$s</string>
-    <string name="kachi_hudroad_st_idle">正在使用 %1$s · 本次运行尚未发送路名</string>
-    <string name="kachi_hudroad_st_sent">%2$s 经 %1$s 发送 · %3$d 字 · %4$s</string>
-    <string name="kachi_hudroad_st_degraded">已选 %1$s，但本车无法使用 ClusterDebug ⇒ 改用 A 发送</string>
     <string name="kachi_nav_default_app">默认导航应用</string>
     <string name="kachi_nav_app_gmaps">Google Maps</string>
     <string name="kachi_nav_app_vietmap">VietMap</string>

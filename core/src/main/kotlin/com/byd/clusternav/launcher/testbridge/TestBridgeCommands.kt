@@ -360,7 +360,7 @@ object TestBridgeCommands {
         // FIX286 · SR6 — cùng hình dạng `a11ylog`: chỉ đọc, `n` tuỳ chọn, kẹp qua [ctlLogTail].
         Spec(CTLLOG, emptyList(), listOf(EXTRA_SLOT)),
         Spec(WAKELOG, emptyList(), listOf(EXTRA_SLOT)),   // FIX286 · VK6 — cùng hình dạng `ctllog`
-    ) + TestBridgeTeachCommands.SPECS + TestBridgeScreenCommands.SPECS + TestBridgeHudRoadCommands.SPECS   // 3.1.12 hudroad · 2.91 A7 · 2.93 DIAG-SCREENS — tệp riêng (trần 500) · 3.1.12: gỡ `np` (bộ ghi 3.1.11)
+    ) + TestBridgeTeachCommands.SPECS + TestBridgeScreenCommands.SPECS   // 2.91 A7 · 2.93 DIAG-SCREENS — tệp riêng (trần 500) · 3.1.12: gỡ `np` (bộ ghi 3.1.11) · 3.1.14: gỡ `hudroad`
 
     /** Tên mọi lệnh — cho tài liệu và cho bài canh "mã lệnh không trùng nhau". */
     val NAMES: List<String> = SPECS.map { it.name }
@@ -412,7 +412,6 @@ object TestBridgeCommands {
         val cap = if (name == CAPTEST) op.ifEmpty { CapTestOps.LIST } else op
         if (!TestBridgeTeachCommands.validOp(name, op)) return TestBridgeParse.Err(ERR_BAD_OP + op)
         TestBridgeScreenCommands.check(name, extras)?.let { return TestBridgeParse.Err(it) }   // 2.93 · tên màn lạ ⇒ chặn tại đây
-        TestBridgeHudRoadCommands.check(name, extras)?.let { return TestBridgeParse.Err(it) }  // 3.1.12 · op lạ ⇒ chặn tại đây
         if (name == CAPTEST) {
             if (cap !in CapTestOps.ALL) return TestBridgeParse.Err(ERR_BAD_OP + cap)
             val id = (extras[EXTRA_ID] as? String)?.trim().orEmpty()

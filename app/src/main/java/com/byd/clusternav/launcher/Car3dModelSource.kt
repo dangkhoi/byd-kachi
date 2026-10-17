@@ -29,19 +29,50 @@ import java.nio.channels.FileChannel
 object Car3dModelSource {
 
     /** [paints] = các màu sơn của đời xe ([Car3dPaint.presets] trên `car_body_color.csv`), rỗng nếu tệp vắng. */
-    class Loaded(val model: Car3dModel, val glb: ByteBuffer, val origin: String, val paints: List<Car3dPaint.Preset>)
+    /** [cacheName] = tên tệp đệm của khoá này (cho [verdict] — dấu dựng hỏng theo khoá). */
+    class Loaded(val model: Car3dModel, val glb: ByteBuffer, val origin: String, val paints: List<Car3dPaint.Preset>, val cacheName: String)
 
     /**
      * MỘT lượt nạp/dựng mỗi lúc (soát Pass 2): view rời rồi gắn lại cửa sổ khi lượt dựng đầu (~0,5 s, lưới nén → GLB) còn chạy
      * ⇒ trước đây hai luồng cùng ghi `car3d-src.tmp` (mở = CẮT tệp mà luồng kia đang ánh xạ ⇒ SIGBUS) + cùng ngốn heap 48 MB.
      * Luồng sau chờ, rồi ánh xạ tệp đệm luồng trước vừa ghi. Chỉ chạy trên luồng nền.
      */
-    fun load(ctx: Context): Loaded? = synchronized(lock) { loadLocked(ctx) }
+    fun load(ctx: Context): Loaded? {
+        // 3.1.14 R5: lượt dựng nguội ~33 s CPU — không bao giờ trên luồng chính (fail-loud thay vì đơ HOME).
+        check(android.os.Looper.getMainLooper().thread !== Thread.currentThread()) { "Car3dModelSource.load trên luồng chính" }
+        return synchronized(lock) { loadLocked(ctx) }
+    }
+
+    /**
+     * 3.1.14 R5 — kết quả gltfio cho tài sản vừa nạp (luồng nền). Nhận ⇒ xoá dấu hỏng của khoá (chỉ khi tệp đệm thật sự còn: không ghi
+     * được đệm thì lần khởi động sau lại phải dựng nguội ⇒ vẫn tính là hỏng). Từ chối ⇒ +1 dấu hỏng + bỏ đệm (lượt sau dựng lại từ
+     * lưới — nhưng chỉ khi còn trong trần [Car3dCache.mayColdBuild]).
+     */
+    fun verdict(ctx: Context, l: Loaded, ok: Boolean) = synchronized(lock) {
+        val mark = File(ctx.noBackupFilesDir, Car3dCache.failMark(l.cacheName))
+        when {
+            !ok -> { bump(mark, 1); purge(ctx) }
+            File(ctx.cacheDir, l.cacheName).isFile -> { if (mark.delete()) Log.i(TAG, "dấu dựng hỏng ${mark.name}: xoá (gltfio nhận)") }
+            // Soát Pass 15: nhận nhưng không ghi được đệm ⇒ GIỮ dấu đã ghi trước lượt dựng (lần sau vẫn phải dựng nguội), KHÔNG cộng
+            // thêm — cộng ở đây là đếm một lượt dựng thành hai, đốt trần [Car3dCache.MAX_COLD_FAILS] nhanh gấp đôi.
+            else -> Log.w(TAG, "gltfio nhận nhưng tệp đệm ${l.cacheName} không còn — giữ dấu ${mark.name} = ${fails(mark)}/${Car3dCache.MAX_COLD_FAILS}")
+        }
+    }
+
+    /** Lượt dựng nguội đã chạy trong tiến trình này (tối đa MỘT — [Car3dCache.mayColdBuild]). */
+    @Volatile private var coldTried = false
+
+    private fun fails(mark: File): Int = Car3dCache.parseFails(runCatching { mark.takeIf { it.isFile }?.readText() }.getOrNull())
+
+    /** Ghi dấu hỏng = cũ + [n] (kẹp ở [Car3dCache.MAX_COLD_FAILS]); lỗi đĩa chỉ log. */
+    private fun bump(mark: File, n: Int) {
+        val v = (fails(mark) + n).coerceAtMost(Car3dCache.MAX_COLD_FAILS)
+        runCatching { mark.writeText(v.toString()) }.onFailure { Log.w(TAG, "không ghi được ${mark.name}", it) }
+        Log.i(TAG, "dấu dựng hỏng ${mark.name} = $v/${Car3dCache.MAX_COLD_FAILS}")
+    }
 
     private val lock = Any()
 
-    /** Bỏ tệp đệm (gltfio từ chối tệp đệm ⇒ lượt thử lại dựng lại từ lưới thay vì kẹt với một tệp hỏng). */
-    fun invalidate(ctx: Context) = synchronized(lock) { purge(ctx) }
 
     /**
      * Xoá mọi tệp của widget trong `cacheDir` ([Car3dCache.stale]) — gọi trong [lock]. Bản nhớ khoang ([Car3dCache.memo]) ở lại:
@@ -95,7 +126,18 @@ object Car3dModelSource {
         fun path(name: String) = src.path(name)
         val paints = Car3dPaint.withExtras(readPaints(src), m.extraPaints)
         val cache = File(ctx.cacheDir, "car3d-${(src.key + path("car.mesh") + CACHE_VERSION).hashCode().toUInt()}.glb")
-        if (cache.isFile && cache.length() > 0) return Loaded(m, map(cache), "cache:${cache.name}", paints)
+        if (cache.isFile && cache.length() > 0) return Loaded(m, map(cache), "cache:${cache.name}", paints, cache.name)
+        // 3.1.14 R5: dựng nguội tối đa MỘT lượt mỗi lần khởi động, có trần qua các lần nổ máy, và KHÔNG trong 30 s đầu.
+        val mark = File(ctx.noBackupFilesDir, Car3dCache.failMark(cache.name))
+        val failed = fails(mark)
+        if (!Car3dCache.mayColdBuild(failed, coldTried)) {
+            Log.w(TAG, "bỏ dựng nguội ${cache.name}: " + if (coldTried) "đã dựng một lượt trong lần khởi động này" else "hỏng $failed/${Car3dCache.MAX_COLD_FAILS} lần nổ máy (đổi phiên bản mới thử lại)")
+            return null
+        }
+        coldTried = true
+        val wait = Car3dCache.coldDelayMs(android.os.SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis())
+        if (wait > 0) { Log.i(TAG, "dựng nguội ${cache.name}: chờ $wait ms cho qua lúc khởi động"); Thread.sleep(wait) }
+        bump(mark, 1)   // TRƯỚC khi dựng: bị giết giữa chừng (tắt máy) cũng tính một lượt; gltfio nhận ⇒ [verdict] xoá
         // Một bản đệm duy nhất: bản của khoá cũ (đổi phiên bản AVM / CACHE_VERSION) + bản dở/bản chép của lần dựng bị giết
         // giữa chừng ([Car3dCache.owned]) bỏ TRƯỚC khi dựng (trong [lock] ⇒ không luồng nào đang dùng chúng).
         purge(ctx)
@@ -113,7 +155,7 @@ object Car3dModelSource {
         // Tệp đệm chỉ được ghi khi qua ⇒ lần sau nạp từ đệm không cần kiểm lại (khoá đệm gồm CACHE_VERSION).
         val verdict = Car3dSanity.check(mesh0, m)
         Log.i(TAG, "sanity ${m.id} ${src.entry.group}: ${if (verdict.ok) "OK" else "FAIL ${verdict.failures}"} · ${verdict.notes}")
-        if (!verdict.ok) return null
+        if (!verdict.ok) { bump(mark, Car3dCache.MAX_COLD_FAILS); return null }   // dữ liệu tất định: không phân tích lại mỗi lần nổ máy
         val t1 = System.nanoTime()
         val tex = (m.materials.values.mapNotNull { it.texture }).distinct().mapNotNull { name ->
             runCatching { assets.open(path(name)).use { it.readBytes() } }.getOrNull()?.let { name to it }
@@ -154,7 +196,7 @@ object Car3dModelSource {
             "đọc+phân tích ${(t1 - t0) / 1_000_000} ms · dựng ${(System.nanoTime() - t1) / 1_000_000} ms" +
             " · CPU luồng ${(android.os.Debug.threadCpuTimeNanos() - cpu0) / 1_000_000} ms")
         Log.i(TAG, "bộ phận: ${mesh.parts.joinToString(",") { it.name }}")
-        return Loaded(m, glb, "avm:${path("car.mesh")}", paints)
+        return Loaded(m, glb, "avm:${path("car.mesh")}", paints, cache.name)
     }
 
     /** Nguồn tệp của đời xe này: gói AVM hệ thống, không có thì bản đóng gói vehicleTest; không có cả hai ⇒ `null`. */

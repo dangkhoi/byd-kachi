@@ -5,6 +5,7 @@ import android.os.Process
 import android.os.SystemClock
 import com.byd.clusternav.launcher.voice.VoiceWakeAsr
 import com.byd.clusternav.launcher.voice.VoiceWakeController
+import com.byd.clusternav.launcher.voice.VoiceWakeDuty
 import com.byd.clusternav.launcher.voice.VoiceWakeKws
 import com.byd.clusternav.launcher.voice.VoiceWavProbe
 import com.byd.clusternav.launcher.voice.WakeModelCatalog
@@ -67,6 +68,8 @@ internal object TestBridgeKws {
         try {
             val (pcm, n) = VoiceWavProbe.readPcmFile(staged(app), ASR_MAX_SAMPLES)
             val ctl = if (base) VoiceWakeController(tailMs = 0L) else VoiceWakeController()   // base: không đuôi câu
+            // WAKE-WEAK-UNIT (3.1.14): `asr` = trần theo máy y như bộ nghe (`VoiceWakePacing.tick`, máy rảnh) — máy ảo 2 lõi ⇒ trần máy yếu.
+            if (!base) ctl.pace(deviceDuty(app), busy = false, nowMs = 0L)
             val oldCap = ArrayDeque<Long>()   // asr-base: trần khung cũ (40 / 10 s) — bản sao tại chỗ để so
             val t0 = SystemClock.elapsedRealtime()
             var fires = 0; var firstFire = -1L; var run = 0; var obs = 0; var idle = 0; var fin = 0; var cpu = 0L
@@ -111,10 +114,17 @@ internal object TestBridgeKws {
                 "finish_decodes" to asr.finishes,
                 "cpu_ms" to cpu,                       // CPU đo thật trên máy này (cả tiến trình)
                 "charged_ms" to ctl.chargedCpuMs(),    // CPU ngân sách đã tính (= cpu_ms, hoặc giá giả `v`)
+                "duty" to ctl.budgetDuty(),            // WAKE-WEAK-UNIT: trần đã áp
                 "audio_ms" to n * 1000L / 16000,
                 "compute_ms" to (SystemClock.elapsedRealtime() - t0),
             )
         } finally { asr.release() }
+    }
+
+    private fun deviceDuty(app: Context): Double {
+        val am = app.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+        val mi = android.app.ActivityManager.MemoryInfo().also { am?.getMemoryInfo(it) }
+        return VoiceWakeDuty.forDevice(Runtime.getRuntime().availableProcessors(), mi.totalMem shr 20, am?.isLowRamDevice == true)
     }
 
     private const val ASR = "asr"

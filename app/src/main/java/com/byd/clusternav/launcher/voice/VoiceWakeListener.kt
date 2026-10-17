@@ -72,7 +72,10 @@ class VoiceWakeListener(
      * "lõi tự-CPU"). `@Volatile` vì [start] (`reset`) ở luồng main còn vòng nghe ở luồng `kachi-wake`.
      */
     @Volatile private var controller = VoiceWakeController()
-    private val loadSource = LoadSource()
+    private val loadSource = VoiceLoadSource()
+
+    /** WAKE-WEAK-UNIT — dựng trên luồng `kachi-wake` ở đầu [runOuter] (đo `schedstat` của chính luồng ấy). */
+    private var pacing: VoiceWakePacing? = null
 
     /** Nhãn chốt micro **của riêng lượt chạy này** — xem KDoc lớp (chống nhả chốt của lượt khác). */
     private val label = "${VoiceSingleFlight.LABEL_WAKE}#${SEQ.incrementAndGet()}"
@@ -152,12 +155,18 @@ class VoiceWakeListener(
             // Dò nguồn tải MỘT lần, ở đây (luồng nền) chứ không ở [start] (luồng main) — xem KDoc lớp. Controller
             // dựng lại theo thang của nguồn; chưa có khung nào đi qua controller cũ nên không mất trạng thái gì.
             controller = VoiceWakeController(loadGuard = loadSource.probe())
+            pacing = VoiceWakePacing(ctx)
             while (alive()) {
                 if (!park()) break
                 // Nạp model **lần đầu được nghe**, không phải lúc dựng luồng: máy khởi động với màn tắt thì
                 // không có lý gì nạp ~4 MB ONNX. Chỉ thử MỘT lần cho cả vòng đời luồng — thiếu model là trạng
                 // thái bền (degrade chỉ-RMS), thử lại mỗi vòng chỉ là đọc đĩa vô ích.
-                if (!kwsTried) { kwsTried = true; kws = runCatching { kwsFactory(ctx) }.getOrNull() }
+                // WAKE-WEAK-UNIT: lượt nạp đầu chờ máy rảnh (nổ máy = mọi thứ cùng khởi động) — [VoiceLoadPacing.awaitCalm].
+                if (!kwsTried) {
+                    if (!VoiceEngine.loaded()) VoiceLoadPacing.awaitCalm("listener")
+                    if (!alive()) break
+                    kwsTried = true; kws = runCatching { kwsFactory(ctx) }.getOrNull()
+                }
                 if (VoiceSingleFlight.acquireWake(label) !is VoiceSingleFlight.Grant.Ok) {
                     // Phiên lệnh đang giữ mic — chuyện thường, không phải lỗi. Nghỉ một nhịp rồi xin lại.
                     nap(BUSY_NAP_MS)
@@ -271,7 +280,7 @@ class VoiceWakeListener(
                 for (i in 0 until n) { val s = buf[i].toDouble(); sum += s * s }
                 val rms = sqrt(sum / n)
                 val now = SystemClock.elapsedRealtime()
-                if (now - lastLoadAt >= LOAD_EVERY_MS) { load = loadSource.read(now); lastLoadAt = now }
+                if (now - lastLoadAt >= LOAD_EVERY_MS) { load = loadSource.read(now); lastLoadAt = now; pacing?.tick(controller, now) }
                 when (controller.onFrame(rms, load, now)) {
                     VoiceWakeController.Frame.SUSPENDED -> return if (controller.isFused()) Inner.FUSED else Inner.SUSPEND
                     VoiceWakeController.Frame.IDLE -> Unit
@@ -371,7 +380,8 @@ class VoiceWakeListener(
         Log.i(
             TAG,
             "ngan_sach cpu_ms=${controller.chargedCpuMs()} du=${controller.budgetCreditMs().toLong()}" +
-                (if (asr != null) " giai_ma=${asr.decodes} bo_khong_tieng_nguoi=${asr.skippedNoSpeech} bo_nho=${asr.skippedQuiet}" else ""),
+                (if (asr != null) " giai_ma=${asr.decodes} bo_khong_tieng_nguoi=${asr.skippedNoSpeech} bo_nho=${asr.skippedQuiet}" else "") +
+                (pacing?.let { " " + it.minute(controller, asr?.decodes ?: 0L) } ?: ""),
         )
     }
 
@@ -397,46 +407,6 @@ class VoiceWakeListener(
                 else { Log.w(TAG, "AudioRecord chưa init"); runCatching { r.release() }; null }
             }
     }.getOrElse { Log.w(TAG, "mở mic wake lỗi", it); null }
-
-    /**
-     * Nguồn tải cho [VoiceLoadGuard] — xem KDoc lớp. Chỉ luồng `kachi-wake` chạm (không cần khoá).
-     *
-     * Hai chế độ, chốt ở [probe]:
-     *  • `LOADAVG` — `/proc/loadavg` đọc được (đời ROM khác) ⇒ `load1` như cũ, guard mặc định.
-     *  • `SELF_CPU` — bị chặn ⇒ [VoiceSelfCpuMeter] trên `Process.getElapsedCpuTime()` ⇒ "số lõi tiến trình này
-     *    đang dùng", guard [VoiceLoadGuard.forSelfCpu]. Không còn ngoại lệ/`avc: denied` nào mỗi giây.
-     */
-    private class LoadSource {
-        private enum class Mode { LOADAVG, SELF_CPU }
-        private var mode = Mode.SELF_CPU
-        private val meter = VoiceSelfCpuMeter()
-        private val nproc = Runtime.getRuntime().availableProcessors()
-
-        /** Dò một lần; trả guard đúng thang. Ghi W đúng MỘT dòng khi `/proc/loadavg` không đọc được. */
-        fun probe(): VoiceLoadGuard {
-            val first = runCatching { VoiceLoadGuard.parseLoadavg(File(LOADAVG).readText()) }
-            mode = if (first.isSuccess && first.getOrNull() != null) Mode.LOADAVG else Mode.SELF_CPU
-            return if (mode == Mode.LOADAVG) {
-                Log.i(TAG, "nguồn tải: /proc/loadavg (load1=${first.getOrNull()})")
-                VoiceLoadGuard()
-            } else {
-                Log.w(
-                    TAG,
-                    "nguồn tải: /proc/loadavg không đọc được (${first.exceptionOrNull()?.javaClass?.simpleName ?: "rác"}" +
-                        ") — chuyển sang CPU của chính tiến trình, ngưỡng theo $nproc lõi",
-                )
-                VoiceLoadGuard.forSelfCpu(nproc)
-            }
-        }
-
-        fun read(nowMs: Long): Double = when (mode) {
-            // Đọc được lúc dò mà hỏng giữa chừng (hiếm) ⇒ 0.0 như cũ, KHÔNG đổi chế độ giữa vòng (guard đã theo thang này).
-            Mode.LOADAVG -> runCatching { VoiceLoadGuard.parseLoadavg(File(LOADAVG).readText()) }.getOrNull() ?: 0.0
-            Mode.SELF_CPU -> meter.sample(Process.getElapsedCpuTime(), nowMs)
-        }
-
-        private companion object { const val LOADAVG = "/proc/loadavg" }
-    }
 
     private fun nap(ms: Long) = runCatching { Thread.sleep(ms) }.getOrElse { Thread.currentThread().interrupt() }
     private fun safe(f: () -> Unit) = runCatching { f() }.onFailure { Log.w(TAG, "callback wake lỗi", it) }

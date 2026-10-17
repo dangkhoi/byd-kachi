@@ -5,7 +5,6 @@ import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import com.byd.clusternav.navigation.HudPathName
 import com.byd.clusternav.navigation.HudPathNameGate
-import com.byd.clusternav.navigation.HudRoadNameRoute
 import com.byd.clusternav.navigation.LaneInfo
 
 /**
@@ -320,18 +319,12 @@ object BydHal {
         if (!keepAlive && writeSurface) featureId("SET_NAVI_SCREEN_STATUS_SET")?.let { id -> setting?.let { s -> rc.append(" NAVI_SCREEN=").append(cachedSetInt(s, id, screenMode)) } }
         // R9 (2.98): TÊN ĐƯỜNG ngay sau STATUS=2, TRƯỚC cự ly/icon, chỉ real push + chỉ khi ĐỔI (nhịp AmapService OEM,
         // fw 2606 AmapService.java:120-145). Raw domestic+oversea ở BydHalContentPush.pushPathName; SDK ngay dưới.
-        // 3.1.12 · HUD-ROADNAME-ALT-PATH: ĐƯỜNG gửi tên do người dùng chọn (A/A48/B/C, HudRoadNameRoute). Keep-alive không
-        // gửi tên ⇒ không đọc prefs/PackageManager (Plan.DEFAULT). Mũi tên/cự ly/status bên dưới KHÔNG đổi theo chế độ.
-        val roadPlan = if (keepAlive) HudRoadNameRoute.Plan.DEFAULT else HudRoadNameTransport.plan(ctx)
-        val roadRcAt = rc.length
-        BydHalContentPush.pushPathName(instr, road, keepAlive, rc, roadPlan)
-        if (roadPlan.hal && road.isNotBlank() && BydHalContentPush.pathNameGate.shouldSend(HudPathNameGate.Channel.SDK, road, keepAlive)) {
+        BydHalContentPush.pushPathName(instr, road, keepAlive, rc)
+        if (road.isNotBlank() && BydHalContentPush.pathNameGate.shouldSend(HudPathNameGate.Channel.SDK, road, keepAlive)) {
             var sdkRc: Any? = null
-            cachedSdk("sendNextPathName", rc, "sdk.road") { sdkMethod(instr, "sendNextPathName", String::class.java).invoke(instr, HudPathName.fit(road, roadPlan.halMaxBytes)).also { sdkRc = it } }
+            cachedSdk("sendNextPathName", rc, "sdk.road") { sdkMethod(instr, "sendNextPathName", String::class.java).invoke(instr, HudPathName.fit(road)).also { sdkRc = it } }
             BydHalContentPush.pathNameGate.onResult(HudPathNameGate.Channel.SDK, road, sdkRc?.toString())
         }
-        if (roadPlan.clusterDebug) HudRoadNameTransport.pushClusterDebug(ctx, road, keepAlive, rc)
-        if (rc.length > roadRcAt) HudRoadNameTransport.noteSent(ctx, roadPlan, road, rc.substring(roadRcAt))
         // CONTENT (LUÔN ghi, kể cả keep-alive): guidance icon + dualIcon + cự ly.
         w("INSTRUMENT_GUIDE_INFO_SIMPLE_SET", icon)
         w("INSTRUMENT_GUIDE_INFO_AND_ROAD_AHEAD_DISTANCE_SET", icon)   // OpenBYD "dualIcon" (0x43F01030) — ghi icon vào cả feature này
@@ -389,10 +382,9 @@ object BydHal {
 
     /** TẮT nav HUD (status=4 + clear guide/dist) khi hết dẫn đường — như DashCast setNaviActive(false). */
     fun clearNavFrame(ctx: Context): String {
-        val rc = StringBuilder()
-        HudRoadNameTransport.clearIfSent(ctx, rc)   // 3.1.12: đường B đã có tên ⇒ gửi tên xoá; TRƯỚC khi cổng bị xả
         BydHalContentPush.pathNameGate.reset()   // R9: hết dẫn ⇒ lần dẫn sau cùng tên vẫn gửi lại
-        val instr = device(INSTRUMENT, systemBypassContext(), bypass(ctx)) ?: return "InstrumentDevice null$rc"
+        val instr = device(INSTRUMENT, systemBypassContext(), bypass(ctx)) ?: return "InstrumentDevice null"
+        val rc = StringBuilder()
         fun w(name: String, v: Int) { featureId(name)?.let { id -> rc.append(" $name=").append(runCatching { setInt(instr, id, v) }.getOrElse { root(it) }) } }
         w("INSTRUMENT_SEND_NAVI_STATUS_SET", 4)
         w("INSTRUMENT_GUIDE_INFO_SIMPLE_SET", 0)

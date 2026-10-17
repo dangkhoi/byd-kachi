@@ -173,7 +173,7 @@
     <string name="kachi_row_boot_profile">Lên bằng hồ sơ</string>
     <string name="kachi_profile_boot_last">Gần nhất</string>
     <string name="kachi_boot_profile_note">"Gần nhất" = lên đúng hồ sơ bạn đang dùng lúc tắt máy. Chọn một hồ sơ cụ thể thì mỗi lần nổ máy Kachi đều đổi về hồ sơ đó, kể cả khi chuyến trước bạn đã đổi sang hồ sơ khác.</string>
-    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền (riêng Tự mở Kachi khi nổ máy, Chạy dịch vụ nền khi nổ máy, Mở app khi nổ máy và Tự mở nhạc khi lên xe vẫn theo hồ sơ), hầu hết nhóm Giọng nói, App dẫn đường mặc định, Kính thật (làm mờ nền), Kéo app thoát ô về lại ô (thử nghiệm), Tự sấy kính khi mưa, Đường gửi tên đường lên HUD, phần chỉnh camera theo xe (xoay, lật gương, góc nhìn), và Giới thiệu — đều lưu cho hồ sơ «%1$s», kể cả chiếu lên cụm, khung và DPI từng app, nút nổi và camera. Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đổi ngay; khung và DPI khi chiếu đổi từ lần chiếu sau, còn bật/tắt chiếu đổi từ lần nổ máy sau.</string>
+    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền (riêng Tự mở Kachi khi nổ máy, Chạy dịch vụ nền khi nổ máy, Mở app khi nổ máy và Tự mở nhạc khi lên xe vẫn theo hồ sơ), hầu hết nhóm Giọng nói, App dẫn đường mặc định, Kính thật (làm mờ nền), Kéo app thoát ô về lại ô (thử nghiệm), Tự sấy kính khi mưa, phần chỉnh camera theo xe (xoay, lật gương, góc nhìn), và Giới thiệu — đều lưu cho hồ sơ «%1$s», kể cả chiếu lên cụm, khung và DPI từng app, nút nổi và camera. Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đổi ngay; khung và DPI khi chiếu đổi từ lần chiếu sau, còn bật/tắt chiếu đổi từ lần nổ máy sau.</string>
     <string name="kachi_delete">Xoá</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -468,26 +468,6 @@
     <string name="kachi_nav_cluster_on">Bật (Giữa + ETA)</string>
     <string name="kachi_nav_marquee_title">Chạy chữ tên đường dài</string>
     <string name="kachi_nav_marquee_sub">Tên dài hơn bề ngang sẽ chạy ngang thay vì bị cắt.</string>
-    <!-- 3.1.12 · HUD-ROADNAME-ALT-PATH — Đường gửi tên đường lên HUD (SettingsHudRoadNameRows) -->
-    <string name="kachi_hudroad_title">Đường gửi tên đường lên HUD</string>
-    <string name="kachi_hudroad_a">A · HAL</string>
-    <string name="kachi_hudroad_a48">A48 · HAL ≤48</string>
-    <string name="kachi_hudroad_b">B · ClusterDebug</string>
-    <string name="kachi_hudroad_c">C · A+B</string>
-    <string name="kachi_hudroad_modes">A: như cũ (HAL, ≤127 ký tự) · A48: HAL, cắt ≤48 ký tự · B: qua ClusterDebug của xe (cách DiAuto) · C: cả A và B. Mũi tên + khoảng cách luôn đi HAL.</string>
-    <string name="kachi_hudroad_help_sl6">SL6: thử B nếu HUD không hiện tên đường. Thử xong chụp màn này gửi về.</string>
-    <string name="kachi_hudroad_cd_ok">ClusterDebug: có (ứng dụng hệ thống) — dùng được B/C</string>
-    <string name="kachi_hudroad_cd_off">B/C tắt: %1$s</string>
-    <string name="kachi_hudroad_why_missing">xe không có ClusterDebug</string>
-    <string name="kachi_hudroad_why_not_system">ClusterDebug không phải ứng dụng hệ thống</string>
-    <string name="kachi_hudroad_why_disabled">ClusterDebug đang bị tắt</string>
-    <string name="kachi_hudroad_why_no_receiver">ClusterDebug thiếu bộ nhận</string>
-    <string name="kachi_hudroad_why_protected">bộ nhận ClusterDebug bị khoá quyền</string>
-    <string name="kachi_hudroad_why_version">bản ClusterDebug khác bản đã kiểm</string>
-    <string name="kachi_hudroad_refused">Không đổi được: %1$s</string>
-    <string name="kachi_hudroad_st_idle">Đang dùng %1$s · chưa gửi tên đường nào trong lần chạy này</string>
-    <string name="kachi_hudroad_st_sent">Gửi lúc %2$s bằng %1$s · %3$d ký tự · %4$s</string>
-    <string name="kachi_hudroad_st_degraded">Đã chọn %1$s nhưng xe này không dùng được ClusterDebug ⇒ đang gửi bằng A</string>
     <string name="kachi_nav_default_app">App dẫn đường mặc định</string>
     <string name="kachi_nav_app_gmaps">Google Maps</string>
     <string name="kachi_nav_app_vietmap">VietMap</string>

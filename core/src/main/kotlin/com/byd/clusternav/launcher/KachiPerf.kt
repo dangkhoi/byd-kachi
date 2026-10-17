@@ -43,7 +43,12 @@ object KachiPerf {
      */
     enum class Counter { HAL_READ, HAL_SKIP_OFFSCREEN, HAL_SKIP_ABSENT, SHELL_CMD, LOG_BYTES, SHELL_DENY, BEHIND_FAIL, BEHIND_ANCHOR_RAN,
         /** 3.1.6 HAL-EVENTS — lượt đọc được trả bằng giá trị sự kiện (KHÔNG gọi HAL) · sự kiện vào từ helper. */
-        HAL_EVENT_HIT, HAL_EVENT }
+        HAL_EVENT_HIT, HAL_EVENT,
+        /**
+         * 3.1.14 `PERF-SL6-3113` — lượt dựng widget xe 3D (Engine + gltfio) · ms LUỒNG CHÍNH của các lượt đó. [ĐO log Seal 17/10]
+         * mỗi lượt 0,8–2,4 s đơ luồng chính; đến từ log thì phải dò dòng `Car3d nạp` — nay nằm ngay trong dòng [dueLine].
+         */
+        CAR3D_BUILD, CAR3D_MAIN_MS }
 
     private val values: Map<Counter, AtomicLong> =
         Counter.values().associateWith { AtomicLong(0) }
@@ -65,7 +70,7 @@ object KachiPerf {
     /** Xả sạch (test + khi người dùng bật/tắt một thứ làm số cũ hết nghĩa). */
     fun reset() {
         values.values.forEach { it.set(0) }
-        lastReportAt.set(NEVER)
+        lastReportAt.set(NEVER); lastLine = null
     }
 
     /**
@@ -93,6 +98,8 @@ object KachiPerf {
         val deny = perMin(Counter.SHELL_DENY)
         val evHit = perMin(Counter.HAL_EVENT_HIT)
         val evIn = perMin(Counter.HAL_EVENT)
+        val builds = values.getValue(Counter.CAR3D_BUILD).getAndSet(0)   // số lượt trong cửa sổ (hiếm — không chia phút)
+        val buildMs = values.getValue(Counter.CAR3D_MAIN_MS).getAndSet(0)
         // ⚠ `Locale.ROOT`: `String.format` không có locale dùng locale MẶC ĐỊNH của máy, mà xe của owner chạy
         // `vi-VN` ⇒ `%.1f` in ra `1,5` thay vì `1.5`. Dòng này là **số đo** được chép vào `docs/diagnostics/perf-*`
         // và so giữa hai lần chạy; đổi dấu thập phân theo ngôn ngữ máy là làm hai lần đo không so được với nhau.
@@ -100,10 +107,14 @@ object KachiPerf {
         return String.format(
             Locale.ROOT,
             "cửa sổ %ds · HAL đọc=%.0f/phút · bỏ-không-hiện=%.0f · bỏ-xe-không-có=%.0f · shell=%.1f/phút · log=%.1f KB/phút" +
-                " · shell-chặn=%.1f/phút · thay-bằng-sự-kiện=%.0f/phút · sự-kiện=%.0f/phút",
-            elapsed / 1000, read, offscreen, absent, shell, logKb, deny, evHit, evIn,
-        )
+                " · shell-chặn=%.1f/phút · thay-bằng-sự-kiện=%.0f/phút · sự-kiện=%.0f/phút · 3D-dựng=%d (luồng-chính %d ms)",
+            elapsed / 1000, read, offscreen, absent, shell, logKb, deny, evHit, evIn, builds, buildMs,
+        ).also { lastLine = it }
     }
+
+    /** Dòng [dueLine] gần nhất (màn Chẩn đoán in lại — CLAUDE.md §11: chụp màn hình là đủ). `null` = chưa đủ một cửa sổ. */
+    @Volatile var lastLine: String? = null
+        private set
 
     /** Nhịp báo cáo mặc định — một phút, đúng đơn vị mà mọi con số trong `docs/diagnostics/perf-*` dùng. */
     const val REPORT_PERIOD_MS = 60_000L

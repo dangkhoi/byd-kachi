@@ -498,7 +498,6 @@ Chạy chữ tên đường	Scroll long street names	เลื่อนชื่
 App dẫn đường mặc định	Default navigation app	แอปนำทางเริ่มต้น
 Tự dẫn đường theo lịch	Scheduled navigation	นำทางตามกำหนดเวลา
 Kết nối lại nguồn dẫn đường	Reconnect the navigation source	เชื่อมต่อแหล่งข้อมูลนำทางอีกครั้ง
-Đường gửi tên đường lên HUD	Road-name path to the HUD	ช่องทางส่งชื่อถนนไปยัง HUD
 Biển báo tốc độ	Speed limit badge	ป้ายจำกัดความเร็ว
 Giới hạn sắp tới	Upcoming limit	ขีดจำกัดความเร็วถัดไป
 Chip cảnh báo camera	Camera alert chip	ชิปแจ้งเตือนกล้อง

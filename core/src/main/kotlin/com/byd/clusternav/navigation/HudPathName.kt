@@ -33,9 +33,8 @@ object HudPathName {
         return road.substring(0, cut)
     }
 
-    /** Payload gửi HAL: [fit] rồi mã UTF-16LE (không BOM — `Charsets.UTF_16LE` không thêm BOM). [maxBytes] < trần chỉ ở
-     *  chế độ A48 (3.1.12, [HudRoadNameMode]); mặc định = đường 3.1.11. */
-    fun encode(road: String, maxBytes: Int = MAX_BYTES): ByteArray = fit(road, maxBytes).toByteArray(Charsets.UTF_16LE)
+    /** Payload gửi HAL: [fit] rồi mã UTF-16LE (không BOM — `Charsets.UTF_16LE` không thêm BOM). */
+    fun encode(road: String): ByteArray = fit(road).toByteArray(Charsets.UTF_16LE)
 
     /** rc HAL/SDK coi là "đã nhận": `0` [ĐO log xe 09-20 `PATHNAME=0 … sdk.road=0`]. "skip"/lỗi/sentinel ⇒ chưa. */
     fun accepted(rc: String?): Boolean = rc?.trim()?.toIntOrNull() == 0
@@ -49,8 +48,7 @@ object HudPathName {
  * rỗng ⇒ không ghi (không có gì để xoá). [reset] khi hết dẫn đường (status=4) ⇒ lần dẫn sau cùng tên vẫn gửi lại.
  */
 class HudPathNameGate {
-    /** [CLUSTER_DEBUG] (3.1.12): đường B — khúc tên đường qua receiver ClusterDebug ([ClusterDebugRoadName]). */
-    enum class Channel { DOMESTIC, OVERSEA, SDK, CLUSTER_DEBUG }
+    enum class Channel { DOMESTIC, OVERSEA, SDK }
 
     private val lastSent = HashMap<Channel, String>()
 
@@ -65,10 +63,6 @@ class HudPathNameGate {
     fun onResult(channel: Channel, road: String, rc: String?) {
         if (HudPathName.accepted(rc)) lastSent[channel] = HudPathName.fit(road)
     }
-
-    /** Kênh đã nhận một tên KHÁC rỗng từ lần [reset] trước chưa — đường B dùng để biết có gì cần xoá lúc hết dẫn. */
-    @Synchronized
-    fun sentSomething(channel: Channel): Boolean = !lastSent[channel].isNullOrBlank()
 
     @Synchronized
     fun reset() = lastSent.clear()
