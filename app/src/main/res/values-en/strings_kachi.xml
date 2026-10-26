@@ -162,7 +162,7 @@
     <string name="kachi_row_boot_profile">Start up with</string>
     <string name="kachi_profile_boot_last">Last used</string>
     <string name="kachi_boot_profile_note">"Last used" starts with whichever profile was active when you switched the engine off. Pin a specific profile and every engine start returns to it, even if you switched profile on the previous trip.</string>
-    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start, Open apps at ignition and Play music when you get in do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Pull apps that leave a frame back in (experimental), Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
+    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start, Open apps at ignition and Play music when you get in do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Pull apps that leave a frame back in (experimental), Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), Telegram remote, Telegram bot token, Telegram chat ID, Allow car control via Telegram, and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
     <string name="kachi_delete">Delete</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -1062,4 +1062,24 @@
     <string name="kachi_np_corner_tr">Top right</string>
     <string name="kachi_np_corner_bl">Bottom left</string>
     <string name="kachi_np_corner_br">Bottom right</string>
+    <!-- TELEGRAM-REMOTE (2026-10-26) -->
+    <string name="kachi_pending_title">Destination for next trip</string>
+    <string name="kachi_pending_none">No destination set. Scheduled navigation runs as usual on the next trip.</string>
+    <string name="kachi_pending_set">Will navigate to: %1$s (priority over schedule, once)</string>
+    <string name="kachi_pending_pick">Pick a destination from saved places…</string>
+    <string name="kachi_pending_clear">Clear pending destination</string>
+    <string name="kachi_pending_no_places">Address book is empty. Add a place in Saved places first.</string>
+    <string name="kachi_tg_title">Telegram remote</string>
+    <string name="kachi_tg_enabled_title">Enable Telegram remote</string>
+    <string name="kachi_tg_enabled_sub">Send a destination / play music / control the car from your phone via a Telegram bot. On board you navigate the right way immediately (with GPS).</string>
+    <string name="kachi_tg_token">Telegram bot token</string>
+    <string name="kachi_tg_token_unset">not set</string>
+    <string name="kachi_tg_chat">Telegram chat ID</string>
+    <string name="kachi_tg_chat_unset">not set</string>
+    <string name="kachi_tg_test">Test connection</string>
+    <string name="kachi_tg_test_ok">Sent a test message to Telegram. Check your phone.</string>
+    <string name="kachi_tg_test_fail">Could not send. Check token, chat ID and network.</string>
+    <string name="kachi_tg_test_incomplete">Not configured yet. Needs enabled + token + chat ID.</string>
+    <string name="kachi_tg_control_title">Allow car control via Telegram</string>
+    <string name="kachi_tg_control_sub">Allow /ac, /defrost… to control the car from Telegram. The boot, windows and sunroof still only open when stopped.</string>
 </resources>

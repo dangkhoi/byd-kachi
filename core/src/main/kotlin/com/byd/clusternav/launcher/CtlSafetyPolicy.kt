@@ -70,6 +70,23 @@ object CtlSafetyPolicy {
     /** Control [id] chỉ được MỞ khi xe đang dừng (0 km/h) không — xem [REQUIRES_STATIONARY]. */
     fun requiresStationary(id: String): Boolean = id in REQUIRES_STATIONARY
 
+    /**
+     * ═══ TELEGRAM-REMOTE (2026-10-26) · cổng tốc độ cho lệnh TỪ NGOÀI (điện thoại) ═══════════════════════════
+     *
+     * Lệnh từ màn hình (chạm/giọng/phím) có **ngón tay người lái trên xe** nên mở kính lúc chạy là việc bình
+     * thường (xem KDoc [REQUIRES_STATIONARY]). Lệnh từ Telegram KHÔNG có ai ngồi sau màn xác nhận: người ngồi sau
+     * (hoặc chính chủ xe ở nhà) bấm một nút trên điện thoại, và nó bung cửa sổ trời / hạ kính ở 100 km/h mà tài xế
+     * không hề biết. Nên cổng tốc độ cho nguồn NGOÀI rộng bằng cả họ bộ-phận-chuyển-động [CONFIRM_REQUIRED] —
+     * đúng điều chuỗi UI `kachi_tg_control_sub` hứa với chủ xe ("Cốp, kính, cửa sổ trời vẫn chỉ mở khi xe dừng").
+     *
+     * Vẫn MỘT nguồn danh sách: tái dùng [CONFIRM_REQUIRED] (bộ phận bung/che tầm nhìn), không khai tập thứ ba.
+     */
+    fun requiresStationaryExternal(id: String): Boolean = id in CONFIRM_REQUIRED
+
+    /** Như [blocked] nhưng cho lệnh TỪ NGOÀI (Telegram): tập stationary rộng bằng [CONFIRM_REQUIRED]. */
+    fun blockedExternal(id: String, arg: Int, motion: () -> Motion): Boolean =
+        requiresStationaryExternal(id) && arg > 0 && !provenStationary(motion())
+
     /** Ảnh chụp chuyển động cho cổng: [speedKmh] / [gear] thô như [CarStatus.Drivetrain] (`null` = không đọc được). */
     data class Motion(val speedKmh: Int?, val gear: String?)
 

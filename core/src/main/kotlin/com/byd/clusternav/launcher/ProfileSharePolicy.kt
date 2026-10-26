@@ -25,6 +25,8 @@ object ProfileSharePolicy {
     val PRIVATE: Map<String, String> = mapOf(
         "saved_places" to
             "sổ địa chỉ (hậu tố launcher): tên nơi người dùng đặt ('Nhà', 'Công ty') + địa chỉ nguyên văn + toạ độ",
+        "pending_nav" to
+            "điểm đến chờ (TELEGRAM-REMOTE): nơi một người đặt cho chuyến sắp tới — riêng tư như sổ địa chỉ, không chia sẻ khi export hồ sơ",
         "nav_automation_rules" to
             "lịch dẫn đường (ảnh clusternav_prefs): khung giờ + thứ trong tuần + nơi đến (placeId = tên trong sổ địa " +
                 "chỉ) + app — tức lịch đi lại của một người",

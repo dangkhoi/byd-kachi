@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
 import android.content.Context
@@ -301,6 +302,9 @@ internal class KachiDialog(private val context: Context) {
     private inner class Win(ctx: Context, theme: Int) : Dialog(ctx, theme) {
         private var keyboardAsked = false
 
+        // GestureBackNavigation: cảnh báo này dành cho Activity (migrate sang OnBackPressedDispatcher). Đây là
+        // Dialog — onBackPressed CÒN được gọi cho nút Back; cử chỉ vuốt-lùi do Dialog host xử lý. Không áp dụng.
+        @SuppressLint("GestureBackNavigation")
         override fun onBackPressed() {
             if (onBack?.invoke() != true) super.onBackPressed()
         }

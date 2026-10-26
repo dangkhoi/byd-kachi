@@ -80,6 +80,9 @@ internal class GroupCellGrid(
     /** Gói đang hiện (cho QA / bài canh). */
     val shownCount: Int get() = plan?.shown ?: cells.size
 
+    // WrongConstant: lint đòi hằng LineBreaker.* còn ta dùng Layout.BREAK_STRATEGY_SIMPLE — giá trị y hệt (alias
+    // hợp lệ của cùng API), lint nhầm. Không đổi giá trị.
+    @SuppressLint("WrongConstant")
     fun add(cell: Cell) {
         // Ngắt THAM LAM ở dấu cách, không gạch nối — đúng giả định của [GroupCellFit.twoLineWidth] (mặc định của TextView
         // là HIGH_QUALITY + gạch nối: có thể ngắt giữa từ để cân dòng).
@@ -249,6 +252,7 @@ internal fun tileSignature(g: ViewGroup): String = buildString {
  * Bề rộng một nút cần: chữ dài nhất trong nút (≤ 2 dòng nếu nút cho 2 dòng, 1 dòng nếu `maxLines = 1`) + mọi lề/đệm từ
  * chữ ra tới mép nút, không dưới [minTouchPx]. Dùng chung cho [GroupActionGrid] và bảng vật × việc (R22).
  */
+@SuppressLint("WrongConstant")   // Layout.BREAK_STRATEGY_SIMPLE = alias hợp lệ của LineBreaker.*; lint nhầm (API 29).
 internal fun tileNeedPx(tile: View, minTouchPx: Int): Int {
     val l = ArrayList<TextView>(); tileTexts(tile, l)
     var need = maxOf(minTouchPx, tile.minimumWidth)

@@ -41,7 +41,8 @@ object ProfileScopeLauncher {
         listOf("dock_visible", "top_strip_labels", "top_strip_migrated_ux5b", "swap_button_autohide").forEach { put(it, PrefType.BOOLEAN) }
         // Cá nhân — chuỗi mã hoá của `:core` (`UnitPrefs`, `WallpaperPrefs`, `SavedPlaces`, `ColorChoice`, `LangMode`…).
         listOf("theme_mode", "unit_prefs", "wallpaper_prefs", "lang", "saved_places", "color_choice", "ignition_apps", "ignition_music",
-            "voice_app_names")   // 2.91 — TaughtNamesCodec (TSV v1)
+            "voice_app_names",   // 2.91 — TaughtNamesCodec (TSV v1)
+            "pending_nav")       // TELEGRAM-REMOTE — điểm đến chờ (chuỗi)
             .forEach { put(it, PrefType.STRING) }
         put("launcher_autostart", PrefType.BOOLEAN)
         // Sinh từ CÙNG nguồn với [ProfileScope.LAUNCHER_SUFFIXES]: trần ô và số tệp ClusterNav còn đổi được, chép tay con

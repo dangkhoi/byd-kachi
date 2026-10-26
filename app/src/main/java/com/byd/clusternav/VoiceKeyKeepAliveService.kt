@@ -173,6 +173,7 @@ class VoiceKeyKeepAliveService : Service() {
          * | 1045 | `VoiceKeyKeepAliveService` (file này)     |
          * | 1046 | `VietMapAutostartService`                 |
          * | 1047 | `KachiAutostartService`                   |
+         * | 1048 | `telegram.TelegramBridgeService`          |
          * | 4801 | `launcher.voice.VoiceWakeService`         |
          *
          * Thêm FGS mới: lấy số kế tiếp, ghi vào bảng này; test sẽ đỏ nếu trùng.

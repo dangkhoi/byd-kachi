@@ -118,6 +118,112 @@ object ScheduledNavApplier {
     fun todayKey(): String = LocalDate.now().toString()
 
     /**
+     * Bắn dẫn đường tới MỘT điểm đến cho DANH SÁCH app — dùng bởi điểm đến chờ (TELEGRAM-REMOTE, spec
+     * `kachi-telegram-remote.html` R2). Cùng cửa bắn với lịch ([launchOne]): `VoiceAppIntents.destinationHandoff`
+     * + `.send`, nên cờ của đích (vd `CLEAR_TASK` Google Maps) đi y hệt — KHÔNG mở đường ghi thứ hai.
+     *
+     * GỌI TỪ THREAD NỀN (đọc `PackageManager`). `true` = ít nhất một app dẫn được.
+     *
+     * @param logId chuỗi nhận dạng ghi log (vd `"pending"`), thay cho `rule.id` của lịch.
+     */
+    fun launchPlace(ctx: Context, place: SavedPlace, apps: List<String>, logId: String = "pending"): Boolean {
+        val app = ctx.applicationContext
+        val installed = installedPackages(app)
+        var anyOk = false
+        for (navApp in apps) {
+            val target = VoiceAppTargets.byKey(navApp) ?: run {
+                Log.i(TAG, "$logId: mã app \"$navApp\" không còn trong bảng đích ⇒ bỏ"); null
+            } ?: continue
+            val pkg = target.packageIn(installed) ?: run {
+                Log.i(TAG, "$logId: ${target.label} chưa cài ⇒ bỏ"); null
+            } ?: continue
+            if (!place.hasCoords && target.needsCoords) {
+                Log.i(TAG, "$logId: \"${place.name}\" chưa có toạ độ mà ${target.label} chỉ nhận toạ độ ⇒ bỏ")
+                continue
+            }
+            val coords = if (place.hasCoords) {
+                VoiceAppIntents.Coords(place.lat!!, place.lng!!, place.query)
+            } else {
+                null
+            }
+            val handoff = VoiceAppIntents.destinationHandoff(target, pkg, place.query, coords) ?: run {
+                Log.i(TAG, "$logId: ${target.label} không có đường giao điểm đến ⇒ bỏ"); null
+            } ?: continue
+            val ok = runCatching { VoiceAppIntents.send(app, handoff) }.getOrDefault(false)
+            Log.i(TAG, "$logId: giao \"${place.name}\" cho ${target.label} ($pkg) ⇒ $ok")
+            if (ok) anyOk = true
+        }
+        return anyOk
+    }
+
+    /** Sổ đã-dẫn hiện tại + mọi id luật đang có — để [com.byd...automation.PendingNavPolicy] dựng dấu chặn lịch. */
+    fun firedMap(ctx: Context): Map<String, String> =
+        NavAutomationFired.decode(Prefs.navAutomationFired(ctx.applicationContext))
+
+    fun setFired(ctx: Context, fired: Map<String, String>) {
+        Prefs.setNavAutomationFired(ctx.applicationContext, NavAutomationFired.encode(fired))
+    }
+
+    /**
+     * ƯU TIÊN điểm đến chờ (TELEGRAM-REMOTE, spec R2/R3/R4/R5). Gọi TRƯỚC [tick] mỗi nhịp.
+     *
+     * @return `true` = đã bắn pending (chỗ gọi BỎ [tick] nhịp này — short-circuit); `false` = không pending /
+     *   đang chờ GPS ⇒ chỗ gọi chạy lịch như cũ.
+     *
+     * Overwrite lịch: sau khi bắn, đóng dấu [NavAutomationFired] của NGÀY cho mọi id luật ⇒ lịch coi như đã dẫn
+     * (chặn chuyến này). Một-lần: [com.byd.clusternav.automation.PendingNavStore.consume] xoá pending. Chờ GPS:
+     * [com.byd.clusternav.launcher.automation.PendingNavPolicy.Decision.WaitForGps] ⇒ giữ nguyên, thử lại nhịp
+     * sau.
+     */
+    fun applyPending(ctx: Context, nowMs: Long = System.currentTimeMillis()): Boolean {
+        val app = ctx.applicationContext
+        return runCatching {
+            val p = com.byd.clusternav.automation.PendingNavStore.read(app) ?: return@runCatching false
+            // P2-14: điểm đến chờ quá cũ (24h) ⇒ bỏ. setAtMs là wall-clock (currentTimeMillis), KHÔNG phải nowMs
+            // (= elapsedRealtime từ FGS) ⇒ so bằng wall-clock riêng.
+            if (com.byd.clusternav.automation.PendingNavStore.isStale(p, System.currentTimeMillis())) {
+                com.byd.clusternav.automation.PendingNavStore.consume(app)
+                Log.i(TAG, "pending: quá hạn 24h ⇒ bỏ")
+                return@runCatching false
+            }
+            val gpsOk = if (p.requireGps) GpsAvailability.isAvailable(app, nowMs) else null
+            val decision = com.byd.clusternav.launcher.automation.PendingNavPolicy
+                .resolve(p.dest, p.requireGps, gpsOk)
+            when (decision) {
+                is com.byd.clusternav.launcher.automation.PendingNavPolicy.Decision.FireNav -> {
+                    Log.i(TAG, "pending: ưu tiên dẫn \"${p.dest.place.name}\" (apps=${p.dest.appsEncoded})")
+                    val ok = launchPlace(app, p.dest.place, p.dest.apps, logId = "pending")
+                    if (ok) {
+                        // Overwrite CHỈ các luật thuộc chuyến này (R3 — khung giờ + thứ hiện tại), không cả ngày (P1-3).
+                        val rules = NavAutomationBook.decode(Prefs.navAutomationRules(app))
+                        val nowMin = java.time.LocalTime.now().let { it.hour * 60 + it.minute }
+                        val dow = java.time.LocalDate.now().dayOfWeek.value
+                        val blocked = com.byd.clusternav.launcher.automation.PendingNavPolicy
+                            .blockScheduleFired(firedMap(app), rules, nowMin, dow, todayKey())
+                        setFired(app, blocked)
+                        com.byd.clusternav.automation.PendingNavStore.consume(app)
+                        Log.i(TAG, "pending: đã bắn + chặn lịch chuyến này + consume")
+                        true
+                    } else {
+                        // Không app nào dẫn được (chưa cài / chỉ chữ cho app cần toạ độ): GIỮ pending, thử lại
+                        // nhịp sau — không consume một lần hỏng thành mất điểm đến.
+                        Log.i(TAG, "pending: chưa app nào dẫn được ⇒ giữ, thử lại")
+                        false
+                    }
+                }
+                com.byd.clusternav.launcher.automation.PendingNavPolicy.Decision.WaitForGps -> {
+                    Log.i(TAG, "pending: chờ GPS")
+                    false
+                }
+                com.byd.clusternav.launcher.automation.PendingNavPolicy.Decision.FallThroughToSchedule -> false
+            }
+        }.getOrElse {
+            Log.w(TAG, "nhịp pending lỗi (degrade-safe, bỏ qua)", it)
+            false
+        }
+    }
+
+    /**
      * Tra điểm đến rồi giao cho app đã chọn. `false` = chưa giao được (**đã ghi log lý do**).
      *
      * Ba ca trả `false`, mỗi ca một lý do khác nhau và đều có thật: mục địa chỉ không còn (đổi hồ sơ / người dùng

@@ -856,3 +856,9 @@ Mở hẳn	Full	全开
 Hé	Vent	微开
 Xe 3D	3D car	3D 车辆
 Tên bài trên cụm khi đang chiếu	Song title on the cluster while casting	歌曲名显示在仪表盘（投屏时）
+# TELEGRAM-REMOTE (2026-10-26)
+Điểm đến cho chuyến tới	Destination for next trip	下一程目的地
+Điều khiển qua Telegram	Telegram remote	Telegram 远程控制
+Mã bot Telegram	Telegram bot token	Telegram 机器人令牌
+Mã chat Telegram	Telegram chat ID	Telegram 聊天 ID
+Cho phép điều khiển xe qua Telegram	Allow car control via Telegram	允许通过 Telegram 控制车辆

@@ -157,6 +157,17 @@ class LayeringRulesTest {
         // (không có lớp `ClusterNavBridge` ở đó để mở rộng).
         "ClusterNavBridgeAutomation.kt" to
             "cầu Settings gọi AutomationService/Prefs/ScheduledNavApplier — không chuyển được sang :core",
+        // TELEGRAM-REMOTE (2026-10-26) — cùng ca `ClusterNavBridgeAutomation.kt`: hàm mở rộng của `ClusterNavBridge`
+        // (:app), gọi `Prefs(Context)` + `TelegramBridgeService` (FGS Android) + `PendingNavStore`/`AutomationService`
+        // qua lời gọi. "Thuần" chỉ vì phép đo soi `import android.*`, không soi phụ thuộc bắc cầu. :core không có
+        // lớp `ClusterNavBridge` để mở rộng.
+        "ClusterNavBridgeTelegram.kt" to
+            "cầu Settings gọi Prefs/TelegramBridgeService/PendingNavStore — không chuyển được sang :core",
+        // TELEGRAM-REMOTE (2026-10-26) — hàm mở rộng của `WorkspacePrefs` (:app, giữ `SharedPreferences`) cho khoá
+        // `pending_nav` theo hồ sơ. Dùng `sp`/`key()` internal của lớp :app; "thuần" chỉ vì không import android.*
+        // trực tiếp. Cùng lẽ `WorkspacePrefsSnapshot.kt`/`WorkspacePrefsProfile.kt` (nếu có trong danh sách này).
+        "WorkspacePrefsPending.kt" to
+            "hàm mở rộng WorkspacePrefs (giữ SharedPreferences) cho khoá pending_nav — thuộc :app",
         // Gọi `KachiTheme.applyTheme`, mà `KachiTheme` import android.graphics.Color ⇒ KHÔNG chuyển được sang :core.
         // Nó "thuần" chỉ vì phép đo soi `import android` + vài tên lớp Android, không soi phụ thuộc bắc cầu.
         "ThemeHost.kt" to "phụ thuộc KachiTheme (Android) qua lời gọi, không chuyển được sang :core",

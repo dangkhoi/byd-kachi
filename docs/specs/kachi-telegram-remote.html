@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi Telegram Remote — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.fnode.new{background:rgba(0,113,227,.12);border-color:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kachi Telegram Remote</h1>
+<p class="muted">Slug: <code>kachi-telegram-remote</code> · Branch <code>feat/telegram-remote</code> (cắt từ <code>feat/key-source-split</code>) · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{rules,documentation-and-backlog,product-team-workflow,trace-den-tan-cung,conversation-protocol}.md</code>. Thư viện mới → verify qua Context7 TRƯỚC khi trình (§4.2). Approve out-of-band: <code>approve spec kachi-telegram-remote</code>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 1 — 2026-10-26</b>: Owner chốt 4 OQ — Q1 poll 60s khi ở HOME (R-nf4) · Q2 <code>/play</code> mở ngay khi đang chạy, else đặt chờ (R8) · Q3 có pending Telegram ⇒ ưu tiên (giữ R2/R3) · Q4 điều khiển xe <b>FULL</b> (mọi nút registry, không chỉ ac/defrost) vì người ngồi sau dùng Telegram không phiền tài xế — công tắc <b>khuyến nghị BẬT</b> thay vì mặc định TẮT (R9); cốp/kính/nóc vẫn qua cổng tốc độ.</li>
+<li><b>Pass 0 — 2026-10-26</b>: Khởi tạo spec. Owner muốn đặt điểm đến trên điện thoại TRƯỚC khi lên xe; lên xe Kachi ưu tiên dẫn điểm đó (gmaps+vietmap) và <b>overwrite lịch dẫn đường</b> nếu lịch nổ cùng ngày. Chốt: Telegram <b>bot thật</b> (không Saved Messages) + inline keyboard; <b>Cách 1 không server</b> (Kachi tự là bot-logic khi polling); lệnh <b>tiếng Anh</b>; gồm cả điều khiển xe.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p><b>Vấn đề thật (PO):</b> Là tài xế, tôi muốn <i>trước khi lên xe</i> đặt sẵn điểm đến (và/hoặc nhạc) từ điện thoại, để <i>lên xe là chắc chắn được dẫn đúng đường ngay khi có GPS</i>, không phải gõ lại trên màn xe — và nếu đã lỡ đặt lịch dẫn đường tự động cùng ngày thì điểm đến đặt tay phải <b>thắng</b> lịch.</p>
+<p><b>Xe BYD DiLink không có kênh phone→head-unit chính thức</b> cho app bên thứ ba. Giải pháp: dùng <b>Telegram Bot API</b> (HTTPS, free, Telegram giữ hàng đợi update) làm "hộp thư" — điện thoại gửi lệnh vào bot, Kachi lúc lên xe gọi <code>getUpdates</code> đọc về. Cách 1 = <b>0 server</b>: Kachi vừa là client vừa là bot-logic, nhưng bot chỉ online khi xe bật & Kachi đang polling.</p>
+
+<p><b>Đã có sẵn trong code (đọc source 2026-10-26):</b></p>
+<ul>
+<li><code>core/.../launcher/SavedPlaces.kt</code> — <code>SavedPlace</code> (name·query·lat·lng) + sổ địa chỉ mã hoá 1-dòng, khử ký tự ngăn ở cửa vào. <b>Dùng lại làm nguồn điểm đến.</b></li>
+<li><code>core/.../launcher/voice/VoiceNavProviders.kt</code> — <code>expand</code> nhân 1 điểm đến thành mỗi app một ý-định <code>Nav</code> (gmaps+vietmap+waze, bản 3.0). <b>Dùng lại để bắn đa-app.</b></li>
+<li><code>core/.../launcher/automation/ScheduledNavRule.kt</code> + <code>NavAutomationFired</code> (sổ đã-dẫn theo NGÀY) + <code>app/.../automation/ScheduledNavApplier.kt</code> — lịch dẫn đường hiện có. <b>Overwrite = đóng dấu sổ đã-dẫn trước khi lịch đọc.</b></li>
+<li><code>app/.../launcher/trip/TripStart.kt</code> (421 dòng) — <b>READY-AT-HOME</b>, chạy ở dòng cuối <code>readyChain</code> lúc lên xe. <b>Điểm chèn ưu tiên.</b></li>
+<li><code>app/.../net/HttpConn.kt</code> — bọc HTTPS sẵn. <b>Dùng cho Telegram API.</b></li>
+<li><code>VoiceControlDispatch</code> — đường thi hành lệnh xe, <b>có cổng an toàn tốc độ</b> (cốp/kính chỉ mở khi dừng). <b>Lệnh xe qua Telegram đi qua đây, không mở đường ghi thứ hai.</b></li>
+</ul>
+
+<div class="card"><b>Cổng / phụ thuộc:</b> Không có cổng on-car chặn. Pha 1 (xương sống <code>:core</code> + nhập tay) kiểm được hoàn toàn <b>off-car</b>. Pha 2–3 (Telegram) kiểm bằng máy ảo + mock HTTP; chỉ cần xe để nghiệm thu E2E thật (gửi lệnh từ phone → xe dẫn). Owner tự tạo bot với <code>@BotFather</code>, dán token + chat-id vào Cài đặt (1 lần).</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Điểm đến chờ (pending destination).</b> Có một ô lưu bền <b>theo hồ sơ</b> chứa "điểm đến đặt sẵn" + danh sách app dẫn. Acceptance: ghi được từ (a) ô nhập tay trên màn Cài đặt, (b) lệnh Telegram; đọc lại đúng sau khi tiến trình bị giết (sống qua tắt máy).</li>
+<li><b>R2 — Ưu tiên khi lên xe.</b> <code>TripStart</code> đọc pending TRƯỚC lịch. Có pending chưa dùng ⇒ bắn <code>VoiceNavProviders.expand</code> cho mọi app trong hồ sơ, rồi <b>short-circuit</b> (lịch KHÔNG chạy). Acceptance: test off-car chứng minh có pending ⇒ <code>ScheduledNavApplier</code> không được gọi.</li>
+<li><b>R3 — Overwrite lịch.</b> Khi bắn pending, đóng dấu <code>NavAutomationFired</code> của NGÀY bằng khoá đặc biệt ⇒ mọi luật lịch cùng ngày bị chặn im. Acceptance: test — lịch nổ 09:00 + pending ⇒ chỉ pending dẫn, lịch bị chặn.</li>
+<li><b>R4 — Một-lần.</b> Pending bắn xong ⇒ đánh dấu <code>consumed</code> (marker bền) ⇒ chuyến sau không dẫn lại điểm cũ. Acceptance: test — bắn 1 lần; lần <code>onReady</code> kế không bắn lại.</li>
+<li><b>R5 — Chờ GPS.</b> Tái dùng cổng <code>requireGps</code> của lịch: pending có cờ chờ GPS ⇒ chờ <code>LocationManager.isAvailable==true</code> rồi mới bắn (hoặc bắn ngay, app tự đợi GPS). Không xin quyền vị trí mới ngoài <code>DeadReckonRetirementTest</code> đã cho phép.</li>
+<li><b>R6 — Telegram bot (text + location).</b> <code>TelegramBridgeService</code> poll <code>getUpdates</code>; parse lệnh <code>/go</code>, <code>/play</code>, <code>/cancel</code>, <code>/help</code>, share-location 📍. Acceptance: máy ảo + mock HTTP — mỗi lệnh ra đúng <code>TelegramCommand</code>; <code>update_id</code> chống đọc trùng.</li>
+<li><b>R7 — Inline keyboard.</b> <code>/go</code> trống ⇒ bot trả nút liệt kê sổ địa chỉ; bấm nút ⇒ callback ⇒ đặt pending + phản hồi "đã nhận". Acceptance: máy ảo — JSON keyboard đúng; callback ra đúng <code>Nav</code>.</li>
+<li><b>R8 — Nhạc.</b> <code>/play &lt;link&gt;</code> ⇒ xe đang chạy (màn bật, có task) ⇒ <b>mở link NGAY</b> qua đường của <code>TripMusicPlan</code>; xe chưa lên ⇒ <b>đặt pending nhạc</b>, mở lúc <code>TripStart</code> (owner 26/10). Acceptance: lệnh ra <code>Music(url)</code>; đang chạy ⇒ mở ngay; else link vào <code>kachi_trip_last</code> như bước nhạc hiện có.</li>
+<li><b>R9 — Điều khiển xe FULL (công tắc, khuyến nghị bật).</b> Usecase (owner 26/10): người ngồi sau dùng Telegram mở nhạc / dẫn đường / chỉnh tiện nghi mà <b>không phiền tài xế</b>. Mọi nút của <code>ControlRegistry</code> gọi được qua Telegram (<code>/ac on</code>, <code>/seat ...</code>, <code>/defrost</code>, <code>/readlight</code>…, sinh từ registry như <code>KeyCtlTargets</code>) ⇒ <code>VoiceControlDispatch.run</code> — <b>thừa hưởng NGUYÊN cổng an toàn tốc độ</b>: cốp / kính / cửa sổ trời chỉ mở khi xe dừng, dù lệnh từ Telegram; KHÔNG mở đường ghi thứ hai. Công tắc riêng ở Cài đặt, <b>khuyến nghị BẬT</b> (không ép tắt sẵn — người ngồi sau cần nó), nhưng vẫn là công tắc vì điều khiển xe qua internet là bề mặt nhạy cảm; TẮT ⇒ lệnh điều khiển bị bỏ + bot báo "điều khiển xe đang tắt". Lệnh gửi NGAY khi xe đang chạy; kết quả (✓ / "chỉ mở khi dừng") phản hồi về bot.</li>
+<li><b>R10 — Config + bảo mật.</b> Ô dán bot token + chat-id + nút "Kiểm tra kết nối" + công tắc bật/tắt bridge. <b>Chỉ nhận lệnh từ đúng <code>allowedChatId</code></b>; update từ chat lạ bị bỏ. Token không log, không commit.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1.</b> <code>:core</code> THUẦN Kotlin (cấm <code>android.*</code>): parse, mô hình lệnh, logic ưu tiên/overwrite/một-lần — kiểm off-car.</li>
+<li><b>R-nf2. Degrade-safe:</b> mạng lỗi / token sai / Telegram 4xx ⇒ log + thử lại sau, KHÔNG chặn <code>readyChain</code>, KHÔNG làm chậm lên-HOME. Pending vẫn đọc được offline (đã lưu bền).</li>
+<li><b>R-nf3.</b> Mọi ký tự ngăn bị khử ở cửa vào (bài học <code>SlotCodec.SEP</code>). Token/chat-id xếp loại TRANSIENT/DEVICE đúng <code>ProfileScope</code>.</li>
+<li><b>R-nf4.</b> FGS polling tôn trọng chống-loop + cooldown như <code>VietMapAutostartService</code>; <b>không poll khi màn tắt</b> (đỡ pin/mạng). Khi đang ở HOME và màn bật: poll <b>mỗi 60s</b> (owner 26/10) để nhận lệnh giữa chuyến — người ngồi sau gửi lệnh, xe nhận trong ≤60s. <code>getUpdates</code> dùng long-poll nên 60s là nhịp vòng lặp, không phải 60s/1 request lãng phí.</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Kiến trúc tổng thể</h3>
+<div class="flow">
+  <div class="fnode"><b>Điện thoại</b><span>Telegram app</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Telegram Bot API</b><span>HTTPS · free · hàng đợi</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>TelegramBridgeService</b><span>:app · FGS poll</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>TelegramUpdateParser</b><span>:core thuần</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>PendingNavStore</b><span>:app · lưu bền/hồ sơ</span></div>
+</div>
+<div class="flow">
+  <div class="fnode"><b>TripStart.onReady</b><span>:app · lúc lên xe (có sẵn)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>PendingNavPolicy</b><span>:core · ưu tiên?</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VoiceNavProviders.expand</b><span>:core · gmaps+vietmap (có sẵn)</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (reuse)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15);border-color:var(--accent)"></span> khối mới</span>
+</div>
+
+<h3>4.2 Luật ưu tiên — trái tim usecase</h3>
+<pre>TripStart.onReady  (dòng cuối readyChain — ĐÃ CÓ)
+  pending = PendingNavStore.read(profile)
+  decision = PendingNavPolicy.resolve(pending, now, gpsOk)
+  when (decision):
+    FireNav(place, apps):
+        VoiceNavProviders.expand(place, apps)          // bắn gmaps+vietmap
+        NavAutomationFired.mark(todayKey, BLOCK_KEY)   // ⬅ R3: chặn MỌI lịch hôm nay
+        PendingNavStore.consume(profile)               // ⬅ R4: một-lần
+        return                                          // ⬅ R2: short-circuit, lịch KHÔNG chạy
+    WaitForGps:
+        (để nguyên pending, nhịp readyChain/periodic thử lại khi có GPS)
+    FallThroughToSchedule:
+        ScheduledNavApplier.tick(...)                   // lịch như cũ</pre>
+<ul>
+<li><b>Ưu tiên</b> = đọc pending trước + short-circuit.</li>
+<li><b>Overwrite lịch</b> = đóng dấu sổ đã-dẫn của ngày (<code>NavAutomationFired</code>) bằng khoá <code>__pending__</code> trước khi lịch kịp đọc — tái dùng đúng cơ chế "một luật một ngày" sẵn có.</li>
+<li><b>Một-lần</b> = cờ <code>consumed</code> + marker bền (như <code>no_backup/voice/music-duck.marker</code>), sống qua BYD-giết-app lúc tắt máy.</li>
+</ul>
+
+<h3>4.3 Quyết định thiết kế + Context7</h3>
+<ul>
+<li><b>Cách 1 (không server)</b> thay vì bot nền: cá nhân dùng, 0 phí, 0 hạ tầng phải nuôi. Nút bấm chỉ render/phản hồi khi xe đang polling — chấp nhận được vì usecase là "đặt trước/khi lên xe". Nếu sau cần nút-khi-xe-tắt thì nâng lên Cách 2 mà KHÔNG đụng <code>PendingNavPolicy</code> (chỉ thay nguồn ghi).</li>
+<li><b>Lệnh tiếng Anh</b> (<code>/go /play /cancel /help /ac /defrost</code>): identifier máy đọc = English ASCII (rules G4). Tên <b>nơi</b> trong sổ địa chỉ là data người dùng ⇒ để tiếng Việt thoải mái (<code>/go Công ty</code> hợp lệ).</li>
+<li><b>Lệnh xe qua internet</b> là bề mặt nhạy cảm ⇒ mặc định TẮT + chỉ 1 chat-id + đi qua cổng tốc độ sẵn có. Không mở setter mới.</li>
+<li><b>Context7</b>: Telegram Bot API là <b>HTTP thuần</b> (không SDK) — dùng <code>HttpConn</code> sẵn có, không thêm thư viện. Chỉ cần xác nhận hợp đồng 4 endpoint (<code>getUpdates</code> long-poll <code>offset</code>/<code>timeout</code>, <code>sendMessage</code> với <code>reply_markup</code>, <code>editMessageText</code>, <code>answerCallbackQuery</code>) qua tài liệu Telegram tại thời điểm code. ⇒ <b>không cần thư viện mới</b>, verify endpoint shape khi implement pha 2.</li>
+</ul>
+
+<h3>4.4 Function list (tóm tắt — chi tiết ở §5)</h3>
+<p class="muted"><code>:core</code> mới: <code>TelegramCommand</code> · <code>TelegramUpdateParser</code> · <code>PendingDestination</code> · <code>PendingNavPolicy</code> · <code>TelegramInlineKeyboard</code> · <code>TelegramConfig</code>. <code>:app</code> mới: <code>TelegramBridgeService</code> · <code>TelegramApi</code> · <code>PendingNavStore</code> · <code>SettingsSectionsTelegram</code> + SỬA <code>TripStart</code>.</p>
+
+<h2>5. Tasks (DAG)</h2>
+<p class="muted">Pha 1 kiểm off-car trọn vẹn; pha 2–3 cần máy ảo + mock HTTP. Mỗi task kèm test red-when-reverted.</p>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td colspan="3"><b>Pha 1 — xương sống (:core off-car) + nhập tay</b></td></tr>
+<tr><td>T1</td><td>Mô hình điểm đến chờ + mã hoá 1-dòng (khử ký tự ngăn), <code>of()</code> trả null khi hỏng</td><td><code>core/.../PendingDestination.kt(+Test)</code></td></tr>
+<tr><td>T2</td><td>Logic ưu tiên <code>resolve()</code> → FireNav/WaitForGps/FallThrough + khoá chặn lịch</td><td><code>core/.../automation/PendingNavPolicy.kt(+Test)</code></td></tr>
+<tr><td>T3</td><td>Lưu bền theo hồ sơ (read/write/consume) + marker bền</td><td><code>app/.../PendingNavStore.kt</code></td></tr>
+<tr><td>T4</td><td>SỬA <code>TripStart</code>: chèn <code>PendingNavPolicy</code> TRƯỚC <code>ScheduledNavApplier</code>; test short-circuit + overwrite</td><td><code>app/.../trip/TripStart.kt(+Test)</code></td></tr>
+<tr><td>T5</td><td>Ô nhập tay "điểm đến chờ" (chọn từ sổ địa chỉ / dán toạ độ) + nút Huỷ</td><td><code>app/.../SettingsSections*.kt</code> · strings VI/EN</td></tr>
+<tr><td colspan="3"><b>Pha 2 — Telegram bridge (:app)</b></td></tr>
+<tr><td>T6</td><td>Mô hình lệnh + parser update→command (text/location/callback), khử ký tự, giới hạn độ dài</td><td><code>core/.../TelegramCommand.kt</code> · <code>TelegramUpdateParser.kt(+Test)</code></td></tr>
+<tr><td>T7</td><td>Config token/chat-id + <code>isAuthorized</code> (chỉ chat-id của owner)</td><td><code>core/.../TelegramConfig.kt(+Test)</code></td></tr>
+<tr><td>T8</td><td>Bọc 4 endpoint HTTPS qua <code>HttpConn</code>, timeout cứng, degrade-safe</td><td><code>app/.../telegram/TelegramApi.kt</code></td></tr>
+<tr><td>T9</td><td>FGS polling: getUpdates long-poll, thực thi Nav/Music/Control, chống đọc trùng <code>update_id</code>, không poll khi màn tắt</td><td><code>app/.../telegram/TelegramBridgeService.kt</code> · manifest</td></tr>
+<tr><td>T10</td><td>UI config: dán token/chat-id, Kiểm tra kết nối, công tắc bridge + công tắc lệnh-xe (mặc định TẮT)</td><td><code>app/.../SettingsSectionsTelegram.kt</code> · strings VI/EN</td></tr>
+<tr><td colspan="3"><b>Pha 3 — inline keyboard + nhạc + lệnh xe</b></td></tr>
+<tr><td>T11</td><td>Dựng keyboard từ sổ địa chỉ + câu phản hồi (thuần, trả JSON string)</td><td><code>core/.../TelegramInlineKeyboard.kt(+Test)</code></td></tr>
+<tr><td>T12</td><td>Nối callback → Nav; <code>/play</code> → TripMusicPlan; <code>/ac</code>/<code>/defrost</code> → VoiceControlDispatch (sau công tắc)</td><td><code>app/.../telegram/*</code></td></tr>
+<tr><td>Tn</td><td>Senior review (strongest model) + security scan (token!) + build + test đủ 5 module</td><td>—</td></tr>
+</table>
+
+<h3>Bảng lệnh Telegram (tiếng Anh)</h3>
+<table>
+<tr><th>Gõ / bấm trên phone</th><th>Việc</th></tr>
+<tr><td><code>/go Office</code></td><td>dẫn tới "Office" trong sổ địa chỉ (gmaps+vietmap)</td></tr>
+<tr><td><code>/go 21.00, 105.84</code></td><td>dẫn tới toạ độ</td></tr>
+<tr><td>share location 📍</td><td>dẫn tới điểm được chia sẻ</td></tr>
+<tr><td><code>/go</code> (trống)</td><td>bot trả <b>nút</b> chọn từ sổ địa chỉ</td></tr>
+<tr><td><code>/play &lt;youtube link&gt;</code></td><td>lên xe mở nhạc link đó</td></tr>
+<tr><td><code>/ac on</code> · <code>/defrost</code> · <code>/seat ...</code> · <code>/readlight</code> …</td><td>điều khiển xe FULL (mọi nút registry; công tắc khuyến nghị bật), qua cổng tốc độ</td></tr>
+<tr><td><code>/cancel</code></td><td>xoá điểm đến chờ</td></tr>
+<tr><td><code>/help</code></td><td>bot liệt kê lệnh + nút</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit:</b> <code>:core</code> — <code>PendingDestinationTest</code> (mã hoá round-trip, khử ký tự, null khi hỏng) · <code>PendingNavPolicyTest</code> (ưu tiên / overwrite / một-lần / chờ GPS — mỗi nhánh 1 ca) · <code>TelegramUpdateParserTest</code> (text/location/callback/chat-lạ-bị-bỏ) · <code>TelegramConfigTest</code> · <code>TelegramInlineKeyboardTest</code>. Mỗi ca chính khoá bằng test red-when-reverted.</li>
+<li><b>V-app:</b> <code>TripStartTest</code> — có pending ⇒ <code>ScheduledNavApplier</code> KHÔNG được gọi (short-circuit) + sổ đã-dẫn đóng dấu (overwrite). Máy ảo + mock HTTP cho <code>TelegramApi</code>/<code>BridgeService</code>.</li>
+<li><b>V-oncar (nghiệm thu E2E, sau pha 2):</b> gửi <code>/go Office</code> từ phone → lên xe (có GPS) → gmaps+vietmap dẫn tới Office, lịch cùng ngày KHÔNG nổ; <code>/cancel</code> xoá được; lệnh xe khi công tắc TẮT bị bỏ + bot báo.</li>
+<li><b>V-lifecycle:</b> đặt pending → tắt máy (BYD giết app) → lên xe → vẫn dẫn đúng (marker bền) → dẫn xong không lặp lại chuyến sau. Mạng lỗi lúc lên xe ⇒ pending đã lưu vẫn dẫn được (không phụ thuộc Telegram online).</li>
+<li><b>Bảo mật:</b> security scan diff trước commit — token KHÔNG lọt vào commit/log; <code>isAuthorized</code> chặn chat lạ (test).</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Lệnh điều khiển xe — <span class="muted">CHỐT: làm FULL (mọi nút registry); công tắc khuyến nghị BẬT, không ép tắt sẵn; cốp/kính/nóc vẫn qua cổng tốc độ (owner 2026-10-26).</span></li>
+<li>OQ2. Server hay không — <span class="muted">CHỐT: Cách 1 không server (owner 2026-10-26).</span></li>
+<li>OQ3. Poll khi xe đang chạy để nhận lệnh giữa chuyến? — <span class="muted">CHỐT: có, nhịp 60s khi ở HOME + màn bật; không poll khi màn tắt (owner 2026-10-26).</span></li>
+<li>OQ4. <code>/play</code> phát NGAY khi đang chạy hay chỉ đặt chờ? — <span class="muted">CHỐT: xe đang chạy ⇒ mở ngay; chưa lên ⇒ đặt pending nhạc (owner 2026-10-26).</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>core/.../launcher/SavedPlaces.kt</code> · <code>voice/VoiceNavProviders.kt</code> · <code>automation/ScheduledNavRule.kt</code> + <code>NavAutomationFired</code></li>
+<li><code>app/.../launcher/trip/TripStart.kt</code> · <code>net/HttpConn.kt</code> · <code>automation/ScheduledNavApplier.kt</code> · <code>VietMapAutostartService.kt</code> (mẫu FGS chống-loop)</li>
+<li><code>docs/specs/kachi-voice-addresses.html</code> (sổ địa chỉ) · <code>kachi-automation.html</code> (lịch dẫn đường) · <code>kachi-300-plan.html</code> (VoiceNavProviders đa-app)</li>
+<li>Telegram Bot API: <code>getUpdates</code> · <code>sendMessage</code> · <code>editMessageText</code> · <code>answerCallbackQuery</code> (verify shape khi code pha 2)</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-26 · Pha 1 xương sống (sai lệch spec)</b> — spec §4.2 viết "chèn <code>PendingNavPolicy</code> vào <code>TripStart.onReady</code>". Đọc code thật: lịch dẫn đường KHÔNG chạy trong <code>TripStart</code> mà ở <b><code>AutomationService.tick</code></b> (FGS, nhịp <code>TICK_MS</code> ≈ 60s, <code>app/.../automation/AutomationService.kt:228-238</code>). ⇒ Điểm chèn ưu tiên ĐÚNG là ngay trước <code>ScheduledNavApplier.tick(app)</code> ở FGS, không phải <code>TripStart</code>. Lợi: nhịp 60s của FGS chính là nhịp Q1 owner muốn cho Telegram — một chỗ lo cả ưu-tiên-lúc-lên-xe lẫn poll-giữa-chuyến.</li>
+<li><b>2026-10-26 · Phát hiện: cổng <code>anyEnabled</code> giết vòng FGS</b> — vòng <code>AutomationService</code> chỉ sống khi <code>anyEnabled(app)</code> (có luật lịch / sấy mưa / camera). Owner chỉ dùng Telegram pending (không luật nào) ⇒ vòng chết ⇒ pending không bao giờ đọc. Sửa: thêm <code>PendingNavStore.read(app) != null</code> vào <code>anyEnabled</code> (<code>AutomationService.kt:154</code>). Hệ quả cần làm ở T5/pha2: mỗi lần đặt pending phải gọi <code>AutomationService.sync(ctx)</code> để dựng vòng ngay.</li>
+<li><b>2026-10-26 · Tái dùng đường bắn, không mở đường ghi thứ hai</b> — pending bắn qua <code>ScheduledNavApplier.launchPlace()</code> (mới), tách từ <code>launchOne</code> của lịch: cùng <code>VoiceAppTargets.byKey</code> + <code>VoiceAppIntents.destinationHandoff</code> + <code>.send</code> ⇒ cờ của đích (CLEAR_TASK Google Maps, cổng toạ độ VietMap) đi y hệt. Không dùng <code>VoiceNavProviders.expand</code> (nó nhận token câu nói, không nhận <code>SavedPlace</code>).</li>
+<li><b>2026-10-26 · Một-lần = xoá khoá</b> — <code>PendingNavStore.consume</code> xoá hẳn khoá <code>pending_nav</code> thay vì giữ cờ <code>consumed</code>; <code>read</code> trả null ⇒ rơi về lịch. Gọn hơn, không có trạng thái "đã dùng còn nằm đó".</li>
+<li><b>2026-10-26 · Test import JUnit 5</b> — dự án dùng <code>org.junit.jupiter</code>, không <code>kotlin.test</code> (sửa 2 test). JDK 17 ở <code>/opt/homebrew/opt/openjdk@17</code> (không trên PATH mặc định). <code>:core</code> 13 test mới xanh; red-when-reverted xác nhận (phá <code>blockScheduleFired</code> ⇒ 2 đỏ). <code>:app:compileDebugKotlin</code> xanh.</li>
+</ul>
+<p class="muted"><i>Còn: T5 (UI nhập tay + gọi sync) · pha 2 (Telegram) · pha 3 · test <code>:app</code> cho <code>applyPending</code>/<code>PendingNavStore</code> · senior review · security scan.</i></p>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li><b>Pass 1 — 2026-10-26</b> (senior architect, strongest model) — Verdict ban đầu <b>KHÔNG PASS: 2×P0, 7×P1, 8×P2, 5×P3</b>. ĐÃ VÁ HẾT P0+P1 + các P2 quan trọng; test xanh lại.
+  <ul>
+  <li><b>P0-1 — token lọt logcat</b>: trên Android <code>getInputStream()</code> ném <code>FileNotFoundException(url)</code> ở mọi 4xx, message chứa token; token sai ⇒ 401 mỗi vòng ⇒ token vào logcat ~1 lần/phút. VÁ: <code>TelegramApi.call()</code> đọc <code>responseCode</code> trước, dùng <code>errorStream</code>, KHÔNG log throwable/url, đóng <code>disconnect()</code> trong <code>finally</code>.</li>
+  <li><b>P0-2 — lệnh Telegram mở nóc/kính ở 100 km/h</b>, mà chuỗi UI hứa ngược. VÁ: <code>CtlSafetyPolicy.blockedExternal()</code> (cổng tốc độ NGOÀI = cả họ <code>CONFIRM_REQUIRED</code>) + bộ phận chuyển động phải nói rõ open/close (không động từ ngầm).</li>
+  <li><b>P1-3 — <code>blockScheduleFired</code> chặn CẢ NGÀY</b>: VÁ sang chặn CHỈ luật trong khung giờ+thứ hiện tại (một-lần, lịch chiều vẫn chạy). Gỡ <code>BLOCK_SOURCE</code> chết + KDoc dở.</li>
+  <li><b>P1-4/P1-5 — lệnh chạy sau khi tắt / token cũ kẹt</b>: VÁ: đọc config+token+generation MỖI vòng, <code>break</code> giữa batch, <code>sync</code> dừng service khi tắt, dựng lại <code>TelegramApi</code> khi token đổi.</li>
+  <li><b>P1-6 — "Kiểm tra kết nối" gọi mạng trên luồng UI</b> (luôn fail trên release): VÁ: chạy nền + post kết quả về main.</li>
+  <li><b>P1-7 — tin nhắn lạc tay chiếm dẫn đường</b>: VÁ: chữ không có <code>/</code> ⇒ <code>Unknown</code>, không auto-<code>/go</code>.</li>
+  <li><b>P1-8 — "không poll khi màn tắt" chưa làm</b>: VÁ: <code>interactive()</code> qua <code>PowerManager.isInteractive</code>.</li>
+  <li><b>P1-9 — pending nhạc thiếu</b>: VÁ: xe chưa lên ⇒ lưu <code>pending_music</code>, mở MỘT LẦN khi màn bật.</li>
+  <li><b>P2 vá kèm</b>: P2-10 offset lưu bền ghi TRƯỚC thi hành (at-most-once); P2-11 chỉ nhận chat RIÊNG TƯ + xét <code>from.id</code>; P2-12 chỉ http(s); P2-14 pending TTL 24h; P2-15 phản hồi kết quả THẬT về bot; P2-16 <code>catch Throwable</code>; P2-17 callback dùng index ≤64 byte.</li>
+  <li><b>Phần ĐÚNG reviewer xác nhận</b>: <code>isAuthorized</code> fail-closed, launch fail không consume, <code>launchPlace</code> dùng đúng cửa canon, phân tầng prefs đúng (token DEVICE, pending PRIVATE), cầu kiểm thử che token.</li>
+  <li><b>Còn mở (owner/sau)</b>: R5 chờ-GPS vẫn hardcode <code>requireGps=false</code> (nhánh GPS là code chết tới khi nối dây); lint 3 lỗi PRE-EXISTING (3.1.1, không phải nhánh này) chặn <code>assembleRelease</code>.</li>
+  </ul>
+</li>
+</ul>
+
+</div></body>
+</html>

@@ -935,4 +935,24 @@
     <string name="kachi_np_corner_tr">ขวาบน</string>
     <string name="kachi_np_corner_bl">ซ้ายล่าง</string>
     <string name="kachi_np_corner_br">ขวาล่าง</string>
+    <!-- TELEGRAM-REMOTE (2026-10-26) -->
+    <string name="kachi_pending_title">จุดหมายเที่ยวหน้า</string>
+    <string name="kachi_pending_none">ยังไม่ตั้งจุดหมาย เที่ยวหน้าจะใช้การนำทางตามเวลาตามปกติ</string>
+    <string name="kachi_pending_set">จะนำทางไป: %1$s (สำคัญกว่าตารางเวลา ครั้งเดียว)</string>
+    <string name="kachi_pending_pick">เลือกจุดหมายจากสมุดที่อยู่…</string>
+    <string name="kachi_pending_clear">ล้างจุดหมายที่รออยู่</string>
+    <string name="kachi_pending_no_places">สมุดที่อยู่ว่าง เพิ่มสถานที่ในสมุดที่อยู่ก่อน</string>
+    <string name="kachi_tg_title">ควบคุมผ่าน Telegram</string>
+    <string name="kachi_tg_enabled_title">เปิดควบคุมผ่าน Telegram</string>
+    <string name="kachi_tg_enabled_sub">ส่งจุดหมาย เล่นเพลง หรือควบคุมรถจากมือถือผ่านบอต Telegram ขึ้นรถแล้วนำทางถูกทางทันที (ต้องมี GPS)</string>
+    <string name="kachi_tg_token">โทเคนบอต Telegram</string>
+    <string name="kachi_tg_token_unset">ยังไม่ตั้ง</string>
+    <string name="kachi_tg_chat">รหัสแชต Telegram</string>
+    <string name="kachi_tg_chat_unset">ยังไม่ตั้ง</string>
+    <string name="kachi_tg_test">ทดสอบการเชื่อมต่อ</string>
+    <string name="kachi_tg_test_ok">ส่งข้อความทดสอบไป Telegram แล้ว ตรวจมือถือ</string>
+    <string name="kachi_tg_test_fail">ส่งไม่สำเร็จ ตรวจโทเคน รหัสแชต และเครือข่าย</string>
+    <string name="kachi_tg_test_incomplete">ยังตั้งค่าไม่ครบ ต้องเปิด + โทเคน + รหัสแชต</string>
+    <string name="kachi_tg_control_title">อนุญาตควบคุมรถผ่าน Telegram</string>
+    <string name="kachi_tg_control_sub">อนุญาต /ac, /defrost… ควบคุมรถผ่าน Telegram ฝากระโปรงท้าย กระจก และซันรูฟยังเปิดได้เฉพาะตอนจอด</string>
 </resources>

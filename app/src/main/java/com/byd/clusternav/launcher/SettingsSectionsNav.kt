@@ -56,6 +56,9 @@ class SettingsNavSection(
     /** 3.1.11 · CLUSTER-NOW-PLAYING — công tắc tên bài lên cụm + dòng tình trạng (tệp riêng: trần 500 dòng). */
     private val nowPlaying = SettingsNowPlayingRows(context, rows) { bridge }
 
+    /** TELEGRAM-REMOTE — điểm đến chờ + cấu hình bot (tệp riêng: trần 500 dòng). */
+    private val telegram = SettingsTelegramRows(context, rows, deps)
+
     /** Hai stepper vị trí biển báo + khung kéo-thả — giữ tham chiếu để ba bề mặt nói CÙNG một toạ độ. */
     private var badgeX: SettingsRows.Stepper? = null
     private var badgeY: SettingsRows.Stepper? = null
@@ -69,6 +72,7 @@ class SettingsNavSection(
     fun build(body: LinearLayout) {
         nav(body)
         nowPlaying.build(body)
+        telegram.build(body)
         badge(body)
         bubble(body)
     }

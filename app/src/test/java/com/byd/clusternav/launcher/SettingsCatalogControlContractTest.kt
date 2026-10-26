@@ -137,6 +137,12 @@ class SettingsCatalogControlContractTest {
             // AUTOMATION #2 (1.85) — lịch tự dẫn. Tệp section RIÊNG cùng lý do `SettingsSectionsPlaces`:
             // `SettingsSectionsNav` đã 425 dòng, và hai khối không liên quan nhau.
             "nav_automation" to ("SettingsSectionsAutomation" to "bridge.setNavRules("),
+            // TELEGRAM-REMOTE (2026-10-26) — điểm đến chờ + cấu hình bot; tệp section RIÊNG (trần 500 dòng của Nav).
+            "pending_nav" to ("SettingsTelegramRows" to "setPendingDestination("),
+            "telegram_enabled" to ("SettingsTelegramRows" to "setTelegramEnabled("),
+            "telegram_bot_token" to ("SettingsTelegramRows" to "setTelegramToken("),
+            "telegram_chat_id" to ("SettingsTelegramRows" to "setTelegramChatId("),
+            "telegram_control_enabled" to ("SettingsTelegramRows" to "setTelegramControlEnabled("),
             // ── 6 · Chiếu màn lên cụm ──
             "cast_enabled" to ("SettingsSectionsCast" to "bridge.setCastEnabled("),
             // UX-OVERHAUL WP6 · R6.1 — công tắc HIỆN nút nổi; dấu vết là lời gọi ghi cờ (hành vi), không phải nhãn.
@@ -226,6 +232,7 @@ class SettingsCatalogControlContractTest {
             "SettingsSectionsBars" to bars,
             "SettingsSectionsNav" to nav,
             "SettingsNowPlayingRows" to code("src/main/java/com/byd/clusternav/launcher/SettingsNowPlayingRows.kt"),
+            "SettingsTelegramRows" to code("src/main/java/com/byd/clusternav/launcher/SettingsTelegramRows.kt"),
             "SettingsSectionsCast" to cast,
             "SettingsSectionsCastStyle" to code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCastStyle.kt"),
             "SettingsBarScaleSection" to code("src/main/java/com/byd/clusternav/launcher/SettingsBarScaleSection.kt"),

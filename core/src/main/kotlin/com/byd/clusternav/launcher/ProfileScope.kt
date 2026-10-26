@@ -89,6 +89,7 @@ object ProfileScope {
     val LAUNCHER_PERSONAL_SUFFIXES: List<String> =
         listOf(
             "theme_mode", "unit_prefs", "wallpaper_prefs", "launcher_autostart", "lang", "saved_places",
+            "pending_nav",   // TELEGRAM-REMOTE — điểm đến chờ (chuỗi, khoá MỚI: không có bản chung-cả-máy, đọc thẳng key())
             // VISUAL-REFRESH P1b · R8 (owner 2026-09-16 *"có cho người ta chọn màu không nhỉ?"*) — màu nhấn + tông
             // thẻ (+ chỗ để sẵn màu sơn P3) là *lựa chọn của một người* y như `theme_mode` ngay cạnh ⇒ theo hồ sơ
             // (AC8.4). Khoá MỚI hoàn toàn: không có bản chung-cả-máy để lùi về, đọc thẳng `key()` như `saved_places`.
@@ -212,6 +213,12 @@ object ProfileScope {
                 "lắp chưa (`VoiceSpeakerSelector` đo lại ở MỖI câu). Chép nó theo hồ sơ thì đổi hồ sơ xong loa im " +
                 "mà không ai hiểu vì sao — cùng họ `voice_mic_pill`/`headless_autostart`: lựa chọn mức máy",
         )
+        // TELEGRAM-REMOTE (2026-10-26) — bot token + chat-id + hai công tắc là cấu hình MỨC MÁY, không theo hồ sơ:
+        // một chiếc xe một bot, token là secret dùng chung mọi hồ sơ. Chép theo hồ sơ = nhập token lại mỗi lần đổi
+        // tài xế, và export hồ sơ sẽ mang token ra ngoài (rủi ro lộ). Cùng họ `voice_speak_replies`: lựa chọn mức máy.
+        listOf("telegram_enabled", "telegram_bot_token", "telegram_chat_id", "telegram_control_enabled").forEach {
+            put(it, "TELEGRAM-REMOTE — bot/chat-id/công tắc mức máy (một xe một bot; token là secret, không theo hồ sơ)")
+        }
         put(
             "voice_ask_aloud",
             "V1 pha NÓI · OQ4 — 'đọc câu hỏi xác nhận rồi mới mở micro'. Cùng lý do [voice_speak_replies]: nó chỉ " +

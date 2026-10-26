@@ -155,7 +155,8 @@ class LangCoverageTest {
         // nghiệm)"* / *"Pull apps that leave a frame back in (experimental)"* (khoá `escape_return_enabled` theo XE).
         // 3.1.11 · CLUSTER-NOW-PLAYING: **85 → 86 (+1)** = `nav_now_playing` *"Tên bài hát lên cụm đồng hồ"* (khoá `cluster_now_playing` theo XE).
         // 3.1.12 · HUD-ROADNAME-ALT-PATH: **86 → 87 (+1)** = `nav_hud_road_name_path`; 3.1.14 gỡ (tester SL6 báo không tác dụng): **87 → 86 (−1)**.
-        assertEquals(86, SettingsCatalog.ENTRIES.size)
+        // TELEGRAM-REMOTE (2026-10-26): **86 → 91 (+5)** = pending_nav + telegram_enabled/bot_token/chat_id/control_enabled (nhóm NAV).
+        assertEquals(91, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -269,7 +270,8 @@ class LangCoverageTest {
         // 3.1.6 · R32: **271 → 272 (+1)** = datum `tailgate_status` ("Cốp sau" / "Tailgate"), EN tại chỗ khai + dòng zh/th/ms có sẵn.
         // 3.1.11 · CLUSTER-NOW-PLAYING: **272 → 273 (+1)** = mục Cài đặt `nav_now_playing`, EN tại chỗ khai + dòng zh/th/ms.
         // 3.1.12 · HUD-ROADNAME-ALT-PATH: **273 → 274 (+1)** = mục Cài đặt `nav_hud_road_name_path`; 3.1.14 gỡ: **274 → 273 (−1)**.
-        assertEquals(273, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // TELEGRAM-REMOTE (2026-10-26): **273 → 278 (+5)** = năm mục Cài đặt Telegram, EN tại chỗ khai + dòng zh/th/ms.
+        assertEquals(278, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

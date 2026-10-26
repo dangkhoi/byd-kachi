@@ -856,3 +856,9 @@ Mở hẳn	Full	Penuh
 Hé	Vent	Renggang
 Xe 3D	3D car	Kereta 3D
 Tên bài trên cụm khi đang chiếu	Song title on the cluster while casting	Tajuk lagu pada kluster semasa memancar
+# TELEGRAM-REMOTE (2026-10-26)
+Điểm đến cho chuyến tới	Destination for next trip	Destinasi perjalanan seterusnya
+Điều khiển qua Telegram	Telegram remote	Kawalan jauh Telegram
+Mã bot Telegram	Telegram bot token	Token bot Telegram
+Mã chat Telegram	Telegram chat ID	ID sembang Telegram
+Cho phép điều khiển xe qua Telegram	Allow car control via Telegram	Benarkan kawalan kereta melalui Telegram

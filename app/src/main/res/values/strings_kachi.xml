@@ -173,7 +173,7 @@
     <string name="kachi_row_boot_profile">Lên bằng hồ sơ</string>
     <string name="kachi_profile_boot_last">Gần nhất</string>
     <string name="kachi_boot_profile_note">"Gần nhất" = lên đúng hồ sơ bạn đang dùng lúc tắt máy. Chọn một hồ sơ cụ thể thì mỗi lần nổ máy Kachi đều đổi về hồ sơ đó, kể cả khi chuyến trước bạn đã đổi sang hồ sơ khác.</string>
-    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền (riêng Tự mở Kachi khi nổ máy, Chạy dịch vụ nền khi nổ máy, Mở app khi nổ máy và Tự mở nhạc khi lên xe vẫn theo hồ sơ), hầu hết nhóm Giọng nói, App dẫn đường mặc định, Kính thật (làm mờ nền), Kéo app thoát ô về lại ô (thử nghiệm), Tự sấy kính khi mưa, phần chỉnh camera theo xe (xoay, lật gương, góc nhìn), và Giới thiệu — đều lưu cho hồ sơ «%1$s», kể cả chiếu lên cụm, khung và DPI từng app, nút nổi và camera. Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đổi ngay; khung và DPI khi chiếu đổi từ lần chiếu sau, còn bật/tắt chiếu đổi từ lần nổ máy sau.</string>
+    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền (riêng Tự mở Kachi khi nổ máy, Chạy dịch vụ nền khi nổ máy, Mở app khi nổ máy và Tự mở nhạc khi lên xe vẫn theo hồ sơ), hầu hết nhóm Giọng nói, App dẫn đường mặc định, Kính thật (làm mờ nền), Kéo app thoát ô về lại ô (thử nghiệm), Tự sấy kính khi mưa, phần chỉnh camera theo xe (xoay, lật gương, góc nhìn), Điều khiển qua Telegram, Mã bot Telegram, Mã chat Telegram, Cho phép điều khiển xe qua Telegram, và Giới thiệu — đều lưu cho hồ sơ «%1$s», kể cả chiếu lên cụm, khung và DPI từng app, nút nổi và camera. Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đổi ngay; khung và DPI khi chiếu đổi từ lần chiếu sau, còn bật/tắt chiếu đổi từ lần nổ máy sau.</string>
     <string name="kachi_delete">Xoá</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -1090,4 +1090,24 @@
     <string name="kachi_np_corner_tr">Phải trên</string>
     <string name="kachi_np_corner_bl">Trái dưới</string>
     <string name="kachi_np_corner_br">Phải dưới</string>
+    <!-- TELEGRAM-REMOTE (2026-10-26) -->
+    <string name="kachi_pending_title">Điểm đến cho chuyến tới</string>
+    <string name="kachi_pending_none">Chưa đặt điểm đến. Lên xe sẽ chạy lịch dẫn đường như thường.</string>
+    <string name="kachi_pending_set">Sẽ dẫn tới: %1$s (ưu tiên hơn lịch, một lần)</string>
+    <string name="kachi_pending_pick">Chọn điểm đến từ sổ địa chỉ…</string>
+    <string name="kachi_pending_clear">Xoá điểm đến chờ</string>
+    <string name="kachi_pending_no_places">Sổ địa chỉ trống. Thêm địa chỉ ở mục Sổ địa chỉ trước.</string>
+    <string name="kachi_tg_title">Điều khiển qua Telegram</string>
+    <string name="kachi_tg_enabled_title">Bật điều khiển qua Telegram</string>
+    <string name="kachi_tg_enabled_sub">Gửi điểm đến / mở nhạc / điều khiển xe từ điện thoại qua bot Telegram. Lên xe là dẫn đúng đường ngay (có GPS).</string>
+    <string name="kachi_tg_token">Mã bot Telegram</string>
+    <string name="kachi_tg_token_unset">chưa đặt</string>
+    <string name="kachi_tg_chat">Mã chat Telegram</string>
+    <string name="kachi_tg_chat_unset">chưa đặt</string>
+    <string name="kachi_tg_test">Kiểm tra kết nối</string>
+    <string name="kachi_tg_test_ok">Đã gửi tin thử tới Telegram. Kiểm điện thoại.</string>
+    <string name="kachi_tg_test_fail">Không gửi được. Kiểm token, chat ID và mạng.</string>
+    <string name="kachi_tg_test_incomplete">Chưa đủ cấu hình. Cần bật + có token + có chat ID.</string>
+    <string name="kachi_tg_control_title">Cho phép điều khiển xe qua Telegram</string>
+    <string name="kachi_tg_control_sub">Cho phép /ac, /defrost… điều khiển xe từ Telegram. Cốp, kính, cửa sổ trời vẫn chỉ mở khi xe dừng.</string>
 </resources>

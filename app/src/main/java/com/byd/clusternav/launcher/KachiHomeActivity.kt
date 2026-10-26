@@ -402,7 +402,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // "Hey Kachi": bộ nghe FGS chết theo tiến trình (app bị kill/cài lại) và KHÔNG có gì dựng lại ngoài boot
         // thật / gạt công tắc. [ĐO xe 2026-09-21] sau reinstall service = 0 ⇒ "thử một loạt không lên". Mở màn
         // chính ⇒ đồng bộ lại FGS nếu công tắc đang bật (sync no-op khi đã chạy / khi tắt).
-        runCatching { com.byd.clusternav.launcher.voice.VoiceWakeService.sync(this) }
+        runCatching { com.byd.clusternav.launcher.voice.VoiceWakeService.sync(this); com.byd.clusternav.telegram.TelegramBridgeService.sync(this); com.byd.clusternav.automation.AutomationService.sync(this) }  // TELEGRAM-REMOTE: dựng lại bridge + vòng pending
         // [SOÁT P2-4] Runnable CÓ TÊN để `onDestroy` gỡ được. Trước đây là lambda vô danh nên không có cách nào
         // huỷ, mà nó lại dựng cửa sổ overlay ⇒ chạy sau khi màn chết là giữ view + giữ activity.
         workspace.removeCallbacks(overlayHeadsKick)

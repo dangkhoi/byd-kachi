@@ -10,6 +10,24 @@ import org.junit.jupiter.api.Test
  */
 class CtlSafetyPolicyTest {
 
+    // TELEGRAM-REMOTE (2026-10-26) — cổng tốc độ NGOÀI (senior review P0-2).
+    private fun moving() = { CtlSafetyPolicy.Motion(speedKmh = 100, gear = "D") }
+    private fun stopped() = { CtlSafetyPolicy.Motion(speedKmh = 0, gear = "P") }
+
+    @Test fun `lenh ngoai telegram mo noc-kinh bi chan khi dang chay`() {
+        listOf("sunroof", "windows_all", "win_lf", "trunk").forEach { id ->
+            assertTrue(CtlSafetyPolicy.blockedExternal(id, 1, moving()), "lệnh ngoài mở '$id' ở 100 km/h phải bị chặn")
+            assertFalse(CtlSafetyPolicy.blockedExternal(id, 1, stopped()), "lệnh ngoài mở '$id' khi dừng phải cho qua")
+            assertFalse(CtlSafetyPolicy.blockedExternal(id, 0, moving()), "ĐÓNG '$id' luôn được, kể cả đang chạy")
+        }
+    }
+
+    @Test fun `cong ngoai KHONG chan nut khi hau du dang chay`() {
+        listOf("ac_auto", "readl", "fan", "temp").forEach { id ->
+            assertFalse(CtlSafetyPolicy.blockedExternal(id, 1, moving()), "nút không bung/che tầm nhìn '$id' không bị cổng tốc độ chặn")
+        }
+    }
+
     @Test fun `moi ma trong denylist deu la control THAT`() {
         CtlSafetyPolicy.CONFIRM_REQUIRED.forEach { id ->
             assertTrue(ControlRegistry.byId(id) != null, "mã denylist '$id' không còn trong ControlRegistry")

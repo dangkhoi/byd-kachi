@@ -241,6 +241,8 @@ object Prefs {
     fun voiceMusicDefaultApp(ctx: Context): String = sp(ctx).getString(K_VOICE_MUSIC_APP, "") ?: ""
     fun setVoiceMusicDefaultApp(ctx: Context, key: String) = sp(ctx).edit().putString(K_VOICE_MUSIC_APP, key).apply().also { VoiceWakePrefsMain.publish(ctx) }
 
+    // ─── TELEGRAM REMOTE (TELEGRAM-REMOTE): token/chat-id/công tắc theo XE — xem PrefsTelegram.kt (tách vì trần 500) ───
+
     // "Hey Kachi" wake-word (W-WAKE) — theo XE (ProfileScope.DEVICE_KEYS), mặc định **TẮT** (nghe nền = rủi ro CPU
     // → opt-in). Câu gọi = preset id ([VoiceWakePhrase]). VoiceWakeService.sync() đọc cờ này để bật/tắt FGS.
     //

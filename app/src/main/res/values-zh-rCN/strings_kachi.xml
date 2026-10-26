@@ -935,4 +935,24 @@
     <string name="kachi_np_corner_tr">右上</string>
     <string name="kachi_np_corner_bl">左下</string>
     <string name="kachi_np_corner_br">右下</string>
+    <!-- TELEGRAM-REMOTE (2026-10-26) -->
+    <string name="kachi_pending_title">下一程目的地</string>
+    <string name="kachi_pending_none">未设置目的地。下一程照常运行定时导航。</string>
+    <string name="kachi_pending_set">将导航至：%1$s（优先于定时，一次性）</string>
+    <string name="kachi_pending_pick">从地址簿选择目的地…</string>
+    <string name="kachi_pending_clear">清除待定目的地</string>
+    <string name="kachi_pending_no_places">地址簿为空。请先在地址簿中添加地点。</string>
+    <string name="kachi_tg_title">Telegram 远程控制</string>
+    <string name="kachi_tg_enabled_title">启用 Telegram 远程控制</string>
+    <string name="kachi_tg_enabled_sub">通过 Telegram 机器人从手机发送目的地、播放音乐或控制车辆。上车即可沿正确路线导航（需 GPS）。</string>
+    <string name="kachi_tg_token">Telegram 机器人令牌</string>
+    <string name="kachi_tg_token_unset">未设置</string>
+    <string name="kachi_tg_chat">Telegram 聊天 ID</string>
+    <string name="kachi_tg_chat_unset">未设置</string>
+    <string name="kachi_tg_test">测试连接</string>
+    <string name="kachi_tg_test_ok">已向 Telegram 发送测试消息，请查看手机。</string>
+    <string name="kachi_tg_test_fail">发送失败。请检查令牌、聊天 ID 和网络。</string>
+    <string name="kachi_tg_test_incomplete">尚未配置。需启用 + 令牌 + 聊天 ID。</string>
+    <string name="kachi_tg_control_title">允许通过 Telegram 控制车辆</string>
+    <string name="kachi_tg_control_sub">允许 /ac、/defrost 等通过 Telegram 控制车辆。后备箱、车窗和天窗仍仅在停车时打开。</string>
 </resources>

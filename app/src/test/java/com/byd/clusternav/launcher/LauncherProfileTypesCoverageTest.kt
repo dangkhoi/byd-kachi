@@ -37,6 +37,8 @@ class LauncherProfileTypesCoverageTest {
         "WorkspacePrefsDockScale.kt",
         // 2.91 VOICE-APP-NAMES — `voice_app_names` đọc/ghi ở tệp riêng (cùng lẽ: WorkspacePrefs.kt 499/500 dòng).
         "WorkspacePrefsVoiceNames.kt",
+        // TELEGRAM-REMOTE (2026-10-26) — `pending_nav` đọc/ghi ở tệp riêng (cùng lẽ: WorkspacePrefs.kt 500 dòng).
+        "WorkspacePrefsPending.kt",
     )
 
     private fun code(file: String) = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$file")

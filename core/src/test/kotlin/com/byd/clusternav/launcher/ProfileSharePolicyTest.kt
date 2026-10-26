@@ -85,7 +85,8 @@ class ProfileSharePolicyTest {
     fun `ba khoa rieng tu dung nhu owner duyet`() {
         // 2.91 VOICE-APP-NAMES (spec OQ2, mặc định đề xuất — owner 06/10 "làm tiếp" = duyệt): + `voice_app_names` — chữ chép
         // từ GIỌNG một người + biệt danh tự đặt; bản FULL vẫn mang, bản CHIA SẺ không.
-        assertEquals(setOf("saved_places", "nav_automation_rules", "nav_automation_fired", "voice_app_names"), ProfileSharePolicy.PRIVATE.keys)
+        // TELEGRAM-REMOTE (2026-10-26): + `pending_nav` — điểm đến chờ của một người cho chuyến tới; riêng tư như sổ địa chỉ.
+        assertEquals(setOf("saved_places", "nav_automation_rules", "nav_automation_fired", "voice_app_names", "pending_nav"), ProfileSharePolicy.PRIVATE.keys)
         ProfileSharePolicy.PRIVATE.keys.forEach { assertFalse(ProfileSharePolicy.shareable(it), it) }
     }
 

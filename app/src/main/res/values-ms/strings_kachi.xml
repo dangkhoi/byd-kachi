@@ -935,4 +935,24 @@
     <string name="kachi_np_corner_tr">Atas kanan</string>
     <string name="kachi_np_corner_bl">Bawah kiri</string>
     <string name="kachi_np_corner_br">Bawah kanan</string>
+    <!-- TELEGRAM-REMOTE (2026-10-26) -->
+    <string name="kachi_pending_title">Destinasi perjalanan seterusnya</string>
+    <string name="kachi_pending_none">Tiada destinasi. Navigasi berjadual berjalan seperti biasa pada perjalanan seterusnya.</string>
+    <string name="kachi_pending_set">Akan navigasi ke: %1$s (keutamaan atas jadual, sekali)</string>
+    <string name="kachi_pending_pick">Pilih destinasi dari buku alamat…</string>
+    <string name="kachi_pending_clear">Kosongkan destinasi tertunda</string>
+    <string name="kachi_pending_no_places">Buku alamat kosong. Tambah tempat di Tempat disimpan dahulu.</string>
+    <string name="kachi_tg_title">Kawalan jauh Telegram</string>
+    <string name="kachi_tg_enabled_title">Dayakan kawalan jauh Telegram</string>
+    <string name="kachi_tg_enabled_sub">Hantar destinasi / mainkan muzik / kawal kereta dari telefon melalui bot Telegram. Naik kereta terus navigasi betul (dengan GPS).</string>
+    <string name="kachi_tg_token">Token bot Telegram</string>
+    <string name="kachi_tg_token_unset">belum ditetapkan</string>
+    <string name="kachi_tg_chat">ID sembang Telegram</string>
+    <string name="kachi_tg_chat_unset">belum ditetapkan</string>
+    <string name="kachi_tg_test">Uji sambungan</string>
+    <string name="kachi_tg_test_ok">Mesej ujian dihantar ke Telegram. Semak telefon.</string>
+    <string name="kachi_tg_test_fail">Gagal hantar. Semak token, ID sembang dan rangkaian.</string>
+    <string name="kachi_tg_test_incomplete">Belum lengkap. Perlu dayakan + token + ID sembang.</string>
+    <string name="kachi_tg_control_title">Benarkan kawalan kereta melalui Telegram</string>
+    <string name="kachi_tg_control_sub">Benarkan /ac, /defrost… mengawal kereta melalui Telegram. But, tingkap dan bumbung suria hanya buka semasa berhenti.</string>
 </resources>

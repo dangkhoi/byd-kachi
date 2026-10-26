@@ -150,6 +150,9 @@ class AutomationService : Service() {
             // `onStartCommand` nổ / luồng daemon chết vì ngoại lệ không bắt. Đọc lỗi ⇒ "không có việc mưa" = hướng an toàn.
             if (runCatching { RainDefrostApplier.choice(app).any }.getOrDefault(false)) return true
             if (runCatching { Prefs.cameraSignalEnabled(app) }.getOrDefault(false)) return true
+            // TELEGRAM-REMOTE R2: có điểm đến chờ ⇒ giữ vòng FGS sống để nhịp 60s đọc + ưu tiên dẫn, kể cả khi
+            // không có luật lịch/sấy/camera nào (owner có thể chỉ dùng Telegram). Pending consume xong ⇒ hết việc.
+            if (runCatching { PendingNavStore.read(app) != null }.getOrDefault(false)) return true
             return runCatching {
                 NavAutomationBook.decode(Prefs.navAutomationRules(app)).any { it.enabled }
             }.getOrDefault(false)
@@ -227,7 +230,14 @@ class AutomationService : Service() {
                         // Nav theo THỜI GIAN TRÔI (giữ mốc elapsed — không phụ thuộc số nhịp); mưa ngay dưới, cùng bất biến.
                         if (nowMs - lastNavMs >= TICK_MS) {
                             lastNavMs = nowMs
-                            runCatching { ScheduledNavApplier.tick(app) }.onFailure { Log.w(TAG, "tick nav lỗi", it) }
+                            // TELEGRAM-REMOTE R2: điểm đến chờ ƯU TIÊN hơn lịch. Có pending bắn được ⇒ BỎ tick lịch
+                            // nhịp này (short-circuit); pending đã tự chặn lịch hôm nay (R3) + consume (R4).
+                            val firedPending = runCatching { ScheduledNavApplier.applyPending(app, nowMs) }
+                                .onFailure { Log.w(TAG, "tick pending lỗi", it) }
+                                .getOrDefault(false)
+                            if (!firedPending) {
+                                runCatching { ScheduledNavApplier.tick(app) }.onFailure { Log.w(TAG, "tick nav lỗi", it) }
+                            }
                         }
                         // Mưa: gọi MỖI lượt thức, không điều kiện — `tickIfDue` tự gác (kachi-automation V8.1 · R-V8.8):
                         // đầu vòng ngay · đọc HAL lỗi ⇒ thử lại 60 s, tối đa 5 lần · sàn 60 s giữa hai nhịp · còn lại
