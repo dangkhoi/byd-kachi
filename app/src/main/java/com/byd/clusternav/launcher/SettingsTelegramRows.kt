@@ -37,7 +37,9 @@ internal class SettingsTelegramRows(
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_pending_title)))
         val summary = bridge.pendingDestinationSummary()
         body.addView(rows.statusRow(
-            if (summary.isEmpty()) "MUT" else "GREEN",
+            // ⚠ statusRow nhận MÃ MÀU (#rrggbb, qua Color.parseColor) — KHÔNG phải tên. "MUT"/"GREEN" chữ trần làm
+            // trang Dẫn đường sập mỗi lần mở (lỗi xe 3.1.18, 26/10). Luôn truyền KachiTheme.*.
+            if (summary.isEmpty()) KachiTheme.MUT2 else KachiTheme.GREEN,
             if (summary.isEmpty()) context.getString(R.string.kachi_pending_none)
             else context.getString(R.string.kachi_pending_set, summary),
         ).view)

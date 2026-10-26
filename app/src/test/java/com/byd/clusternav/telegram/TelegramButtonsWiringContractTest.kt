@@ -168,4 +168,16 @@ class TelegramButtonsWiringContractTest {
         val handle = svc.substringAfter("private fun handleMenuCallback(").substringBefore("\n    }\n")
         assertTrue(!handle.contains("withReadCache { dispatchMenu"), "dispatchMenu (ghi xe) không được dùng số đọc cũ")
     }
+
+    @Test
+    fun `statusRow chi nhan MA MAU, khong nhan ten chu (crash xe 3-1-18)`() {
+        // SettingsRows.statusRow → Color.parseColor(color). Truyền "MUT"/"GREEN" chữ trần ⇒ IllegalArgumentException
+        // "Unknown color" ⇒ trang Cài đặt › Dẫn đường sập MỖI lần mở (lỗi xe 26/10). Quét MỌI tệp trong launcher/.
+        val dir = "src/main/java/com/byd/clusternav/launcher"
+        val bad = Regex("""statusRow\(\s*(?:if\s*\(.+?\)\s*)?"(?!#)""")
+        val files = com.byd.clusternav.testsupport.SourceRoots.path(dir).toFile().listFiles { f -> f.name.endsWith(".kt") }!!
+        assertTrue(files.size > 50, "phải quét được thư mục launcher (tìm thấy ${files.size} tệp)")
+        val hits = files.filter { bad.containsMatchIn(com.byd.clusternav.testsupport.SourceRoots.codeOf("$dir/${it.name}")) }.map { it.name }
+        assertTrue(hits.isEmpty(), "statusRow được truyền chuỗi không phải mã màu ở: $hits")
+    }
 }
