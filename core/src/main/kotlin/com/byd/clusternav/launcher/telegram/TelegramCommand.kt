@@ -15,8 +15,12 @@ sealed class TelegramCommand {
      */
     data class Nav(val placeOrQuery: String, val coords: String? = null, val apps: List<String> = emptyList()) : TelegramCommand()
 
-    /** Mở nhạc từ link. Lớp `:app`: đang chạy ⇒ mở ngay (R8), chưa lên ⇒ đặt pending nhạc. */
-    data class Music(val url: String) : TelegramCommand()
+    /**
+     * Mở nhạc. [isQuery] = false ⇒ [text] là LINK http(s), lớp `:app` mở thẳng `ACTION_VIEW` (hệ tự chọn app theo
+     * URL: youtube.com → YouTube, music.youtube.com → YT Music). true ⇒ [text] là TÊN BÀI, lớp `:app` tìm trên
+     * App nhạc mặc định (`voice_music_default_app`), chưa đặt ⇒ lùi YouTube. Đang chạy ⇒ mở ngay (R8), chưa lên ⇒ pending.
+     */
+    data class Music(val text: String, val isQuery: Boolean = false) : TelegramCommand()
 
     /** Điều khiển xe (R9). [controlId] = id `ControlRegistry` đã xác thực; [value] theo nút (bật/tắt/mức). */
     data class Control(val controlId: String, val value: Int?) : TelegramCommand()

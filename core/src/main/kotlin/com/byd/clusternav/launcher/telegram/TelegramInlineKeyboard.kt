@@ -39,9 +39,11 @@ object TelegramInlineKeyboard {
 
     val HELP: String = buildString {
         appendLine("Kachi remote — commands:")
-        appendLine("/go <place>  — navigate (e.g. /go Office)")
-        appendLine("/go          — pick from saved places")
-        appendLine("/play <link> — play music")
+        appendLine("/go <place>            — navigate (default app)")
+        appendLine("/go <place> vietmap    — pick app: gmaps/vietmap/waze (or gmaps+vietmap)")
+        appendLine("/go                    — pick from saved places")
+        appendLine("/play <link>           — play (YouTube / YT Music by URL)")
+        appendLine("/play <song name>      — search on default music app")
         appendLine("/ac on · /defrost · /fan 3 · /temp 22 — car controls")
         append("/cancel — clear pending · /help")
     }

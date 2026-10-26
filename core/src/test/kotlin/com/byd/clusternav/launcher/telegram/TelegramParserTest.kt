@@ -38,6 +38,32 @@ class TelegramParserTest {
     }
 
     @Test
+    fun `go chon app alias o cuoi`() {
+        assertEquals(TelegramCommand.Nav("Office", apps = listOf("vietmap")),
+            TelegramUpdateParser.parseText("/go Office vietmap", isCtl))
+        assertEquals(TelegramCommand.Nav("Công ty", apps = listOf("gmaps", "vietmap")),
+            TelegramUpdateParser.parseText("/go Công ty gmaps+vietmap", isCtl))
+    }
+
+    @Test
+    fun `go token cuoi khong phai alias ⇒ la ten noi`() {
+        // "bến" không phải alias ⇒ cả cụm là tên nơi, KHÔNG nuốt mất từ cuối.
+        assertEquals(TelegramCommand.Nav("Chợ Bến Thành"), TelegramUpdateParser.parseText("/go Chợ Bến Thành", isCtl))
+    }
+
+    @Test
+    fun `play ten bai ⇒ isQuery`() {
+        assertEquals(TelegramCommand.Music("Chúng ta của hiện tại", isQuery = true),
+            TelegramUpdateParser.parseText("/play Chúng ta của hiện tại", isCtl))
+    }
+
+    @Test
+    fun `play link music youtube ⇒ KHONG query (app tu chon theo url)`() {
+        assertEquals(TelegramCommand.Music("https://music.youtube.com/watch?v=x", isQuery = false),
+            TelegramUpdateParser.parseText("/play https://music.youtube.com/watch?v=x", isCtl))
+    }
+
+    @Test
     fun `cancel va help`() {
         assertEquals(TelegramCommand.Cancel, TelegramUpdateParser.parseText("/cancel", isCtl))
         assertEquals(TelegramCommand.Help, TelegramUpdateParser.parseText("/help", isCtl))

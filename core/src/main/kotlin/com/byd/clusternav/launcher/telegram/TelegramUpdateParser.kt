@@ -40,8 +40,8 @@ object TelegramUpdateParser {
         val verb = (if (sp < 0) text.substring(1) else text.substring(1, sp)).lowercase()
         val rest = if (sp < 0) "" else text.substring(sp + 1).trim()
         return when (verb) {
-            "go", "nav" -> if (rest.isEmpty()) TelegramCommand.ListPlaces else TelegramCommand.Nav(SavedPlaces.sanitize(rest))
-            "play", "music" -> if (rest.isEmpty()) TelegramCommand.Unknown(text) else TelegramCommand.Music(rest.trim())
+            "go", "nav" -> if (rest.isEmpty()) TelegramCommand.ListPlaces else parseGo(rest)
+            "play", "music" -> if (rest.isEmpty()) TelegramCommand.Unknown(text) else parsePlay(rest.trim())
             "cancel", "stop" -> TelegramCommand.Cancel
             "help", "start" -> TelegramCommand.Help
             else -> {
@@ -62,6 +62,34 @@ object TelegramUpdateParser {
         "on", "open" -> 1
         "off", "close" -> 0
         else -> r.toIntOrNull()
+    }
+
+    /** Alias app dẫn đường (owner 26/10 — đơn giản). Chỉ 3 tên này ở CUỐI lệnh mới tách thành [TelegramCommand.Nav.apps]. */
+    private val NAV_APP_ALIASES = setOf("gmaps", "vietmap", "waze")
+
+    /**
+     * `/go <nơi> [app]` — app ở CUỐI, một token `gmaps`/`vietmap`/`waze` (hoặc `gmaps+vietmap` nhiều app). Chỉ tách
+     * khi token cuối gồm TOÀN alias hợp lệ; sai một cái ⇒ coi cả cụm là tên nơi (không đoán, không nuốt tên nơi).
+     * Tên nơi tiếng Việt thoải mái (data người dùng).
+     */
+    private fun parseGo(rest: String): TelegramCommand {
+        val sp = rest.lastIndexOf(' ')
+        if (sp > 0) {
+            val tail = rest.substring(sp + 1).trim()
+            val apps = tail.split(APP_SEP).map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+            if (apps.isNotEmpty() && apps.all { it in NAV_APP_ALIASES }) {
+                val place = rest.substring(0, sp).trim()
+                if (place.isNotEmpty()) return TelegramCommand.Nav(SavedPlaces.sanitize(place), apps = apps)
+            }
+        }
+        return TelegramCommand.Nav(SavedPlaces.sanitize(rest))
+    }
+
+    /** `/play <link|tên bài>` — có scheme http(s) ⇒ LINK (hệ tự chọn app); còn lại ⇒ TÊN BÀI (App nhạc mặc định). */
+    private fun parsePlay(rest: String): TelegramCommand {
+        val low = rest.lowercase()
+        val isLink = low.startsWith("http://") || low.startsWith("https://")
+        return TelegramCommand.Music(rest, isQuery = !isLink)
     }
 
     /** Bí danh lệnh → id `ControlRegistry` (chỉ vài cái tên khác id; còn lại gõ thẳng id). */

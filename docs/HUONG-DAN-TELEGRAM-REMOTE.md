@@ -53,20 +53,24 @@ Nhắn thẳng vào bot trên Telegram. **Lệnh bắt đầu bằng `/`**, ti�
 ### 3.1 Dẫn đường
 | Gửi | Kachi làm |
 |---|---|
-| `/go Công ty` | Đặt điểm đến **"Công ty"** (lấy từ **sổ địa chỉ đã lưu** trong Kachi). Lên xe + có GPS → dẫn ngay bằng app mặc định (gmaps/vietmap). Thắng lịch dẫn-tự-động của chuyến đó. |
+| `/go Công ty` | Đặt điểm đến **"Công ty"** (lấy từ **sổ địa chỉ đã lưu** trong Kachi). Lên xe + có GPS → dẫn ngay bằng **app dẫn đường mặc định**. Thắng lịch dẫn-tự-động của chuyến đó. |
+| `/go Công ty vietmap` | Dẫn bằng **VietMap**. Chọn app ở cuối lệnh: `gmaps` / `vietmap` / `waze`. |
+| `/go Công ty gmaps+vietmap` | Dẫn bằng **nhiều app cùng lúc** (ngăn bằng `+`). |
 | `/go` (không kèm tên) | Bot gửi lại **danh sách nút bấm** các nơi đã lưu — bấm 1 nút là chọn, khỏi gõ. |
 | `/go 21.0285, 105.8542` | Dẫn tới toạ độ trực tiếp. |
 | `/go 1 Đại Cồ Việt Hà Nội` | Địa chỉ lạ không có trong sổ → vẫn dẫn (Google Maps tự tra). |
 | Gửi **vị trí** (ghim 📎 → Location) | Dẫn tới đúng điểm đó. |
 
 > **Sổ địa chỉ dùng chung**: Telegram đọc **đúng sổ địa chỉ của Kachi** (Nhà / Công ty / … bạn đã lưu trong Cài đặt). **KHÔNG phải khai lại** — lưu một nơi trong Kachi là gọi được từ Telegram.
+> **Chọn app**: chỉ 3 alias `gmaps` · `vietmap` · `waze`, đặt ở **cuối** lệnh. Gõ sai → Kachi coi là một phần tên nơi (không đoán bừa). Không ghi app → dùng app mặc định (đổi ở Cài đặt → *App dẫn đường mặc định*).
 
 ### 3.2 Nhạc
 | Gửi | Kachi làm |
 |---|---|
-| `/play https://youtube.com/...` | Xe đang chạy → mở nhạc **ngay**. Xe chưa lên → đặt chờ, phát khi lên xe. |
+| `/play https://youtube.com/...` | Mở nhạc từ **link** — hệ tự chọn app theo URL: `youtube.com` → YouTube, `music.youtube.com` → YT Music. Xe đang chạy → mở ngay; chưa lên → đặt chờ. |
+| `/play Chúng ta của hiện tại` | Gửi **tên bài** (không phải link) → tìm trên **App nhạc mặc định** (Cài đặt → Giọng nói → *App nhạc mặc định*); chưa đặt → mặc định YouTube. |
 
-Chỉ nhận link `http(s)`.
+Link chỉ nhận `http(s)`. Tên bài mở ở màn tìm kiếm của app nhạc (bấm Play nếu app không tự phát).
 
 ### 3.3 Điều khiển xe *(cần bật "Cho phép điều khiển xe")*
 | Gửi | Kachi làm |

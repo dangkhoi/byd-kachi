@@ -28,6 +28,8 @@ import com.byd.clusternav.launcher.telegram.TelegramConfig
 import com.byd.clusternav.launcher.telegram.TelegramInlineKeyboard
 import com.byd.clusternav.launcher.telegram.TelegramUpdate
 import com.byd.clusternav.launcher.voice.VoiceIntent
+import com.byd.clusternav.launcher.voice.VoiceAppTargets
+import com.byd.clusternav.launcher.voice.VoiceLaunch
 import com.byd.clusternav.pendingMusicUrl
 import com.byd.clusternav.setPendingMusicUrl
 import com.byd.clusternav.telegramConfig
@@ -120,13 +122,23 @@ class TelegramBridgeService : Service() {
                     api.sendMessage(chatId, "🧭 Set “${place.name}” — will navigate when you board (priority over schedule).")
                 }
                 is TelegramCommand.Music -> {
-                    if (!isSafeUrl(c.url)) { api.sendMessage(chatId, "⚠️ Only http(s) links are allowed"); return@runCatching }
-                    if (interactive(app) && openUrl(app, c.url)) {
-                        api.sendMessage(chatId, "🎵 Opening music now")
+                    if (c.isQuery) {                                 // tên bài ⇒ App nhạc mặc định (hoặc YouTube), search
+                        if (interactive(app) && playQuery(app, c.text)) {
+                            api.sendMessage(chatId, "🎵 Playing “${c.text}”")
+                        } else {
+                            Prefs.setPendingMusicUrl(app, QUERY_PREFIX + c.text)   // lên xe mới search
+                            AutomationService.sync(app)
+                            api.sendMessage(chatId, "🎵 Saved “${c.text}” — will play when you board")
+                        }
                     } else {
-                        Prefs.setPendingMusicUrl(app, c.url)       // P1-9: xe chưa lên ⇒ đặt chờ, mở lúc lên xe
-                        AutomationService.sync(app)
-                        api.sendMessage(chatId, "🎵 Saved — will play when you board")
+                        if (!isSafeUrl(c.text)) { api.sendMessage(chatId, "⚠️ Only http(s) links are allowed"); return@runCatching }
+                        if (interactive(app) && openUrl(app, c.text)) {
+                            api.sendMessage(chatId, "🎵 Opening music now")
+                        } else {
+                            Prefs.setPendingMusicUrl(app, c.text)    // P1-9: xe chưa lên ⇒ đặt chờ, mở lúc lên xe
+                            AutomationService.sync(app)
+                            api.sendMessage(chatId, "🎵 Saved — will play when you board")
+                        }
                     }
                 }
                 is TelegramCommand.Control -> {
@@ -179,10 +191,32 @@ class TelegramBridgeService : Service() {
         true
     }.getOrDefault(false)
 
+    /**
+     * Mở nhạc theo TÊN BÀI qua App nhạc mặc định (`voice_music_default_app`), chưa đặt / không cài ⇒ YouTube.
+     * Dùng đúng đường `MEDIA_PLAY_FROM_SEARCH` + focus audio của [VoiceAppTargets] (hợp đồng nền tảng để PHÁT).
+     */
+    private fun playQuery(app: Context, query: String): Boolean = runCatching {
+        val installed = app.packageManager.getInstalledPackages(0).mapNotNull { it.packageName }.toSet()
+        val target = VoiceAppTargets.byKey(Prefs.voiceMusicDefaultApp(app).ifBlank { VoiceAppTargets.YOUTUBE })
+            ?.takeIf { it.packageIn(installed) != null }
+            ?: VoiceAppTargets.byKey(VoiceAppTargets.YOUTUBE)?.takeIf { it.packageIn(installed) != null }
+            ?: return@runCatching false
+        val pkg = target.packageIn(installed) ?: return@runCatching false
+        val launch = target.launch as? VoiceLaunch.Action ?: return@runCatching false
+        val i = Intent(launch.action).setPackage(pkg)
+            .putExtra(launch.extra, query)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        launch.extras.forEach { (k, v) -> i.putExtra(k, v) }
+        app.startActivity(i)
+        true
+    }.getOrDefault(false)
+
     private fun playPendingMusicIfInteractive(app: Context) {
-        val url = Prefs.pendingMusicUrl(app) ?: return
+        val saved = Prefs.pendingMusicUrl(app) ?: return
         if (!interactive(app)) return
-        if (isSafeUrl(url) && openUrl(app, url)) Prefs.setPendingMusicUrl(app, null)   // mở một lần rồi xoá
+        val ok = if (saved.startsWith(QUERY_PREFIX)) playQuery(app, saved.removePrefix(QUERY_PREFIX))
+                 else isSafeUrl(saved) && openUrl(app, saved)
+        if (ok) Prefs.setPendingMusicUrl(app, null)   // mở một lần rồi xoá
     }
 
     /** `true` = màn đang bật (xe lên). P1-8 + điều kiện mở nhạc. */
@@ -233,6 +267,7 @@ class TelegramBridgeService : Service() {
 
     companion object {
         private const val TAG = "KachiTelegram"
+        private const val QUERY_PREFIX = "q:"   // pending nhạc dạng tên bài (phân biệt với link http(s))
         private const val CHANNEL_ID = "kachi_telegram"
         private const val NOTIFICATION_ID = 1048   // bảng ID FGS: VoiceKeyKeepAliveService.NOTIFICATION_ID KDoc
         private const val POLL_TIMEOUT_SEC = 60
