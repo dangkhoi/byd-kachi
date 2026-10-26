@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi — Nút bấm Telegram (inline keyboard + transport nhạc)</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a2e; --muted: #5a5a72; --card: #f4f5fb; --border: #d9dae8;
+    --accent: #3b5bdb; --ok: #2f9e44; --warn: #e8590c; --code-bg: #eef0f7; --th: #e7e9f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14151c; --fg: #e8e9f0; --muted: #a0a2b5; --card: #1e2029; --border: #33354a;
+      --accent: #748ffc; --ok: #51cf66; --warn: #ff922b; --code-bg: #1a1c26; --th: #242636; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2rem 1.2rem 5rem; background: var(--bg); color: var(--fg);
+    font: 15px/1.6 -apple-system, "Segoe UI", Roboto, system-ui, sans-serif; max-width: 900px; margin-inline: auto; }
+  h1 { font-size: 1.7rem; border-bottom: 3px solid var(--accent); padding-bottom: .4rem; }
+  h2 { font-size: 1.25rem; margin-top: 2.4rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: .3rem; }
+  h3 { font-size: 1.05rem; margin-top: 1.4rem; }
+  code { background: var(--code-bg); padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+  pre { background: var(--code-bg); padding: .9rem 1rem; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border);
+    font: 12.5px/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .92em; }
+  th, td { border: 1px solid var(--border); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+  th { background: var(--th); }
+  .meta { color: var(--muted); font-size: .9em; }
+  .tag { display: inline-block; background: var(--accent); color: #fff; padding: .05rem .5rem; border-radius: 999px; font-size: .8em; }
+  .ok { color: var(--ok); font-weight: 600; } .warn { color: var(--warn); font-weight: 600; }
+  .spine { border-left: 4px solid var(--accent); padding-left: .8rem; background: var(--card); }
+  ul { padding-left: 1.3rem; } li { margin: .25rem 0; }
+  .kbd { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: .5rem; margin: .4rem 0; font: 12.5px/1.6 ui-monospace, monospace; white-space: pre; display: block; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>Kachi — Nút bấm Telegram (inline keyboard + transport nhạc)</h1>
+<p class="meta"><b>Slug:</b> <code>kachi-telegram-buttons</code> · <b>Trạng thái:</b> Draft — chờ duyệt ·
+<b>Owner:</b> KhoiPD · <b>Ngày:</b> 2026-10-26 · <b>Tiền đề:</b> spec <code>kachi-telegram-remote.html</code> (đã code 3.1.15).
+Đánh giá UX bởi PO/UX senior sub-agent (opus, 2026-10-26, <code>subagents/dd63749e61d03558</code>).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 1 — 2026-10-26</b>: Owner chốt 3 OQ — OQ1 ghim qua <code>/places</code>; OQ2 đọc tươi 1 datum khi mở bảng (không bịa); OQ3 <b>MỌI lệnh + nhãn tiếng Anh</b> ("người Việt đều biết tiếng Anh phổ biến"). setMyCommands 9 lệnh Anh: /menu /home /office /go /play /ac /cancel /status /places.</li>
+<li><b>Pass 0 — 2026-10-26</b>: Khởi tạo. Owner muốn bot Telegram <b>bấm nút là xong</b>, không phải nhớ lệnh ("chỉnh lệnh trên xe nhiều quá trời"). PO agent đánh giá, trả 24 quyết định QD-01…QD-24 (4 xương sống: bảng trạng thái sống, lệnh tuyệt đối, nơi-trước-app-sau, một-bảng-sống). Owner 26/10 chốt gộp luôn <b>play/pause/next</b> (QD-24 → QD-25) vào wave này ("làm luôn cho xong đỡ nợ"). Nền <code>MediaBridge.play/pause/next/prev</code> + <code>read()</code> đã tồn tại (widget nhạc dùng).</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Bot Telegram (spec <code>kachi-telegram-remote</code>) đã điều khiển được xe bằng <b>lệnh gõ tay</b> (<code>/go</code>, <code>/play</code>, <code>/ac</code>…). Vấn đề owner nêu: nhớ từng lệnh khó, nhất là khi đã chỉnh nhiều thứ trên xe. Wave này <b>bọc mọi việc hay dùng bằng NÚT BẤM phân cấp</b> + đăng ký gợi ý lệnh (<code>setMyCommands</code>), và thêm <b>điều khiển nhạc đang phát</b> (play/pause/next) — thiếu hụt lớn nhất cho ca "ngồi sau điều khiển nhạc không phiền tài xế".</p>
+<p><b>Nền sẵn có (đã [ĐO] đọc code):</b></p>
+<ul>
+<li><code>TelegramInlineKeyboard</code> (<code>:core</code>) — đã dựng <code>placesKeyboard</code> + <code>HELP</code>; tự ghép JSON, không org.json.</li>
+<li><code>TelegramBridgeService</code> (<code>:app</code>) — FGS polling 60s, <code>execute()</code> thi hành lệnh, đã xử callback <code>navi:&lt;index&gt;</code>.</li>
+<li><code>MediaBridge</code> (<code>:app</code>) — <code>play/pause/next/prev</code> qua <code>MediaController.TransportControls</code> + <code>read(): MediaSnapshot(title, artist, playing, …)</code>. <b>Transport khả thi, không phải viết lại.</b></li>
+<li><code>ControlRegistry</code> + <code>VoiceControlDispatch</code> — lệnh xe tuyệt đối (set-to-X) đã có; cổng tốc độ (cốp/kính/nóc) qua <code>CtlSafetyPolicy</code>.</li>
+<li><code>WorkspacePrefs.savedPlaces()</code> — sổ địa chỉ dùng chung; <code>voiceMusicDefaultApp</code> / <code>voiceNavDefaultApp</code>.</li>
+</ul>
+<p><b>Ràng buộc Telegram:</b> <code>callback_data</code> ≤ 64 byte; inline keyboard xếp hàng (≤4 nút/hàng cho dễ bấm); <code>answerCallbackQuery</code> phải trả &lt;1s; <code>editMessageText</code>/<code>editMessageReplyMarkup</code> để sửa bảng tại chỗ; <code>setMyCommands</code> đăng ký gợi ý lệnh.</p>
+
+<h2>3. Requirements</h2>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Acceptance</th><th>QD</th></tr>
+<tr><td>R1</td><td><code>/menu</code> + <code>/start</code> mở <b>menu chính</b>: bảng trạng thái sống + hàng nhanh (3 nút) + 4 nhóm (Dẫn đường · Điều hoà · Nhạc · Ghế) + Khác + Làm mới.</td><td>Gửi <code>/menu</code> → nhận 1 tin có text trạng thái + inline keyboard đúng bố cục.</td><td>01,03</td></tr>
+<tr><td>R2</td><td><b>Bảng trạng thái sống</b> (phần text): xe nối/không · GPS · AUTO/nhiệt độ/quạt · ghế lái+phụ · điểm đến chờ · "đang phát ♪…" · giờ cập nhật. Đọc từ <code>MediaBridge.read()</code> + trạng thái pending + control đọc được.</td><td>Mở bảng khi AC đang 24° → text hiện "❄️ AUTO·24°". Đổi rồi Làm mới → text đổi.</td><td>03</td></tr>
+<tr><td>R3</td><td><b>Mọi nút điều khiển là lệnh tuyệt đối</b> (đặt-24°, không +1°-mù). <code>callback_data</code> mang giá trị đích, không "toggle".</td><td>Bấm "24°" 3 lần → xe vẫn 24° (idempotent), không trôi.</td><td>05</td></tr>
+<tr><td>R4</td><td><b>Hàng nhanh 1-chạm</b>: 2 địa điểm <b>do người dùng ghim</b> + macro "❄️ Mát 24°" (AUTO + 24° + quạt 4). Ghim chọn trong sổ địa chỉ, không hardcode.</td><td>Ghim "Nhà" → menu chính có nút "🏠 Nhà"; bấm → gửi điểm đến ngay (1 chạm).</td><td>04</td></tr>
+<tr><td>R5</td><td><b>Dẫn đường: chọn nơi → gửi NGAY</b> bằng app mặc định. Chọn app là <b>hậu kiểm</b>: tin xác nhận có nút "➕ mở thêm VietMap/Waze". Không hỏi app trước.</td><td>Bấm "Công ty" → gửi gmaps ngay + tin xác nhận có 2 nút ➕ + nút Huỷ.</td><td>10,11</td></tr>
+<tr><td>R6</td><td><b>Bảng Điều hoà</b>: AUTO bật/tắt · preset nhiệt 20/22/24/26 + hàng −/+ (nút giá trị giữa là nút chết chống bấm lệch) · quạt Tắt/Nhẹ2/Vừa4/Mạnh6 + −/+ · sấy kính (nhãn mang trạng thái) · PM2.5.</td><td>Mỗi nút preset = 1 lệnh tuyệt đối; −/+ debounce ~600ms rồi gửi 1 lệnh.</td><td>06,07,08,22</td></tr>
+<tr><td>R7</td><td><b>Bảng Ghế</b>: bày phẳng 4 mức/ghế (mát1/mát2/sưởi1/sưởi2) + nút "Tắt" chiếm cả hàng, cho ghế lái + ghế phụ. Không tầng chọn ghế.</td><td>Bấm "🧊 Lái 2" → ghế lái mát mức 2; "Tắt ghế lái" → tắt.</td><td>09</td></tr>
+<tr><td>R8</td><td><b>Bảng Nhạc + transport</b>: hàng ▶️/⏸/⏭/⏮ điều khiển nhạc ĐANG PHÁT (<code>MediaBridge</code>) + nút phát nhanh app nhạc mặc định. Tên bài đang phát ở bảng trạng thái.</td><td>Đang phát YouTube → bấm ⏸ → tạm dừng; ⏭ → bài sau. Không có gì phát → toast "chưa có nhạc".</td><td>25</td></tr>
+<tr><td>R9</td><td><b>Bảng Khác</b>: đèn đọc, PM2.5 (toggle mang trạng thái), và các toggle hiếm. Hành động bị cổng tốc độ (cốp/kính/nóc) <b>vẫn hiện</b>, bấm lúc chạy → toast "chỉ mở khi xe dừng".</td><td>Bấm "cốp" lúc xe chạy → toast từ chối, không ẩn nút.</td><td>20,22</td></tr>
+<tr><td>R10</td><td><b>Phân trang sổ địa chỉ</b>: 6 nơi/trang, 2 nút/hàng, "⬇️ Xem thêm (n)". Chịu 2–15 địa chỉ.</td><td>15 địa chỉ → trang 1 có 6 nơi + nút Xem thêm (9).</td><td>13</td></tr>
+<tr><td>R11</td><td><b>Huỷ điểm đến</b> CHỈ trên tin xác nhận vừa đặt, không trong menu.</td><td>Menu chính + mọi bảng con: không có nút Huỷ. Chỉ tin xác nhận có.</td><td>14</td></tr>
+<tr><td>R-nf1</td><td><b><code>callback_data</code></b> = <code>v&lt;nonce&gt;:&lt;domain&gt;:&lt;action&gt;:&lt;id&gt;</code>, chỉ ID, không chứa chữ người dùng. ≤64 byte.</td><td>Nơi tên 40 ký tự tiếng Việt → callback vẫn dùng index, &lt;20 byte.</td><td>15</td></tr>
+<tr><td>R-nf2</td><td><b>Nonce bảng</b>: nút của bảng cũ → toast "bảng cũ rồi, mở bảng mới", KHÔNG thi hành.</td><td>Mở bảng, chờ, mở bảng mới, bấm nút bảng cũ → toast, xe không đổi.</td><td>16</td></tr>
+<tr><td>R-nf3</td><td><b>Một bảng sống</b>: sau mỗi tin mới trong chat, bot gửi lại bảng ở cuối + xoá bảng cũ (editMessageReplyMarkup bỏ nút bảng cũ).</td><td>Gõ 1 tin giữa chừng → bảng điều khiển vẫn ở cuối, trong tầm ngón.</td><td>17</td></tr>
+<tr><td>R-nf4</td><td><b><code>answerCallbackQuery</code> &lt;1s</b> (toast ngắn) TRƯỚC khi chờ xe trả lời; rồi mới <code>editMessageText</code>.</td><td>Bấm nút → toast tức thì, không vòng xoay → không double-apply.</td><td>18</td></tr>
+<tr><td>R-nf5</td><td><b>Nhãn nút</b>: ≥1 từ tiếng Việt + emoji; ≤4 nút/hàng (5 chỉ khi nhãn ≤3 ký tự).</td><td>Không nút nào chỉ có emoji; không hàng &gt;4 nút chữ dài.</td><td>19</td></tr>
+<tr><td>R12</td><td><b><code>setMyCommands</code></b> đăng ký 9 lệnh TIẾNG ANH (chỉ loại nút-không-làm-được): <code>/menu /home /office /go /play /ac /cancel /status /places</code>.</td><td>Gõ "/" trên Telegram → hiện 9 gợi ý tiếng Anh. <code>/go gym</code>, <code>/play &lt;tên&gt;</code> nhận tham số tự do.</td><td>21,23</td></tr>
+</table>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Kiến trúc — tách core (thuần) ↔ app (Android)</h3>
+<div class="spine">
+<p><b>Nguyên tắc như spec gốc:</b> <code>:core</code> dựng CHUỖI JSON của keyboard + phân giải callback (thuần, test off-car); <code>:app</code> gọi Telegram API + đọc trạng thái xe/nhạc + thi hành. KHÔNG mở đường ghi thứ hai — lệnh xe vẫn qua <code>VoiceControlDispatch</code> (cổng tốc độ), nhạc qua <code>MediaBridge</code>, dẫn đường qua <code>PendingNavStore</code>/<code>ScheduledNavApplier</code> đã có.</p>
+</div>
+<ul>
+<li><b><code>:core</code> mới:</b> <code>TelegramMenu</code> (dựng JSON mọi bảng: menu chính, điều hoà, ghế, nhạc, khác, dẫn đường, xác nhận) · <code>TelegramCallback</code> (data class + parse/encode <code>v&lt;nonce&gt;:&lt;domain&gt;:&lt;action&gt;:&lt;id&gt;</code>) · <code>TelegramStatusLine</code> (ghép text trạng thái sống từ snapshot thuần). Mở rộng <code>TelegramInlineKeyboard</code> hiện có.</li>
+<li><b><code>:app</code> mới/sửa:</b> <code>TelegramApi</code> += <code>answerCallbackQuery</code>, <code>editMessageText</code>, <code>editMessageReplyMarkup</code>, <code>setMyCommands</code>, <code>deleteMessage</code> · <code>TelegramBridgeService.handleCallback()</code> (phân giải → thi hành → sửa bảng) · đọc trạng thái xe qua <code>freshCar</code>/<code>ControlRegistry.readState</code> + nhạc qua <code>MediaBridge.read()</code>.</li>
+</ul>
+
+<h3>4.2 Menu chính (mockup)</h3>
+<div class="kbd">┌ 🚗 Kachi · BYD        ● xe đã nối ──────────┐
+│ ❄️ AUTO·24°·quạt 4   🪑 Lái tắt·Phụ tắt      │
+│ 📍 Chưa có điểm đến · GPS ✓   ♪ —           │
+│ cập nhật 14:32                              │
+└─────────────────────────────────────────────┘
+[ 🏠 Nhà ]  [ 🏢 Công ty ]  [ ❄️ Mát 24° ]
+[ 🧭 Dẫn đường ]        [ ❄️ Điều hoà ]
+[ 🎵 Nhạc ]             [ 🪑 Ghế ]
+[ 🌫 Khác ]             [ 🔄 Làm mới ]</div>
+
+<h3>4.3 Bảng Điều hoà</h3>
+<div class="kbd">❄️ Điều hoà · AUTO BẬT · 24° · quạt 4 (Vừa)
+[ AUTO: BẬT ✓ ]          [ AUTO: TẮT ]
+[ 20° ] [ 22° ] [ 24° ✓ ] [ 26° ]
+[ − 1° ]     [  24°  ]     [ + 1° ]
+[ Quạt tắt ][ Nhẹ 2 ][ Vừa 4 ✓ ][ Mạnh 6 ]
+[ 🌬 Sấy kính: TẮT→bật ] [ 🌫 PM2.5: BẬT ✓ ]
+[ ‹ Về menu ]</div>
+<p class="meta">Nút <code>24°</code> giữa hàng −/+ là <b>nút chết</b> (chỉ vẽ lại bảng) — hiện giá trị tại chỗ mắt nhìn + vùng đệm chống bấm lệch giữa − và +.</p>
+
+<h3>4.4 Bảng Ghế</h3>
+<div class="kbd">🪑 Ghế · Lái: mát 1 · Phụ: tắt
+[ 🧊 Lái 1 ✓ ][ 🧊 Lái 2 ][ ♨️ Lái 1 ][ ♨️ Lái 2 ]
+[ ⏹ Tắt ghế lái                              ]
+[ 🧊 Phụ 1 ][ 🧊 Phụ 2 ][ ♨️ Phụ 1 ][ ♨️ Phụ 2 ]
+[ ⏹ Tắt ghế phụ                              ]
+[ ‹ Về menu ]</div>
+
+<h3>4.5 Bảng Nhạc + transport (QD-25, mới)</h3>
+<div class="kbd">🎵 Nhạc · ♪ Chúng ta của hiện tại — Sơn Tùng (đang phát)
+[ ⏮ Trước ] [ ⏸ Dừng ] [ ⏭ Sau ]
+[ ▶️ Phát (app mặc định) ]
+[ ‹ Về menu ]</div>
+<p class="meta">Transport qua <code>MediaBridge.play/pause/next/prev</code> (đã có). Không có phiên nhạc → <code>answerCallbackQuery</code> toast "Chưa có nhạc đang phát". Nhãn ⏸/▶️ đổi theo <code>MediaSnapshot.playing</code>.</p>
+
+<h3>4.6 Bảng Dẫn đường + tin xác nhận</h3>
+<div class="kbd">🧭 Dẫn đường · GPS ✓ · app mặc định: Google Maps
+[ 🏠 Nhà ]           [ 🏢 Công ty ]
+[ 🏫 Trường con ]    [ 🏋️ Gym ]
+[ ‹ Về menu ] [ ⬇️ Xem thêm (9) ] [ ⚙️ App ]
+
+── sau khi bấm "Công ty" ──
+✅ Đã gửi "Công ty" vào Google Maps trên xe.
+[ ➕ Mở thêm VietMap ] [ ➕ Waze ]
+[ ↩️ Huỷ điểm đến ]    [ ‹ Về menu ]</div>
+
+<h3>4.7 24+1 Quyết định thiết kế (PO agent, owner duyệt)</h3>
+<table>
+<tr><th>#</th><th>Quyết định</th></tr>
+<tr><td>QD-01</td><td>Menu chính = hàng nhanh (3) + 4 nhóm + Khác + Làm mới; ưu tiên theo tần suất.</td></tr>
+<tr><td>QD-02</td><td>Độ sâu ≤2 tầng; mọi việc hay dùng ≤2 lần bấm.</td></tr>
+<tr><td>QD-03</td><td><b>[xương sống]</b> Text tin = bảng trạng thái sống (nối/GPS/AC/ghế/điểm đến/nhạc/giờ).</td></tr>
+<tr><td>QD-04</td><td>Hàng nhanh = 2 địa điểm người dùng ghim + macro "Mát 24°".</td></tr>
+<tr><td>QD-05</td><td><b>[xương sống]</b> Mọi nút là lệnh tuyệt đối (set-to-X), không toggle mù.</td></tr>
+<tr><td>QD-06</td><td>Nhiệt độ: preset 20/22/24/26 + −/+ (nút giá trị chết ở giữa).</td></tr>
+<tr><td>QD-07</td><td>Quạt: preset Tắt/Nhẹ2/Vừa4/Mạnh6 + −/+.</td></tr>
+<tr><td>QD-08</td><td>−/+ debounce ~600ms rồi gửi MỘT lệnh tuyệt đối tính từ trạng thái bot biết.</td></tr>
+<tr><td>QD-09</td><td>Ghế: phẳng 4 mức/ghế + "Tắt" cả hàng, không tầng chọn ghế.</td></tr>
+<tr><td>QD-10</td><td><b>[xương sống]</b> Dẫn: chọn nơi → gửi ngay app mặc định; app là hậu kiểm.</td></tr>
+<tr><td>QD-11</td><td>"Nhiều app" = nút "➕ mở thêm" trên tin xác nhận, không multi-select.</td></tr>
+<tr><td>QD-12</td><td>Trạng thái GPS ở đầu bảng dẫn đường.</td></tr>
+<tr><td>QD-13</td><td>Sổ địa chỉ 6 nơi/trang, 2 nút/hàng, "Xem thêm (n)".</td></tr>
+<tr><td>QD-14</td><td>"Huỷ điểm đến" chỉ trên tin xác nhận.</td></tr>
+<tr><td>QD-15</td><td><code>callback_data</code> = ID + nonce, không chứa chữ người dùng.</td></tr>
+<tr><td>QD-16</td><td>Nonce bảng; nút bảng cũ → toast "bảng cũ", không thi hành.</td></tr>
+<tr><td>QD-17</td><td><b>[xương sống]</b> Chỉ 1 bảng sống; gửi lại ở cuối chat + xoá bảng cũ.</td></tr>
+<tr><td>QD-18</td><td><code>answerCallbackQuery</code> &lt;1s trước khi chờ xe.</td></tr>
+<tr><td>QD-19</td><td>Nhãn ≥1 từ Việt + emoji; ≤4 nút/hàng.</td></tr>
+<tr><td>QD-20</td><td>Hành động cổng tốc độ vẫn hiện, bấm → toast "chỉ khi xe dừng".</td></tr>
+<tr><td>QD-21</td><td><code>setMyCommands</code> 9 lệnh TIẾNG ANH (/menu /home /office /go /play /ac /cancel /status /places); không đăng ký lệnh chỉ mở bảng.</td></tr>
+<tr><td>QD-22</td><td>Đèn + PM2.5 → "Khác"; sấy kính giữ trong bảng Điều hoà.</td></tr>
+<tr><td>QD-23</td><td>Quản lý sổ địa chỉ qua <code>/places</code>, không nút menu.</td></tr>
+<tr><td>QD-25</td><td><b>[owner 26/10 gộp vào wave]</b> Điều khiển nhạc đang phát: play/pause/next/prev qua <code>MediaBridge</code>.</td></tr>
+</table>
+
+<h3>4.8 Autonomous Decisions (ghi khi code, nếu phát sinh)</h3>
+<ul><li>(điền khi code — chỗ lệch spec vì code thật, theo R2.6)</li></ul>
+
+<h2>5. Tasks (DAG)</h2>
+<p class="meta">Tuần tự (lesson dự án: 1 agent/repo, tránh tranh gradle). Mỗi stage có cổng lệnh + handoff.</p>
+<table>
+<tr><th>Stage</th><th>Task</th><th>File</th><th>Cổng</th></tr>
+<tr><td>1 — core thuần</td><td>T1 <code>TelegramCallback</code> (encode/parse v-nonce-domain-action-id, ≤64 byte) · T2 <code>TelegramMenu</code> (JSON mọi bảng) · T3 <code>TelegramStatusLine</code> (text trạng thái từ snapshot thuần) · T4 test off-car + red-when-reverted</td><td><code>core/.../telegram/</code></td><td><code>:core:test</code> xanh; callback round-trip + ≤64 byte có test</td></tr>
+<tr><td>2 — app API</td><td>T5 <code>TelegramApi</code> += answerCallbackQuery/editMessageText/editMessageReplyMarkup/setMyCommands/deleteMessage · T6 đọc trạng thái xe (freshCar) + nhạc (MediaBridge.read) cho status line</td><td><code>app/.../telegram/TelegramApi.kt</code></td><td><code>:app:compileDebugKotlin</code> xanh</td></tr>
+<tr><td>3 — app bridge</td><td>T7 <code>handleCallback</code> (phân giải → nonce gate → thi hành qua đường có sẵn → sửa bảng) · T8 một-bảng-sống (gửi lại cuối + xoá cũ) · T9 debounce −/+ · T10 transport nhạc · T11 setMyCommands lúc sync · T12 ghim địa điểm hàng nhanh</td><td><code>app/.../telegram/TelegramBridgeService.kt</code></td><td>test wiring; cổng tốc độ NGOÀI giữ</td></tr>
+<tr><td>4 — chốt</td><td>T13 test đủ 5 module · T14 senior review + vá · T15 security scan · T16 bump + build APK (3.1.16) · T17 cập nhật guide + backlog + commit</td><td>—</td><td>full XANH · review 0 P0/P1 · scan CLEAN</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>Off-car (test):</b> callback encode/parse round-trip; ≤64 byte với tên 40 ký tự; nonce cũ bị từ chối; status line ghép đúng từ snapshot; menu JSON hợp lệ; red-when-reverted cho nonce gate + lệnh-tuyệt-đối.</li>
+<li><b>Máy ảo:</b> dựng update giả (callback) → bridge thi hành đúng đường; không có phiên nhạc → toast; bảng cũ → toast không thi hành.</li>
+<li><b>🚗 Trên xe (owner):</b> bấm nút thật — dẫn đường 1 chạm, điều hoà preset, ghế, transport nhạc đang phát, cổng tốc độ, một-bảng-sống sau khi gõ tin giữa chừng.</li>
+<li><b>Lifecycle:</b> tắt/mở xe → bảng cũ hết nonce → bấm ra toast; sync lại setMyCommands.</li>
+<li><b>Bảo mật:</b> token không log; callback không chứa chữ người dùng; chat-id authorize giữ nguyên.</li>
+</ul>
+
+<h2>7. Open Questions — CHỐT owner 26/10</h2>
+<table>
+<tr><th>#</th><th>Câu</th><th>CHỐT</th></tr>
+<tr><td>OQ1</td><td>Ghim địa điểm hàng nhanh: chọn ở đâu?</td><td><span class="ok">CHỐT</span> Lệnh <code>/places</code> → bảng có nút "📌 Pin" mỗi nơi; tối đa 2 ghim.</td></tr>
+<tr><td>OQ2</td><td>Bảng trạng thái đọc control xe (nhiệt/quạt/ghế) — đọc được khi màn chính khuất không?</td><td><span class="ok">CHỐT</span> Đọc tươi 1 datum khi mở bảng; không được → hiện "—", không bịa (như VOICE-WAKE-AUTOON).</td></tr>
+<tr><td>OQ3</td><td>Lệnh + nhãn <code>setMyCommands</code> tiếng Việt hay Anh?</td><td><span class="ok">CHỐT TIẾNG ANH TẤT CẢ</span> (owner 26/10: "người Việt đều biết tiếng Anh phổ biến"). Nhãn nút inline vẫn kèm emoji + từ tiếng Anh ngắn.</td></tr>
+</table>
+
+<h2>8. References</h2>
+<ul>
+<li>spec tiền đề: <code>docs/specs/kachi-telegram-remote.html</code> (đã code 3.1.15)</li>
+<li>đánh giá PO/UX: <code>~/.kiro/crew/subagents/dd63749e61d03558/result.txt</code></li>
+<li>nền code: <code>MediaBridge.kt</code> · <code>TelegramInlineKeyboard.kt</code> · <code>TelegramBridgeService.kt</code> · <code>ControlRegistry.kt</code> · <code>CtlSafetyPolicy.kt</code></li>
+<li>Telegram Bot API: inline keyboard, answerCallbackQuery, editMessageText, setMyCommands</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="meta">(điền khi code — quyết định/trade-off/sai lệch spec/bug &amp; cách xử, theo R2.6)</p>
+
+<h2>10. Reviewer Log</h2>
+<p class="meta">(append-only — mỗi pass senior review thêm một mục)</p>
+
+</body>
+</html>
