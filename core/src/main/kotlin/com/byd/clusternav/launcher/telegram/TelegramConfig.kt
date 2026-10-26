@@ -12,13 +12,11 @@ package com.byd.clusternav.launcher.telegram
  * @property botToken token @BotFather (secret).
  * @property allowedChatId chat-id duy nhất được nhận lệnh; 0 = chưa cấu hình ⇒ [isAuthorized] luôn false.
  * @property enabled công tắc bridge (bật mới polling).
- * @property controlEnabled công tắc điều khiển xe (R9 — khuyến nghị bật; tắt ⇒ bỏ lệnh Control + báo).
  */
 data class TelegramConfig(
     val botToken: String = "",
     val allowedChatId: Long = 0,
     val enabled: Boolean = false,
-    val controlEnabled: Boolean = true,
 ) {
     /** Đã đủ cấu hình để polling chưa (bật + có token + có chat-id). */
     val ready: Boolean get() = enabled && botToken.isNotBlank() && allowedChatId != 0L

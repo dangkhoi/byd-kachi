@@ -1,25 +1,18 @@
 package com.byd.clusternav.launcher.telegram
 
-/**
- * Văn bản `/help` của bot — spec `kachi-telegram-remote.html` R7 + `kachi-telegram-buttons.html` R12. Thuần Kotlin.
- *
- * ⚠ 3.1.16 · senior review 26/10 (P3 mã chết): `placesKeyboard` (callback `navi:`) và `ackText` đã GỠ — bảng nút nay do
- * [TelegramMenu] dựng (callback [TelegramCallback] có nonce), nên mọi callback dạng cũ là mã không ai sinh ra nữa.
- */
+/** Văn bản `/help` của bot (3.1.21 — chỉ dẫn đường + nhạc). Thuần Kotlin. */
 object TelegramInlineKeyboard {
 
     val HELP: String = buildString {
-        appendLine("Kachi remote — commands (or just send /menu and tap):")
-        appendLine("/menu                  — control panel with buttons")
-        appendLine("/home · /office        — navigate to pinned place 1 / 2")
-        appendLine("/go <place>            — navigate (default app)")
-        appendLine("/go <place> vietmap    — pick app: gmaps/vietmap/waze (or gmaps+vietmap)")
-        appendLine("/go <lat>, <lng>       — navigate to coordinates")
-        appendLine("/places                — saved places, 📌 to pin")
-        appendLine("/play <link>           — play (YouTube / YT Music by URL)")
-        appendLine("/play <song name>      — search on default music app")
-        appendLine("/ac on · /defrost on · /fan 3 · /temp 22 — car controls")
-        appendLine("/trunk open (only at 0 km/h) · /windows_all close")
-        append("/status · /cancel · /help")
+        appendLine("Kachi remote — navigation & music only:")
+        appendLine("• Paste a Google Maps link — navigate (Google Maps)")
+        appendLine("• Link + vietmap — Google Maps and VietMap")
+        appendLine("• Paste a YouTube / YT Music link — play it now")
+        appendLine("/go <place>            — saved place or address, default app")
+        appendLine("/go <place> gmaps vietmap — pick apps: gmaps · vietmap · waze")
+        appendLine("/play <song>           — search & play on default music app")
+        appendLine("/play <song> youtube   — or ytmusic")
+        appendLine("/go · /places          — saved places + New")
+        append("/cancel — clear pending destination · /help")
     }
 }

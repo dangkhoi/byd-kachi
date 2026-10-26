@@ -102,7 +102,7 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi muc cai dat co nhan EN — 11 nhom va 76 muc`() {
+    fun `moi muc cai dat co nhan EN — 11 nhom va 90 muc`() {
         assertEquals(11, SettingsCatalog.GROUPS.size)   // +VOICE (owner 2026-09-21 tách menu Giọng nói riêng)
         // 54 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
         // system 6 thêm · about 1 thêm), trừ `clusternav_open` (IA v2), trừ `system_advanced_screen` (S3 2026-09-13:
@@ -156,7 +156,8 @@ class LangCoverageTest {
         // 3.1.11 · CLUSTER-NOW-PLAYING: **85 → 86 (+1)** = `nav_now_playing` *"Tên bài hát lên cụm đồng hồ"* (khoá `cluster_now_playing` theo XE).
         // 3.1.12 · HUD-ROADNAME-ALT-PATH: **86 → 87 (+1)** = `nav_hud_road_name_path`; 3.1.14 gỡ (tester SL6 báo không tác dụng): **87 → 86 (−1)**.
         // TELEGRAM-REMOTE (2026-10-26): **86 → 91 (+5)** = pending_nav + telegram_enabled/bot_token/chat_id/control_enabled (nhóm NAV).
-        assertEquals(91, SettingsCatalog.ENTRIES.size)
+        // 3.1.21: gỡ `telegram_control_enabled` (Telegram không điều khiển xe nữa) **91 → 90 (−1)**.
+        assertEquals(90, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -194,7 +195,7 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 239`() {
+    fun `tong so nhan co ban EN dung 277`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
@@ -271,7 +272,8 @@ class LangCoverageTest {
         // 3.1.11 · CLUSTER-NOW-PLAYING: **272 → 273 (+1)** = mục Cài đặt `nav_now_playing`, EN tại chỗ khai + dòng zh/th/ms.
         // 3.1.12 · HUD-ROADNAME-ALT-PATH: **273 → 274 (+1)** = mục Cài đặt `nav_hud_road_name_path`; 3.1.14 gỡ: **274 → 273 (−1)**.
         // TELEGRAM-REMOTE (2026-10-26): **273 → 278 (+5)** = năm mục Cài đặt Telegram, EN tại chỗ khai + dòng zh/th/ms.
-        assertEquals(278, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 3.1.21 (owner 26/10, Telegram chỉ dẫn đường + nhạc): gỡ `telegram_control_enabled` **278 → 277 (−1)**.
+        assertEquals(277, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

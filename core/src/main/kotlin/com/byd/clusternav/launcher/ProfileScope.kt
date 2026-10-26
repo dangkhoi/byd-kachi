@@ -216,7 +216,7 @@ object ProfileScope {
         // TELEGRAM-REMOTE (2026-10-26) — bot token + chat-id + hai công tắc là cấu hình MỨC MÁY, không theo hồ sơ:
         // một chiếc xe một bot, token là secret dùng chung mọi hồ sơ. Chép theo hồ sơ = nhập token lại mỗi lần đổi
         // tài xế, và export hồ sơ sẽ mang token ra ngoài (rủi ro lộ). Cùng họ `voice_speak_replies`: lựa chọn mức máy.
-        listOf("telegram_enabled", "telegram_bot_token", "telegram_chat_id", "telegram_control_enabled").forEach {
+        listOf("telegram_enabled", "telegram_bot_token", "telegram_chat_id").forEach {
             put(it, "TELEGRAM-REMOTE — bot/chat-id/công tắc mức máy (một xe một bot; token là secret, không theo hồ sơ)")
         }
         put(

@@ -145,7 +145,6 @@ internal object SettingsCatalogEntries {
         SettingsEntry("telegram_enabled", SettingsGroup.NAV, "Điều khiển qua Telegram", "telegram_enabled", "Telegram remote"),
         SettingsEntry("telegram_bot_token", SettingsGroup.NAV, "Mã bot Telegram", "telegram_bot_token", "Telegram bot token"),
         SettingsEntry("telegram_chat_id", SettingsGroup.NAV, "Mã chat Telegram", "telegram_chat_id", "Telegram chat ID"),
-        SettingsEntry("telegram_control_enabled", SettingsGroup.NAV, "Cho phép điều khiển xe qua Telegram", "telegram_control_enabled", "Allow car control via Telegram"),
     )
 
     // ── Phía CLUSTERNAV: khoá nằm trong `clusternav_prefs` / `simple_cast_prefs` ─────────────────

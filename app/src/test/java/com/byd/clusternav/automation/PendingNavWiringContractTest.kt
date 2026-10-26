@@ -37,11 +37,10 @@ class PendingNavWiringContractTest {
     }
 
     @Test
-    fun `cong toc do NGOAI + token khong lot log + offset ben`() {
+    fun `GPS bat buoc + token khong lot log + offset ben`() {
         val svc = code("telegram/TelegramBridgeService.kt")
         val api = code("telegram/TelegramApi.kt")
-        assertTrue(!svc.contains("blockedExternal("), "Telegram không còn cổng tốc độ riêng (3.1.20) — dùng cổng của VoiceControlDispatch")
-        assertTrue(svc.contains("needsConfirm(c.controlId) && c.value == null"), "bộ phận chuyển động phải nói rõ mở/đóng (P0-2)")
+        assertTrue(svc.contains("PendingNavStore.write(app, dest, requireGps = true)"), "điểm đến từ Telegram: GPS bắt buộc (owner 26/10)")
         assertTrue(svc.contains("setTelegramOffset("), "offset lưu bền, at-most-once (P2-10)")
         assertTrue(svc.contains("isInteractive") || svc.contains("interactive("), "không poll khi màn tắt (P1-8)")
         // P0-1: không throwable nào bị log (message = url+token); không in url/base() ra log.

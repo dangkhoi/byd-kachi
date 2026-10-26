@@ -954,6 +954,4 @@
     <string name="kachi_tg_test_ok">已向 Telegram 发送测试消息，请查看手机。</string>
     <string name="kachi_tg_test_fail">发送失败。请检查令牌、聊天 ID 和网络。</string>
     <string name="kachi_tg_test_incomplete">尚未配置。需启用 + 令牌 + 聊天 ID。</string>
-    <string name="kachi_tg_control_title">允许通过 Telegram 控制车辆</string>
-    <string name="kachi_tg_control_sub">允许通过 Telegram 使用 /ac、/defrost… 控制车辆。后备箱仍只在车速为 0 时打开。</string>
 </resources>

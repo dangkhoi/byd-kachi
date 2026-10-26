@@ -31,8 +31,6 @@ object CtlSafetyPolicy {
      * Gồm: cốp (`trunk`), nóc (`sunroof`), rèm (`sunshade`), kính mở-hết / đóng-hết (`windows_all`,
      * `windows_close_all`), từng kính (`win_lf`,`win_rf`,`win_lr`,`win_rr`) và kính nửa (`win_half_*`).
      * ⚠ KHÔNG gồm khoá/mở khoá cửa (`lock`/`door`) — tới 3.1.16 KDoc này ghi nhầm là có (senior review 26/10 P2-2).
-     * Telegram dùng tập này CHỈ để đòi nói rõ `open`/`close` (không lệnh mơ hồ); cổng tốc độ của Telegram là [blocked]
-     * như mọi đường khác (3.1.20, owner 26/10).
      *
      * ⚠ 1.85: `hood` rời danh sách vì **mã đã xoá khỏi registry** (xe không có ca-pô điện — [ĐO xe 2026-09-20 §4]),
      * không phải vì nó bớt nguy hiểm. Khoá trẻ em (`child_lock`/`child_lock_r`) CỐ Ý không vào đây: nó khoá *chốt
@@ -72,9 +70,8 @@ object CtlSafetyPolicy {
     /** Control [id] chỉ được MỞ khi xe đang dừng (0 km/h) không — xem [REQUIRES_STATIONARY]. */
     fun requiresStationary(id: String): Boolean = id in REQUIRES_STATIONARY
 
-    // TELEGRAM-REMOTE: 3.1.15–3.1.19 có cổng riêng cho lệnh từ điện thoại (mọi bộ phận chuyển động, bắt số P). Owner
-    // 26/10 trên xe: *"xe đang đậu, về P"* mà kính/cốp vẫn bị từ chối, và *"chỉ cốp mới cần 0 km/h, các cái khác đâu có
-    // cần"* ⇒ GỠ (3.1.20). Telegram nay đi đúng [blocked] như chạm/giọng/phím — qua `VoiceControlDispatch.run`.
+    // TELEGRAM-REMOTE: 3.1.15–3.1.20 cho điều khiển xe từ Telegram (có cổng riêng). 3.1.21 (owner 26/10: "không đọc
+    // ghi gì vào xe hết") ⇒ Telegram chỉ còn dẫn đường + nhạc, không dùng lớp này nữa.
 
     /** Ảnh chụp chuyển động cho cổng: [speedKmh] / [gear] thô như [CarStatus.Drivetrain] (`null` = không đọc được). */
     data class Motion(val speedKmh: Int?, val gear: String?)

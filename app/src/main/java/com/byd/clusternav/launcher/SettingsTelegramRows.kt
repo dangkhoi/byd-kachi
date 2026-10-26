@@ -101,11 +101,6 @@ internal class SettingsTelegramRows(
                         })
                 }
             })
-            body.addView(rows.checkRow(
-                on = bridge.telegramControlEnabled(),
-                title = context.getString(R.string.kachi_tg_control_title),
-                sub = context.getString(R.string.kachi_tg_control_sub),
-            ) { on -> bridge.setTelegramControlEnabled(on) })
         }
     }
 

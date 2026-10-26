@@ -142,7 +142,6 @@ class SettingsCatalogControlContractTest {
             "telegram_enabled" to ("SettingsTelegramRows" to "setTelegramEnabled("),
             "telegram_bot_token" to ("SettingsTelegramRows" to "setTelegramToken("),
             "telegram_chat_id" to ("SettingsTelegramRows" to "setTelegramChatId("),
-            "telegram_control_enabled" to ("SettingsTelegramRows" to "setTelegramControlEnabled("),
             // ── 6 · Chiếu màn lên cụm ──
             "cast_enabled" to ("SettingsSectionsCast" to "bridge.setCastEnabled("),
             // UX-OVERHAUL WP6 · R6.1 — công tắc HIỆN nút nổi; dấu vết là lời gọi ghi cờ (hành vi), không phải nhãn.

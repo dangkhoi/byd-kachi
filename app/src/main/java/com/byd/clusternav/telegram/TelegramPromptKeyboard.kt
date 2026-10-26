@@ -3,9 +3,7 @@ package com.byd.clusternav.telegram
 import android.content.Context
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.launcher.telegram.MapsShareLink
-import com.byd.clusternav.launcher.telegram.TelegramCallback
 import com.byd.clusternav.launcher.telegram.TelegramReplyKeyboard
-import com.byd.clusternav.launcher.telegram.TelegramUpdate
 import com.byd.clusternav.setTelegramKbVersion
 import com.byd.clusternav.telegramKbVersion
 
@@ -22,21 +20,6 @@ internal fun ensureReplyKeyboard(app: Context, api: TelegramApi, chatId: Long) {
     if (Prefs.telegramKbVersion(app) >= TelegramReplyKeyboard.VERSION) return
     val ok = api.sendMessage(chatId, "⌨️ Quick buttons are now below the text box.", TelegramReplyKeyboard.markup())
     if (ok) Prefs.setTelegramKbVersion(app, TelegramReplyKeyboard.VERSION)
-}
-
-/**
- * Nút inline gọi lời nhắc: `music:song` ⇒ "gõ tên bài", `nav:new` ⇒ "gõ điểm đến". Trả `true` khi đã xử (chỗ gọi dừng).
- * Không ghi xe ⇒ không qua công tắc điều khiển; nonce cũ vẫn cho (chỉ là một câu hỏi, không thi hành gì).
- */
-internal fun handlePromptButton(api: TelegramApi, u: TelegramUpdate, cb: TelegramCallback): Boolean {
-    val (prompt, hint) = when {
-        cb.domain == "music" && cb.action == "song" -> TelegramReplyKeyboard.SONG_PROMPT to "Song name or link"
-        cb.domain == "nav" && cb.action == "new" -> TelegramReplyKeyboard.DEST_PROMPT to "Destination"
-        else -> return false
-    }
-    u.callbackId?.let { api.answerCallback(it) }
-    u.chatId?.let { api.sendMessage(it, prompt, TelegramReplyKeyboard.forceReply(hint)) }
-    return true
 }
 
 /**

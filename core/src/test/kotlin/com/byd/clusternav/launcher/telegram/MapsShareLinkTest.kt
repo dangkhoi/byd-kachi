@@ -40,5 +40,6 @@ class MapsShareLinkTest {
         assertEquals(TelegramCommand.Nav(link), TelegramUpdateParser.parseText("Nacasoo Hill\n$link"))
         assertEquals(TelegramCommand.Nav(link), TelegramUpdateParser.parseText("/go $link"))
         assertTrue(TelegramUpdateParser.parseText("/play https://youtu.be/x") is TelegramCommand.Music)
+        assertEquals(TelegramCommand.Nav(link, apps = listOf("vietmap")), TelegramUpdateParser.parseText("$link vietmap"))
     }
 }

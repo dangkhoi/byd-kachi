@@ -17,17 +17,12 @@ import com.byd.clusternav.telegramConfig
  */
 
 fun ClusterNavBridge.telegramEnabled(): Boolean = Prefs.telegramConfig(app).enabled
-fun ClusterNavBridge.telegramControlEnabled(): Boolean = Prefs.telegramConfig(app).controlEnabled
 fun ClusterNavBridge.telegramToken(): String = Prefs.telegramConfig(app).botToken
 fun ClusterNavBridge.telegramChatId(): String = Prefs.telegramConfig(app).allowedChatId.let { if (it == 0L) "" else it.toString() }
 
 fun ClusterNavBridge.setTelegramEnabled(on: Boolean) {
     Prefs.setTelegramConfig(app, Prefs.telegramConfig(app).copy(enabled = on))
     TelegramBridgeService.sync(app)
-}
-
-fun ClusterNavBridge.setTelegramControlEnabled(on: Boolean) {
-    Prefs.setTelegramConfig(app, Prefs.telegramConfig(app).copy(controlEnabled = on))
 }
 
 fun ClusterNavBridge.setTelegramToken(token: String) {

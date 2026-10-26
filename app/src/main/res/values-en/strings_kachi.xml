@@ -1081,6 +1081,4 @@
     <string name="kachi_tg_test_ok">Sent a test message to Telegram. Check your phone.</string>
     <string name="kachi_tg_test_fail">Could not send. Check token, chat ID and network.</string>
     <string name="kachi_tg_test_incomplete">Not configured yet. Needs enabled + token + chat ID.</string>
-    <string name="kachi_tg_control_title">Allow car control via Telegram</string>
-    <string name="kachi_tg_control_sub">Allow /ac, /defrost… to control the car from Telegram. The boot still only opens at 0 km/h.</string>
 </resources>

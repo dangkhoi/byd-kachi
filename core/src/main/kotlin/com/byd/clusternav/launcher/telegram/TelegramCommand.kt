@@ -1,59 +1,48 @@
 package com.byd.clusternav.launcher.telegram
 
 /**
- * Lệnh rút ra từ MỘT update Telegram — spec `docs/specs/kachi-telegram-remote.html` R6. Thuần Kotlin (`:core`,
- * cấm `android.*`) ⇒ kiểm off-car. Lớp `:app` ([com.byd...TelegramBridgeService]) thi hành; lớp này chỉ MÔ TẢ.
+ * Lệnh rút ra từ MỘT update Telegram. Thuần Kotlin (`:core`) ⇒ kiểm off-car; `:app` (`TelegramBridgeService`) thi hành.
  *
- * Lệnh TIẾNG ANH (owner 26/10, rules G4 — identifier máy đọc là English): tên NƠI trong [Nav.placeOrQuery] là
- * data người dùng ⇒ để tiếng Việt thoải mái.
+ * ## Phạm vi (owner 26/10, 3.1.21): CHỈ dẫn đường + nhạc
+ * *"không đọc ghi gì vào xe hết, an toàn data privacy, chỉ làm basic"* ⇒ không lệnh điều khiển xe, không gửi trạng thái
+ * xe về Telegram. Lệnh tiếng Anh; tên nơi / tên bài là data người dùng (tiếng Việt thoải mái).
  */
 sealed class TelegramCommand {
 
     /**
-     * Dẫn đường. [placeOrQuery] = tên nơi trong sổ địa chỉ HOẶC chữ địa chỉ/toạ độ trực tiếp; [coords] từ
-     * share-location 📍 (null nếu lệnh text). [apps] = app dẫn (rỗng ⇒ lớp `:app` dùng mặc định hồ sơ).
+     * Dẫn đường. [placeOrQuery] = tên nơi trong sổ địa chỉ, chữ địa chỉ, toạ độ, hoặc link chia sẻ Google Maps; [coords] từ
+     * share-location 📍. [apps] = app dẫn (`gmaps`/`vietmap`/`waze`), rỗng ⇒ app mặc định của hồ sơ.
      */
     data class Nav(val placeOrQuery: String, val coords: String? = null, val apps: List<String> = emptyList()) : TelegramCommand()
 
     /**
-     * Mở nhạc. [isQuery] = false ⇒ [text] là LINK http(s), lớp `:app` mở thẳng `ACTION_VIEW` (hệ tự chọn app theo
-     * URL: youtube.com → YouTube, music.youtube.com → YT Music). true ⇒ [text] là TÊN BÀI, lớp `:app` tìm trên
-     * App nhạc mặc định (`voice_music_default_app`), chưa đặt ⇒ lùi YouTube. Đang chạy ⇒ mở ngay (R8), chưa lên ⇒ pending.
+     * Nhạc. [isQuery] = false ⇒ [text] là LINK http(s) (app chọn theo host: YouTube / YT Music). true ⇒ TÊN BÀI, tìm trên
+     * [app] (`youtube`/`ytmusic`), `null` ⇒ App nhạc mặc định.
      */
-    data class Music(val text: String, val isQuery: Boolean = false) : TelegramCommand()
+    data class Music(val text: String, val isQuery: Boolean = false, val app: String? = null) : TelegramCommand()
 
-    /** Điều khiển xe (R9). [controlId] = id `ControlRegistry` đã xác thực; [value] theo nút (bật/tắt/mức). */
-    data class Control(val controlId: String, val value: Int?) : TelegramCommand()
-
-    /** `/go` trống ⇒ bot render nút chọn từ sổ địa chỉ (R7). */
+    /** `/go` trống · `/places` · nút 🧭 Go ⇒ bảng nơi đã lưu + ➕ New. */
     object ListPlaces : TelegramCommand()
+
+    /** Nút 🎵 Music ⇒ bot hỏi tên bài (ForceReply). */
+    object AskSong : TelegramCommand()
 
     /** `/cancel` ⇒ xoá điểm đến chờ. */
     object Cancel : TelegramCommand()
 
-    /** `/help` ⇒ bot liệt kê lệnh + nút. */
+    /** `/help` · nút ❓ Help ⇒ danh sách lệnh. */
     object Help : TelegramCommand()
 
-    /** `/menu` · `/start` ⇒ bot mở bảng điều khiển bấm nút (menu chính). */
+    /** `/start` · `/menu` ⇒ gửi lại bàn phím nút + hướng dẫn ngắn. */
     object Menu : TelegramCommand()
 
-    /** `/status` ⇒ mở menu + bảng trạng thái sống (giống /menu, nhấn mạnh trạng thái). */
-    object Status : TelegramCommand()
-
-    /**
-     * Nút bàn phím cố định ([TelegramReplyKeyboard]) ⇒ mở MỘT bảng nút inline ở cuối chat. [domain] ∈
-     * `nav`·`music`·`ac`·`seat`·`misc`·`menu` (`menu` = bảng chính + trạng thái).
-     */
-    data class Board(val domain: String) : TelegramCommand()
-
-    /** Không hiểu ⇒ bot báo + gợi ý `/help`. [raw] đã khử để log an toàn. */
+    /** Không hiểu ⇒ bot gợi ý `/help`. [raw] đã khử để log an toàn. */
     data class Unknown(val raw: String) : TelegramCommand()
 }
 
 /**
- * Một update đã phân tích: lệnh + con trỏ [updateId] (chống đọc trùng) + [chatId] (kiểm quyền) + [callbackId]
- * (để `answerCallbackQuery`) + [messageId] (id tin chứa bảng — để sửa/xoá bảng, QD-17). `null` khi update không
- * mang gì dùng được.
+ * Một update đã phân tích: lệnh + con trỏ [updateId] + [chatId] (kiểm quyền) + [callbackId] (để `answerCallbackQuery`) +
+ * [messageId] (tin chứa bảng nút, để sửa tại chỗ) + [rawCallback] (`callback_data` gốc).
  */
 data class TelegramUpdate(
     val updateId: Long,
@@ -61,6 +50,5 @@ data class TelegramUpdate(
     val command: TelegramCommand,
     val callbackId: String? = null,
     val messageId: Long? = null,
-    val rawCallback: String? = null,   // chuỗi callback_data gốc (menu mới parse bằng TelegramCallback ở :app)
-    val dateSec: Long? = null,         // `message.date` (giây UTC) của TIN GÕ; null với callback (Telegram không gửi giờ bấm)
+    val rawCallback: String? = null,
 )

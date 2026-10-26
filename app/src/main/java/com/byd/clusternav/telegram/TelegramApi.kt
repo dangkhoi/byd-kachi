@@ -58,7 +58,7 @@ class TelegramApi(private val botToken: String) {
      * **`null` khi LỖI** (mạng / HTTP ≠ 2xx / JSON hỏng / `ok=false`) — chỗ gọi phải lùi chờ, không hỏi lại ngay
      * (P1-2: token sai ⇒ 401 tức thì ⇒ vòng không nghỉ sẽ dội Telegram). Con trỏ: chỗ gọi đặt `offset = max(update_id)+1`.
      */
-    fun getUpdates(offset: Long, timeoutSec: Int, isControlId: (String) -> Boolean): List<TelegramUpdate>? {
+    fun getUpdates(offset: Long, timeoutSec: Int): List<TelegramUpdate>? {
         val body = call(
             "getUpdates",
             "offset=$offset&timeout=$timeoutSec&allowed_updates=%5B%22message%22,%22callback_query%22%5D",
@@ -71,7 +71,7 @@ class TelegramApi(private val botToken: String) {
             (0 until arr.length()).mapNotNull { i ->
                 val o = arr.optJSONObject(i) ?: return@mapNotNull null
                 // Một update hỏng KHÔNG được kẹt con trỏ: trả Unknown không chủ (chatId null ⇒ bị bỏ, offset vẫn tiến).
-                runCatching { parseUpdate(o, isControlId) }.getOrElse {
+                runCatching { parseUpdate(o) }.getOrElse {
                     o.optLong("update_id", -1).takeIf { it >= 0 }?.let { id -> TelegramUpdate(id, null, TelegramCommand.Unknown("")) }
                 }
             }
@@ -82,7 +82,7 @@ class TelegramApi(private val botToken: String) {
     }
 
     /** Bóc MỘT update JSON → [TelegramUpdate] (nghĩa lệnh do `:core` quyết). Chỉ nhận chat RIÊNG TƯ (P2-11). */
-    private fun parseUpdate(u: JSONObject, isControlId: (String) -> Boolean): TelegramUpdate? {
+    private fun parseUpdate(u: JSONObject): TelegramUpdate? {
         val updateId = u.optLong("update_id", -1).takeIf { it >= 0 } ?: return null
         // callback_query (nút bấm) — lấy id người bấm (from.id) để kiểm quyền, không chỉ chat.id (P2-11).
         u.optJSONObject("callback_query")?.let { cq ->
@@ -103,19 +103,18 @@ class TelegramApi(private val botToken: String) {
         // Chỉ nhận chat RIÊNG TƯ: bot trong group thì mọi thành viên không được lái xe (P2-11).
         if (msg.optJSONObject("chat")?.optString("type", "private") != "private") return null
         val fromId = msg.optJSONObject("from")?.optLong("id")
-        val dateSec = msg.optLong("date", 0L).takeIf { it > 0 }     // P0-1: tuổi tin cho cổng lệnh xe (TelegramFreshness)
         // share-location 📍
         msg.optJSONObject("location")?.let { loc ->
             val lat = loc.optDouble("latitude", Double.NaN)
             val lng = loc.optDouble("longitude", Double.NaN)
             if (!lat.isNaN() && !lng.isNaN()) {
-                return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseLocation(lat, lng), dateSec = dateSec)
+                return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseLocation(lat, lng))
             }
         }
         val text = msg.optString("text", "")
         // 3.1.20: tin trả lời lời nhắc của bot (ForceReply) ⇒ chữ của tin được trả lời quyết /play · /go.
         val replyTo = msg.optJSONObject("reply_to_message")?.optString("text", "")?.takeIf { it.isNotEmpty() }
-        return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseText(text, isControlId, replyTo), dateSec = dateSec)
+        return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseText(text, replyTo))
     }
 
     /** Gửi tin (text + inline keyboard tuỳ chọn). `false` khi lỗi. */

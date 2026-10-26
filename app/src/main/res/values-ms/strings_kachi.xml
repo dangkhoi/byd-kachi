@@ -954,6 +954,4 @@
     <string name="kachi_tg_test_ok">Mesej ujian dihantar ke Telegram. Semak telefon.</string>
     <string name="kachi_tg_test_fail">Gagal hantar. Semak token, ID sembang dan rangkaian.</string>
     <string name="kachi_tg_test_incomplete">Belum lengkap. Perlu dayakan + token + ID sembang.</string>
-    <string name="kachi_tg_control_title">Benarkan kawalan kereta melalui Telegram</string>
-    <string name="kachi_tg_control_sub">Benarkan /ac, /defrost… mengawal kereta dari Telegram. But masih hanya dibuka pada 0 km/j.</string>
 </resources>

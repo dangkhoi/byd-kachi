@@ -954,6 +954,4 @@
     <string name="kachi_tg_test_ok">ส่งข้อความทดสอบไป Telegram แล้ว ตรวจมือถือ</string>
     <string name="kachi_tg_test_fail">ส่งไม่สำเร็จ ตรวจโทเคน รหัสแชต และเครือข่าย</string>
     <string name="kachi_tg_test_incomplete">ยังตั้งค่าไม่ครบ ต้องเปิด + โทเคน + รหัสแชต</string>
-    <string name="kachi_tg_control_title">อนุญาตควบคุมรถผ่าน Telegram</string>
-    <string name="kachi_tg_control_sub">อนุญาตให้ /ac, /defrost… ควบคุมรถผ่าน Telegram ฝากระโปรงท้ายยังเปิดได้เฉพาะเมื่อรถหยุดนิ่ง (0 กม./ชม.)</string>
 </resources>
