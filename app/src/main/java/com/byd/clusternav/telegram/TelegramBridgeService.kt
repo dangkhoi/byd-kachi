@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * ## Phạm vi 3.1.21 (owner 26/10): CHỈ dẫn đường + nhạc
  * *"không đọc ghi gì vào xe hết, an toàn data privacy, chỉ làm basic"* ⇒ service này **không đọc HAL, không ghi HAL, không
  * gửi bất kỳ trạng thái xe nào về Telegram**. Nó chỉ: đặt điểm đến chờ (`PendingNavStore`, dẫn khi lên xe + có GPS — vòng
- * `AutomationService`), và mở app nhạc. Bài canh `TelegramScopeContractTest` chặn mọi đường xe quay lại.
+ * `AutomationService`), và mở app nhạc. Bài canh phạm vi ở `TelegramButtonsWiringContractTest` chặn mọi đường xe quay lại.
  *
  * Giữ từ các bản trước: không poll khi màn tắt, con trỏ `offset` bền ghi TRƯỚC khi thi hành (at-most-once), lùi chờ khi
  * lỗi, token không bao giờ vào log ([TelegramApi]).
@@ -197,8 +197,10 @@ class TelegramBridgeService : Service() {
                     TelegramMenu.places(cb.nonce, WorkspacePrefs(app).savedPlaces(), cb.id.toIntOrNull() ?: 0))
             }
             "go" -> {
-                val place = cb.id.toIntOrNull()?.let { WorkspacePrefs(app).savedPlaces().getOrNull(it) }
-                api.sendMessage(chatId, if (place == null) "place not found" else setDestination(app, place, listOf(Prefs.voiceNavDefaultApp(app))))
+                val places = WorkspacePrefs(app).savedPlaces()
+                val place = TelegramMenu.placeIndex(cb.id, places)?.let { places[it] }
+                api.sendMessage(chatId, if (place == null) "📍 Saved places changed — tap 🧭 Go for a fresh list"
+                    else setDestination(app, place, listOf(Prefs.voiceNavDefaultApp(app))))
             }
         }
     }

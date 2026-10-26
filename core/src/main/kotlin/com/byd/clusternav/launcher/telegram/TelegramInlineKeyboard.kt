@@ -7,7 +7,7 @@ object TelegramInlineKeyboard {
         appendLine("Kachi remote — navigation & music only:")
         appendLine("• Paste a Google Maps link — navigate (Google Maps)")
         appendLine("• Link + vietmap — Google Maps and VietMap")
-        appendLine("• Paste a YouTube / YT Music link — play it now")
+        appendLine("• Paste a YouTube / YT Music link — play it (screen off: plays when you board)")
         appendLine("/go <place>            — saved place or address, default app")
         appendLine("/go <place> gmaps vietmap — pick apps: gmaps · vietmap · waze")
         appendLine("/play <song>           — search & play on default music app")

@@ -64,16 +64,24 @@ fun ClusterNavBridge.telegramTestConnection(onResult: (Boolean?) -> Unit) {
 fun ClusterNavBridge.pendingDestinationSummary(): String =
     PendingNavStore.read(app)?.dest?.let { "${it.place.name} · ${it.appsEncoded}" } ?: ""
 
-/** Đặt điểm đến chờ từ một mục sổ địa chỉ (tên) + danh sách app; dựng vòng ưu tiên ngay. */
-fun ClusterNavBridge.setPendingDestination(place: SavedPlace, apps: List<String>) {
+/**
+ * Đặt điểm đến chờ từ một mục sổ địa chỉ + danh sách app; dựng vòng ưu tiên ngay. Trả `false` (không đặt) khi MỌI app chọn
+ * cần toạ độ (VietMap — [ĐO RE 23/09]) mà nơi chỉ có chữ: review 26/10 P1 — điểm đến đó không app nào mở được, vòng chờ sẽ
+ * thử lại 24 h trong im lặng. Màn Cài đặt chạy trên luồng UI nên không tra toạ độ ở đây; chỗ gọi nói cho người dùng.
+ */
+fun ClusterNavBridge.setPendingDestination(place: SavedPlace, apps: List<String>): Boolean {
+    val usable = if (place.hasCoords) apps
+        else apps.filterNot { com.byd.clusternav.launcher.voice.VoiceAppTargets.byKey(it)?.needsCoords == true }
+    if (usable.isEmpty()) return false
     val dest = PendingDestinations.of(
-        place.name, place.query, apps,
+        place.name, place.query, usable,
         if (place.hasCoords) "${place.lat}, ${place.lng}" else null,
-    ) ?: return
+    ) ?: return false
     // GPS mặc định BẮT BUỘC: chỉ bắt đầu dẫn khi có định vị (GpsAvailability trả true). Chưa cấp quyền /
     // chưa có fix (trong hầm, vừa nổ máy) ⇒ ScheduledNavApplier CHỜ, không dẫn mù — cùng luật với lịch.
     PendingNavStore.write(app, dest, requireGps = true)
     AutomationService.sync(app)
+    return true
 }
 
 fun ClusterNavBridge.clearPendingDestination() {

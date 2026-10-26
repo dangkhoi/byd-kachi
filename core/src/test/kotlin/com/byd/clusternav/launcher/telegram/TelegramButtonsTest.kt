@@ -29,7 +29,7 @@ class TelegramButtonsTest {
         val m = TelegramMenu.places(4, listOf(place("Nhà"), place("Công ty Đông Á"), place("Gym")))
         val b = buttons(m)
         assertEquals(listOf("Nhà", "Công ty Đông Á", "Gym", "➕ New destination"), b.map { it.first })
-        assertEquals(TelegramCallback(4, "nav", "go", "1"), b[1].second)
+        assertEquals(TelegramCallback(4, "nav", "go", TelegramMenu.placeId(1, place("Công ty Đông Á"))), b[1].second)
         assertEquals(TelegramCallback(4, "nav", "new"), b.last().second)
         assertFalse(b.any { it.second?.id?.contains("Đông") == true })
     }
@@ -40,8 +40,17 @@ class TelegramButtonsTest {
         assertTrue(p0.any { it.first == "⬇️ More (3)" && it.second == TelegramCallback(1, "nav", "page", "1") })
         assertEquals(8, p0.count { it.second?.action == "go" })
         val p1 = buttons(TelegramMenu.places(1, all, 1))
-        assertEquals(listOf("8", "9", "10"), p1.filter { it.second?.action == "go" }.map { it.second!!.id })
+        assertEquals(listOf(8, 9, 10), p1.filter { it.second?.action == "go" }.map { TelegramMenu.placeIndex(it.second!!.id, all) })
         assertTrue(p1.none { it.first.startsWith("⬇️") })
+    }
+
+    @Test fun `so dia chi doi sau khi gui bang - nut cu khong dan nham noi khac`() {
+        val before = listOf(place("Nhà"), place("Công ty"))
+        val id = TelegramMenu.placeId(1, before[1])
+        assertEquals(1, TelegramMenu.placeIndex(id, before))
+        assertEquals(null, TelegramMenu.placeIndex(id, listOf(place("Nhà"), place("Gym"))), "chỉ số 1 nay là Gym ⇒ từ chối")
+        assertEquals(null, TelegramMenu.placeIndex(id, listOf(place("Nhà"))), "mất nơi ⇒ từ chối")
+        assertEquals(null, TelegramMenu.placeIndex("rác", before))
     }
 
     @Test fun `so trong - van co New`() {

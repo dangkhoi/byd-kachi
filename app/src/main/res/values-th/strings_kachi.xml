@@ -943,9 +943,10 @@
     <string name="kachi_pending_pick">เลือกจุดหมายจากสมุดที่อยู่…</string>
     <string name="kachi_pending_clear">ล้างจุดหมายที่รออยู่</string>
     <string name="kachi_pending_no_places">สมุดที่อยู่ว่าง เพิ่มสถานที่ในสมุดที่อยู่ก่อน</string>
+    <string name="kachi_pending_need_coords">“%1$s” ไม่มีพิกัด VietMap จึงนำทางไม่ได้ เปลี่ยนแอปนำทางเริ่มต้นเป็น Google Maps หรือเพิ่มพิกัดให้สถานที่นี้</string>
     <string name="kachi_tg_title">ควบคุมผ่าน Telegram</string>
     <string name="kachi_tg_enabled_title">เปิดควบคุมผ่าน Telegram</string>
-    <string name="kachi_tg_enabled_sub">ส่งจุดหมาย เล่นเพลง หรือควบคุมรถจากมือถือผ่านบอต Telegram ขึ้นรถแล้วนำทางถูกทางทันที (ต้องมี GPS)</string>
+    <string name="kachi_tg_enabled_sub">ส่งจุดหมายหรือเพลงจากมือถือผ่านบอต Telegram (วางลิงก์ Google Maps / YouTube) ไม่อ่านและไม่ส่งข้อมูลรถ ขึ้นรถแล้วนำทางทันทีเมื่อมี GPS</string>
     <string name="kachi_tg_token">โทเคนบอต Telegram</string>
     <string name="kachi_tg_token_unset">ยังไม่ตั้ง</string>
     <string name="kachi_tg_chat">รหัสแชต Telegram</string>

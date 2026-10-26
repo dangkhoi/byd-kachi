@@ -66,7 +66,11 @@ internal class SettingsTelegramRows(
         ) { idx ->
             val place = places[idx]
             val apps = listOf(com.byd.clusternav.Prefs.voiceNavDefaultApp(context))
-            bridge.setPendingDestination(place, apps)
+            if (!bridge.setPendingDestination(place, apps)) {
+                SettingsDialogs.notice(context, context.getString(R.string.kachi_pending_title),
+                    context.getString(R.string.kachi_pending_need_coords, place.name))
+                return@pick
+            }
             rebuild()
         }
     }

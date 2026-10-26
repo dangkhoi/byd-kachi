@@ -15,9 +15,12 @@ class TelegramButtonsWiringContractTest {
 
     @Test
     fun `telegram khong doc khong ghi xe (pham vi owner 26-10)`() {
+        val coreDir = "../../../../../../../../core/src/main/kotlin/com/byd/clusternav/launcher/telegram"
+        val coreFiles = SourceRoots.path("$dir/$coreDir").toFile().listFiles { f -> f.name.endsWith(".kt") }!!.map { "$coreDir/${it.name}" }
+        assertTrue(coreFiles.size >= 6, "phải quét được cả nửa :core (thấy $coreFiles)")
         val files = SourceRoots.path(dir).toFile().listFiles { f -> f.name.endsWith(".kt") }!!.map { it.name } +
-            listOf("../launcher/ClusterNavBridgeTelegram.kt", "../launcher/SettingsTelegramRows.kt")
-        assertTrue(files.size >= 5, "phải quét được thư mục telegram/ (thấy $files)")
+            listOf("../launcher/ClusterNavBridgeTelegram.kt", "../launcher/SettingsTelegramRows.kt") + coreFiles
+        assertTrue(files.size >= 11, "phải quét được thư mục telegram/ (thấy $files)")
         val banned = listOf("AppContainer", "carControl", "readFresh", "readState", "VoiceControlDispatch", "CarStatus",
             "BydHal", "HalBinding", "ControlRegistry", "CtlSafetyPolicy", "MediaBridge", "carStatusRepository")
         files.forEach { f ->
@@ -56,6 +59,10 @@ class TelegramButtonsWiringContractTest {
         assertTrue(api.contains("\"reply_to_message\"") && api.contains("parseText(text, replyTo)"))
         val kb = code("TelegramPromptKeyboard.kt")
         assertTrue(kb.contains("if (ok) Prefs.setTelegramKbVersion"), "chỉ ghi phiên bản bàn phím khi gửi được")
+        val prefs = SourceRoots.codeOf("src/main/java/com/byd/clusternav/PrefsTelegram.kt")
+        assertTrue(prefs.contains("nowMs - at in 0..PENDING_MUSIC_TTL_MS"), "nhạc chờ hết hạn 24 h (review 26/10 P1)")
+        val bridge = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeTelegram.kt")
+        assertTrue(bridge.contains("if (usable.isEmpty()) return false"), "Cài đặt không đặt điểm đến mà VietMap không mở được")
         assertTrue(kb.contains("instanceFollowRedirects = false") && kb.contains("getHeaderField(\"Location\")"),
             "link rút gọn: chỉ đọc header chuyển hướng, không tải trang")
     }
