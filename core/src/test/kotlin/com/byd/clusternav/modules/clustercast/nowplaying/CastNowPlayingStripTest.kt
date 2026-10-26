@@ -92,7 +92,7 @@ class CastNowPlayingStripTest {
         assertEquals(CastNowPlayingCorner.BOTTOM_LEFT, CastNowPlayingCorner.parse("bl"))
         assertEquals(CastNowPlayingDefaults.CORNER, CastNowPlayingCorner.parse("zz"))
         assertEquals(CastNowPlayingDefaults.CORNER, CastNowPlayingCorner.parse(null))
-        assertEquals(listOf("tl", "tr", "bl", "br"), CastNowPlayingCorner.values().map { it.key })
+        assertEquals(listOf("tl", "tc", "tr", "bl", "br"), CastNowPlayingCorner.values().map { it.key })
     }
 
     @Test fun `khung - giao khung chieu voi dai nhin thay cua doi cum`() {
@@ -114,6 +114,19 @@ class CastNowPlayingStripTest {
         assertEquals(140 + m, bl.x); assertEquals(720 - 560 + m, bl.y)
         assertEquals(1640 - 2 * m, bl.maxWidth)
         assertEquals(30, bl.textPx)
+    }
+
+    @Test fun `giua tren - canh giua man cum, rong dung 1-3 man (owner 26-10)`() {
+        val f = CastBounds(140, 132, 1780, 560)
+        val a = CastNowPlayingPlace.anchor(CastNowPlayingCorner.TOP_CENTER, f, 1920, 720)
+        val m = (720 * CastNowPlayingPlace.MARGIN_FRAC).toInt()
+        assertTrue(a.centered && !a.right && !a.bottom)
+        assertEquals(640, a.fixedWidth, "1920 / 3")
+        assertEquals(640, a.maxWidth)
+        assertEquals(0, a.x, "canh giữa bằng gravity, không dịch")
+        assertEquals(132 + m, a.y, "mép trên của khung nhìn thấy")
+        assertEquals(CastNowPlayingCorner.TOP_CENTER, CastNowPlayingCorner.parse("tc"))
+        assertNull(CastNowPlayingPlace.anchor(CastNowPlayingCorner.TOP_RIGHT, f, 1920, 720).fixedWidth, "góc cũ giữ vừa chữ")
     }
 
     @Test fun `khung chieu theo trang thai phien`() {

@@ -932,6 +932,7 @@
     <string name="kachi_np_sub">Semasa memancar ke kluster, paparkan «♪ tajuk — artis» apl muzik yang sedang dimainkan di satu sudut bingkai pancaran (pancaran menutup kotak muzik kluster). Disembunyikan selepas 10 saat dijeda; tiada apa-apa dilakukan jika tidak memancar.</string>
     <string name="kachi_np_corner">Sudut</string>
     <string name="kachi_np_corner_tl">Atas kiri</string>
+    <string name="kachi_np_corner_tc">Atas tengah</string>
     <string name="kachi_np_corner_tr">Atas kanan</string>
     <string name="kachi_np_corner_bl">Bawah kiri</string>
     <string name="kachi_np_corner_br">Bawah kanan</string>
@@ -954,5 +955,5 @@
     <string name="kachi_tg_test_fail">Gagal hantar. Semak token, ID sembang dan rangkaian.</string>
     <string name="kachi_tg_test_incomplete">Belum lengkap. Perlu dayakan + token + ID sembang.</string>
     <string name="kachi_tg_control_title">Benarkan kawalan kereta melalui Telegram</string>
-    <string name="kachi_tg_control_sub">Benarkan /ac, /defrost… mengawal kereta melalui Telegram. But, tingkap dan bumbung suria hanya buka semasa berhenti.</string>
+    <string name="kachi_tg_control_sub">Benarkan /ac, /defrost… mengawal kereta dari Telegram. But masih hanya dibuka pada 0 km/j.</string>
 </resources>

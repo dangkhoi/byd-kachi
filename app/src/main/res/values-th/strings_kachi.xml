@@ -932,6 +932,7 @@
     <string name="kachi_np_sub">ขณะฉายภาพขึ้นหน้าปัด จะแสดง «♪ ชื่อเพลง — ศิลปิน» ของแอปเพลงที่กำลังเล่นที่มุมหนึ่งของกรอบฉาย (ภาพฉายบังช่องเพลงของหน้าปัด) หยุดเพลงเกิน 10 วินาทีจะซ่อนเอง ไม่ฉายภาพก็ไม่ทำอะไร</string>
     <string name="kachi_np_corner">มุม</string>
     <string name="kachi_np_corner_tl">ซ้ายบน</string>
+    <string name="kachi_np_corner_tc">กึ่งกลางบน</string>
     <string name="kachi_np_corner_tr">ขวาบน</string>
     <string name="kachi_np_corner_bl">ซ้ายล่าง</string>
     <string name="kachi_np_corner_br">ขวาล่าง</string>
@@ -954,5 +955,5 @@
     <string name="kachi_tg_test_fail">ส่งไม่สำเร็จ ตรวจโทเคน รหัสแชต และเครือข่าย</string>
     <string name="kachi_tg_test_incomplete">ยังตั้งค่าไม่ครบ ต้องเปิด + โทเคน + รหัสแชต</string>
     <string name="kachi_tg_control_title">อนุญาตควบคุมรถผ่าน Telegram</string>
-    <string name="kachi_tg_control_sub">อนุญาต /ac, /defrost… ควบคุมรถผ่าน Telegram ฝากระโปรงท้าย กระจก และซันรูฟยังเปิดได้เฉพาะตอนจอด</string>
+    <string name="kachi_tg_control_sub">อนุญาตให้ /ac, /defrost… ควบคุมรถผ่าน Telegram ฝากระโปรงท้ายยังเปิดได้เฉพาะเมื่อรถหยุดนิ่ง (0 กม./ชม.)</string>
 </resources>

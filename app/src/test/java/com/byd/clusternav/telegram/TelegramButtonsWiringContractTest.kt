@@ -61,10 +61,14 @@ class TelegramButtonsWiringContractTest {
     }
 
     @Test
-    fun `lenh xe tu menu di cong toc do NGOAI`() {
-        // dispatch* gọi runControl → runControl dùng blockedExternal (P0-2). Không mở đường ghi thứ hai.
+    fun `lenh xe tu Telegram di dung cong cua VoiceControlDispatch, khong cong rieng (3-1-20)`() {
+        // Owner 26/10 trên xe: cổng số P riêng của Telegram chặn kính/cốp khi xe đang đậu. Gỡ hẳn; cổng tốc độ duy nhất
+        // là CtlSafetyPolicy.blocked trong VoiceControlDispatch.run (chỉ cốp cần 0 km/h).
         val svc = code("TelegramBridgeService.kt")
-        assertTrue(svc.contains("blockedExternal("), "runControl phải qua cổng tốc độ NGOÀI")
+        assertTrue(svc.contains("VoiceControlDispatch(") && svc.contains("dispatch.run(VoiceIntent.Control("), "thi hành qua VoiceControlDispatch")
+        listOf("blockedExternal", "readMotionFull", "gear P").forEach { assertTrue(!svc.contains(it), "không còn cổng riêng: $it") }
+        val vcd = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/VoiceControlDispatch.kt")
+        assertTrue(vcd.contains("CtlSafetyPolicy.blocked(def.id, arg"), "cổng cốp 0 km/h nằm ở VoiceControlDispatch")
         val disp = code("TelegramMenuDispatch.kt")
         assertTrue(disp.contains("runControl(app"), "dispatch* thi hành control qua runControl (đường có sẵn)")
     }
@@ -100,18 +104,6 @@ class TelegramButtonsWiringContractTest {
         listOf("\"menu\"", "\"home\"", "\"office\"", "\"go\"", "\"play\"", "\"ac\"", "\"cancel\"", "\"status\"", "\"places\"").forEach {
             assertTrue(svc.contains(it), "MENU_COMMANDS phải có lệnh $it")
         }
-    }
-
-    @Test
-    fun `cong toc do NGOAI dung chieu - chan thi RETURN tu choi (review 26-10 M2)`() {
-        // Lượt review 26/10 đảo `if (blockedExternal)` thành `if (!blockedExternal)` mà 15 test vẫn xanh. Khoá HÌNH DẠNG:
-        // đúng một dòng gọi, không phủ định, và nhánh đúng là trả câu từ chối (không thi hành).
-        val svc = code("TelegramBridgeService.kt")
-        assertTrue(svc.contains("if (CtlSafetyPolicy.blockedExternal(c.controlId, arg, motion)) {"), "gọi cổng đúng chiều")
-        assertTrue(!svc.contains("!CtlSafetyPolicy.blockedExternal("), "không được phủ định cổng an toàn")
-        val branch = svc.substringAfter("if (CtlSafetyPolicy.blockedExternal(c.controlId, arg, motion)) {").take(160)
-        assertTrue(branch.trimStart().startsWith("return \""), "bị chặn ⇒ return câu từ chối NGAY")
-        assertTrue(svc.contains("CtlSafetyPolicy.readMotionFull("), "cổng ngoài cần cả số (P) lẫn tốc độ")
     }
 
     @Test
@@ -160,7 +152,7 @@ class TelegramButtonsWiringContractTest {
     fun `pha ve doc moi control mot lan (review 26-10 P2-6)`() {
         val svc = code("TelegramBridgeService.kt")
         assertTrue(svc.contains("withReadCache { renderBoard(app, cb, toast) }"), "vẽ bảng sau nút: gom đọc")
-        assertTrue(svc.contains("withReadCache { statusText(app) }"), "gửi menu: gom đọc")
+        assertTrue(svc.contains("withReadCache { renderBoard(app, TelegramCallback(n, domain, \"open\"), \"\", n) }"), "gửi bảng mới: gom đọc")
         val disp = code("TelegramMenuDispatch.kt")
         val read = disp.substringAfter("fun TelegramBridgeService.readCtl(").substringBefore("\n}\n")
         assertTrue(read.contains("cache.containsKey(id)") && read.contains("cache?.put(id, v)"), "readCtl dùng bộ nhớ của lượt vẽ")
@@ -179,5 +171,30 @@ class TelegramButtonsWiringContractTest {
         assertTrue(files.size > 50, "phải quét được thư mục launcher (tìm thấy ${files.size} tệp)")
         val hits = files.filter { bad.containsMatchIn(com.byd.clusternav.testsupport.SourceRoots.codeOf("$dir/${it.name}")) }.map { it.name }
         assertTrue(hits.isEmpty(), "statusRow được truyền chuỗi không phải mã màu ở: $hits")
+    }
+
+    @Test
+    fun `play ten bai mo thang video bai dau (chuyen bai ca khi dang phat - owner 26-10)`() {
+        // MEDIA_PLAY_FROM_SEARCH bị app ĐANG PHÁT bỏ qua ⇒ "báo đã play mà vẫn hát bài cũ". Đi đường watch như giọng nói.
+        val svc = code("TelegramBridgeService.kt")
+        val body = svc.substringAfter("private fun playQuery(").substringBefore("private fun playPendingMusicIfInteractive")
+        assertTrue(body.contains("VoiceAppIntents.watchHandoff(") && body.contains("VoiceYoutubeResolver.firstVideoIdBounded("),
+            "playQuery phải giải video_id rồi mở URL watch")
+        assertTrue(body.indexOf("watchHandoff(") < body.indexOf("Intent(launch.action)"), "watch TRƯỚC, search chỉ là đường lùi")
+    }
+
+    @Test
+    fun `ban phim nut duoi o go - gui mot lan, nut mo bang, loi nhac thanh lenh`() {
+        val svc = code("TelegramBridgeService.kt")
+        val handle = svc.substringAfter("private fun handleUpdate(").substringBefore("private fun backoffMs(")
+        assertTrue(handle.contains("ensureReplyKeyboard(app, api,"), "mọi update hợp lệ đảm bảo bàn phím đã gửi")
+        assertTrue(handle.indexOf("handlePromptButton(") in 0 until handle.indexOf("handleMenuCallback("), "🔎 Song / ➕ New trước menu")
+        assertTrue(svc.contains("is TelegramCommand.Board -> sendBoard(app, api, chatId, c.domain)"), "nút bàn phím mở bảng")
+        val api = code("TelegramApi.kt")
+        assertTrue(api.contains("\"reply_to_message\"") && api.contains("parseText(text, isControlId, replyTo)"),
+            "tin trả lời lời nhắc phải mang chữ của lời nhắc vào bộ phân tích")
+        val kb = code("TelegramPromptKeyboard.kt")
+        assertTrue(kb.contains("TelegramReplyKeyboard.VERSION") && kb.contains("if (ok) Prefs.setTelegramKbVersion"),
+            "chỉ ghi phiên bản bàn phím khi gửi được")
     }
 }

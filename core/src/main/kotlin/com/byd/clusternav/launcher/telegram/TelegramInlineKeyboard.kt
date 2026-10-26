@@ -19,7 +19,7 @@ object TelegramInlineKeyboard {
         appendLine("/play <link>           — play (YouTube / YT Music by URL)")
         appendLine("/play <song name>      — search on default music app")
         appendLine("/ac on · /defrost on · /fan 3 · /temp 22 — car controls")
-        appendLine("/trunk open · /windows_all close — only when parked (gear P)")
+        appendLine("/trunk open (only at 0 km/h) · /windows_all close")
         append("/status · /cancel · /help")
     }
 }

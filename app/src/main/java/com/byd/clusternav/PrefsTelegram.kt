@@ -22,6 +22,7 @@ private const val K_TG_OFFSET = "telegram_offset"        // con trỏ getUpdates
 private const val K_TG_PENDING_MUSIC = "telegram_pending_music"  // link nhạc chờ (một-lần) — R8/P1-9
 private const val K_TG_PINNED = "telegram_pinned_places"  // tên 2 nơi ghim hàng nhanh (QD-04), ngăn bằng '\n'
 private const val K_TG_NONCE = "telegram_board_nonce"    // nonce bảng SỐNG (bền — bảng cũ sau tắt/mở xe không hồi sinh), P1-2
+private const val K_TG_KB_VERSION = "telegram_kb_version"  // phiên bản bàn phím nút đã gửi (TelegramReplyKeyboard.VERSION)
 private const val K_TG_BOARD_MSG = "telegram_board_msg"  // message_id bảng điều khiển sống (một-bảng-sống QD-17)
 
 fun Prefs.telegramConfig(ctx: Context): TelegramConfig {
@@ -77,3 +78,7 @@ fun Prefs.telegramBoardMsg(ctx: Context): Long = Prefs.sp(ctx).getLong(K_TG_BOAR
 fun Prefs.setTelegramBoardMsg(ctx: Context, id: Long) {
     Prefs.sp(ctx).edit().putLong(K_TG_BOARD_MSG, id).apply()
 }
+
+/** Phiên bản bàn phím nút dưới ô gõ đã gửi cho chat (0 = chưa gửi). Thấp hơn [TelegramReplyKeyboard.VERSION] ⇒ gửi lại. */
+fun Prefs.telegramKbVersion(ctx: Context): Int = Prefs.sp(ctx).getInt(K_TG_KB_VERSION, 0)
+fun Prefs.setTelegramKbVersion(ctx: Context, v: Int) { Prefs.sp(ctx).edit().putInt(K_TG_KB_VERSION, v).apply() }

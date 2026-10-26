@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.setTelegramKbVersion
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.automation.AutomationService
 import com.byd.clusternav.automation.PendingNavStore
@@ -52,7 +53,12 @@ fun ClusterNavBridge.telegramTestConnection(onResult: (Boolean?) -> Unit) {
     if (!cfg.ready) { onResult(null); return }
     val main = android.os.Handler(android.os.Looper.getMainLooper())
     Thread({
-        val ok = runCatching { TelegramApi(cfg.botToken).sendMessage(cfg.allowedChatId, "✅ Kachi connected") }.getOrDefault(false)
+        // 3.1.20: tin thử mang luôn bàn phím nút dưới ô gõ (TelegramReplyKeyboard) ⇒ chủ xe có nút ngay sau khi nối.
+        val ok = runCatching {
+            TelegramApi(cfg.botToken).sendMessage(cfg.allowedChatId, "✅ Kachi connected — buttons are below the text box",
+                com.byd.clusternav.launcher.telegram.TelegramReplyKeyboard.markup())
+        }.getOrDefault(false)
+        if (ok) Prefs.setTelegramKbVersion(app, com.byd.clusternav.launcher.telegram.TelegramReplyKeyboard.VERSION)
         main.post { onResult(ok) }
     }, "KachiTgTest").apply { isDaemon = true }.start()
 }

@@ -1059,6 +1059,7 @@
     <string name="kachi_np_sub">While casting to the cluster, shows «♪ title — artist» of the playing music app in a corner of the cast frame (the cast covers the cluster\'s music box). Hides after 10 seconds of pause; does nothing when not casting.</string>
     <string name="kachi_np_corner">Corner</string>
     <string name="kachi_np_corner_tl">Top left</string>
+    <string name="kachi_np_corner_tc">Top middle</string>
     <string name="kachi_np_corner_tr">Top right</string>
     <string name="kachi_np_corner_bl">Bottom left</string>
     <string name="kachi_np_corner_br">Bottom right</string>
@@ -1081,5 +1082,5 @@
     <string name="kachi_tg_test_fail">Could not send. Check token, chat ID and network.</string>
     <string name="kachi_tg_test_incomplete">Not configured yet. Needs enabled + token + chat ID.</string>
     <string name="kachi_tg_control_title">Allow car control via Telegram</string>
-    <string name="kachi_tg_control_sub">Allow /ac, /defrost… to control the car from Telegram. The boot, windows and sunroof still only open when stopped.</string>
+    <string name="kachi_tg_control_sub">Allow /ac, /defrost… to control the car from Telegram. The boot still only opens at 0 km/h.</string>
 </resources>

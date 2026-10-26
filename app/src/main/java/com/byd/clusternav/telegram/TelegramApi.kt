@@ -113,7 +113,9 @@ class TelegramApi(private val botToken: String) {
             }
         }
         val text = msg.optString("text", "")
-        return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseText(text, isControlId), dateSec = dateSec)
+        // 3.1.20: tin trả lời lời nhắc của bot (ForceReply) ⇒ chữ của tin được trả lời quyết /play · /go.
+        val replyTo = msg.optJSONObject("reply_to_message")?.optString("text", "")?.takeIf { it.isNotEmpty() }
+        return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseText(text, isControlId, replyTo), dateSec = dateSec)
     }
 
     /** Gửi tin (text + inline keyboard tuỳ chọn). `false` khi lỗi. */

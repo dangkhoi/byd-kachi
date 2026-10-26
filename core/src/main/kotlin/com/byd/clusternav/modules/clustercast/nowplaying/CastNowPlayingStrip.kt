@@ -30,8 +30,10 @@ object CastNowPlayingDefaults {
 }
 
 /** Góc của khung chiếu. [key] là chuỗi lưu bền (ASCII, không đổi). */
-enum class CastNowPlayingCorner(val key: String, val right: Boolean, val bottom: Boolean) {
+enum class CastNowPlayingCorner(val key: String, val right: Boolean, val bottom: Boolean, val center: Boolean = false) {
     TOP_LEFT("tl", right = false, bottom = false),
+    /** 3.1.20 (owner 26/10): giữa mép trên của màn cụm, bề ngang CỐ ĐỊNH = 1/3 bề ngang màn ([CastNowPlayingPlace.CENTER_WIDTH_FRAC]). */
+    TOP_CENTER("tc", right = false, bottom = false, center = true),
     TOP_RIGHT("tr", right = true, bottom = false),
     BOTTOM_LEFT("bl", right = false, bottom = true),
     BOTTOM_RIGHT("br", right = true, bottom = true);
@@ -127,7 +129,13 @@ object CastNowPlayingText {
 object CastNowPlayingPlace {
 
     /** Neo cửa sổ: [right]/[bottom] = gravity RIGHT/BOTTOM, [x]/[y] = khoảng cách tới mép đó (đúng nghĩa `WindowManager`). */
-    data class Anchor(val right: Boolean, val bottom: Boolean, val x: Int, val y: Int, val maxWidth: Int, val textPx: Int)
+    data class Anchor(
+        val right: Boolean, val bottom: Boolean, val x: Int, val y: Int, val maxWidth: Int, val textPx: Int,
+        /** Canh giữa ngang theo DISPLAY (gravity CENTER_HORIZONTAL, [x] = 0) với bề ngang cố định [fixedWidth]. */
+        val centered: Boolean = false,
+        /** Bề ngang cửa sổ cố định (px); `null` = vừa chữ (tới [maxWidth]). */
+        val fixedWidth: Int? = null,
+    )
 
     /** Khung chiếu của phiên: FULL ⇒ khung đã ghim/đang áp; chia đôi ⇒ hợp hai ô; còn lại / không khung ⇒ `null` (trọn display). */
     fun castFrame(state: SimpleCastState?): CastBounds? = when (state) {
@@ -152,6 +160,12 @@ object CastNowPlayingPlace {
 
     fun anchor(corner: CastNowPlayingCorner, frame: CastBounds, displayW: Int, displayH: Int): Anchor {
         val margin = (displayH * MARGIN_FRAC).toInt()
+        val textPx = (displayH * TEXT_FRAC).toInt().coerceAtLeast(MIN_TEXT_PX)
+        if (corner.center) {
+            val w = (displayW * CENTER_WIDTH_FRAC).toInt().coerceAtLeast(1)
+            return Anchor(right = false, bottom = false, x = 0, y = (frame.top + margin).coerceAtLeast(0),
+                maxWidth = w, textPx = textPx, centered = true, fixedWidth = w)
+        }
         val x = if (corner.right) displayW - frame.right + margin else frame.left + margin
         val y = if (corner.bottom) displayH - frame.bottom + margin else frame.top + margin
         return Anchor(
@@ -170,6 +184,8 @@ object CastNowPlayingPlace {
 
     /** Cỡ chữ theo chiều cao display (720 ⇒ 30 px) — không theo DPI chiếu (người lái đổi DPI app, không đổi dải). */
     const val TEXT_FRAC = 0.042f
+    /** Bề ngang dải ở [CastNowPlayingCorner.TOP_CENTER] = phần này của bề ngang màn cụm (owner 26/10: 1/3). */
+    const val CENTER_WIDTH_FRAC = 1.0 / 3
     const val MARGIN_FRAC = 0.022f
     const val MIN_TEXT_PX = 14
 }

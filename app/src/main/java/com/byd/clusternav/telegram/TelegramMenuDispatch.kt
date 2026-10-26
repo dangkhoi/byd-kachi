@@ -106,7 +106,7 @@ internal fun TelegramBridgeService.dispatchMisc(app: Context, cb: TelegramCallba
     "open" -> ""
     "readl" -> runControl(app, TelegramCommand.Control("readl", if (cb.id == "on") 1 else 0))
     "pm25" -> runControl(app, TelegramCommand.Control("pm25", if (cb.id == "on") 1 else 0))
-    // Cổng tốc độ NGOÀI (blockedExternal trong runControl): xe không ở số P ⇒ câu từ chối.
+    // Cốp: cổng 0 km/h của VoiceControlDispatch (qua runControl). Kính: không cổng tốc độ — như chạm/giọng nói.
     "trunk" -> runControl(app, TelegramCommand.Control("trunk", if (cb.id == "on") 1 else 0))
     "windows" -> runControl(app, TelegramCommand.Control("windows_all", if (cb.id == "on") 1 else 0))
     else -> ""
@@ -176,8 +176,7 @@ internal fun TelegramBridgeService.pinnedPlaces(app: Context): List<com.byd.clus
  * Dựng (text trạng thái sống + markup) cho một bảng theo callback. markup null ⇒ không vẽ lại. [toast] = kết quả
  * lệnh vừa thi hành, chèn vào cuối dòng trạng thái (P2-2: kết quả thật về người dùng).
  */
-internal fun TelegramBridgeService.renderBoard(app: Context, cb: TelegramCallback, toast: String): Pair<String, String?> {
-    val n = boardNonce(app)
+internal fun TelegramBridgeService.renderBoard(app: Context, cb: TelegramCallback, toast: String, n: Int = boardNonce(app)): Pair<String, String?> {
     val places = WorkspacePrefs(app).savedPlaces()
     val status = statusText(app) + (if (toast.isNotBlank()) "\n↳ $toast" else "")
     return when {

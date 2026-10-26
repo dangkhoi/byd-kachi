@@ -932,6 +932,7 @@
     <string name="kachi_np_sub">投屏到仪表盘时，在投屏画面的一个角显示正在播放的音乐应用的“♪ 歌名 — 歌手”（投屏会遮住仪表盘的音乐栏）。暂停超过 10 秒自动隐藏；不投屏时不做任何事。</string>
     <string name="kachi_np_corner">位置</string>
     <string name="kachi_np_corner_tl">左上</string>
+    <string name="kachi_np_corner_tc">顶部居中</string>
     <string name="kachi_np_corner_tr">右上</string>
     <string name="kachi_np_corner_bl">左下</string>
     <string name="kachi_np_corner_br">右下</string>
@@ -954,5 +955,5 @@
     <string name="kachi_tg_test_fail">发送失败。请检查令牌、聊天 ID 和网络。</string>
     <string name="kachi_tg_test_incomplete">尚未配置。需启用 + 令牌 + 聊天 ID。</string>
     <string name="kachi_tg_control_title">允许通过 Telegram 控制车辆</string>
-    <string name="kachi_tg_control_sub">允许 /ac、/defrost 等通过 Telegram 控制车辆。后备箱、车窗和天窗仍仅在停车时打开。</string>
+    <string name="kachi_tg_control_sub">允许通过 Telegram 使用 /ac、/defrost… 控制车辆。后备箱仍只在车速为 0 时打开。</string>
 </resources>

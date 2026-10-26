@@ -153,18 +153,20 @@ object CastNowPlayingOverlay {
             v.text = CastNowPlayingText.display(c)        // chữ ĐẦY ĐỦ — tràn khung thì marquee chạy (owner 17/10: không cắt)
             v.setTextSize(TypedValue.COMPLEX_UNIT_PX, anchor.textPx.toFloat())
             v.maxWidth = anchor.maxWidth
+            v.gravity = if (anchor.centered) Gravity.CENTER else Gravity.CENTER_VERTICAL or Gravity.START
             val padH = anchor.textPx * 6 / 10
             val padV = anchor.textPx * 3 / 10
             v.setPadding(padH, padV, padH, padV)
             paint(v, anchor.textPx)
             val lp = WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
+                anchor.fixedWidth ?: WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 PixelFormat.TRANSLUCENT,
             ).apply {
-                gravity = (if (anchor.right) Gravity.RIGHT else Gravity.LEFT) or (if (anchor.bottom) Gravity.BOTTOM else Gravity.TOP)
+                gravity = (if (anchor.centered) Gravity.CENTER_HORIZONTAL else if (anchor.right) Gravity.RIGHT else Gravity.LEFT) or
+                    (if (anchor.bottom) Gravity.BOTTOM else Gravity.TOP)
                 x = anchor.x
                 y = anchor.y
             }

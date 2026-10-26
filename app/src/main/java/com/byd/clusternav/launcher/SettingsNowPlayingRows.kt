@@ -23,6 +23,7 @@ internal class SettingsNowPlayingRows(
         ) { on -> bridge().setCastNowPlayingEnabled(on) })
         val labels = mapOf(
             CastNowPlayingCorner.TOP_LEFT to R.string.kachi_np_corner_tl,
+            CastNowPlayingCorner.TOP_CENTER to R.string.kachi_np_corner_tc,
             CastNowPlayingCorner.TOP_RIGHT to R.string.kachi_np_corner_tr,
             CastNowPlayingCorner.BOTTOM_LEFT to R.string.kachi_np_corner_bl,
             CastNowPlayingCorner.BOTTOM_RIGHT to R.string.kachi_np_corner_br,

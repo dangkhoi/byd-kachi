@@ -56,7 +56,8 @@ object TelegramMenu {
         row(btn("− fan", TelegramCallback(nonce, "ac", "fandn")),            // P2-8: −/+ quạt cho mức lẻ
             btn("fan ${fan ?: "—"}", TelegramCallback(nonce, "ac", "noop")),
             btn("+ fan", TelegramCallback(nonce, "ac", "fanup"))),
-        row(btn("🌬 Defrost: ${onOff(defrostOn)}", TelegramCallback(nonce, "ac", "defrost", if (defrostOn == true) "off" else "on"))),
+        row(btn(mark("🌬 Defrost On", defrostOn == true), TelegramCallback(nonce, "ac", "defrost", "on")),
+            btn(mark("🌬 Off", defrostOn == false), TelegramCallback(nonce, "ac", "defrost", "off"))),
         row(btn("‹ Menu", TelegramCallback(nonce, "menu", "main"))),
     )
 
@@ -81,7 +82,9 @@ object TelegramMenu {
         row(btn("⏮ Prev", TelegramCallback(nonce, "music", "prev")),
             btn(if (playing == true) "⏸ Pause" else "▶️ Play", TelegramCallback(nonce, "music", if (playing == true) "pause" else "resume")),
             btn("⏭ Next", TelegramCallback(nonce, "music", "next"))),
-        row(btn("‹ Menu", TelegramCallback(nonce, "menu", "main"))),
+        // 3.1.20: bấm ⇒ bot nhắc gõ tên bài (ForceReply) ⇒ câu trả lời thành /play <tên>.
+        row(btn("🔎 Song", TelegramCallback(nonce, "music", "song")),
+            btn("‹ Menu", TelegramCallback(nonce, "menu", "main"))),
     )
 
     /** Bảng Dẫn đường (§4.6): phân trang 6 nơi/trang, 2 nút/hàng, GPS ở status (QD-10/12/13). */
@@ -96,6 +99,8 @@ object TelegramMenu {
             }.joinToString(",") + "]"
         }
         val nextCount = places.size - (start + slice.size)
+        // 3.1.20: ➕ New ⇒ bot nhắc gõ điểm đến (ForceReply) ⇒ câu trả lời thành /go <chữ>.
+        rows += row(btn("➕ New destination", TelegramCallback(nonce, "nav", "new")))
         val footer = mutableListOf(btn("‹ Menu", TelegramCallback(nonce, "menu", "main")))
         if (nextCount > 0) footer += btn("⬇️ More ($nextCount)", TelegramCallback(nonce, "page", "nav", (page + 1).toString()))
         rows += "[" + footer.joinToString(",") + "]"
@@ -112,8 +117,12 @@ object TelegramMenu {
 
     /** Bảng Khác (§4.9 R9, QD-22): đèn đọc + PM2.5 + bộ phận cổng-tốc-độ (cốp/kính/nóc) — nhãn mang trạng thái. */
     fun misc(nonce: Int, readLightOn: Boolean?, pm25On: Boolean?): String = markup(
-        row(btn("💡 Read light: ${onOff(readLightOn)}", TelegramCallback(nonce, "misc", "readl", if (readLightOn == true) "off" else "on")),
-            btn("🌫 PM2.5: ${onOff(pm25On)}", TelegramCallback(nonce, "misc", "pm25", if (pm25On == true) "off" else "on"))),
+        // 3.1.20 (owner 26/10: "mở đèn đọc được mà không tắt được"): đèn đọc KHÔNG có đường đọc ⇒ trạng thái luôn "—" ⇒
+        // nút đảo bật/tắt cũ chỉ gửi BẬT. Nay mỗi việc hai nút TUYỆT ĐỐI On / Off (QD-05), trạng thái chỉ là nhãn.
+        row(btn(mark("💡 Read light On", readLightOn == true), TelegramCallback(nonce, "misc", "readl", "on")),
+            btn(mark("💡 Off", readLightOn == false), TelegramCallback(nonce, "misc", "readl", "off"))),
+        row(btn(mark("🌫 PM2.5 On", pm25On == true), TelegramCallback(nonce, "misc", "pm25", "on")),
+            btn(mark("🌫 Off", pm25On == false), TelegramCallback(nonce, "misc", "pm25", "off"))),
         // Cổng tốc độ: NÚT VẪN HIỆN (QD-20), bấm lúc chạy ⇒ toast "only when stopped". Phải nói rõ open/close (R9).
         row(btn("🧳 Trunk open", TelegramCallback(nonce, "misc", "trunk", "on")),
             btn("🧳 Trunk close", TelegramCallback(nonce, "misc", "trunk", "off"))),
@@ -135,7 +144,6 @@ object TelegramMenu {
     }
 
     private fun mark(label: String, on: Boolean) = if (on) "$label ✓" else label
-    private fun onOff(b: Boolean?): String = when (b) { true -> "ON"; false -> "OFF"; null -> "—" }
 
     private val TEMP_PRESETS = listOf(20, 22, 24, 26)
     private val FAN_PRESETS = listOf("Off" to 0, "Low 2" to 2, "Mid 4" to 4, "High 6" to 6)

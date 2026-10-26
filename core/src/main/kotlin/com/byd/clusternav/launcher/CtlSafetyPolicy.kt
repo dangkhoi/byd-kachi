@@ -31,8 +31,8 @@ object CtlSafetyPolicy {
      * Gồm: cốp (`trunk`), nóc (`sunroof`), rèm (`sunshade`), kính mở-hết / đóng-hết (`windows_all`,
      * `windows_close_all`), từng kính (`win_lf`,`win_rf`,`win_lr`,`win_rr`) và kính nửa (`win_half_*`).
      * ⚠ KHÔNG gồm khoá/mở khoá cửa (`lock`/`door`) — tới 3.1.16 KDoc này ghi nhầm là có (senior review 26/10 P2-2).
-     * Hệ quả cần biết: [requiresStationaryExternal] tái dùng tập này nên lệnh `door`/`lock` từ Telegram KHÔNG bị cổng
-     * tốc độ (mở khoá không bung gì ra ngoài) — chúng vẫn sau công tắc "cho phép điều khiển xe" + cổng tin cũ.
+     * Telegram dùng tập này CHỈ để đòi nói rõ `open`/`close` (không lệnh mơ hồ); cổng tốc độ của Telegram là [blocked]
+     * như mọi đường khác (3.1.20, owner 26/10).
      *
      * ⚠ 1.85: `hood` rời danh sách vì **mã đã xoá khỏi registry** (xe không có ca-pô điện — [ĐO xe 2026-09-20 §4]),
      * không phải vì nó bớt nguy hiểm. Khoá trẻ em (`child_lock`/`child_lock_r`) CỐ Ý không vào đây: nó khoá *chốt
@@ -72,33 +72,9 @@ object CtlSafetyPolicy {
     /** Control [id] chỉ được MỞ khi xe đang dừng (0 km/h) không — xem [REQUIRES_STATIONARY]. */
     fun requiresStationary(id: String): Boolean = id in REQUIRES_STATIONARY
 
-    /**
-     * ═══ TELEGRAM-REMOTE (2026-10-26) · cổng tốc độ cho lệnh TỪ NGOÀI (điện thoại) ═══════════════════════════
-     *
-     * Lệnh từ màn hình (chạm/giọng/phím) có **ngón tay người lái trên xe** nên mở kính lúc chạy là việc bình
-     * thường (xem KDoc [REQUIRES_STATIONARY]). Lệnh từ Telegram KHÔNG có ai ngồi sau màn xác nhận: người ngồi sau
-     * (hoặc chính chủ xe ở nhà) bấm một nút trên điện thoại, và nó bung cửa sổ trời / hạ kính ở 100 km/h mà tài xế
-     * không hề biết. Nên cổng tốc độ cho nguồn NGOÀI rộng bằng cả họ bộ-phận-chuyển-động [CONFIRM_REQUIRED] —
-     * đúng điều chuỗi UI `kachi_tg_control_sub` hứa với chủ xe ("Cốp, kính, cửa sổ trời vẫn chỉ mở khi xe dừng").
-     *
-     * Vẫn MỘT nguồn danh sách: tái dùng [CONFIRM_REQUIRED] (bộ phận bung/che tầm nhìn), không khai tập thứ ba.
-     */
-    fun requiresStationaryExternal(id: String): Boolean = id in CONFIRM_REQUIRED
-
-    /**
-     * Như [blocked] nhưng cho lệnh TỪ NGOÀI (Telegram): tập rộng bằng [CONFIRM_REQUIRED] và phép chứng-minh-đứng CHẶT
-     * hơn ([provenParkedExternal] — phải ở số P). Senior review 26/10 P2-1: `tốc độ == 0` một mình cho qua lúc dừng đèn
-     * đỏ ở số D, mà người bấm trên điện thoại không thấy xe ⇒ cốp bung giữa ngã tư rồi xe chạy tiếp.
-     */
-    fun blockedExternal(id: String, arg: Int, motion: () -> Motion): Boolean =
-        requiresStationaryExternal(id) && arg > 0 && !provenParkedExternal(motion())
-
-    /**
-     * Xe CHỨNG MINH đỗ cho lệnh ngoài: số đọc được là P **và** tốc độ (nếu đọc được) bằng 0. Số không đọc được ⇒ chặn
-     * (fail-safe). Cần [readMotionFull] — [readMotion] bỏ đọc số khi đã có tốc độ.
-     */
-    fun provenParkedExternal(m: Motion): Boolean =
-        parked(m.gear) == true && (m.speedKmh == null || m.speedKmh == 0)
+    // TELEGRAM-REMOTE: 3.1.15–3.1.19 có cổng riêng cho lệnh từ điện thoại (mọi bộ phận chuyển động, bắt số P). Owner
+    // 26/10 trên xe: *"xe đang đậu, về P"* mà kính/cốp vẫn bị từ chối, và *"chỉ cốp mới cần 0 km/h, các cái khác đâu có
+    // cần"* ⇒ GỠ (3.1.20). Telegram nay đi đúng [blocked] như chạm/giọng/phím — qua `VoiceControlDispatch.run`.
 
     /** Ảnh chụp chuyển động cho cổng: [speedKmh] / [gear] thô như [CarStatus.Drivetrain] (`null` = không đọc được). */
     data class Motion(val speedKmh: Int?, val gear: String?)
@@ -134,14 +110,6 @@ object CtlSafetyPolicy {
             CarStatusTap.apply(runCatching { fresh(id) }.getOrNull() ?: snapshot()).drivetrain
         val s = read("speed")
         return if (s.speedKmh != null) Motion(s.speedKmh, s.gear) else Motion(null, read("gear").gear)
-    }
-
-    /** Như [readMotion] nhưng LUÔN đọc số (cổng ngoài [provenParkedExternal] cần số P kể cả khi có tốc độ). */
-    fun readMotionFull(fresh: (String) -> CarStatus?, snapshot: () -> CarStatus): Motion {
-        fun read(id: String): CarStatus.Drivetrain =
-            CarStatusTap.apply(runCatching { fresh(id) }.getOrNull() ?: snapshot()).drivetrain
-        val s = read("speed")
-        return Motion(s.speedKmh, s.gear ?: read("gear").gear)
     }
 
     /** Xe CHỨNG MINH được là đứng yên: tốc độ đọc được bằng 0; không có tốc độ thì số đọc được là P. */

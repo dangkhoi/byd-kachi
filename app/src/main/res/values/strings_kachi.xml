@@ -1087,6 +1087,7 @@
     <string name="kachi_np_sub">Khi đang chiếu lên cụm, hiện «♪ tên bài — nghệ sĩ» của app đang phát nhạc ở một góc khung chiếu (mặt chiếu che ô nhạc của cụm). Dừng nhạc hơn 10 giây thì tự ẩn; không chiếu thì không làm gì.</string>
     <string name="kachi_np_corner">Góc</string>
     <string name="kachi_np_corner_tl">Trái trên</string>
+    <string name="kachi_np_corner_tc">Giữa trên</string>
     <string name="kachi_np_corner_tr">Phải trên</string>
     <string name="kachi_np_corner_bl">Trái dưới</string>
     <string name="kachi_np_corner_br">Phải dưới</string>
@@ -1109,5 +1110,5 @@
     <string name="kachi_tg_test_fail">Không gửi được. Kiểm token, chat ID và mạng.</string>
     <string name="kachi_tg_test_incomplete">Chưa đủ cấu hình. Cần bật + có token + có chat ID.</string>
     <string name="kachi_tg_control_title">Cho phép điều khiển xe qua Telegram</string>
-    <string name="kachi_tg_control_sub">Cho phép /ac, /defrost… điều khiển xe từ Telegram. Cốp, kính, cửa sổ trời vẫn chỉ mở khi xe dừng.</string>
+    <string name="kachi_tg_control_sub">Cho phép /ac, /defrost… điều khiển xe từ Telegram. Cốp vẫn chỉ mở khi xe đứng yên (0 km/h).</string>
 </resources>

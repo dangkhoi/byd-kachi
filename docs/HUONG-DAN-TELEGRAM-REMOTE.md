@@ -1,9 +1,9 @@
 # Hướng dẫn: Điều khiển Kachi từ xa qua Telegram
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-10-26 · **Bản**: Kachi 3.1.19 (224) — bản cá nhân, KHÔNG OTA
+> **Trạng thái**: Current · **Cập nhật**: 2026-10-26 · **Bản**: Kachi 3.1.20 (225) — bản cá nhân, KHÔNG OTA
 > **Mục đích**: Từ điện thoại, gửi điểm đến / mở nhạc / điều khiển xe qua một bot Telegram. Lên xe là Kachi tự dẫn đúng đường ngay khi có GPS; đang ngồi sau cũng bấm điều khiển mà không phiền tài xế.
 
-APK: `apk/Kachi-3.1.19-CHUA-DANG.apk` (sha256 `52d1b7ba…`, chỉ nằm trên máy dựng — **không** vào git, tên tệp cố ý không khớp kênh OTA). Bản nén để chuyển đi: `~/Desktop/Kachi-3.1.19-CHUA-DANG.zip` (24 MB, giải nén ra đúng tệp APK trên). Cài đè bản cũ bằng `adb install -r` — **giữ nguyên dữ liệu** (cùng khoá ký).
+APK: `apk/Kachi-3.1.20-CHUA-DANG.apk` (sha256 `eebe4c91…`, chỉ nằm trên máy dựng — **không** vào git, tên tệp cố ý không khớp kênh OTA). Bản nén để chuyển đi: `~/Desktop/Kachi-3.1.20-CHUA-DANG.zip` (24 MB, giải nén ra đúng tệp APK trên). Cài đè bản cũ bằng `adb install -r` — **giữ nguyên dữ liệu** (cùng khoá ký).
 
 ---
 
@@ -52,18 +52,23 @@ Xong. Khi màn đầu xe đang sáng, Kachi giữ một kết nối chờ tin v�
 
 ## Phần 3 — Cách dùng (gửi lệnh cho bot)
 
+> **Bàn phím nút dưới ô gõ (3.1.20)** — sau khi bấm *Kiểm tra kết nối* (hoặc gửi bot bất kỳ tin nào), dưới ô gõ có sẵn 6 nút: **🧭 Go · 🎵 Music · ❄️ AC · 🪑 Seat · 🌫 More · 📊 Status**. Nhấn là mở đúng bảng, không cần gõ lệnh.
+> - **🎵 Music** → ⏮ ⏯ ⏭ cho bài đang phát + **🔎 Song**: nhấn Song, bot hỏi tên bài, gõ tên (hoặc dán link) là phát.
+> - **🧭 Go** → các nơi đã lưu + **➕ New destination**: nhấn New, bot hỏi điểm đến, gõ tên / địa chỉ / toạ độ là đặt.
+> - **Dán link chia sẻ Google Maps** (nút *Chia sẻ* trong Google Maps → Telegram, hoặc `/go <link>`) → dẫn tới nơi đó. Link Google không có toạ độ nên Kachi lấy **tên + địa chỉ** cho Google Maps tự tra; VietMap không dùng được với link này.
+
 > **Cách DỄ NHẤT: gõ `/menu`** — bot hiện **bảng nút bấm**, mọi thứ chọn bằng cách nhấn, không phải nhớ lệnh (bản 3.1.16+). Đầu bảng là **trạng thái sống** (xe nối/GPS/điều hoà/ghế/điểm đến/nhạc). Bố cục:
 > - Hàng nhanh: 🏠 **nơi ghim 1** · 🏢 **nơi ghim 2** · ❄️ **Cool 24°** (bật AUTO + 24° + quạt 4 một chạm)
 > - Nhóm: 🧭 Navigate · ❄️ AC · 🎵 Music · 🪑 Seat · 🌫 More · 🔄 Refresh (vẽ lại trạng thái)
 > - **AC**: bấm 20°/22°/24°/26° (hoặc −/+), quạt Off/Low/Mid/High, AUTO, sấy kính
 > - **Music**: ⏮ ⏸/▶️ ⏭ điều khiển nhạc **đang phát** (bản 3.1.16+)
 > - **Seat**: Cool 1/2 · Heat 1/2 · Tắt (ghế chỉ có 3 mức Tắt/1/2) — cho ghế lái + phụ
-> - **More**: đèn đọc · lọc bụi PM2.5 · mở/đóng cốp · mở/đóng hết kính (cốp/kính chỉ mở khi xe ở số P)
+> - **More**: đèn đọc On/Off · lọc bụi PM2.5 On/Off · mở/đóng cốp (cốp chỉ mở khi 0 km/h) · mở/đóng hết kính
 > - Gõ **`/places`** để ghim nơi vào hàng nhanh (nút 📌). Gõ **`/`** để Telegram gợi ý 9 lệnh.
 >
 > Sau mỗi lần bấm, dòng **↳** dưới trạng thái là **câu trả lời của chính xe** (vd *"Đã đặt Nhiệt độ = 24"*). Cốp/kính chạy mô-tơ lâu nên có thể chỉ ra *"sent, no confirmation from the car yet"* — nghĩa là lệnh đã gửi, chưa đọc lại được kết quả.
 >
-> Mọi nút là **lệnh tuyệt đối** (bấm "24°" là đúng 24°, bấm lại vẫn 24° — an toàn khi mạng chập chờn). Cốp/kính chỉ mở khi xe ở số P, dù bấm nút. Sau mỗi lệnh gõ, bot đưa lại bảng nút xuống cuối chat (nếu bạn đã mở `/menu`).
+> Mọi nút là **lệnh tuyệt đối** (bấm "24°" là đúng 24°, bấm lại vẫn 24° — an toàn khi mạng chập chờn). Cốp chỉ mở khi xe đứng yên (0 km/h). Sau mỗi lệnh gõ, bot đưa lại bảng nút xuống cuối chat (nếu bạn đã mở `/menu`).
 
 Nhắn thẳng vào bot trên Telegram. **Lệnh bắt đầu bằng `/`**, tiếng Anh; **tên nơi để tiếng Việt thoải mái**.
 
@@ -86,9 +91,9 @@ Nhắn thẳng vào bot trên Telegram. **Lệnh bắt đầu bằng `/`**, ti�
 | Gửi | Kachi làm |
 |---|---|
 | `/play https://youtube.com/...` | Mở nhạc từ **link** — hệ tự chọn app theo URL: `youtube.com` → YouTube, `music.youtube.com` → YT Music. Xe đang chạy → mở ngay; chưa lên → đặt chờ. |
-| `/play Chúng ta của hiện tại` | Gửi **tên bài** (không phải link) → tìm trên **App nhạc mặc định** (Cài đặt → Giọng nói → *App nhạc mặc định*); chưa đặt → mặc định YouTube. |
+| `/play Chúng ta của hiện tại` | Gửi **tên bài** (không phải link) → YouTube / YT Music mở thẳng **bài đầu tiên tìm được** và chuyển bài ngay cả khi đang phát bài khác (3.1.20). App nhạc mặc định ở Cài đặt → Giọng nói → *App nhạc mặc định*; chưa đặt → YouTube. |
 
-Link chỉ nhận `http(s)`. Tên bài mở ở màn tìm kiếm của app nhạc (bấm Play nếu app không tự phát).
+Link chỉ nhận `http(s)`. Không tìm được bài (mạng xe chậm) → mở màn tìm kiếm của app nhạc, bấm Play tay.
 
 ### 3.3 Điều khiển xe *(cần bật "Cho phép điều khiển xe")*
 | Gửi | Kachi làm |
@@ -101,7 +106,7 @@ Link chỉ nhận `http(s)`. Tên bài mở ở màn tìm kiếm của app nhạ
 | `/readlight on` | Đèn đọc sách |
 | `/filter on` | Lọc bụi PM2.5 |
 
-**An toàn**: cốp, cửa kính, cửa sổ trời **chỉ mở khi xe đang ở số P** (đỗ hẳn) — dừng đèn đỏ ở số D cũng **không** mở, vì người bấm trên điện thoại không thấy xe. Không đọc được số thì cũng không mở. **Đóng** thì luôn được. Và các bộ phận chuyển động này **bắt buộc nói rõ** `open`/`close` (vd `/trunk open`), không nhận lệnh mơ hồ.
+**An toàn** (3.1.20 — cùng luật với chạm/giọng nói): chỉ **cốp** cần xe đứng yên (0 km/h); kính, cửa sổ trời mở bình thường. **Đóng** thì luôn được. Và các bộ phận chuyển động này **bắt buộc nói rõ** `open`/`close` (vd `/trunk open`), không nhận lệnh mơ hồ.
 
 ### 3.4 Khác
 | Gửi | Kachi làm |
@@ -127,8 +132,9 @@ Link chỉ nhận `http(s)`. Tên bài mở ở màn tìm kiếm của app nhạ
 
 ## Giới hạn & lưu ý
 
-- **Bản cá nhân, KHÔNG OTA** — chỉ cài tay bằng `adb install -r apk/Kachi-3.1.19-CHUA-DANG.apk` (hoặc giải nén file zip trên Desktop rồi cài).
+- **Bản cá nhân, KHÔNG OTA** — chỉ cài tay bằng `adb install -r apk/Kachi-3.1.20-CHUA-DANG.apk` (hoặc giải nén file zip trên Desktop rồi cài).
 - **VietMap + địa chỉ chữ chưa dẫn được** (xem bảng 3.1) — điểm đến đó nằm chờ, thử lại mỗi phút trong 24 giờ mà không báo. Dùng `gmaps` hoặc gửi toạ độ.
+- **Dải tên bài trên cụm** (Cài đặt › Dẫn đường) có thêm vị trí **Giữa trên**: chính giữa mép trên màn cụm, rộng 1/3 màn.
 - ⚠ **Bản 3.1.18 sập khi mở Cài đặt › Dẫn đường & cụm đồng hồ** (lỗi màu ở mục Telegram) — đã sửa ở 3.1.19, cài đè bản mới.
 - **Chưa đo trên xe thật** — mọi thứ đã kiểm off-car + máy ảo + test xanh; hành vi GPS/polling/điều khiển trên đầu xe BYD cần chính bạn test thực tế.
 - Token Telegram = chìa khoá điều khiển xe. Để lộ = người khác điều khiển được. Mất điện thoại → vào Cài đặt Kachi tắt "Bật điều khiển qua Telegram", hoặc `/revoke` token ở @BotFather.

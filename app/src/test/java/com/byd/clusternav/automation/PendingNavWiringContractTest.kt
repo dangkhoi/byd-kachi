@@ -40,7 +40,7 @@ class PendingNavWiringContractTest {
     fun `cong toc do NGOAI + token khong lot log + offset ben`() {
         val svc = code("telegram/TelegramBridgeService.kt")
         val api = code("telegram/TelegramApi.kt")
-        assertTrue(svc.contains("blockedExternal("), "lệnh xe từ Telegram đi cổng tốc độ NGOÀI (P0-2)")
+        assertTrue(!svc.contains("blockedExternal("), "Telegram không còn cổng tốc độ riêng (3.1.20) — dùng cổng của VoiceControlDispatch")
         assertTrue(svc.contains("needsConfirm(c.controlId) && c.value == null"), "bộ phận chuyển động phải nói rõ mở/đóng (P0-2)")
         assertTrue(svc.contains("setTelegramOffset("), "offset lưu bền, at-most-once (P2-10)")
         assertTrue(svc.contains("isInteractive") || svc.contains("interactive("), "không poll khi màn tắt (P1-8)")

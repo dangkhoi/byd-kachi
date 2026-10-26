@@ -40,6 +40,12 @@ sealed class TelegramCommand {
     /** `/status` ⇒ mở menu + bảng trạng thái sống (giống /menu, nhấn mạnh trạng thái). */
     object Status : TelegramCommand()
 
+    /**
+     * Nút bàn phím cố định ([TelegramReplyKeyboard]) ⇒ mở MỘT bảng nút inline ở cuối chat. [domain] ∈
+     * `nav`·`music`·`ac`·`seat`·`misc`·`menu` (`menu` = bảng chính + trạng thái).
+     */
+    data class Board(val domain: String) : TelegramCommand()
+
     /** Không hiểu ⇒ bot báo + gợi ý `/help`. [raw] đã khử để log an toàn. */
     data class Unknown(val raw: String) : TelegramCommand()
 }

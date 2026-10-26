@@ -30,9 +30,17 @@ object TelegramUpdateParser {
      * @param isControlId trả `true` nếu chuỗi là id control hợp lệ trong `ControlRegistry` — tiêm từ `:app` để
      *   `:core` không phải mang bộ đăng ký điều khiển vào mình (cùng lối `VoiceWiring` tiêm bảng app).
      */
-    fun parseText(raw: String, isControlId: (String) -> Boolean = { false }): TelegramCommand {
+    fun parseText(raw: String, isControlId: (String) -> Boolean = { false }, replyToText: String? = null): TelegramCommand {
         val text = raw.trim()
         if (text.isEmpty()) return TelegramCommand.Unknown("")
+        // 3.1.20: trả lời lời nhắc "gõ tên bài / điểm đến" (ForceReply) ⇒ đúng lệnh /play · /go; nút bàn phím ⇒ mở bảng.
+        TelegramReplyKeyboard.answerOf(text, replyToText)?.let { return parseText(it, isControlId) }
+        TelegramReplyKeyboard.boardOf(text)?.let { return TelegramCommand.Board(it) }
+        // 3.1.20: dán link chia sẻ Google Maps (kể cả không gõ /go — "Chia sẻ" của Google Maps gửi kèm tên nơi + link) ⇒
+        // dẫn tới đó. `:app` mở link rút gọn rồi đọc tên/toạ độ ([MapsShareLink]). Lệnh / khác vẫn thắng (vd /play <link>).
+        if (!text.startsWith("/") || text.startsWith("/go ") || text.startsWith("/nav ")) {
+            MapsShareLink.find(text)?.let { return TelegramCommand.Nav(it) }
+        }
         // Tách lệnh: "/go Office" → verb="go", rest="Office". KHÔNG có "/" ⇒ Unknown (P1-7: một tin nhắn lạc
         // tay như "ok thanks" KHÔNG được biến thành điểm đến chờ + chặn lịch cả chuyến). Muốn dẫn thì phải /go.
         if (!text.startsWith("/")) return TelegramCommand.Unknown(SavedPlaces.sanitize(text))

@@ -10,35 +10,17 @@ import org.junit.jupiter.api.Test
  */
 class CtlSafetyPolicyTest {
 
-    // TELEGRAM-REMOTE (2026-10-26) — cổng tốc độ NGOÀI (senior review P0-2).
-    private fun moving() = { CtlSafetyPolicy.Motion(speedKmh = 100, gear = "D") }
-    private fun stopped() = { CtlSafetyPolicy.Motion(speedKmh = 0, gear = "P") }
+    // 3.1.20 (owner 26/10): Telegram KHÔNG còn cổng riêng — mọi đường dùng [CtlSafetyPolicy.blocked]: chỉ CỐP cần 0 km/h.
+    private fun at(kmh: Int?, gear: String?) = { CtlSafetyPolicy.Motion(speedKmh = kmh, gear = gear) }
 
-    @Test fun `lenh ngoai telegram mo noc-kinh bi chan khi dang chay`() {
-        listOf("sunroof", "windows_all", "win_lf", "trunk").forEach { id ->
-            assertTrue(CtlSafetyPolicy.blockedExternal(id, 1, moving()), "lệnh ngoài mở '$id' ở 100 km/h phải bị chặn")
-            assertFalse(CtlSafetyPolicy.blockedExternal(id, 1, stopped()), "lệnh ngoài mở '$id' khi dừng phải cho qua")
-            assertFalse(CtlSafetyPolicy.blockedExternal(id, 0, moving()), "ĐÓNG '$id' luôn được, kể cả đang chạy")
+    @Test fun `chi cop can 0 kmh - kinh noc khong bi cong toc do`() {
+        assertTrue(CtlSafetyPolicy.blocked("trunk", 1, at(100, "D")), "mở cốp lúc chạy phải bị chặn")
+        assertFalse(CtlSafetyPolicy.blocked("trunk", 1, at(0, "P")), "đậu ở P, 0 km/h ⇒ mở cốp được")
+        assertFalse(CtlSafetyPolicy.blocked("trunk", 0, at(100, "D")), "ĐÓNG cốp luôn được")
+        listOf("windows_all", "win_lf", "sunroof", "readl", "ac_auto").forEach { id ->
+            assertFalse(CtlSafetyPolicy.blocked(id, 1, at(100, "D")), "'$id' không bị cổng tốc độ (owner 26/10)")
         }
-    }
-
-    @Test fun `cong ngoai doi so P - dung den do so D van chan (review 26-10 P2-1)`() {
-        val redLight = { CtlSafetyPolicy.Motion(speedKmh = 0, gear = "D") }
-        val gearUnknown = { CtlSafetyPolicy.Motion(speedKmh = 0, gear = null) }
-        val rawParked = { CtlSafetyPolicy.Motion(speedKmh = 0, gear = "3") }       // mã HAL thô GEAR_P = 3
-        listOf("trunk", "sunroof", "windows_all").forEach { id ->
-            assertTrue(CtlSafetyPolicy.blockedExternal(id, 1, redLight), "0 km/h ở số D (đèn đỏ) — lệnh ngoài mở '$id' phải bị chặn")
-            assertTrue(CtlSafetyPolicy.blockedExternal(id, 1, gearUnknown), "không đọc được số — fail-safe chặn '$id'")
-            assertFalse(CtlSafetyPolicy.blockedExternal(id, 1, rawParked), "số P (mã 3) + 0 km/h — cho '$id'")
-        }
-        // Đường CHẠM giữ luật cũ (có ngón tay người lái): 0 km/h ở D vẫn mở cốp được.
-        assertFalse(CtlSafetyPolicy.blocked("trunk", 1, redLight), "đường chạm không đổi luật")
-    }
-
-    @Test fun `cong ngoai KHONG chan nut khi hau du dang chay`() {
-        listOf("ac_auto", "readl", "fan", "temp").forEach { id ->
-            assertFalse(CtlSafetyPolicy.blockedExternal(id, 1, moving()), "nút không bung/che tầm nhìn '$id' không bị cổng tốc độ chặn")
-        }
+        assertEquals(setOf("trunk"), CtlSafetyPolicy.REQUIRES_STATIONARY)
     }
 
     @Test fun `moi ma trong denylist deu la control THAT`() {
