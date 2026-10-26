@@ -238,6 +238,11 @@
 <li><b>P3</b>: gỡ mã chết <code>placesKeyboard</code>/<code>parseCallback</code>/<code>ackText</code>/<code>deleteMessage</code> · <code>/home</code>/<code>/office</code> không lùi nơi đầu sổ · nonce chỉ ghi khi gửi bảng được · không log tên nơi.</li>
 </ul>
 <b>Hoãn (ledger):</b> toast kết quả thật của <code>VoiceReadback</code> (bất đồng bộ, có từ nhánh cha) · gom đọc HAL một lượt/callback · ghế sưởi mức 3–4 không đánh ✓ · pin toggle. [ĐO] <code>:core</code> 5695/0 · <code>:app</code> 2523/0 · lint 0 · đột biến M2 (đảo cổng app) · M3 (bỏ cổng tin cũ) · M4 (cổng ngoài lùi về tốc-độ-0) đều ĐỎ, khôi phục bằng bản sao, shasum khớp.</li>
+<li><b>Pass 3 — 2026-10-26 19h · 2 việc hoãn của Pass 2</b> (owner chốt sửa luôn; ghế chỉ 3 mức Tắt/1/2 ⇒ việc dấu ✓ cho mức 3–4 không còn cần) ⇒ <b>3.1.18 (223)</b>:
+<ul>
+<li><b>P2-2</b> câu trả lời thật: <code>runControl</code> chờ câu đầu tiên của <code>VoiceReadback</code> (<code>CountDownLatch</code>, trần <code>CTL_REPLY_WAIT_MS</code> = 2,5 s trên luồng polling); quá trần ⇒ "sent, no confirmation from the car yet". Mọi nút ac/seat/misc trả câu của xe (bỏ câu cố định kiểu <code>.let { "…" }</code>). Bot nói tiếng Anh (OQ3).</li>
+<li><b>P2-6</b> gom đọc HAL: <code>withReadCache</code> bọc pha VẼ (bảng sau nút + gửi menu) ⇒ mỗi control đọc một lần; pha ghi và −/+ vẫn đọc tươi.</li>
+</ul>[ĐO] <code>:core</code> 5695/0 · <code>:app</code> 2525/0 · lint 0 · đột biến M5 (bỏ chờ) · M6 (nút vứt câu của xe) · M7 (bỏ gom đọc) đều ĐỎ, khôi phục bằng bản sao, shasum khớp.</li>
 </ul>
 
 </body>

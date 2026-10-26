@@ -64,6 +64,18 @@ class TelegramBridgeService : Service() {
 
     /** Nonce bảng sống đọc từ prefs (P1-2 bền). Nút của bảng cũ (nonce khác) ⇒ không thi hành (R-nf2). */
     internal fun boardNonce(app: Context): Int = Prefs.telegramBoardNonce(app)
+    /**
+     * Review 26/10 P2-6: một lần vẽ bảng từng đọc ~11 lượt HAL (dòng trạng thái + bảng con đọc trùng nhau), vượt ngân
+     * sách đọc đã đo trên xe (`CarControlPort.readState` KDoc: 33 lượt/phút). Trong [withReadCache] mỗi control chỉ
+     * đọc MỘT lần. Chỉ dùng cho pha VẼ (sau khi đã ghi xe) — pha ghi và −/+ luôn đọc tươi. Chỉ luồng polling chạm.
+     */
+    internal var readCache: HashMap<String, Int?>? = null
+
+    internal inline fun <T> withReadCache(block: () -> T): T {
+        val outer = readCache
+        if (outer == null) readCache = HashMap()
+        try { return block() } finally { if (outer == null) readCache = null }
+    }
     @Volatile internal var lastTempStepMs = 0L  // QD-08 debounce −/+ nhiệt
     @Volatile internal var lastFanStepMs = 0L   // QD-08 debounce −/+ quạt (mốc riêng — review 26/10 P2-5)
 
@@ -338,7 +350,7 @@ class TelegramBridgeService : Service() {
             // (4) vẽ lại đúng bảng tại chỗ (một-bảng-sống) kèm kết quả. markup null ⇒ không đổi bảng.
             val msgId = u.messageId
             if (msgId != null) {
-                val (text, markup) = renderBoard(app, cb, toast)
+                val (text, markup) = withReadCache { renderBoard(app, cb, toast) }   // P2-6: đọc mỗi control một lần
                 if (markup != null) api.editMessageText(chatId, msgId, text, markup)
             }
         }.onFailure { Log.w(TAG, "menu callback lỗi: ${it.javaClass.simpleName}") }
@@ -352,7 +364,8 @@ class TelegramBridgeService : Service() {
      */
     private fun sendMainMenu(app: Context, api: TelegramApi, chatId: Long) {
         val n = Prefs.telegramBoardNonce(app) + 1
-        val newId = api.sendMessageReturningId(chatId, statusText(app), TelegramMenu.main(n, pinnedPlaces(app))) ?: return
+        val text = withReadCache { statusText(app) }                       // P2-6: đọc mỗi control một lần
+        val newId = api.sendMessageReturningId(chatId, text, TelegramMenu.main(n, pinnedPlaces(app))) ?: return
         Prefs.bumpTelegramBoardNonce(app)
         val oldMsg = Prefs.telegramBoardMsg(app)
         if (oldMsg != 0L && oldMsg != newId) runCatching { api.clearMarkup(chatId, oldMsg) }   // gỡ nút bảng cũ
@@ -368,18 +381,23 @@ class TelegramBridgeService : Service() {
         if (CtlSafetyPolicy.blockedExternal(c.controlId, arg, motion)) {
             return "🚗 ${c.controlId}: only opens when the car is parked (gear P)"
         }
-        val captured = StringBuilder()
+        // Review 26/10 P2-2: câu trả lời của VoiceReadback có thể đến BẤT ĐỒNG BỘ (đọc lại sau ~300 ms trên luồng nền),
+        // nên đọc StringBuilder ngay sau run() luôn rỗng ⇒ bot chỉ nói câu chung. Nay chờ ĐÚNG MỘT câu, có trần
+        // [CTL_REPLY_WAIT_MS] (luồng polling chờ, không phải luồng UI); quá trần ⇒ nói thật "đã gửi, chưa có xác nhận".
+        val reply = java.util.concurrent.atomic.AtomicReference<String?>(null)
+        val said = java.util.concurrent.CountDownLatch(1)
         val dispatch = VoiceControlDispatch(
             control = { AppContainer.get(app).carControl },
             state = { HomeUiState(carStatus = AppContainer.get(app).carStatusRepository.status.value) },
-            say = { captured.append(it) },            // P2-15: bắt câu trả lời, không nuốt vào log
+            say = { text -> if (reply.compareAndSet(null, text)) said.countDown() },   // câu đầu tiên thắng
             freshCar = { id -> runCatching { AppContainer.get(app).readFresh(id) }.getOrNull() },
             onUi = { block -> block() },
             background = { block -> Thread(block, "KachiTgCtl").start() },
-            lang = { Strings.current },
+            lang = { com.byd.clusternav.launcher.Lang.EN },   // OQ3: bot nói tiếng Anh
         )
         dispatch.run(VoiceIntent.Control(c.controlId, arg)) { }
-        return captured.toString().ifBlank { "🚗 ${c.controlId} ${c.value ?: "toggle"}" }
+        runCatching { said.await(CTL_REPLY_WAIT_MS, java.util.concurrent.TimeUnit.MILLISECONDS) }
+        return reply.get() ?: "🚗 ${c.controlId}: sent, no confirmation from the car yet"
     }
 
     private fun finish() = runCatching { stopForeground(STOP_FOREGROUND_REMOVE); stopSelf() }
@@ -403,6 +421,9 @@ class TelegramBridgeService : Service() {
 
     companion object {
         private const val TAG = "KachiTelegram"
+        /** Trần chờ câu trả lời của xe cho MỘT lệnh (đọc lại sau ~300 ms của VoiceReadback + dư). Cốp/kính chạy mô-tơ
+         *  lâu hơn ⇒ quá trần thì nói "đã gửi, chưa có xác nhận" (thật), không bịa ✓. */
+        private const val CTL_REPLY_WAIT_MS = 2_500L
         private const val QUERY_PREFIX = "q:"   // pending nhạc dạng tên bài (phân biệt với link http(s))
         /** Domain nút cần công tắc "điều khiển xe" (P0-1). nav/music KHÔNG thuộc ⇒ luôn cho. */
         private val CAR_CONTROL_DOMAINS = TelegramFreshness.CAR_CONTROL_DOMAINS   // một nguồn (:core)

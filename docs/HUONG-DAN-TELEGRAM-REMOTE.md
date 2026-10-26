@@ -1,9 +1,9 @@
 # Hướng dẫn: Điều khiển Kachi từ xa qua Telegram
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-10-26 · **Bản**: Kachi 3.1.17 (222) — bản cá nhân, KHÔNG OTA
+> **Trạng thái**: Current · **Cập nhật**: 2026-10-26 · **Bản**: Kachi 3.1.18 (223) — bản cá nhân, KHÔNG OTA
 > **Mục đích**: Từ điện thoại, gửi điểm đến / mở nhạc / điều khiển xe qua một bot Telegram. Lên xe là Kachi tự dẫn đúng đường ngay khi có GPS; đang ngồi sau cũng bấm điều khiển mà không phiền tài xế.
 
-APK: `apk/Kachi-3.1.17-CHUA-DANG.apk` (sha256 `93c1647a…b3b6`, chỉ nằm trên máy dựng — **không** vào git, tên tệp cố ý không khớp kênh OTA). Cài đè bản cũ bằng `adb install -r` — **giữ nguyên dữ liệu** (cùng khoá ký).
+APK: `apk/Kachi-3.1.18-CHUA-DANG.apk` (sha256 `885221ff…6586`, chỉ nằm trên máy dựng — **không** vào git, tên tệp cố ý không khớp kênh OTA). Cài đè bản cũ bằng `adb install -r` — **giữ nguyên dữ liệu** (cùng khoá ký).
 
 ---
 
@@ -59,6 +59,8 @@ Xong. Khi màn đầu xe đang sáng, Kachi giữ một kết nối chờ tin v�
 > - **Music**: ⏮ ⏸/▶️ ⏭ điều khiển nhạc **đang phát** (bản 3.1.16+)
 > - **Seat**: Cool 1/2 · Heat 1/2 · Tắt — cho ghế lái + phụ
 > - Gõ **`/places`** để ghim nơi vào hàng nhanh (nút 📌). Gõ **`/`** để Telegram gợi ý 9 lệnh.
+>
+> Sau mỗi lần bấm, dòng **↳** dưới trạng thái là **câu trả lời của chính xe** (vd *"Đã đặt Nhiệt độ = 24"*). Cốp/kính chạy mô-tơ lâu nên có thể chỉ ra *"sent, no confirmation from the car yet"* — nghĩa là lệnh đã gửi, chưa đọc lại được kết quả.
 >
 > Mọi nút là **lệnh tuyệt đối** (bấm "24°" là đúng 24°, bấm lại vẫn 24° — an toàn khi mạng chập chờn). Cốp/kính chỉ mở khi xe ở số P, dù bấm nút. Sau mỗi lệnh gõ, bot đưa lại bảng nút xuống cuối chat (nếu bạn đã mở `/menu`).
 
@@ -122,7 +124,7 @@ Link chỉ nhận `http(s)`. Tên bài mở ở màn tìm kiếm của app nhạ
 
 ## Giới hạn & lưu ý
 
-- **Bản cá nhân, KHÔNG OTA** — chỉ cài tay bằng `adb install -r apk/Kachi-3.1.17-CHUA-DANG.apk`.
+- **Bản cá nhân, KHÔNG OTA** — chỉ cài tay bằng `adb install -r apk/Kachi-3.1.18-CHUA-DANG.apk`.
 - **Chưa đo trên xe thật** — mọi thứ đã kiểm off-car + máy ảo + test xanh; hành vi GPS/polling/điều khiển trên đầu xe BYD cần chính bạn test thực tế.
 - Token Telegram = chìa khoá điều khiển xe. Để lộ = người khác điều khiển được. Mất điện thoại → vào Cài đặt Kachi tắt "Bật điều khiển qua Telegram", hoặc `/revoke` token ở @BotFather.
 - Poll 60s tốn chút pin + mạng nền khi xe bật màn. Không cần thì tắt công tắc.

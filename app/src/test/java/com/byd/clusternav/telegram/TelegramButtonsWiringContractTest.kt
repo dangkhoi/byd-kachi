@@ -143,4 +143,29 @@ class TelegramButtonsWiringContractTest {
         assertTrue(!disp.contains("\"❄️ temp adjusted\"") && !disp.contains("\"💨 fan adjusted\""), "không báo 'adjusted' khống")
         assertTrue(disp.contains("lastTempStepMs") && disp.contains("lastFanStepMs"), "debounce nhiệt và quạt mốc riêng")
     }
+
+    @Test
+    fun `cau tra loi cua xe la cau THAT, cho co tran (review 26-10 P2-2)`() {
+        // VoiceReadback nói BẤT ĐỒNG BỘ (đọc lại sau ~300 ms). Đọc một StringBuilder ngay sau run() luôn rỗng ⇒ câu chung.
+        val run = code("TelegramBridgeService.kt").substringAfter("internal fun runControl(").substringBefore("\n    }\n")
+        assertTrue(run.contains("said.await(CTL_REPLY_WAIT_MS"), "runControl phải CHỜ câu trả lời (có trần)")
+        assertTrue(!run.contains("StringBuilder"), "không đọc bộ đệm chữ ngay sau run()")
+        assertTrue(run.contains("no confirmation from the car yet"), "quá trần ⇒ nói thật, không bịa ✓")
+        // Nút không được vứt câu của xe để thay bằng câu cố định (dạng `runControl(...).let { "…" }`).
+        val disp = code("TelegramMenuDispatch.kt")
+        assertTrue(!Regex("""runControl\([^\n]*\)\)\.let \{ """").containsMatchIn(disp), "dispatch* phải trả câu của runControl")
+    }
+
+    @Test
+    fun `pha ve doc moi control mot lan (review 26-10 P2-6)`() {
+        val svc = code("TelegramBridgeService.kt")
+        assertTrue(svc.contains("withReadCache { renderBoard(app, cb, toast) }"), "vẽ bảng sau nút: gom đọc")
+        assertTrue(svc.contains("withReadCache { statusText(app) }"), "gửi menu: gom đọc")
+        val disp = code("TelegramMenuDispatch.kt")
+        val read = disp.substringAfter("fun TelegramBridgeService.readCtl(").substringBefore("\n}\n")
+        assertTrue(read.contains("cache.containsKey(id)") && read.contains("cache?.put(id, v)"), "readCtl dùng bộ nhớ của lượt vẽ")
+        // Pha GHI không được bọc cache (−/+ phải đọc tươi trước khi đặt).
+        val handle = svc.substringAfter("private fun handleMenuCallback(").substringBefore("\n    }\n")
+        assertTrue(!handle.contains("withReadCache { dispatchMenu"), "dispatchMenu (ghi xe) không được dùng số đọc cũ")
+    }
 }

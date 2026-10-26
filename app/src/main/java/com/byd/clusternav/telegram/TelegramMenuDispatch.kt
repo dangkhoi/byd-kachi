@@ -35,48 +35,55 @@ internal fun TelegramBridgeService.dispatchMenu(app: Context, cb: TelegramCallba
 
 internal fun TelegramBridgeService.dispatchAc(app: Context, cb: TelegramCallback): String = when (cb.action) {
     "open", "noop" -> ""                                      // mở bảng / nút chết
-    "auto" -> runControl(app, TelegramCommand.Control("ac_auto", if (cb.id == "on") 1 else 0)).let { "❄️ AUTO ${cb.id}" }
-    "temp" -> cb.id.toIntOrNull()?.let { runControl(app, TelegramCommand.Control("temp", it)); "❄️ ${it}°" } ?: ""
-    // Review 26/10 P2-5: toast theo KẾT QUẢ thật (debounce bỏ / không đọc được ⇒ nói đúng, không "adjusted" khống).
-    "tempup", "tempdn" -> stepTemp(app, cb.action == "tempup")?.let { "❄️ temp → $it°" } ?: "❄️ temp unchanged (too fast or unreadable)"
-    "fanup", "fandn" -> stepFan(app, cb.action == "fanup")?.let { "💨 fan → $it" } ?: "💨 fan unchanged (too fast or unreadable)"
+    // Review 26/10 P2-2: mọi nút trả CÂU CỦA XE (runControl chờ VoiceReadback), không câu cố định.
+    "auto" -> runControl(app, TelegramCommand.Control("ac_auto", if (cb.id == "on") 1 else 0))
+    "temp" -> cb.id.toIntOrNull()?.let { runControl(app, TelegramCommand.Control("temp", it)) } ?: ""
+    "tempup", "tempdn" -> stepTemp(app, cb.action == "tempup") ?: "❄️ temp unchanged (too fast or unreadable)"
+    "fanup", "fandn" -> stepFan(app, cb.action == "fanup") ?: "💨 fan unchanged (too fast or unreadable)"
     // P2-3: nấc đáy quạt của nút có autoId bị xe BỎ QUA ⇒ "Quạt tắt" (fan 0) phát ac_auto=1 (AUTO), mức khác set thẳng.
     "fan" -> cb.id.toIntOrNull()?.let { lv ->
-        if (lv == 0) { runControl(app, TelegramCommand.Control("ac_auto", 1)); "💨 AUTO (fan off)" }
-        else { runControl(app, TelegramCommand.Control("fan", lv)); "💨 fan $lv" }
+        if (lv == 0) runControl(app, TelegramCommand.Control("ac_auto", 1))
+        else runControl(app, TelegramCommand.Control("fan", lv))
     } ?: ""
-    "defrost" -> runControl(app, TelegramCommand.Control("defrost", if (cb.id == "on") 1 else 0)).let { "🌬 defrost ${cb.id}" }
-    "pm25" -> runControl(app, TelegramCommand.Control("pm25", if (cb.id == "on") 1 else 0)).let { "🌫 PM2.5 ${cb.id}" }
-    "macro" -> { runControl(app, TelegramCommand.Control("ac_auto", 1)); runControl(app, TelegramCommand.Control("temp", 24)); runControl(app, TelegramCommand.Control("fan", 4)); "❄️ Cool 24°" }
+    "defrost" -> runControl(app, TelegramCommand.Control("defrost", if (cb.id == "on") 1 else 0))
+    "pm25" -> runControl(app, TelegramCommand.Control("pm25", if (cb.id == "on") 1 else 0))
+    "macro" -> listOf(
+        runControl(app, TelegramCommand.Control("ac_auto", 1)),
+        runControl(app, TelegramCommand.Control("temp", 24)),
+        runControl(app, TelegramCommand.Control("fan", 4)),
+    ).joinToString(" · ")
     else -> ""
 }
 
 /** Đọc giá trị MỘT control (Int) qua đường readState (dùng readKey). null = chưa đọc được. */
-internal fun TelegramBridgeService.readCtl(app: Context, id: String): Int? =
-    runCatching { AppContainer.get(app).carControl.readState(id) }.getOrNull()
+internal fun TelegramBridgeService.readCtl(app: Context, id: String): Int? {
+    val cache = readCache
+    if (cache != null && cache.containsKey(id)) return cache[id]          // P2-6: trong pha vẽ, mỗi control đọc một lần
+    val v = runCatching { AppContainer.get(app).carControl.readState(id) }.getOrNull()
+    cache?.put(id, v)
+    return v
+}
 
 // QD-08: −/+ đọc tươi rồi gửi MỘT lệnh TUYỆT ĐỐI (không lệnh tương đối). Debounce ~600ms RIÊNG cho nhiệt và quạt
-// (review 26/10 P2-5: dùng chung một mốc thì "+1°" rồi "+fan" trong 600ms làm mất lệnh quạt). Trả mức đã đặt, null = không đặt.
-internal fun TelegramBridgeService.stepTemp(app: Context, up: Boolean): Int? {
+// (review 26/10 P2-5: dùng chung một mốc thì "+1°" rồi "+fan" trong 600ms làm mất lệnh quạt). Trả câu của xe, null = không gửi.
+internal fun TelegramBridgeService.stepTemp(app: Context, up: Boolean): String? {
     val now = android.os.SystemClock.uptimeMillis()
     if (now - lastTempStepMs < 600) return null
     lastTempStepMs = now
     val cur = readCtl(app, "temp") ?: return null
     val next = (cur + if (up) 1 else -1).coerceIn(17, 33)
-    runControl(app, TelegramCommand.Control("temp", next))
-    return next
+    return runControl(app, TelegramCommand.Control("temp", next))
 }
 
-/** P2-8: −/+ quạt (0..7), cùng luật. Mức 0 ⇒ ac_auto (P2-3: xe bỏ qua fan=0). Trả mức đã đặt, null = không đặt. */
-internal fun TelegramBridgeService.stepFan(app: Context, up: Boolean): Int? {
+/** P2-8: −/+ quạt (0..7), cùng luật. Mức 0 ⇒ ac_auto (P2-3: xe bỏ qua fan=0). Trả câu của xe, null = không gửi. */
+internal fun TelegramBridgeService.stepFan(app: Context, up: Boolean): String? {
     val now = android.os.SystemClock.uptimeMillis()
     if (now - lastFanStepMs < 600) return null
     lastFanStepMs = now
     val cur = readCtl(app, "fan") ?: return null
     val next = (cur + if (up) 1 else -1).coerceIn(0, 7)
-    if (next == 0) runControl(app, TelegramCommand.Control("ac_auto", 1))
+    return if (next == 0) runControl(app, TelegramCommand.Control("ac_auto", 1))
     else runControl(app, TelegramCommand.Control("fan", next))
-    return next
 }
 
 internal fun TelegramBridgeService.dispatchSeat(app: Context, cb: TelegramCallback): String {
@@ -85,21 +92,21 @@ internal fun TelegramBridgeService.dispatchSeat(app: Context, cb: TelegramCallba
     val side = if (cb.action == "d") "Driver" else "Passenger"
     // P1-4: Tắt phải tắt CẢ mát LẪN sưởi (không chỉ seatc=0, bỏ sót sưởi đang chạy).
     if (cb.id == "off") {
-        runControl(app, TelegramCommand.Control("seatc$suffix", 0))
-        runControl(app, TelegramCommand.Control("seath$suffix", 0))
-        return "🪑 $side off"
+        val a = runControl(app, TelegramCommand.Control("seatc$suffix", 0))
+        val b = runControl(app, TelegramCommand.Control("seath$suffix", 0))
+        return "🪑 $side: $a · $b"
     }
+    // Ghế chỉ có 3 mức Tắt/1/2 (owner 26/10) ⇒ chỉ nhận 1 và 2 ở đây; mức khác không có nút.
     val level = when (cb.id) { "cool1", "heat1" -> 1; "cool2", "heat2" -> 2; else -> return "" }
     val realId = if (cb.id.startsWith("cool")) "seatc$suffix" else "seath$suffix"
-    runControl(app, TelegramCommand.Control(realId, level))
-    return "🪑 $side ${cb.id}"
+    return "🪑 $side: " + runControl(app, TelegramCommand.Control(realId, level))
 }
 
 internal fun TelegramBridgeService.dispatchMisc(app: Context, cb: TelegramCallback): String = when (cb.action) {
     "open" -> ""
-    "readl" -> runControl(app, TelegramCommand.Control("readl", if (cb.id == "on") 1 else 0)).let { "💡 read light ${cb.id}" }
-    "pm25" -> runControl(app, TelegramCommand.Control("pm25", if (cb.id == "on") 1 else 0)).let { "🌫 PM2.5 ${cb.id}" }
-    // Cổng tốc độ NGOÀI (blockedExternal trong runControl): bấm lúc chạy ⇒ "only when the car is stopped".
+    "readl" -> runControl(app, TelegramCommand.Control("readl", if (cb.id == "on") 1 else 0))
+    "pm25" -> runControl(app, TelegramCommand.Control("pm25", if (cb.id == "on") 1 else 0))
+    // Cổng tốc độ NGOÀI (blockedExternal trong runControl): xe không ở số P ⇒ câu từ chối.
     "trunk" -> runControl(app, TelegramCommand.Control("trunk", if (cb.id == "on") 1 else 0))
     "windows" -> runControl(app, TelegramCommand.Control("windows_all", if (cb.id == "on") 1 else 0))
     else -> ""
