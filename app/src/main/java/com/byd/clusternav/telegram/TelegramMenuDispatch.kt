@@ -37,8 +37,9 @@ internal fun TelegramBridgeService.dispatchAc(app: Context, cb: TelegramCallback
     "open", "noop" -> ""                                      // mở bảng / nút chết
     "auto" -> runControl(app, TelegramCommand.Control("ac_auto", if (cb.id == "on") 1 else 0)).let { "❄️ AUTO ${cb.id}" }
     "temp" -> cb.id.toIntOrNull()?.let { runControl(app, TelegramCommand.Control("temp", it)); "❄️ ${it}°" } ?: ""
-    "tempup", "tempdn" -> { stepTemp(app, cb.action == "tempup"); "❄️ temp adjusted" }
-    "fanup", "fandn" -> { stepFan(app, cb.action == "fanup"); "💨 fan adjusted" }
+    // Review 26/10 P2-5: toast theo KẾT QUẢ thật (debounce bỏ / không đọc được ⇒ nói đúng, không "adjusted" khống).
+    "tempup", "tempdn" -> stepTemp(app, cb.action == "tempup")?.let { "❄️ temp → $it°" } ?: "❄️ temp unchanged (too fast or unreadable)"
+    "fanup", "fandn" -> stepFan(app, cb.action == "fanup")?.let { "💨 fan → $it" } ?: "💨 fan unchanged (too fast or unreadable)"
     // P2-3: nấc đáy quạt của nút có autoId bị xe BỎ QUA ⇒ "Quạt tắt" (fan 0) phát ac_auto=1 (AUTO), mức khác set thẳng.
     "fan" -> cb.id.toIntOrNull()?.let { lv ->
         if (lv == 0) { runControl(app, TelegramCommand.Control("ac_auto", 1)); "💨 AUTO (fan off)" }
@@ -54,25 +55,28 @@ internal fun TelegramBridgeService.dispatchAc(app: Context, cb: TelegramCallback
 internal fun TelegramBridgeService.readCtl(app: Context, id: String): Int? =
     runCatching { AppContainer.get(app).carControl.readState(id) }.getOrNull()
 
-// QD-08: −/+ đọc tươi rồi gửi MỘT lệnh TUYỆT ĐỐI (không lệnh tương đối). Debounce ~600ms chống double-tap.
-internal fun TelegramBridgeService.stepTemp(app: Context, up: Boolean) {
+// QD-08: −/+ đọc tươi rồi gửi MỘT lệnh TUYỆT ĐỐI (không lệnh tương đối). Debounce ~600ms RIÊNG cho nhiệt và quạt
+// (review 26/10 P2-5: dùng chung một mốc thì "+1°" rồi "+fan" trong 600ms làm mất lệnh quạt). Trả mức đã đặt, null = không đặt.
+internal fun TelegramBridgeService.stepTemp(app: Context, up: Boolean): Int? {
     val now = android.os.SystemClock.uptimeMillis()
-    if (now - lastStepMs < 600) return                         // QD-08 debounce: bỏ cú bấm dồn trong 600ms
-    lastStepMs = now
-    val cur = readCtl(app, "temp") ?: return
+    if (now - lastTempStepMs < 600) return null
+    lastTempStepMs = now
+    val cur = readCtl(app, "temp") ?: return null
     val next = (cur + if (up) 1 else -1).coerceIn(17, 33)
     runControl(app, TelegramCommand.Control("temp", next))
+    return next
 }
 
-/** P2-8: −/+ quạt (mức lẻ 0..7), cùng luật debounce + lệnh tuyệt đối. Mức 0 ⇒ ac_auto (P2-3). */
-internal fun TelegramBridgeService.stepFan(app: Context, up: Boolean) {
+/** P2-8: −/+ quạt (0..7), cùng luật. Mức 0 ⇒ ac_auto (P2-3: xe bỏ qua fan=0). Trả mức đã đặt, null = không đặt. */
+internal fun TelegramBridgeService.stepFan(app: Context, up: Boolean): Int? {
     val now = android.os.SystemClock.uptimeMillis()
-    if (now - lastStepMs < 600) return
-    lastStepMs = now
-    val cur = readCtl(app, "fan") ?: return
+    if (now - lastFanStepMs < 600) return null
+    lastFanStepMs = now
+    val cur = readCtl(app, "fan") ?: return null
     val next = (cur + if (up) 1 else -1).coerceIn(0, 7)
     if (next == 0) runControl(app, TelegramCommand.Control("ac_auto", 1))
     else runControl(app, TelegramCommand.Control("fan", next))
+    return next
 }
 
 internal fun TelegramBridgeService.dispatchSeat(app: Context, cb: TelegramCallback): String {

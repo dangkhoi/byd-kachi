@@ -186,12 +186,13 @@ object ScheduledNavApplier {
                 Log.i(TAG, "pending: quá hạn 24h ⇒ bỏ")
                 return@runCatching false
             }
-            val gpsOk = if (p.requireGps) GpsAvailability.isAvailable(app, nowMs) else null
+            // Review 26/10 P2-3: KHÔNG truyền nowMs (FGS đưa elapsedRealtime) — GpsAvailability so tuổi fix bằng wall-clock.
+            val gpsOk = if (p.requireGps) GpsAvailability.isAvailable(app) else null
             val decision = com.byd.clusternav.launcher.automation.PendingNavPolicy
                 .resolve(p.dest, p.requireGps, gpsOk)
             when (decision) {
                 is com.byd.clusternav.launcher.automation.PendingNavPolicy.Decision.FireNav -> {
-                    Log.i(TAG, "pending: ưu tiên dẫn \"${p.dest.place.name}\" (apps=${p.dest.appsEncoded})")
+                    Log.i(TAG, "pending: ưu tiên dẫn (apps=${p.dest.appsEncoded})")   // không log tên nơi (địa chỉ nhà)
                     val ok = launchPlace(app, p.dest.place, p.dest.apps, logId = "pending")
                     if (ok) {
                         // Overwrite CHỈ các luật thuộc chuyến này (R3 — khung giờ + thứ hiện tại), không cả ngày (P1-3).

@@ -1,9 +1,9 @@
 # Hướng dẫn: Điều khiển Kachi từ xa qua Telegram
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-10-26 · **Bản**: Kachi 3.1.15 (220) — bản cá nhân, KHÔNG OTA
+> **Trạng thái**: Current · **Cập nhật**: 2026-10-26 · **Bản**: Kachi 3.1.17 (222) — bản cá nhân, KHÔNG OTA
 > **Mục đích**: Từ điện thoại, gửi điểm đến / mở nhạc / điều khiển xe qua một bot Telegram. Lên xe là Kachi tự dẫn đúng đường ngay khi có GPS; đang ngồi sau cũng bấm điều khiển mà không phiền tài xế.
 
-APK: `apk/Kachi-3.1.15-release.apk` (sha256 `d323da8a…87daf`). Cài đè bản cũ bằng `adb install -r` — **giữ nguyên dữ liệu** (cùng khoá ký).
+APK: `apk/Kachi-3.1.17-CHUA-DANG.apk` (sha256 `93c1647a…b3b6`, chỉ nằm trên máy dựng — **không** vào git, tên tệp cố ý không khớp kênh OTA). Cài đè bản cũ bằng `adb install -r` — **giữ nguyên dữ liệu** (cùng khoá ký).
 
 ---
 
@@ -38,9 +38,13 @@ Mở **Cài đặt Kachi → nhóm *Dẫn đường* → mục *Điều khiển 
 | **Mã bot Telegram** | Dán token ở bước 1.1 |
 | **Mã chat Telegram** | Dán chat ID ở bước 1.2 |
 | **Kiểm tra kết nối** | Bấm — Kachi gửi 1 tin thử tới Telegram. Điện thoại nhận được = OK |
-| **Cho phép điều khiển xe qua Telegram** | Gạt BẬT **nếu** muốn dùng `/ac`, `/defrost`… (để TẮT thì chỉ dẫn đường + nhạc) |
+| **Cho phép điều khiển xe qua Telegram** | **Mặc định BẬT.** Gạt TẮT nếu chỉ muốn dẫn đường + nhạc — khi tắt, mọi lệnh và nút điều khiển xe (`/ac`, bảng AC/Seat/More…) đều bị từ chối |
 
-Xong. Kachi tự chạy một dịch vụ nền hỏi Telegram **mỗi 60 giây** khi xe đang ở màn hình chính, và một lần nữa mỗi khi lên xe.
+Xong. Khi màn đầu xe đang sáng, Kachi giữ một kết nối chờ tin với Telegram (mỗi lượt chờ tối đa 60 giây, có tin là nhận ngay). Màn tắt thì ngừng hỏi. Mạng lỗi hoặc token sai thì lùi chờ 5 giây → 15 giây → 1 phút → 5 phút rồi thử lại.
+
+> **Lệnh xe gửi lúc Kachi không nghe sẽ bị BỎ.** Telegram giữ tin chưa nhận tới 24 giờ. Nếu bạn bấm nút hay gõ lệnh **điều khiển xe** (cốp, kính, điều hoà, ghế…) lúc xe tắt / mất mạng, lần sau Kachi nhận lại thì **không làm**, chỉ nhắn *"Ignored an old car command…"* — để cốp không tự bung lên lúc bạn đã quên. Lệnh gõ chữ cũ hơn 2 phút cũng bị bỏ. **Điểm đến và nhạc thì KHÔNG bị bỏ** — gửi từ nhà, lên xe mới dẫn/phát là đúng ý.
+>
+> Điểm đến chờ lưu theo **hồ sơ tài xế đang dùng**: đổi sang hồ sơ khác trước khi lên xe thì điểm đến đó không chạy.
 
 > **Lưu ý GPS**: điểm đến gửi qua Telegram **chỉ bắt đầu dẫn khi xe đã bắt được GPS**. Vừa nổ máy / trong hầm chưa có định vị → Kachi **CHỜ**, có GPS lúc nào dẫn lúc đó (không dẫn mù).
 
@@ -56,7 +60,7 @@ Xong. Kachi tự chạy một dịch vụ nền hỏi Telegram **mỗi 60 giây*
 > - **Seat**: Cool 1/2 · Heat 1/2 · Tắt — cho ghế lái + phụ
 > - Gõ **`/places`** để ghim nơi vào hàng nhanh (nút 📌). Gõ **`/`** để Telegram gợi ý 9 lệnh.
 >
-> Mọi nút là **lệnh tuyệt đối** (bấm "24°" là đúng 24°, bấm lại vẫn 24° — an toàn khi mạng chập chờn). Cốp/kính vẫn chỉ mở khi xe dừng dù bấm nút.
+> Mọi nút là **lệnh tuyệt đối** (bấm "24°" là đúng 24°, bấm lại vẫn 24° — an toàn khi mạng chập chờn). Cốp/kính chỉ mở khi xe ở số P, dù bấm nút. Sau mỗi lệnh gõ, bot đưa lại bảng nút xuống cuối chat (nếu bạn đã mở `/menu`).
 
 Nhắn thẳng vào bot trên Telegram. **Lệnh bắt đầu bằng `/`**, tiếng Anh; **tên nơi để tiếng Việt thoải mái**.
 
@@ -67,7 +71,8 @@ Nhắn thẳng vào bot trên Telegram. **Lệnh bắt đầu bằng `/`**, ti�
 | `/go Công ty vietmap` | Dẫn bằng **VietMap**. Chọn app ở cuối lệnh: `gmaps` / `vietmap` / `waze`. |
 | `/go Công ty gmaps+vietmap` | Dẫn bằng **nhiều app cùng lúc** (ngăn bằng `+`). |
 | `/go` (không kèm tên) | Bot gửi lại **danh sách nút bấm** các nơi đã lưu — bấm 1 nút là chọn, khỏi gõ. |
-| `/go 21.0285, 105.8542` | Dẫn tới toạ độ trực tiếp. |
+| `/go 21.0285, 105.8542` | Dẫn tới toạ độ trực tiếp (VietMap cũng nhận được vì có toạ độ). |
+| `/home` · `/office` | Dẫn tới nơi **đã ghim** số 1 / số 2 (ghim bằng `/places` → 📌). Chưa ghim thì bot nhắc ghim, không tự chọn nơi khác. |
 | `/go 1 Đại Cồ Việt Hà Nội` | Địa chỉ lạ không có trong sổ → vẫn dẫn (Google Maps tự tra). |
 | Gửi **vị trí** (ghim 📎 → Location) | Dẫn tới đúng điểm đó. |
 
@@ -89,11 +94,11 @@ Link chỉ nhận `http(s)`. Tên bài mở ở màn tìm kiếm của app nhạ
 | `/defrost on` | Sấy kính |
 | `/fan 3` | Quạt gió mức 3 |
 | `/temp 22` | Nhiệt độ 22°C |
-| `/seat 2` | Ghế (mát/sưởi) mức 2 |
+| `/seat 2` | **Mát** ghế lái mức 2 (`/seat 0` tắt). Sưởi ghế và ghế phụ: dùng bảng **🪑 Seat** trong `/menu` |
 | `/readlight on` | Đèn đọc sách |
 | `/filter on` | Lọc bụi PM2.5 |
 
-**An toàn**: cốp, cửa kính, cửa sổ trời **chỉ mở khi xe đang DỪNG** — dù lệnh từ Telegram. Và các bộ phận chuyển động này **bắt buộc nói rõ** `open`/`close` (vd `/trunk open`), không nhận lệnh mơ hồ.
+**An toàn**: cốp, cửa kính, cửa sổ trời **chỉ mở khi xe đang ở số P** (đỗ hẳn) — dừng đèn đỏ ở số D cũng **không** mở, vì người bấm trên điện thoại không thấy xe. Không đọc được số thì cũng không mở. **Đóng** thì luôn được. Và các bộ phận chuyển động này **bắt buộc nói rõ** `open`/`close` (vd `/trunk open`), không nhận lệnh mơ hồ.
 
 ### 3.4 Khác
 | Gửi | Kachi làm |
@@ -117,7 +122,7 @@ Link chỉ nhận `http(s)`. Tên bài mở ở màn tìm kiếm của app nhạ
 
 ## Giới hạn & lưu ý
 
-- **Bản cá nhân, KHÔNG OTA** — chỉ cài tay bằng `adb install -r apk/Kachi-3.1.15-release.apk`.
+- **Bản cá nhân, KHÔNG OTA** — chỉ cài tay bằng `adb install -r apk/Kachi-3.1.17-CHUA-DANG.apk`.
 - **Chưa đo trên xe thật** — mọi thứ đã kiểm off-car + máy ảo + test xanh; hành vi GPS/polling/điều khiển trên đầu xe BYD cần chính bạn test thực tế.
 - Token Telegram = chìa khoá điều khiển xe. Để lộ = người khác điều khiển được. Mất điện thoại → vào Cài đặt Kachi tắt "Bật điều khiển qua Telegram", hoặc `/revoke` token ở @BotFather.
 - Poll 60s tốn chút pin + mạng nền khi xe bật màn. Không cần thì tắt công tắc.

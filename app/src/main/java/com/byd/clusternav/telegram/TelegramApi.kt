@@ -26,9 +26,15 @@ class TelegramApi(private val botToken: String) {
     private fun base() = "https://api.telegram.org/bot$botToken"
     private fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
 
-    /** GET đã an-token: trả body (2xx) hoặc `null`; không để url/throwable tới log. */
+    /** GET đã an-token: trả body (2xx) hoặc `null`; không để url/throwable tới log. KHÔNG ném (P1-3). */
     private fun call(path: String, query: String, readTimeoutMs: Int): String? {
-        val conn = HttpConn.open("${base()}/$path?$query", readTimeoutMs, "application/json")
+        // P1-3 (review 26/10): `open` nằm TRONG try — ném ở đây từng thoát khỏi vòng polling và giết bridge im lặng.
+        val conn = try {
+            HttpConn.open("${base()}/$path?$query", readTimeoutMs, "application/json")
+        } catch (t: Throwable) {
+            Log.w(TAG, "telegram $path mở kết nối lỗi: ${t.javaClass.simpleName}")   // KHÔNG in url/token
+            return null
+        }
         return try {
             val code = conn.responseCode
             val stream = if (code in 200..299) conn.inputStream else conn.errorStream
@@ -48,23 +54,30 @@ class TelegramApi(private val botToken: String) {
     }
 
     /**
-     * Đọc update mới hơn [offset] (long-poll [timeoutSec] giây). Trả list [TelegramUpdate] đã parse; rỗng khi
-     * không có / lỗi. Con trỏ: chỗ gọi đặt `offset = max(update_id)+1`.
+     * Đọc update mới hơn [offset] (long-poll [timeoutSec] giây). Trả list đã parse (rỗng = không có tin), hoặc
+     * **`null` khi LỖI** (mạng / HTTP ≠ 2xx / JSON hỏng / `ok=false`) — chỗ gọi phải lùi chờ, không hỏi lại ngay
+     * (P1-2: token sai ⇒ 401 tức thì ⇒ vòng không nghỉ sẽ dội Telegram). Con trỏ: chỗ gọi đặt `offset = max(update_id)+1`.
      */
-    fun getUpdates(offset: Long, timeoutSec: Int, isControlId: (String) -> Boolean): List<TelegramUpdate> {
+    fun getUpdates(offset: Long, timeoutSec: Int, isControlId: (String) -> Boolean): List<TelegramUpdate>? {
         val body = call(
             "getUpdates",
             "offset=$offset&timeout=$timeoutSec&allowed_updates=%5B%22message%22,%22callback_query%22%5D",
             readTimeoutMs = (timeoutSec + 10) * 1000,
-        ) ?: return emptyList()
+        ) ?: return null
         return runCatching {
             val root = JSONObject(body)
-            if (!root.optBoolean("ok", false)) return@runCatching emptyList()
+            if (!root.optBoolean("ok", false)) return@runCatching null
             val arr = root.optJSONArray("result") ?: return@runCatching emptyList()
-            (0 until arr.length()).mapNotNull { i -> parseUpdate(arr.getJSONObject(i), isControlId) }
+            (0 until arr.length()).mapNotNull { i ->
+                val o = arr.optJSONObject(i) ?: return@mapNotNull null
+                // Một update hỏng KHÔNG được kẹt con trỏ: trả Unknown không chủ (chatId null ⇒ bị bỏ, offset vẫn tiến).
+                runCatching { parseUpdate(o, isControlId) }.getOrElse {
+                    o.optLong("update_id", -1).takeIf { it >= 0 }?.let { id -> TelegramUpdate(id, null, TelegramCommand.Unknown("")) }
+                }
+            }
         }.getOrElse {
             Log.w(TAG, "getUpdates parse lỗi: ${it.javaClass.simpleName}")
-            emptyList()
+            null
         }
     }
 
@@ -82,23 +95,25 @@ class TelegramApi(private val botToken: String) {
             val msgId = message?.optLong("message_id")?.takeIf { it > 0 }
             // chatId = from.id (NHẤT QUÁN với message path: authorize theo NGƯỜI bấm). Trong chat riêng tư 1-1
             // from.id == chat.id nên gửi tin/sửa bảng vẫn đúng đích. rawCallback giữ chuỗi gốc cho menu mới.
-            return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseCallback(data), cbId, msgId, rawCallback = data)
+            // Nghĩa của nút do TelegramCallback (menu có nonce) quyết ở :app; callback dạng khác ⇒ Unknown (không thi hành).
+            return TelegramUpdate(updateId, fromId, TelegramCommand.Unknown(""), cbId, msgId, rawCallback = data)
         }
         // message
         val msg = u.optJSONObject("message") ?: return TelegramUpdate(updateId, null, TelegramCommand.Unknown(""))
         // Chỉ nhận chat RIÊNG TƯ: bot trong group thì mọi thành viên không được lái xe (P2-11).
         if (msg.optJSONObject("chat")?.optString("type", "private") != "private") return null
         val fromId = msg.optJSONObject("from")?.optLong("id")
+        val dateSec = msg.optLong("date", 0L).takeIf { it > 0 }     // P0-1: tuổi tin cho cổng lệnh xe (TelegramFreshness)
         // share-location 📍
         msg.optJSONObject("location")?.let { loc ->
             val lat = loc.optDouble("latitude", Double.NaN)
             val lng = loc.optDouble("longitude", Double.NaN)
             if (!lat.isNaN() && !lng.isNaN()) {
-                return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseLocation(lat, lng))
+                return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseLocation(lat, lng), dateSec = dateSec)
             }
         }
         val text = msg.optString("text", "")
-        return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseText(text, isControlId))
+        return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseText(text, isControlId), dateSec = dateSec)
     }
 
     /** Gửi tin (text + inline keyboard tuỳ chọn). `false` khi lỗi. */
@@ -133,10 +148,6 @@ class TelegramApi(private val botToken: String) {
     /** Gỡ nút của một tin cũ (QD-17: bảng cũ còn text nhưng không bấm được nữa). */
     fun clearMarkup(chatId: Long, messageId: Long): Boolean =
         call("editMessageReplyMarkup", "chat_id=$chatId&message_id=$messageId", readTimeoutMs = 10_000) != null
-
-    /** Xoá hẳn một tin (dùng khi dọn bảng cũ). */
-    fun deleteMessage(chatId: Long, messageId: Long): Boolean =
-        call("deleteMessage", "chat_id=$chatId&message_id=$messageId", readTimeoutMs = 10_000) != null
 
     /** Đăng ký gợi ý lệnh (gõ "/" hiện danh sách — QD-21). [commands] = cặp (lệnh không dấu '/', mô tả). */
     fun setMyCommands(commands: List<Pair<String, String>>): Boolean {

@@ -56,4 +56,5 @@ data class TelegramUpdate(
     val callbackId: String? = null,
     val messageId: Long? = null,
     val rawCallback: String? = null,   // chuỗi callback_data gốc (menu mới parse bằng TelegramCallback ở :app)
+    val dateSec: Long? = null,         // `message.date` (giây UTC) của TIN GÕ; null với callback (Telegram không gửi giờ bấm)
 )

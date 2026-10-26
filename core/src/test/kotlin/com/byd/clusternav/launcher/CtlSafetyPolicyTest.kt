@@ -22,6 +22,19 @@ class CtlSafetyPolicyTest {
         }
     }
 
+    @Test fun `cong ngoai doi so P - dung den do so D van chan (review 26-10 P2-1)`() {
+        val redLight = { CtlSafetyPolicy.Motion(speedKmh = 0, gear = "D") }
+        val gearUnknown = { CtlSafetyPolicy.Motion(speedKmh = 0, gear = null) }
+        val rawParked = { CtlSafetyPolicy.Motion(speedKmh = 0, gear = "3") }       // mã HAL thô GEAR_P = 3
+        listOf("trunk", "sunroof", "windows_all").forEach { id ->
+            assertTrue(CtlSafetyPolicy.blockedExternal(id, 1, redLight), "0 km/h ở số D (đèn đỏ) — lệnh ngoài mở '$id' phải bị chặn")
+            assertTrue(CtlSafetyPolicy.blockedExternal(id, 1, gearUnknown), "không đọc được số — fail-safe chặn '$id'")
+            assertFalse(CtlSafetyPolicy.blockedExternal(id, 1, rawParked), "số P (mã 3) + 0 km/h — cho '$id'")
+        }
+        // Đường CHẠM giữ luật cũ (có ngón tay người lái): 0 km/h ở D vẫn mở cốp được.
+        assertFalse(CtlSafetyPolicy.blocked("trunk", 1, redLight), "đường chạm không đổi luật")
+    }
+
     @Test fun `cong ngoai KHONG chan nut khi hau du dang chay`() {
         listOf("ac_auto", "readl", "fan", "temp").forEach { id ->
             assertFalse(CtlSafetyPolicy.blockedExternal(id, 1, moving()), "nút không bung/che tầm nhìn '$id' không bị cổng tốc độ chặn")

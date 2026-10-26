@@ -89,12 +89,6 @@ class TelegramParserTest {
         assertEquals("21.0045, 105.8412", c.coords)
     }
 
-    @Test
-    fun `callback nav co app list`() {
-        val c = TelegramUpdateParser.parseCallback("nav:Office:gmaps+vietmap") as TelegramCommand.Nav
-        assertEquals("Office", c.placeOrQuery)
-        assertEquals(listOf("gmaps", "vietmap"), c.apps)
-    }
 
     @Test
     fun `config isAuthorized chi chu xe`() {
@@ -108,14 +102,4 @@ class TelegramParserTest {
         assertFalse(TelegramConfig().ready)
     }
 
-    @Test
-    fun `keyboard tu so dia chi dung index + callback navi giai index`() {
-        val places = listOf(SavedPlace("Of\"fice", "addr"), SavedPlace("Nhà", "addr2"))
-        val kb = TelegramInlineKeyboard.placesKeyboard(places)
-        assertTrue(kb.contains("navi:0") && kb.contains("navi:1"), "callback dùng index (P2-17), không tên")
-        assertTrue(kb.contains("\\\"")) // tên có " vẫn được escape ở nhãn
-        assertEquals("", TelegramInlineKeyboard.placesKeyboard(emptyList()))
-        // callback navi:1 ⇒ Nav("#1") để :app giải index
-        assertEquals(TelegramCommand.Nav("#1"), TelegramUpdateParser.parseCallback("navi:1"))
-    }
 }

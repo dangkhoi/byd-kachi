@@ -101,4 +101,46 @@ class TelegramButtonsWiringContractTest {
             assertTrue(svc.contains(it), "MENU_COMMANDS phải có lệnh $it")
         }
     }
+
+    @Test
+    fun `cong toc do NGOAI dung chieu - chan thi RETURN tu choi (review 26-10 M2)`() {
+        // Lượt review 26/10 đảo `if (blockedExternal)` thành `if (!blockedExternal)` mà 15 test vẫn xanh. Khoá HÌNH DẠNG:
+        // đúng một dòng gọi, không phủ định, và nhánh đúng là trả câu từ chối (không thi hành).
+        val svc = code("TelegramBridgeService.kt")
+        assertTrue(svc.contains("if (CtlSafetyPolicy.blockedExternal(c.controlId, arg, motion)) {"), "gọi cổng đúng chiều")
+        assertTrue(!svc.contains("!CtlSafetyPolicy.blockedExternal("), "không được phủ định cổng an toàn")
+        val branch = svc.substringAfter("if (CtlSafetyPolicy.blockedExternal(c.controlId, arg, motion)) {").take(160)
+        assertTrue(branch.trimStart().startsWith("return \""), "bị chặn ⇒ return câu từ chối NGAY")
+        assertTrue(svc.contains("CtlSafetyPolicy.readMotionFull("), "cổng ngoài cần cả số (P) lẫn tốc độ")
+    }
+
+    @Test
+    fun `cong tin cu dung truoc moi thi hanh (review 26-10 P0-1)`() {
+        val svc = code("TelegramBridgeService.kt")
+        val body = svc.substringAfter("private fun handleUpdate(")
+        val iGate = body.indexOf("TelegramFreshness.allow(")
+        val iMenu = body.indexOf("handleMenuCallback(")
+        val iExec = body.indexOf("execute(app, api, cfg, u)")
+        assertTrue(iGate in 1 until iMenu && iGate < iExec, "cổng tin cũ phải chạy TRƯỚC menu callback và execute")
+        assertTrue(svc.contains("runCatching { handleUpdate(app, api, fresh, u, fromBacklog, nowSec) }"),
+            "vòng polling đưa cờ tồn đọng xuống, và một update lỗi không giết vòng")
+    }
+
+    @Test
+    fun `loi polling lui cho, khong hoi lai ngay (review 26-10 P1-2 P1-3)`() {
+        val svc = code("TelegramBridgeService.kt")
+        val loop = svc.substringAfter("private fun loop(").substringBefore("private fun handleUpdate(")
+        assertTrue(loop.contains("if (updates == null)") && loop.contains("sleep(backoffMs(failures))"),
+            "getUpdates lỗi ⇒ lùi chờ luỹ tiến")
+        assertTrue(loop.contains("runCatching {\n                    api.getUpdates("), "getUpdates ném KHÔNG thoát vòng")
+        val api = code("TelegramApi.kt")
+        assertTrue(api.contains("List<TelegramUpdate>? {"), "getUpdates phân biệt lỗi (null) với không có tin (rỗng)")
+    }
+
+    @Test
+    fun `toast buoc nhiet quat noi that (review 26-10 P2-5)`() {
+        val disp = code("TelegramMenuDispatch.kt")
+        assertTrue(!disp.contains("\"❄️ temp adjusted\"") && !disp.contains("\"💨 fan adjusted\""), "không báo 'adjusted' khống")
+        assertTrue(disp.contains("lastTempStepMs") && disp.contains("lastFanStepMs"), "debounce nhiệt và quạt mốc riêng")
+    }
 }

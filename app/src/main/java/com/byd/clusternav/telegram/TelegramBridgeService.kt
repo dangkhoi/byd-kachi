@@ -27,6 +27,7 @@ import com.byd.clusternav.launcher.telegram.PendingDestinations
 import com.byd.clusternav.launcher.telegram.TelegramCallback
 import com.byd.clusternav.launcher.telegram.TelegramCommand
 import com.byd.clusternav.launcher.telegram.TelegramConfig
+import com.byd.clusternav.launcher.telegram.TelegramFreshness
 import com.byd.clusternav.launcher.telegram.TelegramInlineKeyboard
 import com.byd.clusternav.launcher.telegram.TelegramMenu
 import com.byd.clusternav.launcher.telegram.TelegramStatusLine
@@ -63,7 +64,8 @@ class TelegramBridgeService : Service() {
 
     /** Nonce bảng sống đọc từ prefs (P1-2 bền). Nút của bảng cũ (nonce khác) ⇒ không thi hành (R-nf2). */
     internal fun boardNonce(app: Context): Int = Prefs.telegramBoardNonce(app)
-    @Volatile internal var lastStepMs = 0L     // QD-08 debounce −/+
+    @Volatile internal var lastTempStepMs = 0L  // QD-08 debounce −/+ nhiệt
+    @Volatile internal var lastFanStepMs = 0L   // QD-08 debounce −/+ quạt (mốc riêng — review 26/10 P2-5)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -89,14 +91,32 @@ class TelegramBridgeService : Service() {
             var token = Prefs.telegramConfig(app).botToken
             var api = TelegramApi(token)
             runCatching { api.setMyCommands(MENU_COMMANDS) }  // QD-21: đăng ký gợi ý lệnh một lần khi vòng bắt đầu
+            var failures = 0                                  // P1-2: số lượt lỗi liền nhau (lùi chờ luỹ tiến)
+            var backlog = true                                // P0-1: lượt đọc đầu sau một khoảng KHÔNG hỏi = tồn đọng
             while (myGen == generation) {
                 val cfg = Prefs.telegramConfig(app)
                 if (!cfg.ready) break
-                if (cfg.botToken != token) { token = cfg.botToken; api = TelegramApi(token); runCatching { api.setMyCommands(MENU_COMMANDS) } }  // P1-5
+                if (cfg.botToken != token) {                  // P1-5: đổi token ⇒ dựng lại
+                    token = cfg.botToken; api = TelegramApi(token); failures = 0; backlog = true
+                    runCatching { api.setMyCommands(MENU_COMMANDS) }
+                }
                 // Mở nhạc pending nếu màn đã bật (xe lên) — R8 pha "đặt chờ rồi mở lúc lên xe".
-                playPendingMusicIfInteractive(app)
-                if (!interactive(app)) { sleep(5_000); continue }   // P1-8: không poll khi màn tắt
-                val updates = api.getUpdates(offset, POLL_TIMEOUT_SEC) { ControlRegistry.byId(it) != null }
+                runCatching { playPendingMusicIfInteractive(app) }
+                if (!interactive(app)) { backlog = true; sleep(5_000); continue }   // P1-8: không poll khi màn tắt
+                // P1-3: lỗi một lượt KHÔNG thoát vòng (trước đây ném ra ngoài ⇒ service dừng im lặng).
+                val updates = runCatching {
+                    api.getUpdates(offset, POLL_TIMEOUT_SEC) { ControlRegistry.byId(it) != null }
+                }.getOrNull()
+                if (updates == null) {                        // P1-2: lỗi ⇒ lùi chờ 5s → 15s → 60s → trần 5 phút, có jitter
+                    failures++
+                    backlog = true                            // khoảng lỗi = khoảng không hỏi ⇒ lượt tốt kế là tồn đọng
+                    sleep(backoffMs(failures))
+                    continue
+                }
+                failures = 0
+                val fromBacklog = backlog
+                backlog = false
+                val nowSec = System.currentTimeMillis() / 1000
                 for (u in updates) {
                     if (myGen != generation) return                 // P1-4: tắt giữa batch ⇒ dừng ngay
                     val fresh = Prefs.telegramConfig(app)
@@ -104,14 +124,8 @@ class TelegramBridgeService : Service() {
                     offset = maxOf(offset, u.updateId + 1)
                     Prefs.setTelegramOffset(app, offset)            // P2-10: ghi TRƯỚC khi thi hành (at-most-once)
                     if (!fresh.isAuthorized(u.chatId)) continue      // P3: không log chatId người lạ
-                    // Menu callback (nút bấm bảng mới) đi đường riêng; lệnh text + callback cũ qua execute.
-                    val menuCb = u.rawCallback?.let { TelegramCallback.parse(it) }
-                    if (menuCb != null) {
-                        handleMenuCallback(app, api, fresh, u, menuCb)
-                    } else {
-                        u.callbackId?.let { api.answerCallback(it) }
-                        execute(app, api, fresh, u)
-                    }
+                    runCatching { handleUpdate(app, api, fresh, u, fromBacklog, nowSec) }
+                        .onFailure { Log.w(TAG, "thi hành update lỗi: ${it.javaClass.simpleName}") }
                 }
             }
         } catch (t: Throwable) {                                     // P2-16: Kotlin không checked-exception
@@ -122,14 +136,45 @@ class TelegramBridgeService : Service() {
         }
     }
 
+    /**
+     * MỘT update: cổng tin cũ cho lệnh xe (P0-1) → menu callback hoặc lệnh gõ. Lệnh xe bị chặn vì cũ ⇒ báo thật cho chủ
+     * xe ("không làm gì, gửi lại nếu vẫn muốn") thay vì im lặng — đó là câu họ cần để biết lệnh hôm qua không chạy.
+     */
+    private fun handleUpdate(app: Context, api: TelegramApi, cfg: TelegramConfig, u: TelegramUpdate, fromBacklog: Boolean, nowSec: Long) {
+        val menuCb = u.rawCallback?.let { TelegramCallback.parse(it) }
+        val carControl = TelegramFreshness.isCarControl(u.command, menuCb?.domain)
+        if (!TelegramFreshness.allow(carControl, fromBacklog, u.dateSec, nowSec)) {
+            u.callbackId?.let { api.answerCallback(it, "Old command ignored — tap again") }
+            u.chatId?.let { api.sendMessage(it, "⏱ Ignored an old car command (sent while Kachi was offline). Send it again if you still want it.") }
+            Log.i(TAG, "bỏ lệnh xe cũ (tồn đọng=$fromBacklog)")
+            return
+        }
+        if (menuCb != null) {
+            handleMenuCallback(app, api, cfg, u, menuCb)
+        } else {
+            u.callbackId?.let { api.answerCallback(it) }
+            execute(app, api, cfg, u)
+        }
+    }
+
+    /** P1-2: lùi chờ luỹ tiến có jitter — 5s, 15s, 60s, rồi trần 5 phút. */
+    private fun backoffMs(failures: Int): Long {
+        val base = when (failures) { 1 -> 5_000L; 2 -> 15_000L; 3 -> 60_000L; else -> 300_000L }
+        return base + (Math.random() * base * 0.2).toLong()
+    }
+
     private fun execute(app: Context, api: TelegramApi, cfg: TelegramConfig, u: TelegramUpdate) {
         val chatId = u.chatId ?: return
         runCatching {
-            when (val c = u.command) {
+            val c0 = u.command
+            when (val c = c0) {
                 is TelegramCommand.Nav -> {
                     val place = resolvePlace(app, c)
                     if (place == null) {
-                        api.sendMessage(chatId, "🤔 Couldn’t find “${c.placeOrQuery}”. Add it in saved places or send a location.")
+                        // /home · /office mà chưa ghim ⇒ nói thật, không dẫn bừa tới nơi đầu sổ (review 26/10 P3).
+                        val msg = if (c.placeOrQuery.startsWith("__pin")) "📌 No place pinned for this yet — pin one with /places"
+                                  else "🤔 Couldn’t find “${c.placeOrQuery}”. Add it in saved places or send a location."
+                        api.sendMessage(chatId, msg)
                         return@runCatching
                     }
                     val apps = c.apps.ifEmpty { listOf(Prefs.voiceNavDefaultApp(app)) }
@@ -178,41 +223,53 @@ class TelegramBridgeService : Service() {
                     val places = WorkspacePrefs(app).savedPlaces()
                     if (places.isEmpty()) api.sendMessage(chatId, "📍 No saved places yet. Add some in Kachi settings.")
                     else {
-                        val n = Prefs.bumpTelegramBoardNonce(app)   // bảng mới (QD-17)
-                        val oldMsg = Prefs.telegramBoardMsg(app)
-                        if (oldMsg != 0L) runCatching { api.clearMarkup(chatId, oldMsg) }
+                        // QD-17: bảng mới với nonce KẾ TIẾP; chỉ ghi nonce + gỡ bảng cũ khi GỬI ĐƯỢC (như sendMainMenu).
+                        val n = Prefs.telegramBoardNonce(app) + 1
                         val pinned = Prefs.telegramPinnedPlaces(app).toSet()
                         val id = api.sendMessageReturningId(chatId, "📍 Saved places — tap name to navigate, 📌 to pin to quick row:",
                             TelegramMenu.placesManage(n, places, pinned))
-                        if (id != null) Prefs.setTelegramBoardMsg(app, id)
+                        if (id != null) {
+                            Prefs.bumpTelegramBoardNonce(app)
+                            val oldMsg = Prefs.telegramBoardMsg(app)
+                            if (oldMsg != 0L && oldMsg != id) runCatching { api.clearMarkup(chatId, oldMsg) }
+                            Prefs.setTelegramBoardMsg(app, id)
+                        }
                     }
                 }
                 TelegramCommand.Cancel -> {
                     PendingNavStore.consume(app)
-                    api.sendMessage(chatId, TelegramInlineKeyboard.ackText(c))
+                    api.sendMessage(chatId, "✖️ Pending destination cleared")
                 }
                 TelegramCommand.Help -> api.sendMessage(chatId, TelegramInlineKeyboard.HELP)
                 TelegramCommand.Menu -> sendMainMenu(app, api, chatId)
                 TelegramCommand.Status -> sendMainMenu(app, api, chatId)   // P1-6: /status = menu + bảng trạng thái sống
                 is TelegramCommand.Unknown -> api.sendMessage(chatId, "🤔 Didn’t get that. Try /menu or /help")
             }
+            // R-nf3/QD-17 (review 26/10 P2-6): sau một lệnh gõ có tác dụng, đưa bảng điều khiển xuống CUỐI chat — chỉ khi
+            // người dùng ĐÃ có bảng (đã từng /menu), để người chỉ gõ lệnh không bị bot gửi thêm tin.
+            val moves = c0 is TelegramCommand.Nav || c0 is TelegramCommand.Music || c0 is TelegramCommand.Control || c0 == TelegramCommand.Cancel
+            if (moves && Prefs.telegramBoardMsg(app) != 0L) sendMainMenu(app, api, chatId)
         }.onFailure { Log.w(TAG, "thi hành lệnh Telegram lỗi: ${it.javaClass.simpleName}") }
     }
 
     /** Tên nơi trong sổ địa chỉ > chỉ số từ nút (`#<i>`) > nơi ghim (`__pin0__`/`__pin1__`) > chữ/toạ độ trực tiếp. */
     private fun resolvePlace(app: Context, c: TelegramCommand.Nav): com.byd.clusternav.launcher.SavedPlace? {
         val places = WorkspacePrefs(app).savedPlaces()
-        // P1-6: /home → nơi ghim #0, /office → nơi ghim #1 (hàng nhanh); không ghim ⇒ 2 nơi đầu sổ (pinnedPlaces).
-        if (c.placeOrQuery == "__pin0__") return pinnedPlaces(app).getOrNull(0)
-        if (c.placeOrQuery == "__pin1__") return pinnedPlaces(app).getOrNull(1)
-        // Nút inline gửi "#<index>" (P2-17) ⇒ giải index trong CÙNG danh sách đã render.
-        if (c.placeOrQuery.startsWith("#")) {
-            val i = c.placeOrQuery.drop(1).toIntOrNull() ?: return null
-            return places.getOrNull(i)
-        }
+        // P1-6: /home → nơi GHIM #0, /office → nơi GHIM #1. Chỉ ghim THẬT — không lùi về nơi đầu sổ (review 26/10 P3:
+        // "/home" từng dẫn tới "Gym" khi chưa ghim). Chưa ghim ⇒ null ⇒ chỗ gọi nhắc ghim qua /places.
+        if (c.placeOrQuery == "__pin0__") return explicitPinned(app).getOrNull(0)
+        if (c.placeOrQuery == "__pin1__") return explicitPinned(app).getOrNull(1)
         SavedPlaces.find(places, c.placeOrQuery)?.let { return it }
-        // Toạ độ (share-location / "/go 21,105") vẫn dẫn được; chữ trần không trong sổ ⇒ coi là địa chỉ cho Google Maps.
-        return SavedPlaces.of(c.placeOrQuery, c.placeOrQuery, c.coords)
+        // Toạ độ: share-location (c.coords) HOẶC gõ "/go 21.02, 105.85" (review 26/10 P2-10: trước đây chuỗi gõ
+        // không thành lat/lng ⇒ VietMap (cần toạ độ) bị bỏ, điểm đến kẹt thử lại 24h). Chữ trần ⇒ địa chỉ cho Google Maps.
+        val coords = c.coords ?: c.placeOrQuery.takeIf { SavedPlaces.parseCoords(it) != null }
+        return SavedPlaces.of(c.placeOrQuery, c.placeOrQuery, coords)
+    }
+
+    /** Nơi người dùng ĐÃ GHIM (theo thứ tự ghim), không có phần lùi về đầu sổ. */
+    private fun explicitPinned(app: Context): List<com.byd.clusternav.launcher.SavedPlace> {
+        val all = WorkspacePrefs(app).savedPlaces()
+        return Prefs.telegramPinnedPlaces(app).mapNotNull { name -> all.firstOrNull { it.name == name } }
     }
 
     private fun isSafeUrl(url: String): Boolean =       // P2-12: chỉ http(s), chặn scheme lạ
@@ -289,25 +346,27 @@ class TelegramBridgeService : Service() {
 
 
     /**
-     * Gửi menu chính (lệnh /menu /start) — QD-17 một-bảng-sống: tăng nonce bền, GỠ NÚT bảng cũ, gửi bảng mới ở
-     * cuối chat, nhớ message_id mới. Nút của bảng cũ nay nonce khác ⇒ không thi hành.
+     * Gửi menu chính (lệnh /menu /start, và sau mỗi lệnh gõ — R-nf3) — QD-17 một-bảng-sống: dựng bảng với nonce KẾ
+     * TIẾP, gửi ở cuối chat; CHỈ KHI gửi được mới ghi nonce mới + gỡ nút bảng cũ (review 26/10 P3: tăng nonce trước rồi
+     * gửi hỏng thì bảng cũ chết mà bảng mới không có). Nút của bảng cũ sau đó mang nonce khác ⇒ không thi hành.
      */
     private fun sendMainMenu(app: Context, api: TelegramApi, chatId: Long) {
-        val n = Prefs.bumpTelegramBoardNonce(app)
+        val n = Prefs.telegramBoardNonce(app) + 1
+        val newId = api.sendMessageReturningId(chatId, statusText(app), TelegramMenu.main(n, pinnedPlaces(app))) ?: return
+        Prefs.bumpTelegramBoardNonce(app)
         val oldMsg = Prefs.telegramBoardMsg(app)
-        if (oldMsg != 0L) runCatching { api.clearMarkup(chatId, oldMsg) }   // gỡ nút bảng cũ (còn text, không bấm được)
-        val newId = api.sendMessageReturningId(chatId, statusText(app), TelegramMenu.main(n, pinnedPlaces(app)))
-        if (newId != null) Prefs.setTelegramBoardMsg(app, newId)
+        if (oldMsg != 0L && oldMsg != newId) runCatching { api.clearMarkup(chatId, oldMsg) }   // gỡ nút bảng cũ
+        Prefs.setTelegramBoardMsg(app, newId)
     }
 
     internal fun runControl(app: Context, c: TelegramCommand.Control): String {
         val arg = c.value ?: 1
         // P0-2: cổng tốc độ NGOÀI (rộng cho mọi bộ phận bung/che tầm nhìn khi lệnh từ điện thoại).
-        val motion = { CtlSafetyPolicy.readMotion({ id -> runCatching { AppContainer.get(app).readFresh(id) }.getOrNull() }) {
+        val motion = { CtlSafetyPolicy.readMotionFull({ id -> runCatching { AppContainer.get(app).readFresh(id) }.getOrNull() }) {
             AppContainer.get(app).carStatusRepository.status.value
         } }
         if (CtlSafetyPolicy.blockedExternal(c.controlId, arg, motion)) {
-            return "🚗 ${c.controlId}: only opens when the car is stopped"
+            return "🚗 ${c.controlId}: only opens when the car is parked (gear P)"
         }
         val captured = StringBuilder()
         val dispatch = VoiceControlDispatch(
@@ -346,7 +405,7 @@ class TelegramBridgeService : Service() {
         private const val TAG = "KachiTelegram"
         private const val QUERY_PREFIX = "q:"   // pending nhạc dạng tên bài (phân biệt với link http(s))
         /** Domain nút cần công tắc "điều khiển xe" (P0-1). nav/music KHÔNG thuộc ⇒ luôn cho. */
-        private val CAR_CONTROL_DOMAINS = setOf("ac", "seat", "misc")
+        private val CAR_CONTROL_DOMAINS = TelegramFreshness.CAR_CONTROL_DOMAINS   // một nguồn (:core)
 
         /** 9 lệnh gợi ý (QD-21, OQ3 tiếng Anh) — chỉ loại nút-không-làm-được / phím tắt một phát. */
         private val MENU_COMMANDS = listOf(

@@ -28,9 +28,11 @@ object CtlSafetyPolicy {
     /**
      * Control "mở/khoá thân xe" — bắn qua broadcast phải có `auto_confirm`, và script sweep không tự bắn.
      *
-     * Gồm: khoá/mở khoá cửa (`lock`,`door`), cốp (`trunk`), nóc (`sunroof`), rèm (`sunshade`),
-     * kính cửa lái (`window`), kính mở-hết (`windows_all`) và từng kính (`win_lf`,`win_rf`,`win_lr`,`win_rr`).
-     * Đây đúng tập DENYLIST mà task 71-hal-sweep yêu cầu ("kính mở-hết/nóc/rèm" + từng kính + khoá + cốp).
+     * Gồm: cốp (`trunk`), nóc (`sunroof`), rèm (`sunshade`), kính mở-hết / đóng-hết (`windows_all`,
+     * `windows_close_all`), từng kính (`win_lf`,`win_rf`,`win_lr`,`win_rr`) và kính nửa (`win_half_*`).
+     * ⚠ KHÔNG gồm khoá/mở khoá cửa (`lock`/`door`) — tới 3.1.16 KDoc này ghi nhầm là có (senior review 26/10 P2-2).
+     * Hệ quả cần biết: [requiresStationaryExternal] tái dùng tập này nên lệnh `door`/`lock` từ Telegram KHÔNG bị cổng
+     * tốc độ (mở khoá không bung gì ra ngoài) — chúng vẫn sau công tắc "cho phép điều khiển xe" + cổng tin cũ.
      *
      * ⚠ 1.85: `hood` rời danh sách vì **mã đã xoá khỏi registry** (xe không có ca-pô điện — [ĐO xe 2026-09-20 §4]),
      * không phải vì nó bớt nguy hiểm. Khoá trẻ em (`child_lock`/`child_lock_r`) CỐ Ý không vào đây: nó khoá *chốt
@@ -83,9 +85,20 @@ object CtlSafetyPolicy {
      */
     fun requiresStationaryExternal(id: String): Boolean = id in CONFIRM_REQUIRED
 
-    /** Như [blocked] nhưng cho lệnh TỪ NGOÀI (Telegram): tập stationary rộng bằng [CONFIRM_REQUIRED]. */
+    /**
+     * Như [blocked] nhưng cho lệnh TỪ NGOÀI (Telegram): tập rộng bằng [CONFIRM_REQUIRED] và phép chứng-minh-đứng CHẶT
+     * hơn ([provenParkedExternal] — phải ở số P). Senior review 26/10 P2-1: `tốc độ == 0` một mình cho qua lúc dừng đèn
+     * đỏ ở số D, mà người bấm trên điện thoại không thấy xe ⇒ cốp bung giữa ngã tư rồi xe chạy tiếp.
+     */
     fun blockedExternal(id: String, arg: Int, motion: () -> Motion): Boolean =
-        requiresStationaryExternal(id) && arg > 0 && !provenStationary(motion())
+        requiresStationaryExternal(id) && arg > 0 && !provenParkedExternal(motion())
+
+    /**
+     * Xe CHỨNG MINH đỗ cho lệnh ngoài: số đọc được là P **và** tốc độ (nếu đọc được) bằng 0. Số không đọc được ⇒ chặn
+     * (fail-safe). Cần [readMotionFull] — [readMotion] bỏ đọc số khi đã có tốc độ.
+     */
+    fun provenParkedExternal(m: Motion): Boolean =
+        parked(m.gear) == true && (m.speedKmh == null || m.speedKmh == 0)
 
     /** Ảnh chụp chuyển động cho cổng: [speedKmh] / [gear] thô như [CarStatus.Drivetrain] (`null` = không đọc được). */
     data class Motion(val speedKmh: Int?, val gear: String?)
@@ -121,6 +134,14 @@ object CtlSafetyPolicy {
             CarStatusTap.apply(runCatching { fresh(id) }.getOrNull() ?: snapshot()).drivetrain
         val s = read("speed")
         return if (s.speedKmh != null) Motion(s.speedKmh, s.gear) else Motion(null, read("gear").gear)
+    }
+
+    /** Như [readMotion] nhưng LUÔN đọc số (cổng ngoài [provenParkedExternal] cần số P kể cả khi có tốc độ). */
+    fun readMotionFull(fresh: (String) -> CarStatus?, snapshot: () -> CarStatus): Motion {
+        fun read(id: String): CarStatus.Drivetrain =
+            CarStatusTap.apply(runCatching { fresh(id) }.getOrNull() ?: snapshot()).drivetrain
+        val s = read("speed")
+        return Motion(s.speedKmh, s.gear ?: read("gear").gear)
     }
 
     /** Xe CHỨNG MINH được là đứng yên: tốc độ đọc được bằng 0; không có tốc độ thì số đọc được là P. */

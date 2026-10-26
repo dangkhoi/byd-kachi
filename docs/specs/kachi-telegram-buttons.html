@@ -228,6 +228,16 @@
 </ul>
 <b>Hoãn (ledger, P2):</b> P2-2 (toast async <code>VoiceReadback</code> trả về sau khi đọc — kết quả thật của temp/fan hiện là câu chung, pre-existing nhánh cha); P2-6 (mỗi callback đọc ~11 lượt HAL — gom 1 lượt đầu). P2-4 (pin toggle-mù) giữ toggle (ít dùng). Các P3 spec-đóng + code chết (<code>placesKeyboard</code>) ghi ledger.
 <br>[ĐO] sau vá: <code>:core</code>+<code>:app</code> telegram tests XANH · full 5-module XANH · lint 0 · red-when-reverted P0-1/nonce/seat-off [x].</li>
+<li><b>Pass 2 — 2026-10-26 tối · review TOÀN NGÀY 3.1.15 + 3.1.16</b> (senior architect độc lập, opus, chưa xem các pass trước; <code>subagents/466509004ac95218</code>) — Verdict ban đầu <b>NOT APPROVED: 1×P0, 4×P1, 10×P2</b>. ĐÃ VÁ ⇒ <b>3.1.17 (222)</b>:
+<ul>
+<li><b>P0-1</b> lệnh điều khiển xe tồn đọng tới 24h trong hàng chờ Telegram (bot chỉ nghe khi Kachi chạy) ⇒ lần nổ máy sau cốp bung lúc không ai chờ. Vá: <code>:core TelegramFreshness</code> — lệnh GHI XE trong lượt đọc tồn đọng (lượt đầu sau mỗi khoảng không hỏi: vòng mới, màn vừa sáng, mạng vừa hồi) ⇒ BỎ + nhắn chủ xe; lệnh gõ còn đòi tuổi ≤ 2 phút (<code>message.date</code>). Điểm đến/nhạc vẫn được tồn đọng (usecase gửi từ nhà). Test giá trị + đột biến đỏ.</li>
+<li><b>P1-1</b> APK release vào git (whitelist <code>!apk/Kachi-*-release.apk</code>) ⇒ merge <code>main</code> là OTA. Vá: gỡ khỏi chỉ mục; bản cá nhân tên <code>Kachi-&lt;ver&gt;-CHUA-DANG.apk</code> (bị <code>*.apk</code> chặn, không khớp <code>UpdateChecker.RE_APK</code>). Backlog sửa câu sai. ⚠ nhánh remote <code>feat/telegram-remote</code> vẫn mang <code>Kachi-3.1.15-release.apk</code> ở đầu nhánh — không được merge nhánh đó.</li>
+<li><b>P1-2</b> lỗi polling không nghỉ (token sai ⇒ 401 tức thì ⇒ dội Telegram): <code>getUpdates</code> trả <code>null</code> khi lỗi, vòng lùi chờ 5s→15s→60s→5′ có jitter. <b>P1-3</b> <code>HttpConn.open</code> ném ngoài try giết vòng ⇒ nay trong try + <code>runCatching</code> trong vòng; một update hỏng không kẹt con trỏ.</li>
+<li><b>P1-4</b> guide chỉ tới APK không tồn tại ⇒ sửa bản/đường dẫn/sha256.</li>
+<li><b>P2</b>: cổng ngoài đòi số P (<code>provenParkedExternal</code> + <code>readMotionFull</code>; đèn đỏ số D không mở) · KDoc <code>CONFIRM_REQUIRED</code> sửa (không gồm <code>lock</code>/<code>door</code>) · GPS không trộn đồng hồ · bài canh :app khoá hình dạng cổng (đột biến <code>!blockedExternal</code> nay đỏ) · toast −/+ nói thật + debounce mốc riêng · bảng nút xuống cuối chat sau lệnh gõ · pending theo hồ sơ (ghi rõ ở guide) · guide <code>/seat</code> = mát ghế lái · toạ độ gõ tay thành lat/lng.</li>
+<li><b>P3</b>: gỡ mã chết <code>placesKeyboard</code>/<code>parseCallback</code>/<code>ackText</code>/<code>deleteMessage</code> · <code>/home</code>/<code>/office</code> không lùi nơi đầu sổ · nonce chỉ ghi khi gửi bảng được · không log tên nơi.</li>
+</ul>
+<b>Hoãn (ledger):</b> toast kết quả thật của <code>VoiceReadback</code> (bất đồng bộ, có từ nhánh cha) · gom đọc HAL một lượt/callback · ghế sưởi mức 3–4 không đánh ✓ · pin toggle. [ĐO] <code>:core</code> 5695/0 · <code>:app</code> 2523/0 · lint 0 · đột biến M2 (đảo cổng app) · M3 (bỏ cổng tin cũ) · M4 (cổng ngoài lùi về tốc-độ-0) đều ĐỎ, khôi phục bằng bản sao, shasum khớp.</li>
 </ul>
 
 </body>

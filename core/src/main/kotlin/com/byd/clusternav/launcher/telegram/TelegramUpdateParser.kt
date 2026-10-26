@@ -117,22 +117,4 @@ object TelegramUpdateParser {
     fun parseLocation(lat: Double, lng: Double): TelegramCommand =
         TelegramCommand.Nav(placeOrQuery = "Shared location", coords = "$lat, $lng")
 
-    /** Callback-data từ nút inline. `navi:<index>` (từ [TelegramInlineKeyboard], P2-17) hoặc `nav:<tên>[:<apps>]`. */
-    fun parseCallback(data: String): TelegramCommand {
-        val parts = data.split(':')
-        return when (parts.getOrNull(0)) {
-            // navi:<index> — `:app` giải index → mục trong sổ (placeOrQuery = "#<index>").
-            "navi" -> parts.getOrNull(1)?.trim()?.toIntOrNull()
-                ?.let { TelegramCommand.Nav("#$it") } ?: TelegramCommand.Unknown(data)
-            "nav" -> {
-                val name = parts.getOrNull(1)?.let { SavedPlaces.sanitize(it) }.orEmpty()
-                if (name.isEmpty()) return TelegramCommand.Unknown(data)
-                val apps = parts.getOrNull(2)?.split(APP_SEP)?.map { it.trim() }?.filter { it.isNotEmpty() }
-                    ?: emptyList()
-                TelegramCommand.Nav(name, apps = apps)
-            }
-            "cancel" -> TelegramCommand.Cancel
-            else -> TelegramCommand.Unknown(SavedPlaces.sanitize(data))
-        }
-    }
 }
