@@ -34,17 +34,26 @@ sealed class TelegramCommand {
     /** `/help` ⇒ bot liệt kê lệnh + nút. */
     object Help : TelegramCommand()
 
+    /** `/menu` · `/start` ⇒ bot mở bảng điều khiển bấm nút (menu chính). */
+    object Menu : TelegramCommand()
+
+    /** `/status` ⇒ mở menu + bảng trạng thái sống (giống /menu, nhấn mạnh trạng thái). */
+    object Status : TelegramCommand()
+
     /** Không hiểu ⇒ bot báo + gợi ý `/help`. [raw] đã khử để log an toàn. */
     data class Unknown(val raw: String) : TelegramCommand()
 }
 
 /**
  * Một update đã phân tích: lệnh + con trỏ [updateId] (chống đọc trùng) + [chatId] (kiểm quyền) + [callbackId]
- * (để `answerCallbackQuery`). `null` khi update không mang gì dùng được.
+ * (để `answerCallbackQuery`) + [messageId] (id tin chứa bảng — để sửa/xoá bảng, QD-17). `null` khi update không
+ * mang gì dùng được.
  */
 data class TelegramUpdate(
     val updateId: Long,
     val chatId: Long?,
     val command: TelegramCommand,
     val callbackId: String? = null,
+    val messageId: Long? = null,
+    val rawCallback: String? = null,   // chuỗi callback_data gốc (menu mới parse bằng TelegramCallback ở :app)
 )

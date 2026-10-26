@@ -210,6 +210,25 @@
 
 <h2>10. Reviewer Log</h2>
 <p class="meta">(append-only — mỗi pass senior review thêm một mục)</p>
+<ul>
+<li><b>Pass 1 — 2026-10-26</b> (senior architect, opus) — Verdict ban đầu <b>KHÔNG APPROVED: 1×P0, 7×P1, 8×P2</b>. ĐÃ VÁ:
+<ul>
+<li><b>P0-1</b> — nút menu điều khiển xe dù owner TẮT công tắc: thêm gate <code>cb.domain in CAR_CONTROL_DOMAINS && !cfg.controlEnabled</code> trong <code>handleMenuCallback</code> (nav/music vẫn cho). Red-when-reverted [x].</li>
+<li><b>P1-1</b> — <code>answerCallback</code> làm NGƯỢC thứ tự: nay gọi <code>api.answerCallback(it)</code> NGAY sau nonce gate, TRƯỚC <code>dispatchMenu</code> (R-nf4). Test đổi sang assert thứ tự xuất hiện.</li>
+<li><b>P1-2</b> — nonce RAM ⇒ bảng cũ hồi sinh sau tắt/mở xe: chuyển sang prefs bền <code>telegram_board_nonce</code> (<code>bumpTelegramBoardNonce</code>/<code>telegramBoardNonce</code>).</li>
+<li><b>P1-3</b> — QD-17 một-bảng-sống chưa làm: <code>sendMainMenu</code>/<code>ListPlaces</code> nay gỡ nút bảng cũ (<code>clearMarkup</code>) + nhớ <code>telegram_board_msg</code> + gửi bảng mới.</li>
+<li><b>P1-4</b> — Tắt ghế chỉ tắt quạt, sưởi còn chạy: nhánh off ghi CẢ <code>seatc$suffix=0</code> LẪN <code>seath$suffix=0</code>. Red-when-reverted [x].</li>
+<li><b>P1-5</b> — ➕ mở thêm dẫn sai nơi khi vào từ ghim: <code>absoluteIndexOfPinned</code> map index ghim → index tuyệt đối trước <code>navConfirm</code>.</li>
+<li><b>P1-6</b> — /home//office//status không có nhánh xử: thêm <code>Status</code> command + parser <code>home</code>→pin0 / <code>office</code>→pin1 / <code>status</code>→menu.</li>
+<li><b>P1-7</b> — <code>carLinked=true</code> hardcode: nay <code>carLinked(app)</code> đọc control thật; GPS truyền <code>Boolean?</code> (P2-1, null→"—").</li>
+<li><b>P2-3</b> — "Quạt tắt" bị xe bỏ qua: fan 0 phát <code>ac_auto=1</code> (AUTO).</li>
+<li><b>P2-5</b> — debounce −/+: <code>stepTemp</code>/<code>stepFan</code> cửa sổ 600ms, lệnh tuyệt đối.</li>
+<li><b>P2-7</b> — bảng Khác + cổng tốc độ: thêm Trunk/Windows (open/close) + PM2.5 (QD-22) ⇒ cổng <code>blockedExternal</code> nay có nút chạm tới.</li>
+<li><b>P2-8</b> — thêm hàng −/+ quạt. <b>P3</b> — mọi toast chuyển TIẾNG ANH (OQ3); ghế off hiện "off" không "—".</li>
+</ul>
+<b>Hoãn (ledger, P2):</b> P2-2 (toast async <code>VoiceReadback</code> trả về sau khi đọc — kết quả thật của temp/fan hiện là câu chung, pre-existing nhánh cha); P2-6 (mỗi callback đọc ~11 lượt HAL — gom 1 lượt đầu). P2-4 (pin toggle-mù) giữ toggle (ít dùng). Các P3 spec-đóng + code chết (<code>placesKeyboard</code>) ghi ledger.
+<br>[ĐO] sau vá: <code>:core</code>+<code>:app</code> telegram tests XANH · full 5-module XANH · lint 0 · red-when-reverted P0-1/nonce/seat-off [x].</li>
+</ul>
 
 </body>
 </html>

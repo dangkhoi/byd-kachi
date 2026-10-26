@@ -48,6 +48,16 @@ Xong. Kachi tự chạy một dịch vụ nền hỏi Telegram **mỗi 60 giây*
 
 ## Phần 3 — Cách dùng (gửi lệnh cho bot)
 
+> **Cách DỄ NHẤT: gõ `/menu`** — bot hiện **bảng nút bấm**, mọi thứ chọn bằng cách nhấn, không phải nhớ lệnh (bản 3.1.16+). Đầu bảng là **trạng thái sống** (xe nối/GPS/điều hoà/ghế/điểm đến/nhạc). Bố cục:
+> - Hàng nhanh: 🏠 **nơi ghim 1** · 🏢 **nơi ghim 2** · ❄️ **Cool 24°** (bật AUTO + 24° + quạt 4 một chạm)
+> - 4 nhóm: 🧭 Navigate · ❄️ AC · 🎵 Music · 🪑 Seat · 🌫 More · 🔄 Refresh
+> - **AC**: bấm 20°/22°/24°/26° (hoặc −/+), quạt Off/Low/Mid/High, AUTO, sấy kính
+> - **Music**: ⏮ ⏸/▶️ ⏭ điều khiển nhạc **đang phát** (bản 3.1.16+)
+> - **Seat**: Cool 1/2 · Heat 1/2 · Tắt — cho ghế lái + phụ
+> - Gõ **`/places`** để ghim nơi vào hàng nhanh (nút 📌). Gõ **`/`** để Telegram gợi ý 9 lệnh.
+>
+> Mọi nút là **lệnh tuyệt đối** (bấm "24°" là đúng 24°, bấm lại vẫn 24° — an toàn khi mạng chập chờn). Cốp/kính vẫn chỉ mở khi xe dừng dù bấm nút.
+
 Nhắn thẳng vào bot trên Telegram. **Lệnh bắt đầu bằng `/`**, tiếng Anh; **tên nơi để tiếng Việt thoải mái**.
 
 ### 3.1 Dẫn đường

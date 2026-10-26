@@ -41,9 +41,14 @@ object TelegramUpdateParser {
         val rest = if (sp < 0) "" else text.substring(sp + 1).trim()
         return when (verb) {
             "go", "nav" -> if (rest.isEmpty()) TelegramCommand.ListPlaces else parseGo(rest)
+            "places" -> TelegramCommand.ListPlaces
             "play", "music" -> if (rest.isEmpty()) TelegramCommand.Unknown(text) else parsePlay(rest.trim())
             "cancel", "stop" -> TelegramCommand.Cancel
-            "help", "start" -> TelegramCommand.Help
+            "menu", "start" -> TelegramCommand.Menu
+            "status" -> TelegramCommand.Status
+            "home" -> TelegramCommand.Nav(SavedPlaces.sanitize("__pin0__"))     // P1-6: dẫn nơi ghim #0 (giải ở :app)
+            "office" -> TelegramCommand.Nav(SavedPlaces.sanitize("__pin1__"))   // P1-6: dẫn nơi ghim #1
+            "help" -> TelegramCommand.Help
             else -> {
                 // Điều khiển xe: verb = id control (hoặc bí danh). "on"/"off"/số là tham số.
                 val id = CONTROL_ALIASES[verb] ?: verb

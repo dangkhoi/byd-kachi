@@ -20,6 +20,9 @@ private const val K_TG_ENABLED = "telegram_enabled"
 private const val K_TG_CONTROL = "telegram_control_enabled"
 private const val K_TG_OFFSET = "telegram_offset"        // con trỏ getUpdates (bền, theo XE) — P2-10
 private const val K_TG_PENDING_MUSIC = "telegram_pending_music"  // link nhạc chờ (một-lần) — R8/P1-9
+private const val K_TG_PINNED = "telegram_pinned_places"  // tên 2 nơi ghim hàng nhanh (QD-04), ngăn bằng '\n'
+private const val K_TG_NONCE = "telegram_board_nonce"    // nonce bảng SỐNG (bền — bảng cũ sau tắt/mở xe không hồi sinh), P1-2
+private const val K_TG_BOARD_MSG = "telegram_board_msg"  // message_id bảng điều khiển sống (một-bảng-sống QD-17)
 
 fun Prefs.telegramConfig(ctx: Context): TelegramConfig {
     val p = Prefs.sp(ctx)
@@ -52,4 +55,25 @@ fun Prefs.setPendingMusicUrl(ctx: Context, url: String?) {
     val e = Prefs.sp(ctx).edit()
     if (url.isNullOrBlank()) e.remove(K_TG_PENDING_MUSIC) else e.putString(K_TG_PENDING_MUSIC, url)
     e.apply()
+}
+
+/** Tên 2 nơi ghim hàng nhanh (QD-04). Rỗng ⇒ `:app` lùi về 2 nơi đầu sổ. */
+fun Prefs.telegramPinnedPlaces(ctx: Context): List<String> =
+    Prefs.sp(ctx).getString(K_TG_PINNED, "")?.split('\n')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+fun Prefs.setTelegramPinnedPlaces(ctx: Context, names: List<String>) {
+    Prefs.sp(ctx).edit().putString(K_TG_PINNED, names.take(2).joinToString("\n")).apply()
+}
+
+/** Nonce bảng SỐNG (P1-2): bền qua lần BYD giết app ⇒ nút của bảng cũ (nonce khác) không bao giờ hồi sinh. */
+fun Prefs.telegramBoardNonce(ctx: Context): Int = Prefs.sp(ctx).getInt(K_TG_NONCE, 0)
+fun Prefs.bumpTelegramBoardNonce(ctx: Context): Int {
+    val next = telegramBoardNonce(ctx) + 1
+    Prefs.sp(ctx).edit().putInt(K_TG_NONCE, next).apply()
+    return next
+}
+
+/** message_id của bảng điều khiển sống (QD-17 một-bảng-sống); 0 = chưa có. */
+fun Prefs.telegramBoardMsg(ctx: Context): Long = Prefs.sp(ctx).getLong(K_TG_BOARD_MSG, 0L)
+fun Prefs.setTelegramBoardMsg(ctx: Context, id: Long) {
+    Prefs.sp(ctx).edit().putLong(K_TG_BOARD_MSG, id).apply()
 }

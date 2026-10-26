@@ -34,6 +34,8 @@ object TelegramInlineKeyboard {
         TelegramCommand.Cancel -> "✖️ Pending destination cleared"
         TelegramCommand.ListPlaces -> "📍 Pick a destination:"
         TelegramCommand.Help -> HELP
+        TelegramCommand.Menu -> "📋 Menu"
+        TelegramCommand.Status -> "📊 Status"
         is TelegramCommand.Unknown -> "🤔 Didn’t get that. Try /help"
     }
 

@@ -74,11 +74,15 @@ class TelegramApi(private val botToken: String) {
         // callback_query (nút bấm) — lấy id người bấm (from.id) để kiểm quyền, không chỉ chat.id (P2-11).
         u.optJSONObject("callback_query")?.let { cq ->
             val data = cq.optString("data", "")
-            val chat = cq.optJSONObject("message")?.optJSONObject("chat")
+            val message = cq.optJSONObject("message")
+            val chat = message?.optJSONObject("chat")
             if (chat != null && chat.optString("type", "private") != "private") return null
             val fromId = cq.optJSONObject("from")?.optLong("id")
             val cbId = cq.optString("id", "").takeIf { it.isNotEmpty() }
-            return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseCallback(data), cbId)
+            val msgId = message?.optLong("message_id")?.takeIf { it > 0 }
+            // chatId = from.id (NHẤT QUÁN với message path: authorize theo NGƯỜI bấm). Trong chat riêng tư 1-1
+            // from.id == chat.id nên gửi tin/sửa bảng vẫn đúng đích. rawCallback giữ chuỗi gốc cho menu mới.
+            return TelegramUpdate(updateId, fromId, TelegramUpdateParser.parseCallback(data), cbId, msgId, rawCallback = data)
         }
         // message
         val msg = u.optJSONObject("message") ?: return TelegramUpdate(updateId, null, TelegramCommand.Unknown(""))
@@ -104,9 +108,45 @@ class TelegramApi(private val botToken: String) {
         return call("sendMessage", q, readTimeoutMs = 10_000) != null
     }
 
-    /** Đóng vòng xoay "đang xử lý" của nút sau khi nhận callback. */
-    fun answerCallback(callbackId: String): Boolean =
-        call("answerCallbackQuery", "callback_query_id=${enc(callbackId)}", readTimeoutMs = 10_000) != null
+    /** Như [sendMessage] nhưng trả `message_id` của tin vừa gửi (cho một-bảng-sống QD-17). `null` khi lỗi. */
+    fun sendMessageReturningId(chatId: Long, text: String, replyMarkupJson: String? = null): Long? {
+        var q = "chat_id=$chatId&text=${enc(text)}"
+        if (!replyMarkupJson.isNullOrBlank()) q += "&reply_markup=${enc(replyMarkupJson)}"
+        val body = call("sendMessage", q, readTimeoutMs = 10_000) ?: return null
+        return runCatching { JSONObject(body).optJSONObject("result")?.optLong("message_id")?.takeIf { it > 0 } }.getOrNull()
+    }
+
+    /** Đóng vòng xoay "đang xử lý" + toast tuỳ chọn (R-nf4: gọi &lt;1s TRƯỚC khi chờ xe). */
+    fun answerCallback(callbackId: String, toast: String? = null): Boolean {
+        var q = "callback_query_id=${enc(callbackId)}"
+        if (!toast.isNullOrBlank()) q += "&text=${enc(toast)}"
+        return call("answerCallbackQuery", q, readTimeoutMs = 10_000) != null
+    }
+
+    /** Sửa text + bảng của một tin đã gửi (QD-17 một-bảng-sống — vẽ lại tại chỗ). */
+    fun editMessageText(chatId: Long, messageId: Long, text: String, replyMarkupJson: String? = null): Boolean {
+        var q = "chat_id=$chatId&message_id=$messageId&text=${enc(text)}"
+        if (!replyMarkupJson.isNullOrBlank()) q += "&reply_markup=${enc(replyMarkupJson)}"
+        return call("editMessageText", q, readTimeoutMs = 10_000) != null
+    }
+
+    /** Gỡ nút của một tin cũ (QD-17: bảng cũ còn text nhưng không bấm được nữa). */
+    fun clearMarkup(chatId: Long, messageId: Long): Boolean =
+        call("editMessageReplyMarkup", "chat_id=$chatId&message_id=$messageId", readTimeoutMs = 10_000) != null
+
+    /** Xoá hẳn một tin (dùng khi dọn bảng cũ). */
+    fun deleteMessage(chatId: Long, messageId: Long): Boolean =
+        call("deleteMessage", "chat_id=$chatId&message_id=$messageId", readTimeoutMs = 10_000) != null
+
+    /** Đăng ký gợi ý lệnh (gõ "/" hiện danh sách — QD-21). [commands] = cặp (lệnh không dấu '/', mô tả). */
+    fun setMyCommands(commands: List<Pair<String, String>>): Boolean {
+        val arr = commands.joinToString(",") { (cmd, desc) ->
+            """{"command":"${escJson(cmd)}","description":"${escJson(desc)}"}"""
+        }
+        return call("setMyCommands", "commands=${enc("[$arr]")}", readTimeoutMs = 10_000) != null
+    }
+
+    private fun escJson(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"")
 
     companion object {
         private const val TAG = "KachiTelegram"
