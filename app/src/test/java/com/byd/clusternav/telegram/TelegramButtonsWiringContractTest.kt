@@ -76,4 +76,25 @@ class TelegramButtonsWiringContractTest {
         val hits = files.filter { bad.containsMatchIn(SourceRoots.codeOf("$d/${it.name}")) }.map { it.name }
         assertTrue(hits.isEmpty(), "statusRow được truyền chuỗi không phải mã màu ở: $hits")
     }
+
+    /** Owner 27/10: bàn phím nút mất sau lần bấm đầu (tin ForceReply thay nó) ⇒ mọi câu trả lời chữ mang lại nó. */
+    @Test
+    fun `cau tra loi chu tron mang lai ban phim nut`() {
+        val h = SourceRoots.body(code("TelegramBridgeService.kt"), "private fun handleUpdate(")
+        assertTrue(h.contains("val say = { text: String -> api.sendMessage(chatId, text, TelegramReplyKeyboard.markup()) }"))
+        listOf("say(navigate(app, c))", "say(playMusic(app, c))", "say(TelegramInlineKeyboard.HELP)").forEach {
+            assertTrue(h.contains(it), "thiếu: $it")
+        }
+    }
+
+    /** Owner 27/10: Go ⇒ nơi đã lưu ⇒ CHỌN app (gmaps / vietmap / cả hai) + ghim nơi thường dùng. */
+    @Test
+    fun `bam noi da luu thi hien bang chon app, chon app moi dat diem den`() {
+        val b = SourceRoots.body(code("TelegramBridgeService.kt"), "private fun handlePlacesButton(")
+        val go = b.substringAfter("\"go\" ->").substringBefore("\"pin\" ->")
+        assertTrue(go.contains("picker(") && !go.contains("setDestination("), "bấm nơi KHÔNG dẫn ngay — hiện bảng chọn app")
+        val pick = b.substringAfter("\"app\" ->")
+        assertTrue(pick.contains("TelegramMenu.appChoice(cb.id)") && pick.contains("setDestination(app, place, choice.second)"))
+        assertTrue(b.substringAfter("\"pin\" ->").substringBefore("\"app\" ->").contains("TelegramMenu.togglePin("))
+    }
 }

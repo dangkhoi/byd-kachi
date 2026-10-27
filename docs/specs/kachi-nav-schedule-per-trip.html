@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><title>Kachi 3.1.22 — lịch dẫn đường quyết một lần mỗi chuyến + Go chọn app</title>
+<style>:root{color-scheme:light dark}body{font:15px/1.5 system-ui;max-width:960px;margin:2em auto;padding:0 1em}table{border-collapse:collapse;width:100%}td,th{border:1px solid #8884;padding:4px 8px;text-align:left}code{font-size:13px}</style></head><body>
+<h1>Kachi 3.1.22 — lịch dẫn đường quyết một lần mỗi chuyến · Telegram Go chọn app + ghim</h1>
+<p><b>Trạng thái</b>: Approved (owner 27/10 trong chat) · <b>Cập nhật</b>: 2026-10-27 · <b>Owner</b>: KhoiPD@fpt.com</p>
+
+<h2>Changelog</h2>
+<ul><li>2026-10-27 — tạo, owner duyệt bảng tình huống A–E (chọn E1, B4 "kệ nó"), mã off-car xong, APK 3.1.22 (227) chưa OTA.</li></ul>
+
+<h2>Context</h2>
+<p>[ĐO mã 27/10] <code>ScheduledNavApplier.tick</code> xét lịch MỖI nhịp 60 s và không hỏi xe có đang dẫn: đi một chuyến theo yêu cầu, tới 16:00 lịch "về nhà" bắn và đè tuyến đang chạy. Owner: <i>"làm rối trí quá"</i>; mốc "10 phút đầu" bị owner bác (<i>"đi 5p xong nó vẫn quay xe"</i>).
+Kèm 3 việc Telegram: bàn phím nút mất sau lần bấm đầu; bấm nơi đã lưu chỉ dẫn Google Maps; muốn ghim 2–3 nơi lên đầu.</p>
+
+<h2>Requirements</h2>
+<ol>
+<li><b>R1</b> Lịch quyết MỘT lần mỗi chuyến, theo giờ nổ máy (lần đầu Kachi thấy mã chuyến mới, trong 5 phút đầu sau lần thức đầu của tiến trình). Các nhịp sau chỉ thi hành.</li>
+<li><b>R2</b> Đang chạy mà đồng hồ vào khung ⇒ không gì xảy ra.</li>
+<li><b>R3</b> Điểm đến chủ động (Telegram) thắng lịch cả chuyến; còn chờ GPS thì lịch cũng không chen trước.</li>
+<li><b>R4</b> Mỗi chuyến nổ máy trong khung đều dẫn (E1) — bỏ sổ "một lần mỗi ngày".</li>
+<li><b>R5</b> Không dò app dẫn đường nào đang chạy (B3/B4 — owner: "kệ nó, ko chen giữa các app").</li>
+<li><b>R6</b> Mọi câu trả lời chữ của bot mang lại bàn phím nút.</li>
+<li><b>R7</b> 🧭 Go → nơi → bảng chọn Google Maps / VietMap / cả hai (⭐ app mặc định) → đặt điểm đến.</li>
+<li><b>R8</b> 📌 ghim tối đa 3 nơi lên đầu danh sách; bấm lại để bỏ.</li>
+</ol>
+
+<h2>Design</h2>
+<table><tr><th>Tình huống</th><th>Kết quả</th></tr>
+<tr><td>A1 nổ máy trong khung</td><td>Gắn luật, dẫn (chờ GPS nếu luật đòi)</td></tr>
+<tr><td>A2/C1 nổ máy ngoài khung, chạy tới giờ</td><td>Cả chuyến không lịch</td></tr>
+<tr><td>A3 có điểm đến Telegram</td><td>Telegram thắng, lịch nhường cả chuyến</td></tr>
+<tr><td>A4 hai khung trùng</td><td>Luật đầu trong sổ</td></tr>
+<tr><td>B2/B5 chờ GPS</td><td>Chờ trong chuyến; có GPS thì dẫn dù đã quá khung</td></tr>
+<tr><td>B6 app lỗi</td><td>Thử lại mỗi nhịp, không lưu "đã dẫn"</td></tr>
+<tr><td>C3 BYD giết Kachi giữa đường</td><td>Cùng mã chuyến ⇒ không bắn lại</td></tr>
+<tr><td>D1/D3 nổ máy lại trong khung</td><td>Chuyến mới ⇒ dẫn lại (E1)</td></tr>
+<tr><td>Thấy chuyến lần đầu khi đã &gt; 5 phút</td><td>Không biết giờ nổ máy ⇒ không lịch (LATE)</td></tr>
+</table>
+<ul>
+<li><code>:core ScheduledNavPolicy.step</code> thuần + <code>NavTripPlan</code> (<code>trip|ruleId|0/1</code>). Mã chuyến = <code>TripStart.currentId</code> (dùng chung với chuyến lên xe, đổi mỗi lần tắt máy). Lưu ở khoá cũ <code>nav_automation_fired</code> (giữ tên vì đã khai phạm vi theo hồ sơ; giá trị ≤ 3.1.21 decode ra null ⇒ vô hại), <code>commit()</code>.</li>
+<li><code>NavAutomationFired</code> + <code>PendingNavPolicy.blockScheduleFired</code> gỡ; Telegram thắng = <code>ScheduledNavPolicy.blocked(trip)</code>.</li>
+<li>Telegram: <code>TelegramMenu.ordered/places/appPicker/appChoice/togglePin</code> (<code>:core</code>); callback <code>nav:app:&lt;nơi&gt;:&lt;g|v|gv&gt;</code>, <code>nav:pin:&lt;nơi&gt;</code>; ghim lưu theo TÊN ở <code>telegram_pinned_places</code> (theo xe).</li>
+</ul>
+
+<h2>Verification</h2>
+<p>[ĐO 27/10] 10 905 test / 0 lỗi (5 module, <code>--rerun-tasks</code>) · lint release 0 lỗi · 2 đột biến (bỏ "đã quyết thì không chọn lại" ⇒ 4 bài đỏ; bỏ bàn phím khỏi câu trả lời ⇒ 1 bài đỏ), khôi phục khớp byte · APK 3.1.22 (227) ký <code>92:57…99:17</code>, không debuggable. Máy ảo: chưa chạy (lượt bật máy ảo treo, đã dừng). 🚗 chưa đo xe.</p>
+
+<h2>Open Questions</h2><p>Không.</p>
+<h2>References</h2><p><a href="kachi-automation.html">kachi-automation.html</a> · <a href="kachi-telegram-remote.html">kachi-telegram-remote.html</a></p>
+<h2>Reviewer Log</h2><ul><li>Pass 0 — 2026-10-27: chưa có senior review độc lập.</li></ul>
+</body></html>

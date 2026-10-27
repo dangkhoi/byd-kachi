@@ -298,12 +298,12 @@ fun ClusterNavBridge.navRules(): List<ScheduledNavRule> =
  * ([NavAutomationBook.upsert]/[NavAutomationBook.remove]) — cùng khuôn `onSavedPlaces`. Hai đường ghi cho cùng
  * một bảng là chỗ để hai đường lệch nhau (bài học `unitPrefs` ×4 bản).
  *
- * `pruneFired` chạy **sau** lượt ghi: `NavAutomationBook.newId` cấp lại `id` đã rảnh, nên một dấu đã-dẫn mồ côi
- * (`r1=<hôm nay>` sau khi xoá `r1`) sẽ đóng dấu cho **luật mới vừa tạo** ⇒ luật ấy không chạy hôm nay, im lặng.
+ * `pruneTripPlan` chạy **sau** lượt ghi: `NavAutomationBook.newId` cấp lại `id` đã rảnh, nên kế hoạch chuyến trỏ tới
+ * `r1` đã xoá sẽ thi hành **luật mới vừa tạo** cùng id giữa chuyến. Sửa luật KHÔNG làm chuyến quyết lại (owner 27/10).
  */
 fun ClusterNavBridge.setNavRules(rules: List<ScheduledNavRule>) {
     Prefs.setNavAutomationRules(app, NavAutomationBook.encode(rules))
-    ScheduledNavApplier.pruneFired(app)
+    ScheduledNavApplier.pruneTripPlan(app)
     AutomationService.sync(app)
 }
 

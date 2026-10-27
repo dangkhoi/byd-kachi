@@ -346,12 +346,12 @@ fun Prefs.setCameraCamId(ctx: Context, left: Boolean, v: Int) =
 // Hai khoá, hai VAI khác nhau — cố ý KHÔNG gộp:
 //  • `nav_automation_rules` = CẤU HÌNH (sổ luật người dùng đặt trong Cài đặt › Dẫn đường), mã hoá bởi
 //    `NavAutomationBook` (`:core`); rỗng = chưa có luật nào ⇒ engine không làm gì.
-//  • `nav_automation_fired` = TRẠNG THÁI CHẠY (`id luật` → ngày đã dẫn, `NavAutomationFired`), thứ thi hành luật
-//    "1 lần / khung / ngày" (R2.4). Nó KHÔNG phải cấu hình ⇒ khai ở `SettingsCatalog.NOT_SETTINGS`.
-// Gộp hai vai vào một khoá thì một lượt SỬA luật sẽ xoá sạch dấu đã-dẫn: sửa giờ lúc 8h05 ⇒ dẫn lại ngay lần thứ
-// hai, ngay trước mặt người đang lái.
+//  • `nav_automation_fired` (tên giữ từ 1.85) = TRẠNG THÁI CHẠY: kế hoạch lịch của chuyến hiện tại (`NavTripPlan` — mã chuyến · luật đã
+//    gắn lúc nổ máy · đã dẫn chưa; owner 27/10 "quyết một lần mỗi chuyến"). KHÔNG phải cấu hình ⇒ `NOT_SETTINGS`.
+// Gộp hai vai vào một khoá thì một lượt SỬA luật sẽ xoá kế hoạch: sửa giờ giữa chuyến ⇒ lịch quyết lại và chen vào
+// tuyến đang chạy. (≤ 3.1.21 khoá này là sổ "một lần mỗi ngày" `id=ngày`; nay decode ra null ⇒ chuyến kế quyết lại, vô hại.)
 private const val K_NAV_AUTOMATION = "nav_automation_rules"
-private const val K_NAV_AUTOMATION_FIRED = "nav_automation_fired"
+private const val K_NAV_AUTOMATION_TRIP = "nav_automation_fired"   // tên cũ GIỮ (khoá theo hồ sơ, bảng phạm vi khai sẵn); nội dung nay là NavTripPlan
 
 /** AUTOMATION #2 — sổ luật, dạng chuỗi của `NavAutomationBook.encode`. Rỗng = chưa có luật nào. */
 fun Prefs.navAutomationRules(ctx: Context): String =
@@ -361,10 +361,11 @@ fun Prefs.navAutomationRules(ctx: Context): String =
 fun Prefs.setNavAutomationRules(ctx: Context, encoded: String) =
     autoPrefs(ctx).edit().putString(K_NAV_AUTOMATION, encoded).apply()
 
-/** Sổ ĐÃ-DẪN (`id=ngày`), dạng chuỗi của `NavAutomationFired.encode`. Rỗng = chưa dẫn lần nào. */
-fun Prefs.navAutomationFired(ctx: Context): String =
-    autoPrefs(ctx).getString(K_NAV_AUTOMATION_FIRED, "").orEmpty()
+/** Kế hoạch lịch của chuyến hiện tại, dạng chuỗi của `ScheduledNavPolicy.encode`. Rỗng = chưa có. */
+fun Prefs.navAutomationTrip(ctx: Context): String =
+    autoPrefs(ctx).getString(K_NAV_AUTOMATION_TRIP, "").orEmpty()
 
-/** Xem [navAutomationFired]. */
-fun Prefs.setNavAutomationFired(ctx: Context, encoded: String) =
-    autoPrefs(ctx).edit().putString(K_NAV_AUTOMATION_FIRED, encoded).apply()
+/** Xem [navAutomationTrip]. `commit()`: tiến trình có thể bị BYD giết ngay sau lượt dẫn — kế hoạch phải lên đĩa trước. */
+fun Prefs.setNavAutomationTrip(ctx: Context, encoded: String) {
+    autoPrefs(ctx).edit().putString(K_NAV_AUTOMATION_TRIP, encoded).commit()
+}

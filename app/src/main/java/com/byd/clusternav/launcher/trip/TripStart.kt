@@ -110,9 +110,12 @@ object TripStart {
     /** L4 · D1 — kết quả đang hiện có phải của lần nổ máy NÀY ([TripGate.now]). Chỉ đọc (sổ bền + claim tắt-máy bền). */
     fun now(ctx: Context): TripGate.Now {
         val s = TripLedgerStore(ctx)
-        val current = TripGate.tripId(bootKey(ctx), Prefs.a11yTatMayAt(ctx), SystemClock.elapsedRealtime())
-        return TripGate.now(current, s.ledger(), s.last())
+        return TripGate.now(currentId(ctx), s.ledger(), s.last())
     }
+
+    /** Mã chuyến hiện tại (đổi ở mỗi lần tắt máy, giữ khi BYD giết Kachi giữa đường) — dùng chung với lịch dẫn đường. */
+    fun currentId(ctx: Context): String =
+        TripGate.tripId(bootKey(ctx), Prefs.a11yTatMayAt(ctx), SystemClock.elapsedRealtime())
 
     /** Một dòng cho màn Chẩn đoán (CLAUDE.md §11 — anh em chụp màn gửi về). */
     fun describe(ctx: Context): String {

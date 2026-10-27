@@ -217,10 +217,9 @@ object SettingsCatalog {
         )
         put(
             "nav_automation_fired",
-            "AUTOMATION #2 (1.85) — trạng thái CHẠY, không phải cấu hình: `id luật` → ngày đã dẫn " +
-                "(`NavAutomationFired`), thứ thi hành luật \"1 lần / khung giờ / ngày\" (spec R2.4). Người dùng " +
-                "không 'đặt' nó và không sửa nó; bày ra như một dòng cài đặt thì chỉ có một chuỗi ngày không ai " +
-                "hiểu, mà sửa sai là mất một lượt dẫn của ngày hôm đó. Cùng họ `recent_apps`/`captest_results` — " +
+            "AUTOMATION #2 (3.1.22, owner 27/10) — trạng thái CHẠY, không phải cấu hình: kế hoạch lịch của chuyến " +
+                "hiện tại (`NavTripPlan`: mã chuyến · luật đã gắn lúc nổ máy · đã dẫn chưa). Người dùng không 'đặt' " +
+                "nó; sửa sai là lịch chen giữa chuyến. Cùng họ `recent_apps`/`captest_results` — " +
                 "dấu vết của việc đã xảy ra. Cấu hình của automation này là `nav_automation_rules` (mục " +
                 "`nav_automation`), khoá ĐÓ mới lên UI",
         )

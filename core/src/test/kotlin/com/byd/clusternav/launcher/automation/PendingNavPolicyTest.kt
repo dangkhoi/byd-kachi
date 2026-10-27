@@ -40,20 +40,11 @@ class PendingNavPolicyTest {
     }
 
     @Test
-    fun `overwrite lich — dong dau CHI luat trong khung gio chuyen nay`() {
-        val r1 = ScheduledNavRules.of("r1", true, 420, 540, setOf(1), false, "office", "gmaps")!!   // 07:00–09:00 T2
-        val r2 = ScheduledNavRules.of("r2", true, 1020, 1080, setOf(1), false, "home", "gmaps")!!   // 17:00–18:00 T2
-        val existing = mapOf("r9" to "2026-10-25")
-        // pending nổ 07:10 T2 ⇒ chỉ r1 (đang trong khung) bị chặn; r2 (17:00) vẫn chạy chiều nay
-        val out = PendingNavPolicy.blockScheduleFired(existing, listOf(r1, r2), nowMinOfDay = 430, dow = 1, todayKey = "2026-10-26")
-        assertEquals("2026-10-26", out["r1"])
-        assertEquals(null, out["r2"], "luật khung giờ khác KHÔNG bị chặn (một lần, không cả ngày)")
-        assertEquals("2026-10-25", out["r9"], "dấu ngày khác giữ nguyên")
-    }
-
-    @Test
-    fun `todayKey rong ⇒ khong dong dau (khong chan vinh vien)`() {
+    fun `overwrite lich — chuyen hien tai khong con lich`() {
+        val b = ScheduledNavPolicy.blocked("n7.t123")
+        assertEquals(NavTripPlan("n7.t123", "", true), b)
         val r1 = ScheduledNavRules.of("r1", true, 420, 540, setOf(1), false, "office", "gmaps")!!
-        assertEquals(mapOf("r1" to "x"), PendingNavPolicy.blockScheduleFired(mapOf("r1" to "x"), listOf(r1), 430, 1, ""))
+        val step = ScheduledNavPolicy.step(b, "n7.t123", listOf(r1), 430, 1, 0L, true)
+        assertEquals(NavHoldReason.NO_RULE, (step as NavTripStep.Hold).reason, "điểm đến chủ động đã dẫn ⇒ lịch nhường cả chuyến")
     }
 }

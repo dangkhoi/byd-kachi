@@ -39,6 +39,8 @@ import com.byd.clusternav.telegramOffset
 import com.byd.clusternav.setTelegramOffset
 import com.byd.clusternav.telegramBoardNonce
 import com.byd.clusternav.bumpTelegramBoardNonce
+import com.byd.clusternav.telegramPinnedPlaces
+import com.byd.clusternav.setTelegramPinnedPlaces
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -119,15 +121,17 @@ class TelegramBridgeService : Service() {
         ensureReplyKeyboard(app, api, chatId)
         val cb = u.rawCallback?.let { TelegramCallback.parse(it) }
         if (u.rawCallback != null) { handlePlacesButton(app, api, u, cb); return }
+        // Mọi câu trả lời chữ trơn mang LẠI bàn phím nút (owner 27/10: "chip lúc đầu hiện, bấm xong giờ mất tiêu"):
+        // tin `ForceReply` của lời nhắc Song/New thay bàn phím trên máy khách — gửi kèm lại ở tin kế là bàn phím về.
+        val say = { text: String -> api.sendMessage(chatId, text, TelegramReplyKeyboard.markup()) }
         when (val c = u.command) {
-            is TelegramCommand.Nav -> api.sendMessage(chatId, navigate(app, c))
-            is TelegramCommand.Music -> api.sendMessage(chatId, playMusic(app, c))
+            is TelegramCommand.Nav -> say(navigate(app, c))
+            is TelegramCommand.Music -> say(playMusic(app, c))
             TelegramCommand.ListPlaces -> sendPlaces(app, api, chatId)
             TelegramCommand.AskSong -> api.sendMessage(chatId, TelegramReplyKeyboard.SONG_PROMPT, TelegramReplyKeyboard.forceReply("Song name or link"))
-            TelegramCommand.Cancel -> { PendingNavStore.consume(app); api.sendMessage(chatId, "✖️ Pending destination cleared") }
-            TelegramCommand.Help -> api.sendMessage(chatId, TelegramInlineKeyboard.HELP)
-            TelegramCommand.Menu -> api.sendMessage(chatId, TelegramInlineKeyboard.HELP, TelegramReplyKeyboard.markup())
-            is TelegramCommand.Unknown -> api.sendMessage(chatId, "🤔 Didn’t get that. Paste a Google Maps / YouTube link, or tap ❓ Help")
+            TelegramCommand.Cancel -> { PendingNavStore.consume(app); say("✖️ Pending destination cleared") }
+            TelegramCommand.Help, TelegramCommand.Menu -> say(TelegramInlineKeyboard.HELP)
+            is TelegramCommand.Unknown -> say("🤔 Didn’t get that. Paste a Google Maps / YouTube link, or tap ❓ Help")
         }
     }
 
@@ -179,10 +183,15 @@ class TelegramBridgeService : Service() {
         val n = Prefs.telegramBoardNonce(app) + 1
         val text = if (places.isEmpty()) "📍 No saved places yet — tap ➕ New or paste a Google Maps link"
                    else "📍 Tap a place to navigate (default app), or ➕ New"
-        if (api.sendMessageReturningId(chatId, text, TelegramMenu.places(n, places, page)) != null) Prefs.bumpTelegramBoardNonce(app)
+        if (api.sendMessageReturningId(chatId, text, TelegramMenu.places(n, places, page, Prefs.telegramPinnedPlaces(app))) != null) {
+            Prefs.bumpTelegramBoardNonce(app)
+        }
     }
 
-    /** Nút của bảng nơi đã lưu: `go <i>` dẫn · `page <p>` trang sau (sửa tại chỗ) · `new` hỏi điểm đến. Nonce cũ ⇒ bỏ. */
+    /**
+     * Nút của bảng nơi đã lưu (sửa TẠI CHỖ cùng một tin): `go <nơi>` ⇒ bảng chọn app · `app <nơi>:<g|v|gv>` ⇒ đặt điểm
+     * đến · `pin <nơi>` ⇒ ghim/bỏ ghim · `page <p>` ⇒ danh sách (trang p) · `new` ⇒ hỏi điểm đến. Nonce cũ ⇒ bỏ.
+     */
     private fun handlePlacesButton(app: Context, api: TelegramApi, u: TelegramUpdate, cb: TelegramCallback?) {
         val chatId = u.chatId ?: return
         if (cb == null || cb.nonce != Prefs.telegramBoardNonce(app)) {
@@ -190,17 +199,27 @@ class TelegramBridgeService : Service() {
             return
         }
         u.callbackId?.let { api.answerCallback(it) }
+        val places = WorkspacePrefs(app).savedPlaces()
+        val pins = Prefs.telegramPinnedPlaces(app).filter { n -> places.any { it.name == n } }
+        val placeOf = { id: String -> TelegramMenu.placeIndex(id, places)?.let { places[it] } }
+        val stale = "📍 Saved places changed — tap 🧭 Go for a fresh list"
+        fun edit(text: String, markup: String) { u.messageId?.let { api.editMessageText(chatId, it, text, markup) } }
+        fun picker(id: String, p: SavedPlace) = edit("📍 “${p.name}” — navigate with:",
+            TelegramMenu.appPicker(cb.nonce, id, Prefs.voiceNavDefaultApp(app), p.name in pins, pins.size < TelegramMenu.MAX_PINS))
         when (cb.action) {
             "new" -> api.sendMessage(chatId, TelegramReplyKeyboard.DEST_PROMPT, TelegramReplyKeyboard.forceReply("Destination"))
-            "page" -> u.messageId?.let { id ->
-                api.editMessageText(chatId, id, "📍 Tap a place to navigate (default app), or ➕ New",
-                    TelegramMenu.places(cb.nonce, WorkspacePrefs(app).savedPlaces(), cb.id.toIntOrNull() ?: 0))
-            }
-            "go" -> {
-                val places = WorkspacePrefs(app).savedPlaces()
-                val place = TelegramMenu.placeIndex(cb.id, places)?.let { places[it] }
-                api.sendMessage(chatId, if (place == null) "📍 Saved places changed — tap 🧭 Go for a fresh list"
-                    else setDestination(app, place, listOf(Prefs.voiceNavDefaultApp(app))))
+            "page" -> edit("📍 Tap a place, then pick the app — or ➕ New",
+                TelegramMenu.places(cb.nonce, places, cb.id.toIntOrNull() ?: 0, pins))
+            "go" -> placeOf(cb.id)?.let { picker(cb.id, it) } ?: api.sendMessage(chatId, stale, TelegramReplyKeyboard.markup())
+            "pin" -> placeOf(cb.id)?.let { p ->
+                Prefs.setTelegramPinnedPlaces(app, TelegramMenu.togglePin(pins, p.name))
+                picker(cb.id, p)
+            } ?: api.sendMessage(chatId, stale, TelegramReplyKeyboard.markup())
+            "app" -> {
+                val choice = TelegramMenu.appChoice(cb.id)
+                val place = choice?.let { placeOf(it.first) }
+                api.sendMessage(chatId, if (choice == null || place == null) stale else setDestination(app, place, choice.second),
+                    TelegramReplyKeyboard.markup())
             }
         }
     }

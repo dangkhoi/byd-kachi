@@ -8,10 +8,9 @@ package com.byd.clusternav.launcher.automation
  * bằng `\n`, cùng lệ `SavedPlaces.encode`.
  *
  * ## ⚠ Bất biến quan trọng nhất của tệp này: `id` KHÔNG ĐƯỢC TRÙNG
- * [ScheduledNavRule.id] là khoá của **sổ đã-dẫn** (`lastFiredDay[id]` — xem [ScheduledNavPolicy]). Hai luật trùng
- * `id` ⇒ luật nổ trước đóng dấu *"hôm nay đã dẫn"* cho **cả hai**, nên luật thứ hai (vd *"chiều về nhà"*) không
- * bao giờ chạy — và nó hỏng **im lặng**: cấu hình vẫn hiện đủ hai dòng trong Cài đặt, test đơn lẻ từng luật vẫn
- * xanh. Vì vậy [decode] **bỏ** dòng trùng `id` và [upsert] coi `id` là khoá ghi-đè, còn [newId] không bao giờ cấp
+ * [ScheduledNavRule.id] là khoá mà kế hoạch của chuyến ([NavTripPlan.ruleId] — xem [ScheduledNavPolicy]) trỏ tới.
+ * Hai luật trùng `id` ⇒ chuyến gắn luật này lại thi hành luật kia (điểm đến / app khác hẳn) — và nó hỏng **im
+ * lặng**: cấu hình vẫn hiện đủ hai dòng trong Cài đặt, test đơn lẻ từng luật vẫn xanh. Vì vậy [decode] **bỏ** dòng trùng `id` và [upsert] coi `id` là khoá ghi-đè, còn [newId] không bao giờ cấp
  * lại một `id` đang có.
  */
 object NavAutomationBook {

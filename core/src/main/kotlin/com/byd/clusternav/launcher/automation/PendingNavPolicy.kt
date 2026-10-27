@@ -15,9 +15,8 @@ import com.byd.clusternav.launcher.telegram.PendingDestination
  * ## Ba tính chất, ba cơ chế tái dùng
  *  - **Ưu tiên** = chỗ gọi đọc pending TRƯỚC, [resolve] trả [Decision.FireNav] ⇒ **short-circuit**, không gọi
  *    [ScheduledNavApplier]. (R2)
- *  - **Overwrite lịch** = sau khi bắn, chỗ gọi đóng dấu [NavAutomationFired] của NGÀY bằng [BLOCK_KEY] ⇒ mọi
- *    luật lịch cùng chuyến bị chặn im (tái dùng cơ chế "một luật một ngày" sẵn có). (R3) — [blockScheduleFired]
- *    dựng bản đồ đã-dẫn để chỗ gọi lưu.
+ *  - **Overwrite lịch** = sau khi bắn, chỗ gọi lưu [ScheduledNavPolicy.blocked] cho CHUYẾN hiện tại ⇒ lịch của
+ *    chuyến này không bao giờ dẫn (lịch quyết một lần mỗi chuyến — owner 27/10). (R3)
  *  - **Một-lần** = [Decision.FireNav] kèm lệnh [Decision.FireNav] ⇒ chỗ gọi gọi `consume`. Pending bắn rồi là
  *    hết ⇒ nó chỉ thắng CHUYẾN SẮP TỚI, các khung lịch sau trong ngày vẫn chạy (owner 26/10: "một lần thôi").
  *    (R4)
@@ -56,33 +55,5 @@ object PendingNavPolicy {
         if (pending == null) return Decision.FallThroughToSchedule
         if (requireGps && gpsOk != true) return Decision.WaitForGps
         return Decision.FireNav(pending)
-    }
-
-    /**
-     * Bản đồ đã-dẫn dùng để **overwrite lịch** — chặn CHỈ các luật thuộc CHUYẾN NÀY (owner 26/10: *"một lần thôi"*).
-     *
-     * Đóng dấu `todayKey` cho các luật đang **trong khung giờ + đúng thứ** lúc này ([ScheduledNavRules.inWindow]) ⇒
-     * [ScheduledNavPolicy] bỏ chúng lượt này; luật của khung giờ KHÁC trong ngày (vd 17:30 "về nhà") KHÔNG bị chạm,
-     * vẫn chạy bình thường. Đây là chỗ bản đầu sai (senior review P1-3): đóng dấu MỌI id = chặn cả ngày.
-     *
-     * Hợp nhất với sổ đã có (giữ dấu các ngày khác). Chỗ gọi lưu bản đồ trả về vào [NavAutomationFired].
-     *
-     * @param existing sổ đã-dẫn hiện tại ([NavAutomationFired.EMPTY] nếu chưa có).
-     * @param rules mọi luật lịch đang có (từ [NavAutomationBook]).
-     * @param nowMinOfDay phút-trong-ngày hiện tại · @param dow thứ ISO-8601 (1=T2…7=CN).
-     * @param todayKey khoá ngày hôm nay (quy ước `yyyy-MM-dd` của `:app`).
-     */
-    fun blockScheduleFired(
-        existing: Map<String, String>,
-        rules: List<ScheduledNavRule>,
-        nowMinOfDay: Int,
-        dow: Int,
-        todayKey: String,
-    ): Map<String, String> {
-        if (todayKey.isBlank()) return existing
-        val out = existing.toMutableMap()
-        rules.filter { it.enabled && dow in it.days && ScheduledNavRules.inWindow(it, nowMinOfDay) }
-            .forEach { if (it.id.isNotBlank()) out[it.id] = todayKey }
-        return out
     }
 }

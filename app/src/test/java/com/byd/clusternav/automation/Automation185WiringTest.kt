@@ -161,20 +161,21 @@ class Automation185WiringTest {
     }
 
     /**
-     * R2.4: đóng dấu **NGAY** sau khi giao được, và **KHÔNG** đóng dấu khi chưa giao được.
-     *  • thiếu vế đầu ⇒ nhịp sau (60 s) mở app dẫn đường lần thứ hai, suốt cả khung giờ;
-     *  • thêm vế sau sai ⇒ một lần hỏng tạm thời (app chưa cài) làm mất cả lượt đi của ngày hôm đó.
+     * Lưu "đã dẫn" của chuyến NGAY sau khi giao được, và KHÔNG lưu khi chưa giao được (owner 27/10 — lịch theo chuyến).
+     *  • thiếu vế đầu ⇒ nhịp sau (60 s) mở app dẫn đường lần thứ hai;
+     *  • thêm vế sau sai ⇒ một lần hỏng tạm thời (app chưa cài) làm mất lượt dẫn của cả chuyến.
+     * Và lịch quyết theo MÃ CHUYẾN (không theo ngày) — sổ "một lần mỗi ngày" đã gỡ.
      */
     @Test
-    fun `dong dau da-dan chi khi giao duoc`() {
-        assertTrue("if (launched) {" in navApplier)
-        assertTrue("NavAutomationFired.put(fired, rule.id, today)" in navApplier)
-        assertTrue("setNavAutomationFired(app" in navApplier)
-        val afterElse = navApplier.substringAfter("if (launched) {").substringAfter("} else {")
-        assertTrue(
-            "setNavAutomationFired" !in afterElse.substringBefore("\n        }"),
-            "nhánh KHÔNG giao được tuyệt đối không được đóng dấu",
-        )
+    fun `luu da-dan cua chuyen chi khi giao duoc`() {
+        val body = SourceRoots.body(navApplier, "fun tick(")
+        assertTrue("TripStart.currentId(app)" in body, "lịch phải quyết theo mã chuyến")
+        assertTrue("ScheduledNavPolicy.step(" in body)
+        val launched = body.substringAfter("if (launch(app, rule)) {")
+        assertTrue("savePlan(app, step.plan.copy(fired = true)" in launched.substringBefore("} else {"))
+        assertTrue("savePlan" !in launched.substringAfter("} else {").substringBefore("\n                    }"),
+            "nhánh KHÔNG giao được tuyệt đối không được lưu đã-dẫn")
+        assertTrue("NavAutomationFired" !in navApplier, "sổ một-lần-mỗi-ngày đã gỡ")
     }
 
     /** Đi đúng đường mà một câu lệnh giọng nói đi — không dựng `Intent` thứ hai (xem KDoc `VoiceAppIntents`). */
@@ -250,7 +251,7 @@ class Automation185WiringTest {
         assertTrue("AutomationService.sync(app)" in setRain, "ghi xong phải đồng bộ engine")
         val setRules = SourceRoots.body(bridge, "fun ClusterNavBridge.setNavRules(")
         assertTrue("setNavAutomationRules(app, NavAutomationBook.encode(rules))" in setRules)
-        assertTrue("ScheduledNavApplier.pruneFired(app)" in setRules, "phải dọn dấu đã-dẫn mồ côi")
+        assertTrue("ScheduledNavApplier.pruneTripPlan(app)" in setRules, "phải bỏ kế hoạch chuyến trỏ tới luật đã xoá")
         assertTrue("AutomationService.sync(app)" in setRules)
     }
 

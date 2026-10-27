@@ -8,15 +8,20 @@ import com.byd.clusternav.launcher.SavedPlace
 import com.byd.clusternav.launcher.SavedPlaces
 import com.byd.clusternav.launcher.WorkspacePrefs
 import com.byd.clusternav.launcher.automation.NavAutomationBook
-import com.byd.clusternav.launcher.automation.NavAutomationFired
+import com.byd.clusternav.launcher.automation.NavHoldReason
+import com.byd.clusternav.launcher.automation.NavTripPlan
+import com.byd.clusternav.launcher.automation.NavTripStep
 import com.byd.clusternav.launcher.automation.ScheduledNavPolicy
 import com.byd.clusternav.launcher.automation.ScheduledNavRule
 import com.byd.clusternav.launcher.voice.VoiceAppIntents
 import com.byd.clusternav.launcher.voice.VoiceAppTargets
-import com.byd.clusternav.navAutomationFired
+import com.byd.clusternav.KachiReadyLog
+import com.byd.clusternav.launcher.trip.TripStart
+import com.byd.clusternav.navAutomationTrip
 import com.byd.clusternav.navAutomationRules
-import com.byd.clusternav.setNavAutomationFired
+import com.byd.clusternav.setNavAutomationTrip
 import com.byd.clusternav.system.PackageQueries
+import android.os.SystemClock
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -24,8 +29,8 @@ import java.time.LocalTime
  * ═══ AUTOMATION #2 · DẪN ĐƯỜNG THEO LỊCH · PHẦN CHẠM ANDROID ═════════════════════════════════════════════════
  *
  * Spec `docs/specs/kachi-automation.html` R2 (§Design › :app). Mọi **luật** ở `:core` ([ScheduledNavPolicy] ·
- * [NavAutomationBook] · [NavAutomationFired]); lớp này chỉ: đọc đồng hồ · hỏi GPS · tra sổ địa chỉ · **bắn một
- * ý-định dẫn đường** · đóng dấu đã-dẫn.
+ * [NavAutomationBook]); lớp này chỉ: đọc đồng hồ + mã chuyến · hỏi GPS · tra sổ địa chỉ · **bắn một ý-định dẫn
+ * đường** · lưu kế hoạch của chuyến ([NavTripPlan] — lịch quyết MỘT lần lúc nổ máy, owner 27/10).
  *
  * ## Đi đúng đường mà một câu lệnh giọng nói đi
  * `VoiceTargetDispatch.runNavSaved` đã giải xong bài *"giao một điểm đến đã lưu cho app dẫn đường"*, và nó bắn
@@ -61,33 +66,38 @@ object ScheduledNavApplier {
             val rules = NavAutomationBook.decode(Prefs.navAutomationRules(app))
             if (rules.none { it.enabled }) return@runCatching null
 
-            val today = todayKey()
-            val fired = NavAutomationFired.decode(Prefs.navAutomationFired(app))
+            val trip = TripStart.currentId(app)
+            val saved = ScheduledNavPolicy.decode(Prefs.navAutomationTrip(app))
             val nowMin = LocalTime.now().let { it.hour * 60 + it.minute }
             val dow = LocalDate.now().dayOfWeek.value          // ISO-8601: 1=T2 … 7=CN, khớp `ScheduledNavRules`
-            // Hỏi GPS **chỉ khi** có luật cần nó — off-car/thiếu quyền thì lời gọi này còn ghi một dòng log, và
-            // ghi nó mỗi phút cho một cấu hình không dùng GPS là nhiễu.
+            val wake = KachiReadyLog.firstWakeAt()
+            val sinceStart = if (wake < 0) null else SystemClock.elapsedRealtime() - wake
+            // Hỏi GPS **chỉ khi** có luật cần nó — off-car/thiếu quyền thì lời gọi này còn ghi một dòng log.
             val gpsOk = if (rules.any { it.enabled && it.requireGps }) {
                 GpsAvailability.isAvailable(app, nowMs) == true
             } else {
                 false
             }
 
-            val rule = ScheduledNavPolicy.firstToLaunch(rules, nowMin, dow, gpsOk, fired, today)
-                ?: return@runCatching null
-            Log.i(TAG, "luật ${rule.id} tới lượt (giờ=$nowMin thứ=$dow gps=$gpsOk ngày=$today)")
-
-            val launched = launch(app, rule)
-            if (launched) {
-                // Đóng dấu **NGAY** sau khi giao được (R2.4). Thiếu bước này thì nhịp sau (60 s) lại thấy "chưa
-                // dẫn hôm nay" và mở app dẫn đường lần thứ hai — suốt cả khung giờ.
-                val next = NavAutomationFired.put(fired, rule.id, today)
-                Prefs.setNavAutomationFired(app, NavAutomationFired.encode(next))
-                rule
-            } else {
-                // KHÔNG đóng dấu khi chưa giao được: app chưa cài / chưa mở được là ca **tạm thời**, nhịp sau thử
-                // lại là đúng. Đóng dấu ở đây sẽ biến một lần hỏng thành mất cả lượt đi của ngày hôm đó.
-                null
+            val step = ScheduledNavPolicy.step(saved, trip, rules, nowMin, dow, sinceStart, gpsOk)
+            step.plan?.let { if (it != saved) savePlan(app, it, "kế hoạch chuyến mới (giờ=$nowMin thứ=$dow)") }
+            when (step) {
+                is NavTripStep.Hold -> {
+                    if (step.reason == NavHoldReason.NO_GPS || step.plan != saved) Log.i(TAG, "lịch: ${step.reason} (chuyến $trip)")
+                    null
+                }
+                is NavTripStep.Launch -> {
+                    val rule = step.rule
+                    Log.i(TAG, "luật ${rule.id} dẫn cho chuyến $trip")
+                    if (launch(app, rule)) {
+                        // Lưu "đã dẫn" NGAY (commit) — thiếu bước này thì nhịp sau (60 s) mở app dẫn đường lần hai.
+                        savePlan(app, step.plan.copy(fired = true), "đã dẫn")
+                        rule
+                    } else {
+                        // KHÔNG lưu "đã dẫn" khi chưa giao được (app chưa cài / chưa mở được): thử lại nhịp sau.
+                        null
+                    }
+                }
             }
         }.getOrElse {
             Log.w(TAG, "nhịp dẫn-theo-lịch lỗi (degrade-safe, bỏ qua)", it)
@@ -95,27 +105,24 @@ object ScheduledNavApplier {
         }
     }
 
+    private fun savePlan(app: Context, plan: NavTripPlan, why: String) {
+        Prefs.setNavAutomationTrip(app, ScheduledNavPolicy.encode(plan))
+        Log.i(TAG, "lịch: $why ⇒ chuyến ${plan.trip} luật=${plan.ruleId.ifEmpty { "-" }} đã-dẫn=${plan.fired}")
+    }
+
     /**
-     * Dọn dấu đã-dẫn của những luật **không còn tồn tại** — gọi sau mỗi lượt người dùng sửa sổ luật.
-     *
-     * Lý do đầy đủ ở KDoc [NavAutomationFired.prune]: `newId` cấp lại `id` đã rảnh, nên một dấu mồ côi sẽ chặn
-     * đúng luật vừa được tạo.
+     * Sổ luật vừa sửa: kế hoạch chuyến trỏ tới luật không còn ⇒ bỏ lịch của chuyến ([ScheduledNavPolicy.pruned] —
+     * `newId` cấp lại `id` đã rảnh, nên một kế hoạch mồ côi có thể thi hành nhầm luật vừa tạo).
      */
-    fun pruneFired(ctx: Context) {
+    fun pruneTripPlan(ctx: Context) {
         val app = ctx.applicationContext
         runCatching {
             val live = NavAutomationBook.decode(Prefs.navAutomationRules(app)).map { it.id }.toSet()
-            val fired = NavAutomationFired.decode(Prefs.navAutomationFired(app))
-            val pruned = NavAutomationFired.prune(fired, live)
-            if (pruned.size != fired.size) {
-                Prefs.setNavAutomationFired(app, NavAutomationFired.encode(pruned))
-                Log.i(TAG, "dọn ${fired.size - pruned.size} dấu đã-dẫn mồ côi")
-            }
+            val plan = ScheduledNavPolicy.decode(Prefs.navAutomationTrip(app))
+            val pruned = ScheduledNavPolicy.pruned(plan, live)
+            if (pruned != null && pruned != plan) savePlan(app, pruned, "luật của chuyến đã xoá")
         }
     }
-
-    /** Khoá ngày hôm nay, `yyyy-MM-dd` — quy ước của `:app` (xem KDoc [ScheduledNavPolicy]). */
-    fun todayKey(): String = LocalDate.now().toString()
 
     /**
      * Bắn dẫn đường tới MỘT điểm đến cho DANH SÁCH app — dùng bởi điểm đến chờ (TELEGRAM-REMOTE, spec
@@ -156,22 +163,14 @@ object ScheduledNavApplier {
         return anyOk
     }
 
-    /** Sổ đã-dẫn hiện tại + mọi id luật đang có — để [com.byd...automation.PendingNavPolicy] dựng dấu chặn lịch. */
-    fun firedMap(ctx: Context): Map<String, String> =
-        NavAutomationFired.decode(Prefs.navAutomationFired(ctx.applicationContext))
-
-    fun setFired(ctx: Context, fired: Map<String, String>) {
-        Prefs.setNavAutomationFired(ctx.applicationContext, NavAutomationFired.encode(fired))
-    }
-
     /**
      * ƯU TIÊN điểm đến chờ (TELEGRAM-REMOTE, spec R2/R3/R4/R5). Gọi TRƯỚC [tick] mỗi nhịp.
      *
      * @return `true` = đã bắn pending (chỗ gọi BỎ [tick] nhịp này — short-circuit); `false` = không pending /
      *   đang chờ GPS ⇒ chỗ gọi chạy lịch như cũ.
      *
-     * Overwrite lịch: sau khi bắn, đóng dấu [NavAutomationFired] của NGÀY cho mọi id luật ⇒ lịch coi như đã dẫn
-     * (chặn chuyến này). Một-lần: [com.byd.clusternav.automation.PendingNavStore.consume] xoá pending. Chờ GPS:
+     * Overwrite lịch: sau khi bắn, lưu [ScheduledNavPolicy.blocked] cho CHUYẾN hiện tại ⇒ lịch của chuyến này không
+     * bao giờ dẫn (owner 27/10: lịch quyết một lần mỗi chuyến). Một-lần: [com.byd.clusternav.automation.PendingNavStore.consume] xoá pending. Chờ GPS:
      * [com.byd.clusternav.launcher.automation.PendingNavPolicy.Decision.WaitForGps] ⇒ giữ nguyên, thử lại nhịp
      * sau.
      */
@@ -195,13 +194,8 @@ object ScheduledNavApplier {
                     Log.i(TAG, "pending: ưu tiên dẫn (apps=${p.dest.appsEncoded})")   // không log tên nơi (địa chỉ nhà)
                     val ok = launchPlace(app, p.dest.place, p.dest.apps, logId = "pending")
                     if (ok) {
-                        // Overwrite CHỈ các luật thuộc chuyến này (R3 — khung giờ + thứ hiện tại), không cả ngày (P1-3).
-                        val rules = NavAutomationBook.decode(Prefs.navAutomationRules(app))
-                        val nowMin = java.time.LocalTime.now().let { it.hour * 60 + it.minute }
-                        val dow = java.time.LocalDate.now().dayOfWeek.value
-                        val blocked = com.byd.clusternav.launcher.automation.PendingNavPolicy
-                            .blockScheduleFired(firedMap(app), rules, nowMin, dow, todayKey())
-                        setFired(app, blocked)
+                        // Overwrite lịch của CHUYẾN này (R3) — các chuyến sau (nổ máy lại) quyết lịch như thường.
+                        savePlan(app, ScheduledNavPolicy.blocked(TripStart.currentId(app)), "điểm đến chủ động thắng")
                         com.byd.clusternav.automation.PendingNavStore.consume(app)
                         Log.i(TAG, "pending: đã bắn + chặn lịch chuyến này + consume")
                         true

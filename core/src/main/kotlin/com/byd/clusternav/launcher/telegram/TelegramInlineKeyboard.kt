@@ -12,7 +12,7 @@ object TelegramInlineKeyboard {
         appendLine("/go <place> gmaps vietmap — pick apps: gmaps · vietmap · waze")
         appendLine("/play <song>           — search & play on default music app")
         appendLine("/play <song> youtube   — or ytmusic")
-        appendLine("/go · /places          — saved places + New")
+        appendLine("🧭 Go — tap a place, pick Google Maps / VietMap / Both; 📌 pins up to 3 on top")
         append("/cancel — clear pending destination · /help")
     }
 }

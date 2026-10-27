@@ -155,10 +155,8 @@ object ScheduledNavRules {
      * Phút hiện tại có nằm trong khung giờ của luật — **hai đầu đều tính** (spec R2.3: *"trong khung giờ"*).
      *
      * ## Vì sao KHÔNG hỗ trợ khung qua đêm (22:00 → 02:00)
-     * Đo được thì dễ, nhưng nó làm **luật một-lần-mỗi-ngày mất nghĩa**: sổ đã-dẫn đóng dấu theo *ngày lịch tại
-     * lúc dẫn* ([ScheduledNavPolicy]), nên một khung bắc qua nửa đêm nằm trên **hai** ngày lịch ⇒ nó được phép nổ
-     * hai lần cho cùng một lượt đi, và tập [ScheduledNavRule.days] cũng không còn trả lời được *"đêm Chủ Nhật
-     * sang Thứ Hai là thứ mấy"*. Hai câu hỏi đó không có câu trả lời **đúng duy nhất**, nên đây là chỗ phải
+     * Tập [ScheduledNavRule.days] không trả lời được *"đêm Chủ Nhật sang Thứ Hai là thứ mấy"* khi chọn luật theo
+     * giờ nổ máy ([ScheduledNavPolicy.pickAtStart]). Câu hỏi đó không có câu trả lời **đúng duy nhất**, nên đây là chỗ phải
      * **từ chối** ([of] trả `null`) chứ không phải chỗ đoán — usecase của spec là khung đi làm trong ngày.
      */
     fun inWindow(rule: ScheduledNavRule, nowMinOfDay: Int): Boolean =

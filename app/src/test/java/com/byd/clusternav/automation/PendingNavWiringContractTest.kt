@@ -25,12 +25,13 @@ class PendingNavWiringContractTest {
         val i = service.indexOf("applyPending")
         val j = service.indexOf("ScheduledNavApplier.tick(")
         assertTrue(i in 0 until j, "applyPending phải đứng TRƯỚC tick trong vòng FGS (ưu tiên pending)")
-        assertTrue(service.contains("if (!firedPending)"), "có pending bắn ⇒ BỎ tick nhịp này (short-circuit R2)")
+        assertTrue(service.contains("if (!firedPending && !pendingWaits)"), "có pending bắn ⇒ BỎ tick nhịp này (short-circuit R2)")
     }
 
     @Test
     fun `applyPending overwrite lich roi consume`() {
-        assertTrue(applier.contains("blockScheduleFired("), "đóng dấu NavAutomationFired = overwrite lịch (R3)")
+        assertTrue(applier.contains("ScheduledNavPolicy.blocked(TripStart.currentId(app))"), "điểm đến chủ động thắng lịch của CHUYẾN (R3)")
+        assertTrue(service.contains("!firedPending && !pendingWaits"), "điểm đến còn chờ GPS ⇒ lịch không chen trước nó")
         assertTrue(applier.contains("PendingNavStore.consume("), "bắn xong ⇒ consume (một-lần, R4)")
         assertTrue(applier.contains("launchPlace("), "bắn qua launchPlace — cùng cửa với lịch, không đường ghi thứ hai")
         assertTrue(applier.contains("isStale("), "điểm đến chờ quá hạn ⇒ bỏ (P2-14)")

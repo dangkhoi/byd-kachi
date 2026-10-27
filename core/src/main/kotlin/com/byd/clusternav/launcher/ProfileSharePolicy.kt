@@ -31,7 +31,7 @@ object ProfileSharePolicy {
             "lịch dẫn đường (ảnh clusternav_prefs): khung giờ + thứ trong tuần + nơi đến (placeId = tên trong sổ địa " +
                 "chỉ) + app — tức lịch đi lại của một người",
         "nav_automation_fired" to
-            "sổ đã-dẫn (ảnh clusternav_prefs): ngày nào luật nào đã chạy = nhật ký chuyến đi thật",
+            "kế hoạch lịch của chuyến (ảnh clusternav_prefs; ≤ 3.1.21 là sổ đã-dẫn theo ngày) = dấu vết chuyến đi thật",
         // 2.91 VOICE-APP-NAMES (spec OQ2) — bản FULL vẫn mang; bản CHIA SẺ thì không.
         "voice_app_names" to
             "tên app tự dạy: chữ chép từ GIỌNG của một người + biệt danh tự đặt (có thể là tên người) — vô ích với giọng khác",

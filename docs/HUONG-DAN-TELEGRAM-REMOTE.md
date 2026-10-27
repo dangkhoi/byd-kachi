@@ -1,6 +1,6 @@
 # Hướng dẫn: Gửi điểm đến và nhạc từ điện thoại qua Telegram
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-10-26 · **Bản**: Kachi 3.1.21 (226) — có trên kênh cập nhật tự động
+> **Trạng thái**: Current · **Cập nhật**: 2026-10-27 · **Bản**: Kachi 3.1.22 (227) — bản cài tay, CHƯA lên kênh cập nhật tự động (kênh vẫn 3.1.21)
 > **Mục đích**: Từ điện thoại, gửi điểm đến hoặc nhạc cho Kachi qua một bot Telegram. Lên xe là Kachi dẫn đường ngay khi có GPS.
 > **Phạm vi**: CHỈ dẫn đường + nhạc. Kachi **không đọc, không gửi, không điều khiển** bất cứ thứ gì của xe qua Telegram.
 
@@ -49,10 +49,11 @@ Khi màn đầu xe sáng, Kachi chờ tin từ Telegram; màn tắt thì ngừng
 | `/go Công ty` | Nơi trong sổ địa chỉ của Kachi, hoặc địa chỉ chữ — app dẫn đường mặc định |
 | `/go Công ty gmaps vietmap` · `/go Công ty gmaps+vietmap` · `/go Công ty + waze` | Dẫn bằng các app ghi ở cuối (`gmaps` · `vietmap` · `waze`) |
 | `/go 21.0285, 105.8542` · gửi **vị trí** 📍 | Dẫn tới toạ độ |
-| `/go` · `/places` · nút 🧭 Go | Danh sách nơi đã lưu: bấm để dẫn, ➕ New để gõ điểm đến |
+| `/go` · `/places` · nút 🧭 Go | Danh sách nơi đã lưu (nơi 📌 lên đầu). Bấm một nơi ⇒ chọn **🗺 Google Maps · 🧭 VietMap · Both** (⭐ = app mặc định); **📌 Pin to top** ghim tối đa 3 nơi, bấm **📍 Unpin** để bỏ; ➕ New để gõ điểm đến |
 | `/cancel` | Xoá điểm đến đang chờ |
 
 - Điểm đến **chỉ bắt đầu dẫn khi xe có GPS**; gửi từ nhà thì lên xe mới dẫn. Hết hạn sau 24 giờ.
+- **Lịch dẫn đường tự động** (Cài đặt › Dẫn đường) chỉ quyết lúc **nổ máy**: nổ máy trong khung giờ thì chuyến đó dẫn theo lịch; đang chạy mà tới giờ thì lịch **không** chen vào. Điểm đến gửi qua Telegram thắng lịch cả chuyến (3.1.22).
 - **VietMap chỉ nhận toạ độ.** Link Google Maps và địa chỉ chữ không có toạ độ, nên Kachi tự tra toạ độ từ địa chỉ. Tra không ra thì bỏ VietMap và báo lại; nếu chỉ chọn VietMap thì không đặt điểm đến.
 
 ### Nhạc

@@ -1,124 +1,125 @@
 package com.byd.clusternav.launcher.automation
 
 /**
- * Vì sao một luật dẫn đường **không** nổ ở nhịp này. Là `enum` (không phải chuỗi) để nhật ký chẩn đoán trên xe
- * nói được đúng một trong các lý do đã lường, và để bài canh so được bằng giá trị.
+ * Kế hoạch lịch dẫn đường của MỘT chuyến (một lần nổ máy).
+ *
+ * @property trip mã chuyến (`TripGate.tripId` ở `:app` — đổi ở mỗi lần tắt máy, giữ nguyên khi BYD giết Kachi giữa đường).
+ * @property ruleId luật lịch đã gắn cho chuyến này; rỗng = chuyến này KHÔNG có lịch.
+ * @property fired lịch đã giao điểm đến cho app dẫn đường (xong việc của chuyến).
  */
-enum class NavSkipReason {
-    /** Luật đang tắt. */
-    DISABLED,
-
-    /** Hôm nay không nằm trong [ScheduledNavRule.days]. */
-    WRONG_DAY,
-
-    /** Đúng ngày nhưng chưa tới / đã qua khung giờ. */
-    OUTSIDE_WINDOW,
-
-    /** Đã dẫn trong khung này hôm nay rồi (spec R2.4). */
-    ALREADY_FIRED,
-
-    /**
-     * Luật đòi GPS mà chưa có định vị — spec R2.4, usecase **hầm**: vẫn trong khung 7–9h, chờ ra khỏi hầm có GPS
-     * mới dẫn. Đây là lý do **chờ**, không phải lý do bỏ: nhịp sau vẫn hỏi lại.
-     */
-    NO_GPS,
-
-    /**
-     * Không dựng được khoá ngày (`today` rỗng) ⇒ **không thể** biết hôm nay đã dẫn chưa.
-     *
-     * Không phải ca lý thuyết vô hại: nếu cho qua, phép so *"đã dẫn hôm nay"* mất nghĩa và luật nổ lại **mỗi
-     * nhịp** — tức app dẫn đường bị mở lại mỗi phút suốt cả khung giờ, ngay trước mặt người đang lái. Thà không
-     * dẫn.
-     */
-    NO_DAY_KEY,
+data class NavTripPlan(val trip: String, val ruleId: String, val fired: Boolean) {
+    val hasRule: Boolean get() = ruleId.isNotEmpty()
 }
 
-/** Việc cần làm với MỘT luật ở MỘT nhịp. */
-sealed interface NavAutomationDecision {
-    /** Bắn ý-định dẫn đường tới [ScheduledNavRule.placeId] bằng [ScheduledNavRule.navApp]. */
-    object Launch : NavAutomationDecision
+/** Vì sao nhịp này lịch không dẫn. `enum` để nhật ký trên xe nói đúng một lý do đã lường. */
+enum class NavHoldReason {
+    /** Chuyến này không có lịch: giờ nổ máy ngoài mọi khung / sai thứ / luật tắt / có điểm đến chủ động. */
+    NO_RULE,
 
-    /** Không dẫn, kèm lý do. */
-    data class Skip(val reason: NavSkipReason) : NavAutomationDecision
+    /** Lịch của chuyến đã dẫn xong. */
+    FIRED,
+
+    /** Luật đòi GPS mà chưa có định vị (usecase hầm) — CHỜ, nhịp sau hỏi lại. */
+    NO_GPS,
+
+    /** Luật đã gắn cho chuyến không còn (bị xoá / tắt giữa chuyến). */
+    RULE_GONE,
+
+    /** Không biết mã chuyến ⇒ không biết "một lần mỗi chuyến" ⇒ thà không dẫn. */
+    NO_TRIP,
+
+    /** Thấy chuyến lần đầu khi đã đi quá [ScheduledNavPolicy.START_GRACE_MS] — không biết giờ nổ máy ⇒ không dẫn. */
+    LATE,
+}
+
+/** Việc của một nhịp: [Launch] (bắn [rule], lưu [plan] sau khi giao được với `fired = true`) hoặc [Hold]. */
+sealed interface NavTripStep {
+    val plan: NavTripPlan?
+
+    data class Launch(val rule: ScheduledNavRule, override val plan: NavTripPlan) : NavTripStep
+
+    data class Hold(val reason: NavHoldReason, override val plan: NavTripPlan?) : NavTripStep
 }
 
 /**
- * ═══ AUTOMATION #2 · DẪN ĐƯỜNG THEO LỊCH · LUẬT QUYẾT ĐỊNH ════════════════════════════════════════════════════
+ * ═══ AUTOMATION #2 · DẪN ĐƯỜNG THEO LỊCH — QUYẾT MỘT LẦN MỖI CHUYẾN (owner 27/10) ═══════════════════════════════
  *
- * Spec `docs/specs/kachi-automation.html` R2.3 · R2.4 (§Design › :core). Thuần Kotlin (`:core`, cấm `android.*`) ⇒
- * bơm giờ/ngày/GPS giả mà kiểm off-car; đọc `LocationManager`, tra sổ địa chỉ và bắn ý-định là việc của
- * `ScheduledNavApplier` (`:app`).
+ * Spec `docs/specs/kachi-nav-schedule-per-trip.html`. Thuần Kotlin (`:core`) ⇒ kiểm off-car.
  *
- * ## Sổ đã-dẫn là một CHUỖI NGÀY, không phải một cờ boolean
- * *"Đã dẫn"* phải tự hết hiệu lực sang ngày mới (spec R2.4). Một cờ `Boolean` thì cần ai đó **xoá** nó lúc nửa
- * đêm — mà nửa đêm là lúc không có gì chạy (xe tắt máy), nên cờ ấy sẽ còn nguyên sáng hôm sau và luật **không bao
- * giờ chạy lần thứ hai**. Lưu *"ngày đã dẫn"* rồi so với ngày hôm nay thì việc hết hiệu lực xảy ra **tự nó**,
- * không cần ai chạy đúng lúc. [lastFiredDay] rỗng = chưa dẫn bao giờ.
+ * ## Vì sao không còn "xét mỗi phút trong khung giờ"
+ * [ĐO mã 27/10] lịch cũ xét lại MỖI NHỊP 60 s: đang đi một chuyến theo yêu cầu, tới 16:00 thì lịch "về nhà" bắn và ĐÈ
+ * tuyến đang chạy (owner: *"làm rối trí quá"*). Lịch là điểm đến MẶC ĐỊNH của một chuyến khi người lái chưa chọn gì ⇒
+ * nó chỉ được quyết ở ĐẦU chuyến:
+ *  - Lần đầu thấy một chuyến mới ⇒ chọn luật theo **giờ nổ máy** (giờ của nhịp này) — một lần, ghi vào [NavTripPlan].
+ *  - Các nhịp sau trong cùng chuyến chỉ THI HÀNH kế hoạch đó (chờ GPS rồi dẫn), không bao giờ chọn lại ⇒ đang chạy
+ *    mà đồng hồ vào khung giờ thì không có gì xảy ra.
+ *  - Điểm đến chủ động (Telegram) thắng: chỗ gọi [blocked] chuyến khi điểm đến đó đã dẫn.
+ *  - Mỗi chuyến nổ máy trong khung đều dẫn (owner chọn E1) — không còn sổ "một lần mỗi ngày".
  *
- * ⚠ Dạng chuỗi ngày là **quy ước của chỗ gọi** (`:app` dùng `yyyy-MM-dd`) — hàm này chỉ so **bằng nhau**, nên nó
- * không mang một phép định dạng ngày thứ hai vào `:core`, và cũng không cần đồng hồ.
+ * Mã chuyến đổi ở mỗi lần tắt máy và GIỮ khi BYD giết Kachi giữa đường ⇒ tiến trình bật lại giữa chuyến đọc kế hoạch
+ * đã lưu, không chọn lại.
  */
 object ScheduledNavPolicy {
 
     /**
-     * Quyết định cho MỘT luật ở MỘT nhịp — spec R2.3.
-     *
-     * Thứ tự kiểm là **có chủ ý**, vì nó quyết định câu nhật ký nào hiện ra khi nhiều điều kiện cùng sai: đi từ
-     * *"luật này không liên quan lúc này"* (tắt · sai ngày · ngoài giờ) tới *"đã xong việc"* (đã dẫn) rồi mới tới
-     * *"đang chờ"* ([NavSkipReason.NO_GPS]). Đặt `NO_GPS` **sau** `ALREADY_FIRED` vì khi đã dẫn rồi thì GPS không
-     * còn là câu hỏi — báo *"chờ GPS"* lúc ấy là nói sai việc đang xảy ra.
-     *
-     * @param nowMinOfDay phút-trong-ngày hiện tại (0..1439).
-     * @param dow thứ hôm nay theo ISO-8601 (1 = Thứ Hai … 7 = Chủ Nhật), khớp `java.time.DayOfWeek.value`.
-     * @param gpsOk đang có định vị dùng được (`GpsAvailability` ở `:app` quyết định *"dùng được"* nghĩa là gì).
-     * @param lastFiredDay khoá ngày của lần dẫn gần nhất **của chính luật này**; rỗng = chưa bao giờ.
-     * @param today khoá ngày hôm nay, cùng dạng với [lastFiredDay].
+     * Chuyến chỉ được gắn lịch khi Kachi thấy nó trong 5 phút đầu (tính từ lần thức đầu của tiến trình). Quá mốc này mà
+     * chưa có kế hoạch lưu nghĩa là vòng automation không chạy lúc nổ máy (vd vừa thêm luật giữa đường) ⇒ không biết
+     * giờ nổ máy thật ⇒ không gắn lịch, tránh đúng lỗi chen giữa chuyến.
      */
-    fun decide(
-        rule: ScheduledNavRule,
-        nowMinOfDay: Int,
-        dow: Int,
-        gpsOk: Boolean,
-        lastFiredDay: String,
-        today: String,
-    ): NavAutomationDecision = when {
-        !rule.enabled -> NavAutomationDecision.Skip(NavSkipReason.DISABLED)
-        dow !in rule.days -> NavAutomationDecision.Skip(NavSkipReason.WRONG_DAY)
-        !ScheduledNavRules.inWindow(rule, nowMinOfDay) -> NavAutomationDecision.Skip(NavSkipReason.OUTSIDE_WINDOW)
-        today.isBlank() -> NavAutomationDecision.Skip(NavSkipReason.NO_DAY_KEY)
-        lastFiredDay == today -> NavAutomationDecision.Skip(NavSkipReason.ALREADY_FIRED)
-        rule.requireGps && !gpsOk -> NavAutomationDecision.Skip(NavSkipReason.NO_GPS)
-        else -> NavAutomationDecision.Launch
-    }
+    const val START_GRACE_MS: Long = 5L * 60_000
+
+    /** Luật đầu tiên (theo thứ tự trong sổ) khớp giờ nổ máy [startMin] + thứ [dow]; `null` = chuyến không có lịch. */
+    fun pickAtStart(rules: List<ScheduledNavRule>, startMin: Int, dow: Int): ScheduledNavRule? =
+        rules.firstOrNull { it.enabled && dow in it.days && ScheduledNavRules.inWindow(it, startMin) }
+
+    /** Kế hoạch "chuyến này không có lịch" — dùng khi điểm đến chủ động đã dẫn ([NavTripStep] sau đó luôn `Hold`). */
+    fun blocked(trip: String): NavTripPlan = NavTripPlan(trip, "", fired = true)
 
     /**
-     * Luật ĐẦU TIÊN được dẫn ở nhịp này, hoặc `null` nếu không luật nào.
+     * Một nhịp.
      *
-     * ## Vì sao phải có phép chọn "một luật mỗi nhịp" ở đây
-     * Hai khung giờ chồng nhau là chuyện người dùng đặt được (vd *"7–9h đến cty"* và một luật khác *"8–8h30 đón
-     * con"*). Nếu `:app` cứ duyệt danh sách và bắn mọi luật nào [decide] trả `Launch`, xe sẽ nhận **hai ý-định dẫn
-     * đường trong cùng một giây** — app dẫn đường sau ghi đè tuyến của app trước, và người lái thấy tuyến nhảy
-     * một cách không giải thích được. Chọn một (theo **thứ tự trong sổ** = thứ tự người dùng tạo, không phải thứ
-     * tự "gần giờ nhất" — thứ tự tạo là thứ duy nhất người dùng nhìn thấy và sắp được) rồi để luật kia nổ ở nhịp
-     * sau (nó vẫn còn trong khung, và sổ đã-dẫn của nó vẫn trống).
-     *
-     * @param firedDays sổ đã-dẫn: `id luật` → khoá ngày; thiếu khoá = chưa bao giờ dẫn.
+     * @param saved kế hoạch đã lưu (có thể của chuyến TRƯỚC).
+     * @param trip mã chuyến hiện tại; rỗng ⇒ [NavHoldReason.NO_TRIP].
+     * @param nowMinOfDay phút-trong-ngày của nhịp này · @param dow thứ ISO-8601 (1 = T2 … 7 = CN).
+     * @param sinceStartMs ms kể từ lần thức đầu của tiến trình; `null` = không biết (coi như vừa nổ máy).
+     * @param gpsOk đang có định vị dùng được.
      */
-    fun firstToLaunch(
+    fun step(
+        saved: NavTripPlan?,
+        trip: String,
         rules: List<ScheduledNavRule>,
         nowMinOfDay: Int,
         dow: Int,
+        sinceStartMs: Long?,
         gpsOk: Boolean,
-        firedDays: Map<String, String>,
-        today: String,
-    ): ScheduledNavRule? = rules.firstOrNull { rule ->
-        decide(
-            rule = rule,
-            nowMinOfDay = nowMinOfDay,
-            dow = dow,
-            gpsOk = gpsOk,
-            lastFiredDay = firedDays[rule.id].orEmpty(),
-            today = today,
-        ) == NavAutomationDecision.Launch
+    ): NavTripStep {
+        if (trip.isBlank()) return NavTripStep.Hold(NavHoldReason.NO_TRIP, null)
+        val plan = if (saved?.trip == trip) saved else {
+            if (sinceStartMs != null && sinceStartMs > START_GRACE_MS) {
+                return NavTripStep.Hold(NavHoldReason.LATE, NavTripPlan(trip, "", fired = false))
+            }
+            NavTripPlan(trip, pickAtStart(rules, nowMinOfDay, dow)?.id.orEmpty(), fired = false)
+        }
+        if (!plan.hasRule) return NavTripStep.Hold(NavHoldReason.NO_RULE, plan)
+        if (plan.fired) return NavTripStep.Hold(NavHoldReason.FIRED, plan)
+        val rule = rules.firstOrNull { it.id == plan.ruleId && it.enabled }
+            ?: return NavTripStep.Hold(NavHoldReason.RULE_GONE, plan)
+        if (rule.requireGps && !gpsOk) return NavTripStep.Hold(NavHoldReason.NO_GPS, plan)
+        return NavTripStep.Launch(rule, plan)
+    }
+
+    /** Sổ luật vừa sửa: luật của kế hoạch không còn ⇒ bỏ lịch của chuyến (`newId` có thể cấp lại id đã rảnh). */
+    fun pruned(plan: NavTripPlan?, liveIds: Set<String>): NavTripPlan? =
+        if (plan != null && plan.hasRule && plan.ruleId !in liveIds) plan.copy(ruleId = "") else plan
+
+    /** Dạng lưu một dòng `trip|ruleId|0/1`. */
+    fun encode(plan: NavTripPlan): String = "${plan.trip}|${plan.ruleId}|${if (plan.fired) 1 else 0}"
+
+    /** Chuỗi hỏng / rỗng ⇒ `null` (coi như chưa có kế hoạch — chuyến được quyết lại theo [START_GRACE_MS]). */
+    fun decode(raw: String?): NavTripPlan? {
+        val parts = raw?.trim()?.split('|') ?: return null
+        if (parts.size != 3 || parts[0].isBlank()) return null
+        val fired = when (parts[2]) { "1" -> true; "0" -> false; else -> return null }
+        return NavTripPlan(parts[0], parts[1], fired)
     }
 }

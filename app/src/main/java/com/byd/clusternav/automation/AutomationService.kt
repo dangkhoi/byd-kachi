@@ -235,7 +235,9 @@ class AutomationService : Service() {
                             val firedPending = runCatching { ScheduledNavApplier.applyPending(app, nowMs) }
                                 .onFailure { Log.w(TAG, "tick pending lỗi", it) }
                                 .getOrDefault(false)
-                            if (!firedPending) {
+                            // Điểm đến chủ động còn chờ (vd chờ GPS) ⇒ lịch KHÔNG chen vào trước nó.
+                            val pendingWaits = runCatching { PendingNavStore.read(app) != null }.getOrDefault(false)
+                            if (!firedPending && !pendingWaits) {
                                 runCatching { ScheduledNavApplier.tick(app) }.onFailure { Log.w(TAG, "tick nav lỗi", it) }
                             }
                         }

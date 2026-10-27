@@ -56,4 +56,32 @@ class TelegramButtonsTest {
     @Test fun `so trong - van co New`() {
         assertEquals(listOf("➕ New destination"), buttons(TelegramMenu.places(1, emptyList())).map { it.first })
     }
+
+    @Test fun `noi ghim len dau co dau ghim, callback van la chi so trong so`() {
+        val all = listOf(place("Nhà"), place("Công ty"), place("Gym"), place("Mẹ"))
+        val b = buttons(TelegramMenu.places(2, all, 0, pinned = listOf("Gym", "Không còn", "Nhà")))
+        assertEquals(listOf("📌 Gym", "📌 Nhà", "Công ty", "Mẹ", "➕ New destination"), b.map { it.first })
+        assertEquals(2, TelegramMenu.placeIndex(b[0].second!!.id, all), "Gym vẫn trỏ đúng chỉ số 2 trong sổ")
+    }
+
+    @Test fun `ghim toi da 3 noi, bam lai thi bo ghim`() {
+        val three = listOf("A", "B", "C")
+        assertEquals(three, TelegramMenu.togglePin(three, "D"), "đầy 3 ⇒ không thêm")
+        assertEquals(listOf("A", "C"), TelegramMenu.togglePin(three, "B"))
+        assertEquals(listOf("A", "B"), TelegramMenu.togglePin(listOf("A"), "B"))
+    }
+
+    @Test fun `bang chon app - Google Maps, VietMap, ca hai, sao o app mac dinh`() {
+        val id = TelegramMenu.placeId(1, place("Công ty"))
+        val b = buttons(TelegramMenu.appPicker(5, id, "vietmap", isPinned = false, canPin = true))
+        assertEquals(listOf("🗺 Google Maps", "🧭 VietMap ⭐", "🗺+🧭 Both", "📌 Pin to top", "⬅️ Back"), b.map { it.first })
+        assertEquals(id to listOf("gmaps"), TelegramMenu.appChoice(b[0].second!!.id))
+        assertEquals(id to listOf("vietmap"), TelegramMenu.appChoice(b[1].second!!.id))
+        assertEquals(id to listOf("gmaps", "vietmap"), TelegramMenu.appChoice(b[2].second!!.id))
+        assertEquals(TelegramCallback(5, "nav", "pin", id), b[3].second)
+        assertTrue(buttons(TelegramMenu.appPicker(5, id, "gmaps", isPinned = true, canPin = false)).any { it.first == "📍 Unpin" })
+        assertFalse(buttons(TelegramMenu.appPicker(5, id, "gmaps", isPinned = false, canPin = false)).any { it.first.startsWith("📌") })
+        assertNull(TelegramMenu.appChoice("$id:x"))
+        assertNull(TelegramMenu.appChoice(":g"))
+    }
 }

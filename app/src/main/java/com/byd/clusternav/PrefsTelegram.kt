@@ -78,3 +78,16 @@ fun Prefs.bumpTelegramBoardNonce(ctx: Context): Int {
 /** Phiên bản bàn phím nút dưới ô gõ đã gửi cho chat (0 = chưa gửi). Thấp hơn [TelegramReplyKeyboard.VERSION] ⇒ gửi lại. */
 fun Prefs.telegramKbVersion(ctx: Context): Int = Prefs.sp(ctx).getInt(K_TG_KB_VERSION, 0)
 fun Prefs.setTelegramKbVersion(ctx: Context, v: Int) { Prefs.sp(ctx).edit().putInt(K_TG_KB_VERSION, v).apply() }
+
+/**
+ * Tên các nơi đã ghim lên đầu bảng 🧭 Go (owner 27/10, tối đa `TelegramMenu.MAX_PINS`). Lưu theo TÊN (không chỉ số):
+ * sổ địa chỉ sửa/xoá thì nơi không còn tự rơi khỏi danh sách hiện, không ghim nhầm sang nơi khác. Theo XE như bot.
+ */
+private const val K_TG_PINS = "telegram_pinned_places"
+
+fun Prefs.telegramPinnedPlaces(ctx: Context): List<String> =
+    Prefs.sp(ctx).getString(K_TG_PINS, "").orEmpty().split('\n').filter { it.isNotBlank() }
+
+fun Prefs.setTelegramPinnedPlaces(ctx: Context, names: List<String>) {
+    Prefs.sp(ctx).edit().putString(K_TG_PINS, names.joinToString("\n")).apply()
+}

@@ -381,7 +381,7 @@ object ProfileScope {
      * Khoá ClusterNav đi theo HỒ SƠ nhưng **không phải cài đặt** (trạng thái chạy) → tệp prefs chứa nó.
      *
      * Vì sao cần danh sách RIÊNG thay vì nhét vào danh mục Cài đặt: bảng `SettingsCatalogClusterNav.KEYS` chỉ nhận
-     * khoá **có mặt trên UI** (chú thích tại chỗ), mà `nav_automation_fired` là sổ ĐÃ-DẪN, không có hàng nào. Nhưng
+     * khoá **có mặt trên UI** (chú thích tại chỗ), mà `nav_automation_fired` là kế hoạch lịch của chuyến (3.1.22; trước là sổ ĐÃ-DẪN), không có hàng nào. Nhưng
      * nó vẫn phải đi theo hồ sơ, và phải đi **CÙNG** `nav_automation_rules`: tách phạm vi hai khoá là mời chúng
      * lệch nhau — luật theo hồ sơ mà dấu đã-dẫn theo xe thì đổi hồ sơ là **dẫn lại lần hai trong cùng khung giờ**.
      *

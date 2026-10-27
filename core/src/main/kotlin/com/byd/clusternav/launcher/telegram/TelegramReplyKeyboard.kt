@@ -21,7 +21,7 @@ object TelegramReplyKeyboard {
     const val DEST_PROMPT = "🧭 Type a destination — saved name, address, lat, lng or a Google Maps link (add “vietmap” to also open VietMap):"
 
     /** Phiên bản bàn phím. Tăng khi đổi nút ⇒ `:app` gửi lại một lần (Telegram giữ bàn phím cũ phía máy khách). */
-    const val VERSION = 2
+    const val VERSION = 3
 
     /** Nhãn nút → lệnh; `null` = không phải nút bàn phím. */
     fun commandOf(text: String): TelegramCommand? = when (text.trim()) {
