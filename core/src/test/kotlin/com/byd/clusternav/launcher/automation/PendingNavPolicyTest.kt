@@ -44,7 +44,7 @@ class PendingNavPolicyTest {
         val b = ScheduledNavPolicy.blocked("n7.t123")
         assertEquals(NavTripPlan("n7.t123", "", true), b)
         val r1 = ScheduledNavRules.of("r1", true, 420, 540, setOf(1), false, "office", "gmaps")!!
-        val step = ScheduledNavPolicy.step(b, "n7.t123", listOf(r1), 430, 1, 0L, true)
+        val step = ScheduledNavPolicy.step(b, "n7.t123", listOf(r1), 430, 1, 10_000L, 0L, true)
         assertEquals(NavHoldReason.NO_RULE, (step as NavTripStep.Hold).reason, "điểm đến chủ động đã dẫn ⇒ lịch nhường cả chuyến")
     }
 }

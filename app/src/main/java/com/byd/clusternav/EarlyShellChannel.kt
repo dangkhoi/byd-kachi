@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.PowerManager
 import android.os.SystemClock
+import com.byd.clusternav.automation.ScheduledNavApplier
 import android.util.Log
 import com.byd.clusternav.carexec.EarlyPlan
 import com.byd.clusternav.carexec.EarlyStep
@@ -82,6 +83,7 @@ internal object EarlyShellChannel {
             if (intent?.action != Intent.ACTION_SCREEN_ON) return
             KachiReadyLog.wake(SystemClock.elapsedRealtime(), "broadcast")
             val app = context?.applicationContext ?: return
+            submit("nav_wake") { ScheduledNavApplier.noteWake(app) }   // nền: prefs commit + Settings.Global
             if (ShellReadiness.isUp()) submit("screen_on") { readyChain(app, KachiReadyLog.lastScreenOnAt()) }
         }
     }
@@ -142,6 +144,7 @@ internal object EarlyShellChannel {
      */
     fun homeVisible(app: Context) {
         KachiReadyLog.wake(SystemClock.elapsedRealtime(), "home")
+        submit("nav_wake") { ScheduledNavApplier.noteWake(app) }   // nền: prefs commit + Settings.Global
         if (ShellReadiness.isUp()) submit("home") { readyChain(app, KachiReadyLog.lastScreenOnAt()) }
     }
 
@@ -151,6 +154,7 @@ internal object EarlyShellChannel {
         // Kênh lên lúc màn ĐANG bật (tiến trình bật khi màn sáng, hoặc F4 vừa đo xong) ⇒ coi là một mốc "thức" để lượt
         // HOME hiện ngay sau đó (cùng lần thức, < 10 s) không chạy chuỗi SẴN lần hai.
         KachiReadyLog.wake(SystemClock.elapsedRealtime(), "up")
+        submit("nav_wake") { ScheduledNavApplier.noteWake(app) }   // nền: prefs commit + Settings.Global
         readyChain(app, KachiReadyLog.lastScreenOnAt())
     }
 

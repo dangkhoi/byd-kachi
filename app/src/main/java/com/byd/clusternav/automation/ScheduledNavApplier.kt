@@ -70,8 +70,6 @@ object ScheduledNavApplier {
             val saved = ScheduledNavPolicy.decode(Prefs.navAutomationTrip(app))
             val nowMin = LocalTime.now().let { it.hour * 60 + it.minute }
             val dow = LocalDate.now().dayOfWeek.value          // ISO-8601: 1=T2 … 7=CN, khớp `ScheduledNavRules`
-            val wake = KachiReadyLog.firstWakeAt()
-            val sinceStart = if (wake < 0) null else SystemClock.elapsedRealtime() - wake
             // Hỏi GPS **chỉ khi** có luật cần nó — off-car/thiếu quyền thì lời gọi này còn ghi một dòng log.
             val gpsOk = if (rules.any { it.enabled && it.requireGps }) {
                 GpsAvailability.isAvailable(app, nowMs) == true
@@ -79,7 +77,7 @@ object ScheduledNavApplier {
                 false
             }
 
-            val step = ScheduledNavPolicy.step(saved, trip, rules, nowMin, dow, sinceStart, gpsOk)
+            val step = ScheduledNavPolicy.step(saved, trip, rules, nowMin, dow, SystemClock.elapsedRealtime(), KachiReadyLog.firstWakeAt(), gpsOk)
             step.plan?.let { if (it != saved) savePlan(app, it, "kế hoạch chuyến mới (giờ=$nowMin thứ=$dow)") }
             when (step) {
                 is NavTripStep.Hold -> {
@@ -105,6 +103,19 @@ object ScheduledNavApplier {
         }
     }
 
+    /**
+     * Màn chính vừa THỨC (nổ máy / màn bật — mọi đường `KachiReadyLog.wake`): ghi mốc thức của CHUYẾN để nhịp lịch sau biết
+     * tuổi chuyến thật, kể cả khi tiến trình bị BYD giết rồi bật lại giữa đường (review 27/10 P1). Không chạm luật, không GPS.
+     */
+    fun noteWake(ctx: Context) {
+        val app = ctx.applicationContext
+        runCatching {
+            val trip = TripStart.currentId(app)
+            val saved = ScheduledNavPolicy.decode(Prefs.navAutomationTrip(app))
+            ScheduledNavPolicy.noteWake(saved, trip, SystemClock.elapsedRealtime())?.let { savePlan(app, it, "mốc thức chuyến") }
+        }.onFailure { Log.w(TAG, "ghi mốc thức chuyến lỗi (bỏ qua)", it) }
+    }
+
     private fun savePlan(app: Context, plan: NavTripPlan, why: String) {
         Prefs.setNavAutomationTrip(app, ScheduledNavPolicy.encode(plan))
         Log.i(TAG, "lịch: $why ⇒ chuyến ${plan.trip} luật=${plan.ruleId.ifEmpty { "-" }} đã-dẫn=${plan.fired}")
@@ -117,7 +128,7 @@ object ScheduledNavApplier {
     fun pruneTripPlan(ctx: Context) {
         val app = ctx.applicationContext
         runCatching {
-            val live = NavAutomationBook.decode(Prefs.navAutomationRules(app)).map { it.id }.toSet()
+            val live = NavAutomationBook.decode(Prefs.navAutomationRules(app))
             val plan = ScheduledNavPolicy.decode(Prefs.navAutomationTrip(app))
             val pruned = ScheduledNavPolicy.pruned(plan, live)
             if (pruned != null && pruned != plan) savePlan(app, pruned, "luật của chuyến đã xoá")
@@ -166,24 +177,26 @@ object ScheduledNavApplier {
     /**
      * ƯU TIÊN điểm đến chờ (TELEGRAM-REMOTE, spec R2/R3/R4/R5). Gọi TRƯỚC [tick] mỗi nhịp.
      *
-     * @return `true` = đã bắn pending (chỗ gọi BỎ [tick] nhịp này — short-circuit); `false` = không pending /
-     *   đang chờ GPS ⇒ chỗ gọi chạy lịch như cũ.
+     * @return [PendingOutcome.FIRED] = đã bắn (chỗ gọi BỎ [tick] nhịp này) · [PendingOutcome.WAITING] = còn chờ (GPS /
+     *   chưa app nào mở được) ⇒ lịch KHÔNG chen trước nó · [PendingOutcome.NONE] ⇒ chạy lịch như cũ. Một lượt đọc kho.
      *
      * Overwrite lịch: sau khi bắn, lưu [ScheduledNavPolicy.blocked] cho CHUYẾN hiện tại ⇒ lịch của chuyến này không
      * bao giờ dẫn (owner 27/10: lịch quyết một lần mỗi chuyến). Một-lần: [com.byd.clusternav.automation.PendingNavStore.consume] xoá pending. Chờ GPS:
      * [com.byd.clusternav.launcher.automation.PendingNavPolicy.Decision.WaitForGps] ⇒ giữ nguyên, thử lại nhịp
      * sau.
      */
-    fun applyPending(ctx: Context, nowMs: Long = System.currentTimeMillis()): Boolean {
+    enum class PendingOutcome { NONE, WAITING, FIRED }
+
+    fun applyPending(ctx: Context, nowMs: Long = System.currentTimeMillis()): PendingOutcome {
         val app = ctx.applicationContext
         return runCatching {
-            val p = com.byd.clusternav.automation.PendingNavStore.read(app) ?: return@runCatching false
+            val p = com.byd.clusternav.automation.PendingNavStore.read(app) ?: return@runCatching PendingOutcome.NONE
             // P2-14: điểm đến chờ quá cũ (24h) ⇒ bỏ. setAtMs là wall-clock (currentTimeMillis), KHÔNG phải nowMs
             // (= elapsedRealtime từ FGS) ⇒ so bằng wall-clock riêng.
             if (com.byd.clusternav.automation.PendingNavStore.isStale(p, System.currentTimeMillis())) {
                 com.byd.clusternav.automation.PendingNavStore.consume(app)
                 Log.i(TAG, "pending: quá hạn 24h ⇒ bỏ")
-                return@runCatching false
+                return@runCatching PendingOutcome.NONE
             }
             // Review 26/10 P2-3: KHÔNG truyền nowMs (FGS đưa elapsedRealtime) — GpsAvailability so tuổi fix bằng wall-clock.
             val gpsOk = if (p.requireGps) GpsAvailability.isAvailable(app) else null
@@ -198,23 +211,23 @@ object ScheduledNavApplier {
                         savePlan(app, ScheduledNavPolicy.blocked(TripStart.currentId(app)), "điểm đến chủ động thắng")
                         com.byd.clusternav.automation.PendingNavStore.consume(app)
                         Log.i(TAG, "pending: đã bắn + chặn lịch chuyến này + consume")
-                        true
+                        PendingOutcome.FIRED
                     } else {
                         // Không app nào dẫn được (chưa cài / chỉ chữ cho app cần toạ độ): GIỮ pending, thử lại
                         // nhịp sau — không consume một lần hỏng thành mất điểm đến.
                         Log.i(TAG, "pending: chưa app nào dẫn được ⇒ giữ, thử lại")
-                        false
+                        PendingOutcome.WAITING
                     }
                 }
                 com.byd.clusternav.launcher.automation.PendingNavPolicy.Decision.WaitForGps -> {
                     Log.i(TAG, "pending: chờ GPS")
-                    false
+                    PendingOutcome.WAITING
                 }
-                com.byd.clusternav.launcher.automation.PendingNavPolicy.Decision.FallThroughToSchedule -> false
+                com.byd.clusternav.launcher.automation.PendingNavPolicy.Decision.FallThroughToSchedule -> PendingOutcome.NONE
             }
         }.getOrElse {
             Log.w(TAG, "nhịp pending lỗi (degrade-safe, bỏ qua)", it)
-            false
+            PendingOutcome.NONE
         }
     }
 

@@ -36,15 +36,16 @@ Kèm 3 việc Telegram: bàn phím nút mất sau lần bấm đầu; bấm nơi
 <tr><td>Thấy chuyến lần đầu khi đã &gt; 5 phút</td><td>Không biết giờ nổ máy ⇒ không lịch (LATE)</td></tr>
 </table>
 <ul>
-<li><code>:core ScheduledNavPolicy.step</code> thuần + <code>NavTripPlan</code> (<code>trip|ruleId|0/1</code>). Mã chuyến = <code>TripStart.currentId</code> (dùng chung với chuyến lên xe, đổi mỗi lần tắt máy). Lưu ở khoá cũ <code>nav_automation_fired</code> (giữ tên vì đã khai phạm vi theo hồ sơ; giá trị ≤ 3.1.21 decode ra null ⇒ vô hại), <code>commit()</code>.</li>
+<li><code>:core ScheduledNavPolicy.step</code> thuần + <code>NavTripPlan</code> (<code>trip|ruleId|fired|decided|wakeAt|ruleSig</code>); mốc thức chuyến ghi bởi <code>noteWake</code> ở mọi đường thức của màn chính (Pass 1). Mã chuyến = <code>TripStart.currentId</code> (dùng chung với chuyến lên xe, đổi mỗi lần tắt máy). Lưu ở khoá cũ <code>nav_automation_fired</code> (giữ tên vì đã khai phạm vi theo hồ sơ; giá trị ≤ 3.1.21 decode ra null ⇒ vô hại), <code>commit()</code>.</li>
 <li><code>NavAutomationFired</code> + <code>PendingNavPolicy.blockScheduleFired</code> gỡ; Telegram thắng = <code>ScheduledNavPolicy.blocked(trip)</code>.</li>
 <li>Telegram: <code>TelegramMenu.ordered/places/appPicker/appChoice/togglePin</code> (<code>:core</code>); callback <code>nav:app:&lt;nơi&gt;:&lt;g|v|gv&gt;</code>, <code>nav:pin:&lt;nơi&gt;</code>; ghim lưu theo TÊN ở <code>telegram_pinned_places</code> (theo xe).</li>
 </ul>
 
 <h2>Verification</h2>
-<p>[ĐO 27/10] 10 905 test / 0 lỗi (5 module, <code>--rerun-tasks</code>) · lint release 0 lỗi · 2 đột biến (bỏ "đã quyết thì không chọn lại" ⇒ 4 bài đỏ; bỏ bàn phím khỏi câu trả lời ⇒ 1 bài đỏ), khôi phục khớp byte · APK 3.1.22 (227) ký <code>92:57…99:17</code>, không debuggable. Máy ảo: chưa chạy (lượt bật máy ảo treo, đã dừng). 🚗 chưa đo xe.</p>
+<p>[ĐO 27/10 sau Pass 1] 10 908 test / 0 lỗi (5 module, <code>--rerun-tasks</code>) · lint release 0 lỗi · 5 đột biến đỏ đúng chỗ (chọn lại giữa chuyến · bàn phím · mốc tiến trình thay mốc chuyến · bỏ so chữ ký luật · bỏ một đường noteWake), khôi phục khớp byte · APK 3.1.22 (227) sha256 <code>af628acd…</code>, ký <code>92:57…99:17</code>, không debuggable · máy ảo A10: nâng cấp thật 3.1.21 (OTA) → 3.1.22, HOME lên, 11 nhóm Cài đặt 0 crash, tắt/bật màn ⇒ log <code>lịch: mốc thức chuyến ⇒ chuyến n5.b</code>. 🚗 chưa đo xe.</p>
 
 <h2>Open Questions</h2><p>Không.</p>
 <h2>References</h2><p><a href="kachi-automation.html">kachi-automation.html</a> · <a href="kachi-telegram-remote.html">kachi-telegram-remote.html</a></p>
-<h2>Reviewer Log</h2><ul><li>Pass 0 — 2026-10-27: chưa có senior review độc lập.</li></ul>
+<h2>Reviewer Log</h2><ul>
+<li>Pass 1 — 2026-10-27 (agent <code>27bb89c9</code>, độc lập, chỉ đọc): APPROVE WITH FIXES — 0 P0. <b>[P1]</b> mốc thức của tiến trình (<code>KachiReadyLog.firstWakeAt</code>) không sống qua lượt BYD giết Kachi ⇒ tiến trình bật lại giữa đường có thể chọn lịch theo giờ hiện tại nếu chuyến chưa có kế hoạch — VÁ: <code>NavTripPlan.wakeAt/decided</code> ghi ở 3 đường thức của màn chính (<code>ScheduledNavApplier.noteWake</code>), mốc chuyến thắng mốc tiến trình, chọn theo giờ nổ máy (giờ nhịp − tuổi chuyến). <b>[P2]</b> <code>newId</code> cấp lại id ⇒ thi hành nhầm luật mới — VÁ: <code>ruleSig</code> (đích+khung+app) đi cùng id. <b>[P2]</b> đọc <code>PendingNavStore</code> hai lần một nhịp — VÁ: <code>applyPending</code> trả <code>PendingOutcome</code>. <b>[P3]</b> "Back" của bảng chọn app về trang 0 — ledger. Test mới: 3 ca (<code>tien trinh bat lai giua duong…</code>, <code>chon theo gio no may…</code>, <code>id cap lai…</code>), 3 đột biến đỏ đúng chỗ.</li></ul>
 </body></html>

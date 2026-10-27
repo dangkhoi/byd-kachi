@@ -4,10 +4,22 @@ package com.byd.clusternav.launcher.automation
  * Kế hoạch lịch dẫn đường của MỘT chuyến (một lần nổ máy).
  *
  * @property trip mã chuyến (`TripGate.tripId` ở `:app` — đổi ở mỗi lần tắt máy, giữ nguyên khi BYD giết Kachi giữa đường).
- * @property ruleId luật lịch đã gắn cho chuyến này; rỗng = chuyến này KHÔNG có lịch.
+ * @property ruleId luật lịch đã gắn cho chuyến này; rỗng = chuyến này KHÔNG có lịch (khi [decided]).
  * @property fired lịch đã giao điểm đến cho app dẫn đường (xong việc của chuyến).
+ * @property decided đã CHỌN luật cho chuyến chưa. `false` = chỉ mới ghi mốc thức ([wakeAt]) lúc nổ máy, chưa có nhịp lịch nào.
+ * @property wakeAt `elapsedRealtime` của lần thức đầu của chuyến (ghi bởi màn chính lúc nổ máy, SỐNG qua lượt BYD giết
+ *   tiến trình giữa đường — review 27/10 P1: mốc thức của RIÊNG tiến trình mới sẽ trông như vừa nổ máy); `-1` = không biết.
+ * @property ruleSig dấu vân tay của luật lúc gắn ([ScheduledNavPolicy.sig]) — `newId` cấp lại id đã rảnh, nên chỉ so id
+ *   là thi hành nhầm luật MỚI mang id cũ giữa chuyến (review 27/10 P2).
  */
-data class NavTripPlan(val trip: String, val ruleId: String, val fired: Boolean) {
+data class NavTripPlan(
+    val trip: String,
+    val ruleId: String,
+    val fired: Boolean,
+    val decided: Boolean = true,
+    val wakeAt: Long = -1L,
+    val ruleSig: String = "",
+) {
     val hasRule: Boolean get() = ruleId.isNotEmpty()
 }
 
@@ -62,9 +74,9 @@ sealed interface NavTripStep {
 object ScheduledNavPolicy {
 
     /**
-     * Chuyến chỉ được gắn lịch khi Kachi thấy nó trong 5 phút đầu (tính từ lần thức đầu của tiến trình). Quá mốc này mà
-     * chưa có kế hoạch lưu nghĩa là vòng automation không chạy lúc nổ máy (vd vừa thêm luật giữa đường) ⇒ không biết
-     * giờ nổ máy thật ⇒ không gắn lịch, tránh đúng lỗi chen giữa chuyến.
+     * Chuyến chỉ được gắn lịch khi nhịp lịch đầu tiên tới trong 5 phút đầu kể từ lần thức của chuyến ([NavTripPlan.wakeAt],
+     * ghi bởi [noteWake] lúc màn chính thức; không có mốc ⇒ lùi về mốc thức của tiến trình). Quá mốc này nghĩa là vòng
+     * automation không chạy lúc nổ máy (vd vừa thêm luật giữa đường) ⇒ không biết giờ nổ máy thật ⇒ không gắn lịch.
      */
     const val START_GRACE_MS: Long = 5L * 60_000
 
@@ -75,13 +87,28 @@ object ScheduledNavPolicy {
     /** Kế hoạch "chuyến này không có lịch" — dùng khi điểm đến chủ động đã dẫn ([NavTripStep] sau đó luôn `Hold`). */
     fun blocked(trip: String): NavTripPlan = NavTripPlan(trip, "", fired = true)
 
+    /** Dấu vân tay luật: đích + khung + app (không gồm id). Hai luật cùng id khác dấu = luật KHÁC. */
+    fun sig(rule: ScheduledNavRule): String =
+        "${rule.placeId}#${rule.startMin}-${rule.endMin}#${rule.navApp}".hashCode().toUInt().toString(16)
+
+    /**
+     * Màn chính vừa THỨC (nổ máy / màn bật) ở mốc [nowElapsed]: trả kế hoạch cần lưu, hoặc `null` khi chuyến này đã có
+     * kế hoạch (tiến trình bật lại giữa đường — GIỮ mốc cũ, không ghi đè). Gọi từ `:app` ở mọi đường "thức" của màn chính,
+     * KHÔNG phụ thuộc vòng automation có chạy hay không.
+     */
+    fun noteWake(saved: NavTripPlan?, trip: String, nowElapsed: Long): NavTripPlan? {
+        if (trip.isBlank() || saved?.trip == trip) return null
+        return NavTripPlan(trip, "", fired = false, decided = false, wakeAt = nowElapsed)
+    }
+
     /**
      * Một nhịp.
      *
-     * @param saved kế hoạch đã lưu (có thể của chuyến TRƯỚC).
+     * @param saved kế hoạch đã lưu (có thể của chuyến TRƯỚC, hoặc mốc thức chưa quyết của chuyến này).
      * @param trip mã chuyến hiện tại; rỗng ⇒ [NavHoldReason.NO_TRIP].
      * @param nowMinOfDay phút-trong-ngày của nhịp này · @param dow thứ ISO-8601 (1 = T2 … 7 = CN).
-     * @param sinceStartMs ms kể từ lần thức đầu của tiến trình; `null` = không biết (coi như vừa nổ máy).
+     * @param nowElapsed `elapsedRealtime` của nhịp này.
+     * @param processWakeAt mốc thức đầu của TIẾN TRÌNH (`-1` = chưa thức) — chỉ dùng khi chuyến chưa có mốc thức lưu.
      * @param gpsOk đang có định vị dùng được.
      */
     fun step(
@@ -90,36 +117,49 @@ object ScheduledNavPolicy {
         rules: List<ScheduledNavRule>,
         nowMinOfDay: Int,
         dow: Int,
-        sinceStartMs: Long?,
+        nowElapsed: Long,
+        processWakeAt: Long,
         gpsOk: Boolean,
     ): NavTripStep {
         if (trip.isBlank()) return NavTripStep.Hold(NavHoldReason.NO_TRIP, null)
-        val plan = if (saved?.trip == trip) saved else {
-            if (sinceStartMs != null && sinceStartMs > START_GRACE_MS) {
-                return NavTripStep.Hold(NavHoldReason.LATE, NavTripPlan(trip, "", fired = false))
+        val known = saved?.takeIf { it.trip == trip }
+        val plan = if (known != null && known.decided) known else {
+            val wakeAt = known?.wakeAt?.takeIf { it >= 0 } ?: processWakeAt.takeIf { it >= 0 } ?: nowElapsed
+            val age = (nowElapsed - wakeAt).coerceAtLeast(0)
+            if (age > START_GRACE_MS) {
+                return NavTripStep.Hold(NavHoldReason.LATE, NavTripPlan(trip, "", fired = false, wakeAt = wakeAt))
             }
-            NavTripPlan(trip, pickAtStart(rules, nowMinOfDay, dow)?.id.orEmpty(), fired = false)
+            // Chọn theo giờ NỔ MÁY (= giờ nhịp này lùi lại đúng tuổi chuyến), không theo giờ nhịp.
+            val startMin = ((nowMinOfDay - (age / 60_000).toInt()) % 1440 + 1440) % 1440
+            val rule = pickAtStart(rules, startMin, dow)
+            NavTripPlan(trip, rule?.id.orEmpty(), fired = false, wakeAt = wakeAt, ruleSig = rule?.let(::sig).orEmpty())
         }
         if (!plan.hasRule) return NavTripStep.Hold(NavHoldReason.NO_RULE, plan)
         if (plan.fired) return NavTripStep.Hold(NavHoldReason.FIRED, plan)
-        val rule = rules.firstOrNull { it.id == plan.ruleId && it.enabled }
+        val rule = rules.firstOrNull { it.id == plan.ruleId && it.enabled && sig(it) == plan.ruleSig }
             ?: return NavTripStep.Hold(NavHoldReason.RULE_GONE, plan)
         if (rule.requireGps && !gpsOk) return NavTripStep.Hold(NavHoldReason.NO_GPS, plan)
         return NavTripStep.Launch(rule, plan)
     }
 
-    /** Sổ luật vừa sửa: luật của kế hoạch không còn ⇒ bỏ lịch của chuyến (`newId` có thể cấp lại id đã rảnh). */
-    fun pruned(plan: NavTripPlan?, liveIds: Set<String>): NavTripPlan? =
-        if (plan != null && plan.hasRule && plan.ruleId !in liveIds) plan.copy(ruleId = "") else plan
+    /** Sổ luật vừa sửa: luật của kế hoạch không còn (id + dấu vân tay) ⇒ bỏ lịch của chuyến, không quyết lại. */
+    fun pruned(plan: NavTripPlan?, live: List<ScheduledNavRule>): NavTripPlan? =
+        if (plan != null && plan.hasRule && live.none { it.id == plan.ruleId && sig(it) == plan.ruleSig }) {
+            plan.copy(ruleId = "", ruleSig = "")
+        } else plan
 
-    /** Dạng lưu một dòng `trip|ruleId|0/1`. */
-    fun encode(plan: NavTripPlan): String = "${plan.trip}|${plan.ruleId}|${if (plan.fired) 1 else 0}"
+    /** Dạng lưu một dòng `trip|ruleId|fired 0/1|decided 0/1|wakeAt|ruleSig`. */
+    fun encode(plan: NavTripPlan): String =
+        "${plan.trip}|${plan.ruleId}|${if (plan.fired) 1 else 0}|${if (plan.decided) 1 else 0}|${plan.wakeAt}|${plan.ruleSig}"
 
-    /** Chuỗi hỏng / rỗng ⇒ `null` (coi như chưa có kế hoạch — chuyến được quyết lại theo [START_GRACE_MS]). */
+    /** Chuỗi hỏng / rỗng / dạng cũ (sổ `id=ngày` ≤ 3.1.21) ⇒ `null` (coi như chưa có kế hoạch). */
     fun decode(raw: String?): NavTripPlan? {
         val parts = raw?.trim()?.split('|') ?: return null
-        if (parts.size != 3 || parts[0].isBlank()) return null
-        val fired = when (parts[2]) { "1" -> true; "0" -> false; else -> return null }
-        return NavTripPlan(parts[0], parts[1], fired)
+        if (parts.size != 6 || parts[0].isBlank()) return null
+        fun flag(v: String) = when (v) { "1" -> true; "0" -> false; else -> null }
+        val fired = flag(parts[2]) ?: return null
+        val decided = flag(parts[3]) ?: return null
+        val wakeAt = parts[4].toLongOrNull() ?: return null
+        return NavTripPlan(parts[0], parts[1], fired, decided, wakeAt, parts[5])
     }
 }

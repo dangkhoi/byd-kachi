@@ -232,12 +232,12 @@ class AutomationService : Service() {
                             lastNavMs = nowMs
                             // TELEGRAM-REMOTE R2: điểm đến chờ ƯU TIÊN hơn lịch. Có pending bắn được ⇒ BỎ tick lịch
                             // nhịp này (short-circuit); pending đã tự chặn lịch hôm nay (R3) + consume (R4).
-                            val firedPending = runCatching { ScheduledNavApplier.applyPending(app, nowMs) }
+                            // Một lượt đọc kho: FIRED ⇒ bỏ lịch nhịp này; WAITING (chờ GPS / app) ⇒ lịch KHÔNG chen
+                            // trước điểm đến chủ động; NONE ⇒ lịch như cũ.
+                            val pending = runCatching { ScheduledNavApplier.applyPending(app, nowMs) }
                                 .onFailure { Log.w(TAG, "tick pending lỗi", it) }
-                                .getOrDefault(false)
-                            // Điểm đến chủ động còn chờ (vd chờ GPS) ⇒ lịch KHÔNG chen vào trước nó.
-                            val pendingWaits = runCatching { PendingNavStore.read(app) != null }.getOrDefault(false)
-                            if (!firedPending && !pendingWaits) {
+                                .getOrDefault(ScheduledNavApplier.PendingOutcome.NONE)
+                            if (pending == ScheduledNavApplier.PendingOutcome.NONE) {
                                 runCatching { ScheduledNavApplier.tick(app) }.onFailure { Log.w(TAG, "tick nav lỗi", it) }
                             }
                         }

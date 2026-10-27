@@ -176,6 +176,10 @@ class Automation185WiringTest {
         assertTrue("savePlan" !in launched.substringAfter("} else {").substringBefore("\n                    }"),
             "nhánh KHÔNG giao được tuyệt đối không được lưu đã-dẫn")
         assertTrue("NavAutomationFired" !in navApplier, "sổ một-lần-mỗi-ngày đã gỡ")
+        // Review 27/10 P1: mốc thức của chuyến ghi ở MỌI đường thức của màn chính, không phụ thuộc vòng automation.
+        val early = app("EarlyShellChannel.kt")
+        assertEquals(3, Regex("KachiReadyLog\\.wake\\(").findAll(early).count(), "ba đường thức")
+        assertEquals(3, Regex("ScheduledNavApplier\\.noteWake\\(app\\)").findAll(early).count(), "mỗi đường thức ghi mốc chuyến")
     }
 
     /** Đi đúng đường mà một câu lệnh giọng nói đi — không dựng `Intent` thứ hai (xem KDoc `VoiceAppIntents`). */
